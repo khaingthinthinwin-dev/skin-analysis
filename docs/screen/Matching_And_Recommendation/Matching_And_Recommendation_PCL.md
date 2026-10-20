@@ -11,7 +11,7 @@
 | **Subsystem** | Product Discovery |
 | **Version** | 1.1 |
 | **Created** | 2026-10-14 |
-| **Last Updated** | 2026-10-19 |
+| **Last Updated** | 2026-10-20 |
 | **Status** | Active |
 | **Source Specs** | DD_MATCH_01–06; 機能設計書 / 画面項目設計書 (Matching_And_Recommendation) |
 
@@ -368,18 +368,17 @@
 
 - [x] **A-01**: Open recommendations without authentication
   - **Evidence**:
-    - Screenshots: (none captured)
+    - `A-01_1_unauthenticated_redirect.png` — captures the rendered Sign In form after redirecting to `/login`
     - Test: matching.spec.ts › "A-01: redirects unauthenticated visitors to login" — passed
   - **Precondition**: User is not authenticated
   - **Steps**:
     1. Navigate directly to `/buyer/recommendations`
   - **Expected Result**: User is redirected to `/login`
   - **Business Rules**: None (route authentication)
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **A-02**: Reject invalid personalized recommendation query parameters
   - **Evidence**:
-    - Screenshots: (none captured)
+    - API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?sort=invalid → `A-02_1_invalid_recommendation_query.png`
     - Test: matching.spec.ts › "A-02: rejects an invalid recommendation query" — passed
   - **Precondition**: Valid buyer token is available
   - **Steps**:
@@ -387,11 +386,10 @@
   - **Expected Response**: HTTP 400 `BAD_REQUEST`
   - **Business Rules**: BR-MATCH-025
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no API test evidence has been recorded.
 
 - [x] **A-03**: Reject personalized recommendations for a non-buyer role
   - **Evidence**:
-    - Screenshots: (none captured)
+    - API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized → `A-03_1_non_buyer_forbidden.png`
     - Test: matching.spec.ts › "A-03: rejects a non-buyer recommendation request" — passed
   - **Precondition**: Authenticated user has a role other than buyer
   - **Steps**:
@@ -399,11 +397,12 @@
   - **Expected Response**: HTTP 403 `FORBIDDEN`
   - **Business Rules**: None (role guard)
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no API test evidence has been recorded.
 
 - [x] **A-04**: Handle recommendations request failure and retry
   - **Evidence**:
     - `A-04_1_retry.png`
+    - API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?sort=createdAt&order=desc&page=1&limit=12 → `A-04_2_failed_recommendation_request.png`
+    - API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?sort=createdAt&order=desc&page=1&limit=12 → `A-04_3_retried_recommendation_request.png`
     - Test: matching.spec.ts › "A-04: offers retry after a failed recommendations request" — passed
   - **Precondition**: Recommendations page is open and the API can be made to fail once
   - **Steps**:
@@ -413,11 +412,11 @@
   - **Expected Result**: Error banner offers retry and the query is refetched
   - **Business Rules**: None (error handling)
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **A-05**: Observe malformed and missing similar-product source behavior
   - **Evidence**:
-    - Screenshots: (none captured)
+    - API response evidence for GET http://localhost:8080/api/v1/recommendations/similar/not-a-uuid → `A-05_1_malformed_similar_product_id.png`
+    - API response evidence for GET http://localhost:8080/api/v1/recommendations/similar/11111111-1111-4111-8111-111111111111 → `A-05_2_missing_similar_product.png`
     - Test: matching.spec.ts › "A-05: records malformed and missing similar-product ID behavior" — passed
   - **Precondition**: No valid source product matching the requested ID
   - **Steps**:
@@ -430,7 +429,7 @@
 
 - [x] **A-06**: Confirm personalized requests have no endpoint rate limit
   - **Evidence**:
-    - Screenshots: (none captured)
+    - API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized → `A-06_1_request_above_rate_limit_threshold.png`
     - Test: matching.spec.ts › "A-06: accepts requests above the documented rate-limit threshold" — passed
   - **Precondition**: Authenticated buyer sends personalized requests above the configured limit
   - **Steps**:
@@ -443,7 +442,7 @@
 
 - [x] **A-07**: Blocks a non-buyer from the recommendations page
   - **Evidence**:
-    - Screenshots: (none captured)
+    - `A-07_1_non_buyer_unauthorized_page.png`
     - Test: matching.spec.ts › "A-07: blocks non-buyers from the recommendations page" — passed
   - **Precondition**: An authenticated merchant opens the buyer-only recommendations route.
   - **Steps**:
@@ -465,7 +464,6 @@
   - **Expected Result**: Negative and non-numeric values block the commit with `role="alert"` errors. A min>max range shows an inline error and is committed as-is.
   - **Business Rules**: None (client-side validation)
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 ---
 
@@ -480,7 +478,6 @@
     1. Apply filters that return no results
   - **Expected Result**: `No matching products` empty state and `Reset Filters` action are displayed
   - **Business Rules**: None (empty state)
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **B-02**: Keep out-of-stock products visible with an availability indicator
   - **Evidence**:
@@ -492,11 +489,10 @@
     2. Inspect the out-of-stock product card
   - **Expected Result**: Product remains in results and its card displays `Out of Stock`
   - **Business Rules**: BR-MATCH-021, BR-MATCH-022, BR-MATCH-023
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **B-03**: Return an empty page when requested page exceeds available pages
   - **Evidence**:
-    - Screenshots: (none captured)
+    - API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?page=999 → `B-03_1_page_beyond_total_pages.png`
     - Test: matching.spec.ts › "B-03: returns an empty page beyond total pages" — passed
   - **Precondition**: Valid buyer token and a result set with fewer pages than the requested page
   - **Steps**:
@@ -504,11 +500,11 @@
   - **Expected Response**: HTTP 200 with an empty `data` array and pagination metadata for the full result set
   - **Business Rules**: BR-MATCH-026, BR-MATCH-027
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no API test evidence has been recorded.
 
 - [x] **B-04**: Enforce the maximum recommendation page size
   - **Evidence**:
-    - Screenshots: (none captured)
+    - API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?limit=50 → `B-04_1_maximum_allowed_limit.png`
+    - API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?limit=51 → `B-04_2_limit_above_maximum.png`
     - Test: matching.spec.ts › "B-04: accepts limit 50 and rejects limit 51" — passed
   - **Precondition**: Valid buyer token
   - **Steps**:
@@ -517,7 +513,6 @@
   - **Expected Result**: Limit 50 is accepted; a limit above 50 is rejected by query validation
   - **Business Rules**: BR-MATCH-026
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no API test evidence has been recorded.
 
 - [x] **B-05**: Display the no-history state
   - **Evidence**:
@@ -530,7 +525,6 @@
   - **Expected Result**: `No recommendation history yet` is displayed
   - **Business Rules**: None (empty state)
   - **API**: `GET /api/v1/recommendations/history`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **B-06**: Hide the ad panel when no eligible ads exist
   - **Evidence**:
@@ -542,7 +536,6 @@
   - **Expected Result**: Ad panel is not rendered
   - **Business Rules**: BR-MATCH-037
   - **API**: `GET /api/v1/ads/panel`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **B-07**: Card image and price display fallbacks
   - **Evidence**:
@@ -555,7 +548,6 @@
   - **Expected Result**: Broken/empty image renders the 🧴 placeholder block, never a broken-image glyph; prices render with `toLocaleString()` plus `Ks`, compare-at-price struck through
   - **Business Rules**: None (UI behavior)
   - **API**: None (client-side)
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **B-08**: First-load skeleton grid matches the active view
   - **Evidence**:
@@ -568,13 +560,11 @@
   - **Expected Result**: Grid shows the 8-card skeleton; list shows 4 skeleton rows. Note: on page/filter changes `placeholderData` keeps old results, so no skeleton appears — skeleton is first-load only.
   - **Business Rules**: None (UI behavior)
   - **API**: None (client-side)
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
-
 ---
 
 ## 4. Interface Scenarios (I) — API Contracts & Payloads
 
-> API contract tests use status and response assertions only; no screenshots are expected.
+> API contract tests include evidence screenshots showing the request method, URL, status, request body, and response body.
 
 - [x] **I-01**: `GET /api/v1/recommendations/personalized` returns recommendation data and metadata
   - **Evidence**:
@@ -587,7 +577,6 @@
   - **Expected Response**: HTTP 200; JSON contains `data` recommendations, top-level `source`, and `meta` pagination information (`total`, `page`, `limit`, `totalPages`)
   - **Business Rules**: BR-MATCH-001, BR-MATCH-027, BR-MATCH-028
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no API test evidence has been recorded.
 
 - [x] **I-02**: `GET /api/v1/recommendations/personalized` rejects a missing or invalid token
   - **Evidence**:
@@ -599,7 +588,6 @@
   - **Expected Response**: HTTP 401 `UNAUTHORIZED`
   - **Business Rules**: None (JWT guard)
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no API test evidence has been recorded.
 
 - [x] **I-03**: `GET /api/v1/recommendations/similar/:productId` returns similar products
   - **Evidence**:
@@ -611,7 +599,6 @@
   - **Expected Response**: HTTP 200 with a `data` array of similar products, excluding the source product
   - **Business Rules**: BR-MATCH-021, BR-MATCH-022
   - **API**: `GET /api/v1/recommendations/similar/:productId`
-  - **Note**: Unchecked because no API test evidence has been recorded.
 
 - [x] **I-04**: `GET /api/v1/recommendations/history` returns the buyer's paginated sessions
   - **Evidence**:
@@ -624,7 +611,6 @@
   - **Expected Response**: HTTP 200 with session groups in `data` and pagination metadata
   - **Business Rules**: None (buyer history isolation)
   - **API**: `GET /api/v1/recommendations/history`
-  - **Note**: Unchecked because no API test evidence has been recorded.
 
 - [x] **I-05**: `GET /api/v1/ads/panel` returns eligible ads for a placement
   - **Evidence**:
@@ -637,7 +623,6 @@
   - **Expected Response**: HTTP 200 with a `data` array containing eligible ads and their image URL, link URL, CTA text, and priority amount
   - **Business Rules**: BR-MATCH-037, BR-MATCH-049, BR-MATCH-051
   - **API**: `GET /api/v1/ads/panel`
-  - **Note**: Unchecked because no API test evidence has been recorded.
 
 - [x] **I-06**: `POST /api/v1/ads/track/impression` records valid ad IDs
   - **Evidence**:
@@ -650,7 +635,6 @@
   - **Expected Response**: HTTP 200 with a `data` response confirming the tracking operation
   - **Business Rules**: None (ad analytics)
   - **API**: `POST /api/v1/ads/track/impression`
-  - **Note**: Unchecked because no API test evidence has been recorded.
 
 - [x] **I-07**: `POST /api/v1/ads/track/click` records a valid ad click
   - **Evidence**:
@@ -663,7 +647,6 @@
   - **Expected Response**: HTTP 200 with a `data` response confirming the tracking operation
   - **Business Rules**: None (ad analytics)
   - **API**: `POST /api/v1/ads/track/click`
-  - **Note**: Unchecked because no API test evidence has been recorded.
 
 - [x] **I-08**: Documents permissive handling of malformed ad tracking payloads
   - **Evidence**:

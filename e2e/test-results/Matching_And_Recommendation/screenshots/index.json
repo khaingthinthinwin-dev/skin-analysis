@@ -95,8 +95,42 @@
   "N-16_1_cart_add.png": {
     "test": "matching.spec.ts::N-16: adds an in-stock recommendation to the cart"
   },
+  "A-01_1_unauthenticated_redirect.png": {
+    "test": "matching.spec.ts::A-01: redirects unauthenticated visitors to login"
+  },
+  "A-02_1_invalid_recommendation_query.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?sort=invalid",
+    "test": "matching.spec.ts::A-02: rejects an invalid recommendation query"
+  },
+  "A-03_1_non_buyer_forbidden.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized",
+    "test": "matching.spec.ts::A-03: rejects a non-buyer recommendation request"
+  },
   "A-04_1_retry.png": {
     "test": "matching.spec.ts::A-04: offers retry after a failed recommendations request"
+  },
+  "A-04_2_failed_recommendation_request.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?sort=createdAt&order=desc&page=1&limit=12",
+    "test": "matching.spec.ts::A-04: offers retry after a failed recommendations request"
+  },
+  "A-04_3_retried_recommendation_request.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?sort=createdAt&order=desc&page=1&limit=12",
+    "test": "matching.spec.ts::A-04: offers retry after a failed recommendations request"
+  },
+  "A-05_1_malformed_similar_product_id.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/similar/not-a-uuid",
+    "test": "matching.spec.ts::A-05: records malformed and missing similar-product ID behavior"
+  },
+  "A-05_2_missing_similar_product.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/similar/11111111-1111-4111-8111-111111111111",
+    "test": "matching.spec.ts::A-05: records malformed and missing similar-product ID behavior"
+  },
+  "A-06_1_request_above_rate_limit_threshold.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized",
+    "test": "matching.spec.ts::A-06: accepts requests above the documented rate-limit threshold"
+  },
+  "A-07_1_non_buyer_unauthorized_page.png": {
+    "test": "matching.spec.ts::A-07: blocks non-buyers from the recommendations page"
   },
   "A-08_1_negative_price.png": {
     "test": "matching.spec.ts::A-08: rejects negative price input without applying it"
@@ -106,6 +140,18 @@
   },
   "B-02_1_out_of_stock.png": {
     "test": "matching.spec.ts::B-02: shows out-of-stock products and hides cart action"
+  },
+  "B-03_1_page_beyond_total_pages.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?page=999",
+    "test": "matching.spec.ts::B-03: returns an empty page beyond total pages"
+  },
+  "B-04_1_maximum_allowed_limit.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?limit=50",
+    "test": "matching.spec.ts::B-04: accepts limit 50 and rejects limit 51"
+  },
+  "B-04_2_limit_above_maximum.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?limit=51",
+    "test": "matching.spec.ts::B-04: accepts limit 50 and rejects limit 51"
   },
   "B-05_1_no_history.png": {
     "test": "matching.spec.ts::B-05: displays the empty recommendation history state"
@@ -119,7 +165,51 @@
   "B-08_1_first_load_skeleton.png": {
     "test": "matching.spec.ts::B-08: shows first-load skeleton cards while the request is pending"
   },
+  "I-01_1_api_recommendations.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?page=1&limit=12",
+    "test": "matching.spec.ts::I-01: returns recommendation data and pagination metadata"
+  },
   "I-01_2_live_page.png": {
     "test": "matching.spec.ts::I-01: renders live recommendation data without mocks"
+  },
+  "I-02_1_missing_token.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized",
+    "test": "matching.spec.ts::I-02: rejects missing and invalid tokens"
+  },
+  "I-02_2_invalid_token.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized",
+    "test": "matching.spec.ts::I-02: rejects missing and invalid tokens"
+  },
+  "I-03_1_api_similar_products.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/similar/11111111-1111-4111-8111-111111111111",
+    "test": "matching.spec.ts::I-03: returns a similar-products array excluding the source product"
+  },
+  "I-04_1_api_recommendation_history.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/history?page=1&limit=5",
+    "test": "matching.spec.ts::I-04: returns paginated history for the authenticated buyer"
+  },
+  "I-05_1_api_ad_panel.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/ads/panel?placement=recommendation_page_banner",
+    "test": "matching.spec.ts::I-05: returns the ad panel contract for the recommendation placement"
+  },
+  "I-06_1_api_ad_impression.png": {
+    "description": "API response evidence for POST http://localhost:8080/api/v1/ads/track/impression",
+    "test": "matching.spec.ts::I-06: records impressions for submitted ad IDs"
+  },
+  "I-07_1_api_ad_click.png": {
+    "description": "API response evidence for POST http://localhost:8080/api/v1/ads/track/click",
+    "test": "matching.spec.ts::I-07: records a sponsored ad click"
+  },
+  "I-08_1_malformed_impression.png": {
+    "description": "API response evidence for POST http://localhost:8080/api/v1/ads/track/impression",
+    "test": "matching.spec.ts::I-08: documents permissive handling of malformed ad tracking payloads"
+  },
+  "I-08_2_empty_impression.png": {
+    "description": "API response evidence for POST http://localhost:8080/api/v1/ads/track/impression",
+    "test": "matching.spec.ts::I-08: documents permissive handling of malformed ad tracking payloads"
+  },
+  "I-08_3_malformed_click.png": {
+    "description": "API response evidence for POST http://localhost:8080/api/v1/ads/track/click",
+    "test": "matching.spec.ts::I-08: documents permissive handling of malformed ad tracking payloads"
   }
 }
