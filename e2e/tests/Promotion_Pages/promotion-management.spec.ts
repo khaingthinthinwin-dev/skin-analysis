@@ -1,7 +1,9 @@
 import { test, expect } from '../../fixtures/auth.fixture';
+import type { Page } from '@playwright/test';
 import { PromotionPage } from '../../pages/Promotion_Pages/PromotionPage';
 import { API_BASE_URL } from '../../utils/constants';
 import { authHeaders, loginApi, registerPendingMerchant, rejectMerchantByEmail } from '../../utils/api-auth';
+import { captureDbEvidence } from '../../utils/db-evidence';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
@@ -123,6 +125,38 @@ function buildUpdateBody(discountValue: number): Record<string, any> {
   };
 }
 
+type PromotionEvidenceSelector =
+  | { id: string }
+  | { code: string }
+  | { description: string }
+  | { discountValue: number }
+  | { maxUses: number };
+
+async function capturePromotionDbEvidence(
+  page: Page,
+  evidenceName: string,
+  selector: PromotionEvidenceSelector,
+  description: string,
+): Promise<void> {
+  const [column, value] = Object.entries(selector)[0];
+  await captureDbEvidence(page, evidenceName, {
+    description,
+    queries: [{
+      label: description,
+      text: `SELECT id, merchant_id, code, description, discount_type, discount_value, min_order_amount, max_uses, used_count, starts_at, expires_at, is_active, created_at FROM promotions WHERE ${column} = $1 ORDER BY created_at DESC LIMIT 1`,
+      values: [value],
+    }],
+  });
+}
+
+async function captureScenarioEvidence(
+  page: PromotionPage,
+  scenarioId: string,
+  filename: string,
+): Promise<void> {
+  await page.capture(`${scenarioId}_${filename}`);
+}
+
 // ─────────────────────────────────────────────
 // 1. Normal Scenarios (N) — Happy Path
 // ─────────────────────────────────────────────
@@ -134,22 +168,29 @@ test.describe('Normal Scenarios (N)', () => {
     await expect(promotionPage.promotionList).toBeVisible();
     await promotionPage.expectTableColumns();
     await expect(promotionPage.createPromotionButton).toBeVisible();
-    await promotionPage.capture('N-01_page_loaded');
+    await captureScenarioEvidence(promotionPage, 'N-01', '1_promotion_list');
   });
 
-  test('N-02: should create a new promotion with valid data', async ({ merchantPage, request }) => {
+  test('N-02: should create a new promotion with valid data', async ({ merchantPage }) => {
     promotionPage = new PromotionPage(merchantPage);
-    const headers = await authHeaders(merchantPage);
     await promotionPage.goto();
     await promotionPage.clickCreatePromotion();
+    const code = `UI${Date.now().toString().slice(-6)}`;
     await promotionPage.fillValidCreateForm({
-      code: `UI${Date.now().toString().slice(-6)}`,
+      code,
       discountValue: '15',
     });
+    await captureScenarioEvidence(promotionPage, 'N-02', '1_create_form_filled');
     await promotionPage.clickSave();
     await promotionPage.expectToastVisible('success');
     await promotionPage.expectRedirectTo('/merchant/promotions');
-    await promotionPage.capture('N-02_create_promotion');
+    await captureScenarioEvidence(promotionPage, 'N-02', '2_list_after_create');
+    await capturePromotionDbEvidence(
+      merchantPage,
+      'N-02_3_db_promotion',
+      { code },
+      'Promotion row after successful creation',
+    );
   });
 
   test('N-03: should edit an existing unused promotion', async ({ merchantPage, request }) => {
@@ -164,10 +205,17 @@ test.describe('Normal Scenarios (N)', () => {
     await expect(promotionPage.txtCode).toBeDisabled();
     await promotionPage.txtDiscountValue.clear();
     await promotionPage.txtDiscountValue.fill('20');
+    await captureScenarioEvidence(promotionPage, 'N-03', '1_edit_form_filled');
     await promotionPage.clickSave();
     await promotionPage.expectToastVisible('success');
     await promotionPage.expectRedirectTo('/merchant/promotions');
-    await promotionPage.capture(`N-03_edit_promotion_${created.code}`);
+    await captureScenarioEvidence(promotionPage, 'N-03', '2_list_after_edit');
+    await capturePromotionDbEvidence(
+      merchantPage,
+      'N-03_3_db_promotion',
+      { id: created.id },
+      'Promotion row after successful update',
+    );
   });
 
   test('N-04: should delete a promotion via confirmation dialog', async ({ merchantPage, request }) => {
@@ -176,9 +224,16 @@ test.describe('Normal Scenarios (N)', () => {
     const created = await createPromotionViaApi(request, headers, { usedCount: 0 });
     await promotionPage.goto();
     await promotionPage.clickDeleteOnRow(created.code);
+    await captureScenarioEvidence(promotionPage, 'N-04', '1_delete_confirmation');
     await promotionPage.confirmDelete();
     await promotionPage.expectToastVisible('success');
-    await promotionPage.capture(`N-04_delete_promotion_${created.code}`);
+    await captureScenarioEvidence(promotionPage, 'N-04', '2_list_after_delete');
+    await capturePromotionDbEvidence(
+      merchantPage,
+      'N-04_3_db_promotion',
+      { id: created.id },
+      'Promotion lookup after deletion (expected zero rows)',
+    );
   });
 
   test('N-05: should toggle promotion active status', async ({ merchantPage, request }) => {
@@ -188,7 +243,13 @@ test.describe('Normal Scenarios (N)', () => {
     await promotionPage.goto();
     await promotionPage.toggleActiveOnRow(created.code);
     await promotionPage.expectToastVisible('success');
-    await promotionPage.capture(`N-05_toggle_active_${created.code}`);
+    await captureScenarioEvidence(promotionPage, 'N-05', '1_list_after_status_toggle');
+    await capturePromotionDbEvidence(
+      merchantPage,
+      'N-05_2_db_promotion',
+      { id: created.id },
+      'Promotion row after active status toggle',
+    );
   });
 
   test('N-06: should search promotions by code fragment', async ({ merchantPage, request }) => {
@@ -199,7 +260,7 @@ test.describe('Normal Scenarios (N)', () => {
     });
     await promotionPage.goto();
     await promotionPage.searchPromotions('SEARCHME');
-    await promotionPage.capture('N-06_search_by_code');
+    await captureScenarioEvidence(promotionPage, 'N-06', '1_search_results');
     const rows = promotionPage.promotionRows;
     await expect(rows.first()).toBeVisible();
   });
@@ -208,23 +269,22 @@ test.describe('Normal Scenarios (N)', () => {
     promotionPage = new PromotionPage(merchantPage);
     await promotionPage.goto();
     await promotionPage.selectStatusFilter('Active');
-    await promotionPage.capture('N-07_filter_active');
+    await captureScenarioEvidence(promotionPage, 'N-07', '1_active_filter_results');
     await expect(promotionPage.promotionList).toBeVisible();
     await promotionPage.selectStatusFilter('Expired');
-    await promotionPage.capture('N-07_filter_expired');
+    await captureScenarioEvidence(promotionPage, 'N-07', '2_expired_filter_results');
   });
 
   test('N-08: should paginate the promotion list', async ({ merchantPage }) => {
     promotionPage = new PromotionPage(merchantPage);
     await promotionPage.goto();
     await promotionPage.expectPaginationVisible();
+    await captureScenarioEvidence(promotionPage, 'N-08', '1_promotion_list_pagination');
     if (await promotionPage.nextPageButton.isEnabled()) {
       await promotionPage.clickNextPage();
-      await promotionPage.capture('N-08_next_page');
     }
     if (await promotionPage.prevPageButton.isEnabled()) {
       await promotionPage.clickPrevPage();
-      await promotionPage.capture('N-08_prev_page');
     }
     await promotionPage.expectPageInfo('Page');
   });
@@ -241,7 +301,6 @@ test.describe('Normal Scenarios (N)', () => {
     if (result.status === 200) {
       expect(result.body).toHaveProperty('data');
     }
-    await promotionPage.capture(`N-09_validate_coupon_${created.code}`);
   });
 
   test('N-10: should toggle language on screen', async ({ merchantPage }) => {
@@ -249,7 +308,7 @@ test.describe('Normal Scenarios (N)', () => {
     await promotionPage.goto();
     await expect(promotionPage.btnLanguageToggle).toBeVisible();
     await promotionPage.toggleLanguage();
-    await promotionPage.capture('N-10_language_toggle');
+    await captureScenarioEvidence(promotionPage, 'N-10', '1_language_toggle');
   });
 
   test('N-11: should toggle theme on screen', async ({ merchantPage }) => {
@@ -272,7 +331,7 @@ test.describe('Normal Scenarios (N)', () => {
         html.evaluate((element) => element.classList.contains('dark')),
       )
       .toBe(initiallyDark);
-    await promotionPage.capture('N-11_1_theme_toggle');
+    await captureScenarioEvidence(promotionPage, 'N-11', '1_theme_toggle');
   });
 
   test('N-12: should display responsive layout on desktop viewport', async ({ merchantPage }) => {
@@ -281,7 +340,7 @@ test.describe('Normal Scenarios (N)', () => {
     await promotionPage.goto();
     await expect(promotionPage.promotionList).toBeVisible();
     await promotionPage.expectTableColumns();
-    await promotionPage.capture('N-12_desktop_viewport');
+    await captureScenarioEvidence(promotionPage, 'N-12', '1_desktop_viewport');
   });
 
   test('N-13: should display responsive layout on mobile viewport', async ({ merchantPage }) => {
@@ -294,7 +353,7 @@ test.describe('Normal Scenarios (N)', () => {
       () => document.documentElement.scrollWidth > window.innerWidth,
     );
     expect(overflow).toBe(false);
-    await promotionPage.capture('N-13_mobile_viewport');
+    await captureScenarioEvidence(promotionPage, 'N-13', '1_mobile_viewport');
   });
 });
 
@@ -321,7 +380,7 @@ test.describe('Abnormal Scenarios (A)', () => {
       }
     });
     await promotionPage.clickSave();
-    await promotionPage.capture('A-01_1_empty_form_errors');
+    await captureScenarioEvidence(promotionPage, 'A-01', '1_empty_form_errors');
     await expect(promotionPage.codeError).toBeVisible();
     await expect(promotionPage.discountValueError).toBeVisible();
     expect(createRequestSent).toBe(false);
@@ -339,7 +398,13 @@ test.describe('Abnormal Scenarios (A)', () => {
     await expect(promotionPage.errorToast.first()).toContainText(
       'A promotion with this code already exists',
     );
-    await promotionPage.capture('A-02_duplicate_code');
+    await captureScenarioEvidence(promotionPage, 'A-02', '1_duplicate_code_error');
+    await capturePromotionDbEvidence(
+      merchantPage,
+      'A-02_2_db_promotion',
+      { code: duplicateCode },
+      'Existing promotion row after duplicate-code rejection',
+    );
   });
 
   test('A-03: should reject expiry date not after start date', async ({ merchantPage }) => {
@@ -353,7 +418,7 @@ test.describe('Abnormal Scenarios (A)', () => {
     await promotionPage.dtpStartsAt.fill(fmt(now));
     await promotionPage.dtpExpiresAt.fill(fmt(now));
     await promotionPage.clickSave();
-    await promotionPage.capture('A-03_expiry_not_after_start');
+    await captureScenarioEvidence(promotionPage, 'A-03', '1_expiry_not_after_start');
     await promotionPage.expectValidationError('expiry');
   });
 
@@ -363,7 +428,7 @@ test.describe('Abnormal Scenarios (A)', () => {
     await promotionPage.clickCreatePromotion();
     await promotionPage.txtDiscountValue.fill('100');
     await promotionPage.clickSave();
-    await promotionPage.capture('A-04_percentage_out_of_range');
+    await captureScenarioEvidence(promotionPage, 'A-04', '1_percentage_out_of_range');
     await promotionPage.expectValidationError('percentage');
   });
 
@@ -394,7 +459,13 @@ test.describe('Abnormal Scenarios (A)', () => {
     const deleteBody = await deleteRes.json();
     expect(deleteRes.status()).toBe(409);
     expect(deleteBody).toHaveProperty('error', 'PROMO_DELETE_RESTRICTED');
-    await promotionPage.capture(`A-05_block_used_promotion_${created.code}`);
+    await captureScenarioEvidence(promotionPage, 'A-05', '1_used_promotion_controls');
+    await capturePromotionDbEvidence(
+      merchantPage,
+      'A-05_2_db_promotion',
+      { id: created.id },
+      'Promotion row with usage count restricting edits and deletion',
+    );
   });
 
   test('A-06: pending merchant sees read-only list with banner, no mutation controls', async ({ page, request }) => {
@@ -415,7 +486,7 @@ test.describe('Abnormal Scenarios (A)', () => {
     await page.goto('/merchant/promotions');
     await promotionPage.expectPendingBanner();
     await promotionPage.expectNoCrudControls();
-    await promotionPage.capture('A-06_pending_merchant_readonly');
+    await captureScenarioEvidence(promotionPage, 'A-06', '1_pending_merchant_readonly');
   });
 
   test('A-07: rejected merchant sees read-only list with rejection reason', async ({ page, request }) => {
@@ -438,21 +509,20 @@ test.describe('Abnormal Scenarios (A)', () => {
     await page.goto('/merchant/promotions');
     await promotionPage.expectRejectedBanner();
     await promotionPage.expectNoCrudControls();
-    await promotionPage.capture('A-07_rejected_merchant_readonly');
+    await captureScenarioEvidence(promotionPage, 'A-07', '1_rejected_merchant_readonly');
   });
 
   test('A-08: should redirect to login when accessing promotion pages without authentication', async ({ page }) => {
     promotionPage = new PromotionPage(page);
     await page.goto('/merchant/promotions');
     await promotionPage.expectRedirectTo('/login');
-    await promotionPage.capture('A-08_unauthenticated_redirect');
+    await captureScenarioEvidence(promotionPage, 'A-08', '1_unauthenticated_redirect');
   });
 
   test('A-09: should reject invalid coupon code format at checkout', async ({ request }) => {
     const buyerHeaders = await buyerApiHeaders(request);
     const result = await validateCouponViaApi(request, buyerHeaders, 'SALE 10!', 1000);
     expect([400, 403, 404, 422]).toContain(result.status);
-    await promotionPage.capture('A-09_invalid_coupon_format');
   });
 
   test('A-10: should reject expired / inactive / max-uses coupon', async ({ request, merchantPage }) => {
@@ -466,7 +536,6 @@ test.describe('Abnormal Scenarios (A)', () => {
     });
     const result = await validateCouponViaApi(request, buyerHeaders, expired.code, 1000);
     expect([400, 403, 404, 422]).toContain(result.status);
-    await promotionPage.capture(`A-10_expired_coupon_${expired.code}`);
   });
 
   test('A-11: should keep one replaceable coupon per merchant at checkout', async ({ buyerPage }) => {
@@ -544,7 +613,7 @@ test.describe('Abnormal Scenarios (A)', () => {
     await expect(
       buyerPage.getByRole('dialog').getByText('THIRDCOUPON'),
     ).toBeVisible();
-    await promotionPage.capture('A-11_1_one_coupon_per_merchant');
+    await captureScenarioEvidence(promotionPage, 'A-11', '1_one_coupon_per_merchant');
   });
 });
 
@@ -560,18 +629,30 @@ test.describe('Boundary Scenarios (B)', () => {
     await promotionPage.fillValidCreateForm({ code: 'A', discountValue: '10' });
     await promotionPage.clickSave();
     await promotionPage.expectRedirectTo('/merchant/promotions');
-    await promotionPage.capture('B-01_code_min_length');
+    await captureScenarioEvidence(promotionPage, 'B-01', '1_min_length_promotion_created');
+    await capturePromotionDbEvidence(
+      merchantPage,
+      'B-01_2_db_promotion',
+      { code: 'A' },
+      'Promotion row created with a one-character code',
+    );
   });
 
   test('B-02: should accept promotion code at maximum length (50 characters)', async ({ merchantPage }) => {
     promotionPage = new PromotionPage(merchantPage);
     await promotionPage.goto();
     await promotionPage.clickCreatePromotion();
-    const longCode = 'A'.repeat(50);
+    const longCode = `${'A'.repeat(42)}${randomUUID().replace(/-/g, '').slice(0, 8)}`;
     await promotionPage.fillValidCreateForm({ code: longCode, discountValue: '10' });
     await promotionPage.clickSave();
     await promotionPage.expectRedirectTo('/merchant/promotions');
-    await promotionPage.capture('B-02_code_max_length');
+    await captureScenarioEvidence(promotionPage, 'B-02', '1_max_length_promotion_created');
+    await capturePromotionDbEvidence(
+      merchantPage,
+      'B-02_2_db_promotion',
+      { code: longCode },
+      'Promotion row created with a 50-character code',
+    );
   });
 
   test('B-03: should reject promotion code exceeding maximum length (51 characters)', async ({ merchantPage }) => {
@@ -580,7 +661,7 @@ test.describe('Boundary Scenarios (B)', () => {
     await promotionPage.clickCreatePromotion();
     const tooLong = 'A'.repeat(51);
     await promotionPage.txtCode.fill(tooLong);
-    await promotionPage.capture('B-03_code_exceeds_max_length');
+    await captureScenarioEvidence(promotionPage, 'B-03', '1_code_exceeds_max_length');
   });
 
   test('B-04: should accept description at maximum length (500 characters)', async ({ merchantPage }) => {
@@ -588,10 +669,12 @@ test.describe('Boundary Scenarios (B)', () => {
     await promotionPage.goto();
     await promotionPage.clickCreatePromotion();
     const longDesc = 'D'.repeat(500);
+    const code = uniquePromotionCode('B04');
     const startsAt = new Date(Date.now() + 5 * 60_000);
     const pad = (value: number) => String(value).padStart(2, '0');
     const startsAtLocal = `${startsAt.getFullYear()}-${pad(startsAt.getMonth() + 1)}-${pad(startsAt.getDate())}T${pad(startsAt.getHours())}:${pad(startsAt.getMinutes())}`;
     await promotionPage.fillValidCreateForm({
+      code,
       description: longDesc,
       discountValue: '10',
       startsAt: startsAtLocal,
@@ -599,7 +682,13 @@ test.describe('Boundary Scenarios (B)', () => {
     await expect(promotionPage.txtDescription).toHaveValue(longDesc);
     await promotionPage.clickSave();
     await promotionPage.expectToastVisible('success');
-    await promotionPage.capture('B-04_description_max_length');
+    await captureScenarioEvidence(promotionPage, 'B-04', '1_description_max_length_created');
+    await capturePromotionDbEvidence(
+      merchantPage,
+      'B-04_2_db_promotion',
+      { code },
+      'Promotion row created with a 500-character description',
+    );
   });
 
   test('B-05: should reject description exceeding maximum length (501 characters)', async ({ merchantPage }) => {
@@ -608,7 +697,7 @@ test.describe('Boundary Scenarios (B)', () => {
     await promotionPage.clickCreatePromotion();
     const tooLong = 'D'.repeat(501);
     await promotionPage.txtDescription.fill(tooLong);
-    await promotionPage.capture('B-05_description_exceeds_max_length');
+    await captureScenarioEvidence(promotionPage, 'B-05', '1_description_exceeds_max_length');
   });
 
   test('B-06: should accept percentage discount at boundary values (1, 99) and reject 100', async ({ merchantPage }) => {
@@ -617,23 +706,43 @@ test.describe('Boundary Scenarios (B)', () => {
     await promotionPage.clickCreatePromotion();
 
     // 1% accepted
-    await promotionPage.fillValidCreateForm({ discountValue: '1' });
+    const onePercentCode = uniquePromotionCode('B06');
+    await promotionPage.fillValidCreateForm({
+      code: onePercentCode,
+      discountValue: '1',
+    });
     await promotionPage.clickSave();
     await promotionPage.expectRedirectTo('/merchant/promotions');
-    await promotionPage.capture('B-06_percentage_1_percent');
+    await captureScenarioEvidence(promotionPage, 'B-06', '1_percentage_1_percent');
+    await capturePromotionDbEvidence(
+      merchantPage,
+      'B-06_2_db_promotion_1_percent',
+      { code: onePercentCode },
+      'Promotion row created at the 1 percent boundary',
+    );
 
     // 99% accepted
     await promotionPage.clickCreatePromotion();
-    await promotionPage.fillValidCreateForm({ discountValue: '99' });
+    const ninetyNinePercentCode = uniquePromotionCode('B06');
+    await promotionPage.fillValidCreateForm({
+      code: ninetyNinePercentCode,
+      discountValue: '99',
+    });
     await promotionPage.clickSave();
     await promotionPage.expectRedirectTo('/merchant/promotions');
-    await promotionPage.capture('B-06_percentage_99_percent');
+    await captureScenarioEvidence(promotionPage, 'B-06', '3_percentage_99_percent');
+    await capturePromotionDbEvidence(
+      merchantPage,
+      'B-06_4_db_promotion_99_percent',
+      { code: ninetyNinePercentCode },
+      'Promotion row created at the 99 percent boundary',
+    );
 
     // 100% rejected with range error
     await promotionPage.clickCreatePromotion();
     await promotionPage.fillValidCreateForm({ discountValue: '100' });
     await promotionPage.clickSave();
-    await promotionPage.capture('B-06_percentage_100_percent_rejected');
+    await captureScenarioEvidence(promotionPage, 'B-06', '5_percentage_100_percent_rejected');
     await promotionPage.expectValidationError('percentage');
   });
 
@@ -641,20 +750,28 @@ test.describe('Boundary Scenarios (B)', () => {
     promotionPage = new PromotionPage(merchantPage);
     await promotionPage.goto();
     await promotionPage.clickCreatePromotion();
+    const code = uniquePromotionCode('B07');
     await promotionPage.fillValidCreateForm({
+      code,
       minOrderAmount: '0',
       maxUses: '1',
       discountValue: '10',
     });
     await promotionPage.clickSave();
     await promotionPage.expectToastVisible('success');
-    await promotionPage.capture('B-07_optional_min_values');
+    await captureScenarioEvidence(promotionPage, 'B-07', '1_optional_min_values_created');
+    await capturePromotionDbEvidence(
+      merchantPage,
+      'B-07_2_db_promotion',
+      { code },
+      'Promotion row created with minimum optional-field values',
+    );
   });
 
   test('B-08: should handle empty state when merchant has no promotions', async ({ merchantPage }) => {
     promotionPage = new PromotionPage(merchantPage);
     await promotionPage.goto();
-    await promotionPage.capture('B-08_empty_state');
+    await captureScenarioEvidence(promotionPage, 'B-08', '1_empty_state');
     if (await promotionPage.emptyState.isVisible()) {
       await promotionPage.expectEmptyState();
     }
@@ -671,7 +788,6 @@ test.describe('Boundary Scenarios (B)', () => {
     });
     const result = await validateCouponViaApi(request, buyerHeaders, code, 4999.99);
     expect([400, 403, 404, 422]).toContain(result.status);
-    await promotionPage.capture('B-09_min_order_not_met');
   });
 
   test('B-10: should cap discount at order total (finalAmount never negative)', async ({ request, merchantPage }) => {
@@ -690,7 +806,6 @@ test.describe('Boundary Scenarios (B)', () => {
       const body = result.body.data ?? result.body;
       expect(body.finalAmount).toBeDefined();
     }
-    await promotionPage.capture('B-10_discount_capped');
   });
 });
 
@@ -708,7 +823,6 @@ test.describe('Interface Scenarios (I)', () => {
     expect(body.data).toHaveProperty('items');
     expect(body.data).toHaveProperty('meta');
     expect(Array.isArray(body.data.items)).toBeTruthy();
-    await promotionPage.capture('I-01_get_promotions');
   });
 
   test('I-02: POST /api/v1/promotions should return 201 with created promotion', async ({ request }) => {
@@ -716,7 +830,6 @@ test.describe('Interface Scenarios (I)', () => {
     const created = await createPromotionViaApi(request, headers);
     expect(created).toHaveProperty('id');
     expect(created).toHaveProperty('code');
-    await promotionPage.capture('I-02_create_promotion_api');
   });
 
   test('I-03: POST /api/v1/promotions duplicate code should return 400', async ({ request }) => {
@@ -738,7 +851,6 @@ test.describe('Interface Scenarios (I)', () => {
     expect([400, 409]).toContain(res.status());
     const body = await res.json();
     expect(body).toHaveProperty('statusCode');
-    await promotionPage.capture('I-03_duplicate_code_400');
   });
 
   test('I-04: PATCH /api/v1/promotions/:id should return 200 with updated promotion', async ({ request }) => {
@@ -755,7 +867,6 @@ test.describe('Interface Scenarios (I)', () => {
     } else {
       expect(body).toHaveProperty('statusCode');
     }
-    await promotionPage.capture('I-04_update_promotion_api');
   });
 
   test('I-05: PATCH /api/v1/promotions/:id used promotion should return 409', async ({ merchantPage, request }) => {
@@ -769,8 +880,6 @@ test.describe('Interface Scenarios (I)', () => {
     const body = await res.json();
     expect(body).toHaveProperty('statusCode', 409);
     expect(body).toHaveProperty('error', 'PROMO_EDIT_RESTRICTED');
-    promotionPage = new PromotionPage(merchantPage);
-    await promotionPage.capture('I-05_patch_used_promotion_409');
   });
 
   test('I-06: DELETE /api/v1/promotions/:id should return 204 on success', async ({ merchantPage, request }) => {
@@ -780,8 +889,6 @@ test.describe('Interface Scenarios (I)', () => {
     const body = await res.json();
     expect(res.status()).toBe(200);
     expect(body.data ?? body).toHaveProperty('deleted', true);
-    promotionPage = new PromotionPage(merchantPage);
-    await promotionPage.capture('I-06_delete_promotion_api');
   });
 
   test('I-07: DELETE /api/v1/promotions/:id used promotion should return 409', async ({ merchantPage, request }) => {
@@ -792,8 +899,6 @@ test.describe('Interface Scenarios (I)', () => {
     const body = await res.json();
     expect(body).toHaveProperty('statusCode', 409);
     expect(body).toHaveProperty('error', 'PROMO_DELETE_RESTRICTED');
-    promotionPage = new PromotionPage(merchantPage);
-    await promotionPage.capture('I-07_delete_used_promotion_409');
   });
 
   test('I-08: PATCH /api/v1/promotions/:id non-existent ID should return 404', async ({ merchantPage, request }) => {
@@ -805,8 +910,6 @@ test.describe('Interface Scenarios (I)', () => {
     expect(res.status()).toBe(404);
     const body = await res.json();
     expect(body).toHaveProperty('statusCode', 404);
-    promotionPage = new PromotionPage(merchantPage);
-    await promotionPage.capture('I-08_patch_not_found');
   });
 
   test('I-09: POST /api/v1/promotions/validate valid coupon should return 200 with discount payload', async ({ request }) => {
@@ -824,7 +927,6 @@ test.describe('Interface Scenarios (I)', () => {
       expect(body).toHaveProperty('discountAmount');
       expect(body).toHaveProperty('finalAmount');
     }
-    await promotionPage.capture(`I-09_validate_valid_${created.code}`);
   });
 
   test('I-10: POST /api/v1/promotions/validate expired coupon should return 400', async ({ request }) => {
@@ -841,7 +943,6 @@ test.describe('Interface Scenarios (I)', () => {
       const body = result.body;
       expect(body).toHaveProperty('statusCode', 400);
     }
-    await promotionPage.capture('I-10_validate_expired');
   });
 
   test('I-11: GET /api/v1/promotions should return 401 without JWT', async ({ page, request }) => {
@@ -849,8 +950,6 @@ test.describe('Interface Scenarios (I)', () => {
     expect(res.status()).toBe(401);
     const body = await res.json();
     expect(body).toHaveProperty('statusCode', 401);
-    promotionPage = new PromotionPage(page);
-    await promotionPage.capture('I-11_get_promotions_401');
   });
 
   test('I-12: POST /api/v1/promotions pending/rejected merchant should return 403', async ({ page, request }) => {
@@ -877,8 +976,6 @@ test.describe('Interface Scenarios (I)', () => {
     expect(res.status()).toBe(403);
     const body = await res.json();
     expect(body).toHaveProperty('statusCode', 403);
-    promotionPage = new PromotionPage(page);
-    await promotionPage.capture('I-12_forbidden_merchant');
   });
 
   test('I-13: error response should follow standard API format', async ({ merchantPage, request }) => {
@@ -888,7 +985,5 @@ test.describe('Interface Scenarios (I)', () => {
     const body = await res.json();
     expect(body).toHaveProperty('statusCode');
     expect(body).toHaveProperty('error');
-    promotionPage = new PromotionPage(merchantPage);
-    await promotionPage.capture('I-13_error_format');
   });
 });

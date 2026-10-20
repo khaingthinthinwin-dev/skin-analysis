@@ -256,19 +256,16 @@ export class PromotionPage {
       this.promotionList.waitFor({ state: 'visible', timeout: 15000 }).catch(() => null),
       this.page.getByRole('heading', { name: /promotion management/i }).waitFor({ state: 'visible', timeout: 15000 }).catch(() => null),
     ]);
-    await captureScreenshot(this.page, 'promotion_management_page_loaded');
   }
 
   async gotoNew() {
     await this.page.goto('/merchant/promotions/new');
     await this.page.waitForLoadState('networkidle');
-    await captureScreenshot(this.page, 'new_promotion_page_loaded');
   }
 
   async gotoEdit(id: string) {
     await this.page.goto(`/merchant/promotions/${id}/edit`);
     await this.page.waitForLoadState('networkidle');
-    await captureScreenshot(this.page, `edit_promotion_${id}_loaded`);
   }
 
   // ─────────────────────────────────────────────
@@ -277,81 +274,67 @@ export class PromotionPage {
   async clickCreatePromotion() {
     await this.createPromotionButton.click();
     await this.page.waitForLoadState('networkidle');
-    await captureScreenshot(this.page, 'create_promotion_clicked');
   }
 
   async searchPromotions(query: string) {
     await this.txtSearch.fill(query);
     await this.page.waitForTimeout(400);
-    await captureScreenshot(this.page, `search_promotions_${query}`);
   }
 
   async selectStatusFilter(status: string) {
     await this.selStatusFilter.click();
     await this.page.getByRole('option', { name: status, exact: true }).click();
     await this.page.waitForTimeout(400);
-    await captureScreenshot(this.page, `filtered_by_status_${status}`);
   }
 
   async selectSortOption(option: string) {
     await this.selSortFilter.click();
     await this.page.getByRole('option', { name: option, exact: true }).click();
     await this.page.waitForTimeout(400);
-    await captureScreenshot(this.page, `sorted_by_${option}`);
   }
 
   async clickEditOnFirstRow() {
     await this.editButton.click();
     await this.page.waitForLoadState('networkidle');
-    await captureScreenshot(this.page, 'edit_promotion_row_clicked');
   }
 
   async clickDeleteOnFirstRow() {
     await this.deleteButton.click();
-    await captureScreenshot(this.page, 'delete_dialog_opened');
   }
 
   async confirmDelete() {
     await this.deleteConfirmButton.click();
-    await captureScreenshot(this.page, 'delete_confirmed');
   }
 
   async cancelDelete() {
     await this.deleteCancelButton.click();
-    await captureScreenshot(this.page, 'delete_cancelled');
   }
 
   async toggleActiveOnFirstRow() {
     await this.activeToggle.click();
-    await captureScreenshot(this.page, 'active_toggle_clicked');
   }
 
   async toggleLanguage() {
     await this.btnLanguageToggle.click();
-    await captureScreenshot(this.page, 'language_toggled');
   }
 
   async toggleTheme() {
     await this.btnThemeToggle.click();
-    await captureScreenshot(this.page, 'theme_toggled');
   }
 
   async clickNextPage() {
     await this.nextPageButton.click();
     await this.page.waitForLoadState('networkidle');
-    await captureScreenshot(this.page, 'next_page_clicked');
   }
 
   async clickPrevPage() {
     await this.prevPageButton.click();
     await this.page.waitForLoadState('networkidle');
-    await captureScreenshot(this.page, 'prev_page_clicked');
   }
 
   async clickPageNumber(pageNumber: number) {
     await this.page.getByRole('button', { name: String(pageNumber), exact: true }).click();
     await this.page.waitForLoadState('networkidle');
-    await captureScreenshot(this.page, `page_${pageNumber}_clicked`);
   }
 
   async fillPromotionForm(data: {
@@ -398,7 +381,6 @@ export class PromotionPage {
         await this.swtActive.click();
       }
     }
-    await captureScreenshot(this.page, 'promotion_form_filled');
   }
 
   async fillValidCreateForm(overrides: {
@@ -432,12 +414,10 @@ export class PromotionPage {
 
   async clickSave() {
     await this.saveButton.click();
-    await captureScreenshot(this.page, 'save_clicked');
   }
 
   async clickCancel() {
     await this.cancelButton.click();
-    await captureScreenshot(this.page, 'cancel_clicked');
   }
 
   // ─────────────────────────────────────────────
@@ -466,17 +446,14 @@ export class PromotionPage {
   async clickEditOnRow(code: string) {
     await (await this.rowEditButton(code)).click();
     await this.page.waitForLoadState('networkidle');
-    await captureScreenshot(this.page, `edit_promotion_${code}`);
   }
 
   async clickDeleteOnRow(code: string) {
     await (await this.rowDeleteButton(code)).click();
-    await captureScreenshot(this.page, `delete_dialog_${code}`);
   }
 
   async toggleActiveOnRow(code: string) {
     await (await this.rowActiveToggle(code)).click();
-    await captureScreenshot(this.page, `toggle_active_${code}`);
   }
 
   // ─────────────────────────────────────────────
@@ -485,13 +462,11 @@ export class PromotionPage {
   async expectToastVisible(type: 'success' | 'error') {
     const toast = type === 'success' ? this.successToast : this.errorToast;
     await toast.first().waitFor({ state: 'visible', timeout: 10_000 });
-    await captureScreenshot(this.page, `${type}_toast_visible`);
   }
 
   async expectValidationError(field: string) {
     const error = this.validationErrors.filter({ hasText: new RegExp(field, 'i') });
     await expect(error.first()).toBeVisible();
-    await captureScreenshot(this.page, `validation_error_${field}`);
   }
 
   async expectRedirectTo(path: string) {
@@ -504,17 +479,14 @@ export class PromotionPage {
 
   async expectEmptyState() {
     await expect(this.emptyStateMessage).toBeVisible();
-    await captureScreenshot(this.page, 'empty_state_visible');
   }
 
   async expectPendingBanner() {
     await expect(this.pendingBanner).toBeVisible();
-    await captureScreenshot(this.page, 'pending_banner_visible');
   }
 
   async expectRejectedBanner() {
     await expect(this.rejectedBanner).toBeVisible();
-    await captureScreenshot(this.page, 'rejected_banner_visible');
   }
 
   async expectTableColumns() {
@@ -525,12 +497,10 @@ export class PromotionPage {
     await expect(this.expiryColumn).toBeVisible();
     await expect(this.statusColumn).toBeVisible();
     await expect(this.actionsColumn).toBeVisible();
-    await captureScreenshot(this.page, 'table_columns_visible');
   }
 
   async expectPaginationVisible() {
     await expect(this.pagination).toBeVisible();
-    await captureScreenshot(this.page, 'pagination_visible');
   }
 
   async expectPageInfo(text: string) {
@@ -539,7 +509,6 @@ export class PromotionPage {
 
   async expectNoCrudControls() {
     await expect(this.createPromotionButton).toBeHidden();
-    await captureScreenshot(this.page, 'no_crud_controls');
   }
 
   // ─────────────────────────────────────────────

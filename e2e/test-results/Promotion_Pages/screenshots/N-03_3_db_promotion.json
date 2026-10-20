@@ -1,0 +1,27 @@
+{
+  "capturedAt": "2026-10-20T03:18:54.524Z",
+  "description": "Promotion row after successful update",
+  "results": [
+    {
+      "label": "Promotion row after successful update",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "8c254c0a-16a9-46fe-a668-6f376900c8df",
+          "merchant_id": "35c44c85-a7f0-4000-b5bd-f377a1077bd0",
+          "code": "E2Ee67b9860",
+          "description": "E2E API-created promotion",
+          "discount_type": "percentage",
+          "discount_value": "20.00",
+          "min_order_amount": "0.00",
+          "max_uses": 100,
+          "used_count": 0,
+          "starts_at": "2026-10-19T20:48:00.000Z",
+          "expires_at": "2026-11-18T20:48:00.000Z",
+          "is_active": true,
+          "created_at": "2026-10-19T20:48:49.782Z"
+        }
+      ]
+    }
+  ]
+}
