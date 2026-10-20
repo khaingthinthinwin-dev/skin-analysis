@@ -1,0 +1,197 @@
+{
+  "module": "SearchAndFilter",
+  "timestamp": "2026-10-19T08:30:44.698Z",
+  "total": 31,
+  "passed": 31,
+  "failed": 0,
+  "skipped": 0,
+  "durationMs": 145065,
+  "tests": [
+    {
+      "title": "should display search page with search input",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 6703
+    },
+    {
+      "title": "should search products by keyword",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 3931
+    },
+    {
+      "title": "should display no results for invalid search",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 3050
+    },
+    {
+      "title": "should filter by category",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 3246
+    },
+    {
+      "title": "should filter by price range",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 2659
+    },
+    {
+      "title": "should sort results by price ascending",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 2904
+    },
+    {
+      "title": "should sort results by price descending",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 2499
+    },
+    {
+      "title": "should display sponsored ads in search results",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 2803
+    },
+    {
+      "title": "should navigate between pages",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 2470
+    },
+    {
+      "title": "N-01: should add a product to the wishlist",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 4215
+    },
+    {
+      "title": "N-02: should remove a product from the wishlist",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 4292
+    },
+    {
+      "title": "N-03: should add a product to the cart",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 3867
+    },
+    {
+      "title": "N-04: should reflect the saved wishlist state on the product card",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 4355
+    },
+    {
+      "title": "N-05: should disable wishlist and cart buttons while a mutation is pending",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 9468
+    },
+    {
+      "title": "N-06: should flag products already in the cart",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 4262
+    },
+    {
+      "title": "N-07: should toggle language on the Search & Filter page",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 6680
+    },
+    {
+      "title": "N-08: should display notification bell badge and open panel",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 5865
+    },
+    {
+      "title": "A-01: should open the Already in Cart dialog for a product already in the cart",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 5300
+    },
+    {
+      "title": "A-02: should open the Already in Cart dialog on server 409 from add-to-cart",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 6533
+    },
+    {
+      "title": "A-03: should show Already in your wishlist toast on wishlist 409",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 6067
+    },
+    {
+      "title": "A-04: should show a generic error toast on add-to-cart failure",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 5637
+    },
+    {
+      "title": "A-05: should show a generic error toast on wishlist failure",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 5416
+    },
+    {
+      "title": "B-01: should not issue any cart request for guests",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 3573
+    },
+    {
+      "title": "B-02: should add the first item to an empty cart and guard the duplicate",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 5502
+    },
+    {
+      "title": "B-03: should serialize rapid repeated cart clicks",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 6672
+    },
+    {
+      "title": "I-01: should return the authenticated buyer cart from GET /cart",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 3619
+    },
+    {
+      "title": "I-02: should send the expected POST /cart/items contract",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 4434
+    },
+    {
+      "title": "I-03: should return saved items from GET /wishlist",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 3774
+    },
+    {
+      "title": "I-04: should send the expected POST /wishlist/:productId contract",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 4373
+    },
+    {
+      "title": "I-05: should send the expected DELETE /wishlist/:productId contract",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 4981
+    },
+    {
+      "title": "I-06: should not exercise wishlist/cart endpoints outside the Search screen",
+      "file": "C:\\Tharaphee\\skin-analysis-TRPH\\e2e\\tests\\SearchAndFilter\\search-filter.spec.ts",
+      "status": "passed",
+      "duration": 5915
+    }
+  ]
+}
