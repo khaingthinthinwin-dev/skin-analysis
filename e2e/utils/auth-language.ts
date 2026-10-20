@@ -18,5 +18,5 @@ export async function chooseAuthLanguage(
   });
   await expect(toggle).toBeVisible();
   await toggle.click();
-  await page.getByRole('menuitem', { name: languages[language], exact: true }).click();
+  await page.getByRole('menuitem', { name: languages[language] }).click();
 }

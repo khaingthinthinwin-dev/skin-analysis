@@ -1,0 +1,104 @@
+{
+  "search_page_loaded.png": {
+    "test": "search-filter.spec.ts::B-01: should not issue any cart request for guests"
+  },
+  "search_results_moisturizer.png": {
+    "test": "search-filter.spec.ts::should search products by keyword"
+  },
+  "N-01_1_search_results.png": {
+    "test": "search-filter.spec.ts::should search products by keyword"
+  },
+  "search_results_xyznonexistent123.png": {
+    "test": "search-filter.spec.ts::should display no results for invalid search"
+  },
+  "N-02_1_search_no_results.png": {
+    "test": "search-filter.spec.ts::should display no results for invalid search"
+  },
+  "N-03_1_search_filter_category.png": {
+    "test": "search-filter.spec.ts::should filter by category"
+  },
+  "N-04_1_search_filter_price.png": {
+    "test": "search-filter.spec.ts::should filter by price range"
+  },
+  "N-05_1_search_sort_price_asc.png": {
+    "test": "search-filter.spec.ts::should sort results by price ascending"
+  },
+  "N-06_1_search_sort_price_desc.png": {
+    "test": "search-filter.spec.ts::should sort results by price descending"
+  },
+  "N-07_1_search_ad_banner.png": {
+    "test": "search-filter.spec.ts::should display sponsored ads in search results"
+  },
+  "N-08_1_search_pagination.png": {
+    "test": "search-filter.spec.ts::should navigate between pages"
+  },
+  "N-01_1_wishlist_added.png": {
+    "test": "search-filter.spec.ts::N-01: should add a product to the wishlist"
+  },
+  "N-02_1_wishlist_removed.png": {
+    "test": "search-filter.spec.ts::N-02: should remove a product from the wishlist"
+  },
+  "N-03_1_cart_added.png": {
+    "test": "search-filter.spec.ts::N-03: should add a product to the cart"
+  },
+  "N-04_1_saved_heart_state.png": {
+    "test": "search-filter.spec.ts::N-04: should reflect the saved wishlist state on the product card"
+  },
+  "N-05_1_heart_pending.png": {
+    "test": "search-filter.spec.ts::N-05: should disable wishlist and cart buttons while a mutation is pending"
+  },
+  "N-05_2_cart_pending.png": {
+    "test": "search-filter.spec.ts::N-05: should disable wishlist and cart buttons while a mutation is pending"
+  },
+  "N-06_1_in_cart_duplicate_guard.png": {
+    "test": "search-filter.spec.ts::N-06: should flag products already in the cart"
+  },
+  "N-07_1_lang_initial.png": {
+    "test": "search-filter.spec.ts::N-07: should toggle language on the Search & Filter page"
+  },
+  "N-07_2_lang_japanese.png": {
+    "test": "search-filter.spec.ts::N-07: should toggle language on the Search & Filter page"
+  },
+  "N-07_3_lang_myanmar.png": {
+    "test": "search-filter.spec.ts::N-07: should toggle language on the Search & Filter page"
+  },
+  "N-07_4_lang_english.png": {
+    "test": "search-filter.spec.ts::N-07: should toggle language on the Search & Filter page"
+  },
+  "N-08_1_notification_badge.png": {
+    "test": "search-filter.spec.ts::N-08: should display notification bell badge and open panel"
+  },
+  "N-08_2_notification_drawer.png": {
+    "test": "search-filter.spec.ts::N-08: should display notification bell badge and open panel"
+  },
+  "A-01_1_duplicate_cart_dialog.png": {
+    "test": "search-filter.spec.ts::A-01: should open the Already in Cart dialog for a product already in the cart"
+  },
+  "A-02_1_server_409_dialog.png": {
+    "test": "search-filter.spec.ts::A-02: should open the Already in Cart dialog on server 409 from add-to-cart"
+  },
+  "A-03_1_wishlist_409_toast.png": {
+    "test": "search-filter.spec.ts::A-03: should show Already in your wishlist toast on wishlist 409"
+  },
+  "A-04_1_cart_error_toast.png": {
+    "test": "search-filter.spec.ts::A-04: should show a generic error toast on add-to-cart failure"
+  },
+  "A-05_1_wishlist_error_toast.png": {
+    "test": "search-filter.spec.ts::A-05: should show a generic error toast on wishlist failure"
+  },
+  "B-01_1_guest_no_cart_request.png": {
+    "test": "search-filter.spec.ts::B-01: should not issue any cart request for guests"
+  },
+  "B-02_1_first_add_toast.png": {
+    "test": "search-filter.spec.ts::B-02: should add the first item to an empty cart and guard the duplicate"
+  },
+  "B-02_2_duplicate_guard.png": {
+    "test": "search-filter.spec.ts::B-02: should add the first item to an empty cart and guard the duplicate"
+  },
+  "B-03_1_pending_disabled.png": {
+    "test": "search-filter.spec.ts::B-03: should serialize rapid repeated cart clicks"
+  },
+  "B-03_2_after_settle.png": {
+    "test": "search-filter.spec.ts::B-03: should serialize rapid repeated cart clicks"
+  }
+}

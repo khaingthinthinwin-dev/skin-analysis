@@ -1,17 +1,126 @@
 {
-  "pclFile": "docs/screen/SearchAndFilter/Search_And_Filter_PCL.md",
+  "pclFile": "docs/screen/SearchAndFilter/SearchAndFilter_Buyer_PCL.md",
+  "format": "pcl-id-keyed",
   "specFiles": [
     "e2e/tests/SearchAndFilter/search-filter.spec.ts"
   ],
   "mappings": {
-    "should display search page with search input": "E2E-SEARCH-01: Search page loads with search input",
-    "should search products by keyword": "E2E-SEARCH-02: Keyword search returns matching products",
-    "should display no results for invalid search": "E2E-SEARCH-03: No results message for invalid search",
-    "should filter by category": "E2E-SEARCH-04: Category filter narrows results",
-    "should filter by price range": "E2E-SEARCH-05: Price range filter works correctly",
-    "should sort results by price ascending": "E2E-SEARCH-06: Sort by price ascending",
-    "should sort results by price descending": "E2E-SEARCH-07: Sort by price descending",
-    "should display sponsored ads in search results": "E2E-SEARCH-08: Sponsored ads displayed in results",
-    "should navigate between pages": "E2E-SEARCH-09: Pagination navigation works"
+    "N-01": [
+      { "file": "search-filter.spec.ts", "title": "N-01: should add a product to the wishlist" }
+    ],
+    "N-02": [
+      { "file": "search-filter.spec.ts", "title": "N-02: should remove a product from the wishlist" }
+    ],
+    "N-03": [
+      { "file": "search-filter.spec.ts", "title": "N-03: should add a product to the cart" }
+    ],
+    "N-04": [
+      {
+        "file": "search-filter.spec.ts",
+        "title": "N-04: should reflect the saved wishlist state on the product card"
+      }
+    ],
+    "N-05": [
+      {
+        "file": "search-filter.spec.ts",
+        "title": "N-05: should disable wishlist and cart buttons while a mutation is pending"
+      }
+    ],
+    "N-06": [
+      { "file": "search-filter.spec.ts", "title": "N-06: should flag products already in the cart" }
+    ],
+    "N-07": [
+      {
+        "file": "search-filter.spec.ts",
+        "title": "N-07: should toggle language on the Search & Filter page"
+      }
+    ],
+    "N-08": [
+      {
+        "file": "search-filter.spec.ts",
+        "title": "N-08: should display notification bell badge and open panel"
+      }
+    ],
+    "A-01": [
+      {
+        "file": "search-filter.spec.ts",
+        "title": "A-01: should open the Already in Cart dialog for a product already in the cart"
+      }
+    ],
+    "A-02": [
+      {
+        "file": "search-filter.spec.ts",
+        "title": "A-02: should open the Already in Cart dialog on server 409 from add-to-cart"
+      }
+    ],
+    "A-03": [
+      {
+        "file": "search-filter.spec.ts",
+        "title": "A-03: should show Already in your wishlist toast on wishlist 409"
+      }
+    ],
+    "A-04": [
+      {
+        "file": "search-filter.spec.ts",
+        "title": "A-04: should show a generic error toast on add-to-cart failure"
+      }
+    ],
+    "A-05": [
+      {
+        "file": "search-filter.spec.ts",
+        "title": "A-05: should show a generic error toast on wishlist failure"
+      }
+    ],
+    "B-01": [
+      { "file": "search-filter.spec.ts", "title": "B-01: should not issue any cart request for guests" }
+    ],
+    "B-02": [
+      {
+        "file": "search-filter.spec.ts",
+        "title": "B-02: should add the first item to an empty cart and guard the duplicate"
+      }
+    ],
+    "B-03": [
+      {
+        "file": "search-filter.spec.ts",
+        "title": "B-03: should serialize rapid repeated cart clicks"
+      }
+    ],
+    "I-01": [
+      {
+        "file": "search-filter.spec.ts",
+        "title": "I-01: should return the authenticated buyer cart from GET /cart"
+      }
+    ],
+    "I-02": [
+      {
+        "file": "search-filter.spec.ts",
+        "title": "I-02: should send the expected POST /cart/items contract"
+      }
+    ],
+    "I-03": [
+      {
+        "file": "search-filter.spec.ts",
+        "title": "I-03: should return saved items from GET /wishlist"
+      }
+    ],
+    "I-04": [
+      {
+        "file": "search-filter.spec.ts",
+        "title": "I-04: should send the expected POST /wishlist/:productId contract"
+      }
+    ],
+    "I-05": [
+      {
+        "file": "search-filter.spec.ts",
+        "title": "I-05: should send the expected DELETE /wishlist/:productId contract"
+      }
+    ],
+    "I-06": [
+      {
+        "file": "search-filter.spec.ts",
+        "title": "I-06: should not exercise wishlist/cart endpoints outside the Search screen"
+      }
+    ]
   }
 }
