@@ -132,21 +132,17 @@ export class MatchingService {
           ? analysisSkinTypes
           : [];
 
-    // The effective types with `hasSome` semantics (BR-MATCH-016). On the AI
-    // source, products tagged for every skin type stay compatible with either
-    // source of the types. A selection may add a second condition below.
+    // The effective types use `hasSome` semantics (BR-MATCH-016), with
+    // universally tagged products included for both AI and generic sources.
+    // An AI selection may add an analysis-scope condition below.
     const skinTypeConditions: Prisma.ProductWhereInput[] = [];
     if (effectiveSkinTypes.length > 0) {
-      skinTypeConditions.push(
-        context.source === 'ai'
-          ? {
-              OR: [
-                { skinTypes: { hasSome: effectiveSkinTypes } },
-                { skinTypes: { has: ALL_SKIN_TYPES } },
-              ],
-            }
-          : { skinTypes: { hasSome: effectiveSkinTypes } },
-      );
+      skinTypeConditions.push({
+        OR: [
+          { skinTypes: { hasSome: effectiveSkinTypes } },
+          { skinTypes: { has: ALL_SKIN_TYPES } },
+        ],
+      });
     }
 
     // Custom rule (supersedes DD_MATCH_05 §2.1 step 5): an explicit selection

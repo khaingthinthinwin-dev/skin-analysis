@@ -1,0 +1,125 @@
+{
+  "matching_page_loaded.png": {
+    "test": "matching.spec.ts::I-01: renders live recommendation data without mocks"
+  },
+  "N-01_1_personalized.png": {
+    "test": "matching.spec.ts::N-01: displays personalized recommendations and match scores"
+  },
+  "N-02_1_generic.png": {
+    "test": "matching.spec.ts::N-02: displays generic recommendations without match scores"
+  },
+  "N-03_1_retake_analysis.png": {
+    "test": "matching.spec.ts::N-03: shows the stale analysis prompt and retake navigation"
+  },
+  "N-08_1_history_session.png": {
+    "test": "matching.spec.ts::N-08: expands a recommendation history session"
+  },
+  "N-07_1_product_navigation.png": {
+    "test": "matching.spec.ts::N-07: opens the product page from a recommendation card"
+  },
+  "N-09_1_similar_products.png": {
+    "test": "matching.spec.ts::N-09: views similar products from a product detail page"
+  },
+  "N-20_1_history_expand_collapse.png": {
+    "test": "matching.spec.ts::N-20: expands and collapses recommendation history beyond the first five sessions"
+  },
+  "N-04_1_skin_type_filtered.png": {
+    "test": "matching.spec.ts::N-04: filters by skin type, price, category, and rating"
+  },
+  "N-04_2_all_filters_applied.png": {
+    "test": "matching.spec.ts::N-04: filters by skin type, price, category, and rating"
+  },
+  "N-05_1_price_sort_page_2.png": {
+    "test": "matching.spec.ts::N-05: sorts by ascending price and paginates results"
+  },
+  "N-06_1_filters_reset.png": {
+    "test": "matching.spec.ts::N-06: resets filters and returns pagination to page 1"
+  },
+  "N-13_1280_responsive.png": {
+    "test": "matching.spec.ts::N-13: renders the product grid at desktop, tablet, and mobile widths"
+  },
+  "N-13_768_responsive.png": {
+    "test": "matching.spec.ts::N-13: renders the product grid at desktop, tablet, and mobile widths"
+  },
+  "N-13_390_responsive.png": {
+    "test": "matching.spec.ts::N-13: renders the product grid at desktop, tablet, and mobile widths"
+  },
+  "N-12_1_language_en.png": {
+    "test": "matching.spec.ts::N-12: switches the app-shell language and returns to English"
+  },
+  "N-12_2_language_my.png": {
+    "test": "matching.spec.ts::N-12: switches the app-shell language and returns to English"
+  },
+  "N-12_3_language_ja.png": {
+    "test": "matching.spec.ts::N-12: switches the app-shell language and returns to English"
+  },
+  "N-12_4_language_toggle.png": {
+    "test": "matching.spec.ts::N-12: switches the app-shell language and returns to English"
+  },
+  "N-17_1_grid_and_list.png": {
+    "test": "matching.spec.ts::N-17: switches between grid and list views"
+  },
+  "N-18_1_price_validation.png": {
+    "test": "matching.spec.ts::N-18: validates category, rating, and invalid price range"
+  },
+  "N-19_1_default_and_fallback_sort.png": {
+    "test": "matching.spec.ts::N-19: defaults to Newest and falls back from an unsupported sort"
+  },
+  "N-21_1_mobile_filter_applied.png": {
+    "test": "matching.spec.ts::N-21: opens the mobile filters sheet and applies a filter"
+  },
+  "N-22_1_filter_chips_removed.png": {
+    "test": "matching.spec.ts::N-22: removes a filter chip and clears all chips"
+  },
+  "N-23_1_multiple_types_and_universal_product.png": {
+    "test": "matching.spec.ts::N-23: selects multiple skin types and removes one without a reload"
+  },
+  "N-24_1_source_sort_options.png": {
+    "test": "matching.spec.ts::N-24: offers Match Score sort only for AI recommendations"
+  },
+  "N-25_1_fresh_analysis.png": {
+    "test": "matching.spec.ts::N-25: hides the freshness prompt at exactly 24 hours"
+  },
+  "N-14_1_mobile_pagination.png": {
+    "test": "matching.spec.ts::N-14: changes recommendation pages on mobile with numbered pagination"
+  },
+  "N-10_1_sponsored_impression.png": {
+    "test": "matching.spec.ts::N-10: displays sponsored ads and records a panel impression"
+  },
+  "N-11_1_ad_destination.png": {
+    "test": "matching.spec.ts::N-11: tracks a sponsored ad click and follows its destination"
+  },
+  "N-15_1_wishlist_toggle.png": {
+    "test": "matching.spec.ts::N-15: adds and removes a recommendation from the wishlist"
+  },
+  "N-16_1_cart_add.png": {
+    "test": "matching.spec.ts::N-16: adds an in-stock recommendation to the cart"
+  },
+  "A-04_1_retry.png": {
+    "test": "matching.spec.ts::A-04: offers retry after a failed recommendations request"
+  },
+  "A-08_1_negative_price.png": {
+    "test": "matching.spec.ts::A-08: rejects negative price input without applying it"
+  },
+  "B-01_1_empty_results.png": {
+    "test": "matching.spec.ts::B-01: displays the empty result state"
+  },
+  "B-02_1_out_of_stock.png": {
+    "test": "matching.spec.ts::B-02: shows out-of-stock products and hides cart action"
+  },
+  "B-05_1_no_history.png": {
+    "test": "matching.spec.ts::B-05: displays the empty recommendation history state"
+  },
+  "B-06_1_no_ads.png": {
+    "test": "matching.spec.ts::B-06: hides the ad panel with an empty ad response"
+  },
+  "B-07_1_card_fallbacks.png": {
+    "test": "matching.spec.ts::B-07: uses image fallback and formats product prices"
+  },
+  "B-08_1_first_load_skeleton.png": {
+    "test": "matching.spec.ts::B-08: shows first-load skeleton cards while the request is pending"
+  },
+  "I-01_2_live_page.png": {
+    "test": "matching.spec.ts::I-01: renders live recommendation data without mocks"
+  }
+}
