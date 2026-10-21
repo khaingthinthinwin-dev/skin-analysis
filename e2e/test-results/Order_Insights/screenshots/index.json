@@ -1,0 +1,193 @@
+{
+  "N-01_1_order_history_loaded.png": {
+    "test": "order-insights.spec.ts::N-01: buyer sees their order history"
+  },
+  "N-01_buyer_order_history.png": {
+    "test": "order-insights.spec.ts::N-01: buyer sees their order history"
+  },
+  "N-02_1_order_available_in_history.png": {
+    "test": "order-insights.spec.ts::N-02: buyer opens an order detail from history"
+  },
+  "N-02_buyer_order_detail.png": {
+    "test": "order-insights.spec.ts::N-02: buyer opens an order detail from history"
+  },
+  "N-06_1_detail_before_return.png": {
+    "test": "order-insights.spec.ts::N-06: buyer returns from detail to the order list"
+  },
+  "N-06_back_to_orders.png": {
+    "test": "order-insights.spec.ts::N-06: buyer returns from detail to the order list"
+  },
+  "N-08_1_language_menu_open.png": {
+    "test": "order-insights.spec.ts::N-08: buyer language preference persists between order list and detail"
+  },
+  "N-08_1_japanese_language_selected.png": {
+    "test": "order-insights.spec.ts::N-08: buyer language preference persists between order list and detail"
+  },
+  "N-08_2_japanese_preference_on_detail.png": {
+    "test": "order-insights.spec.ts::N-08: buyer language preference persists between order list and detail"
+  },
+  "N-08_3_japanese_preference_after_reload.png": {
+    "test": "order-insights.spec.ts::N-08: buyer language preference persists between order list and detail"
+  },
+  "N-07_english_order_history.png": {
+    "test": "order-insights.spec.ts::N-07: buyer order history and detail are translated in English, Japanese, and Myanmar"
+  },
+  "N-07_english_order_detail.png": {
+    "test": "order-insights.spec.ts::N-07: buyer order history and detail are translated in English, Japanese, and Myanmar"
+  },
+  "N-07_japanese_order_history.png": {
+    "test": "order-insights.spec.ts::N-07: buyer order history and detail are translated in English, Japanese, and Myanmar"
+  },
+  "N-07_japanese_order_detail.png": {
+    "test": "order-insights.spec.ts::N-07: buyer order history and detail are translated in English, Japanese, and Myanmar"
+  },
+  "N-07_myanmar_order_history.png": {
+    "test": "order-insights.spec.ts::N-07: buyer order history and detail are translated in English, Japanese, and Myanmar"
+  },
+  "N-07_myanmar_order_detail.png": {
+    "test": "order-insights.spec.ts::N-07: buyer order history and detail are translated in English, Japanese, and Myanmar"
+  },
+  "N-09_1_merchant_advances_order_api.png": {
+    "description": "API PATCH http://localhost:8080/api/v1/merchant/orders/49a09c99-5ebe-41bd-9029-232696356672/status returned 200",
+    "test": "order-insights.spec.ts::N-09: buyer opens an order status notification and it is marked read"
+  },
+  "N-09_1_unread_order_notification_api.png": {
+    "description": "API GET http://localhost:8080/api/v1/notifications?limit=50&unreadOnly=true returned 200",
+    "test": "order-insights.spec.ts::N-09: buyer opens an order status notification and it is marked read"
+  },
+  "N-09_2_unread_order_notification.png": {
+    "test": "order-insights.spec.ts::N-09: buyer opens an order status notification and it is marked read"
+  },
+  "N-09_3_notification_order_detail.png": {
+    "test": "order-insights.spec.ts::N-09: buyer opens an order status notification and it is marked read"
+  },
+  "N-09_4_notification_marked_read_api.png": {
+    "description": "API GET http://localhost:8080/api/v1/notifications?limit=50 returned 200",
+    "test": "order-insights.spec.ts::N-09: buyer opens an order status notification and it is marked read"
+  },
+  "A-01_1_out_of_scope_not_found.png": {
+    "test": "order-insights.spec.ts::A-01: buyer cannot open an order outside their scope"
+  },
+  "A-01_out_of_scope_order_not_found.png": {
+    "test": "order-insights.spec.ts::A-01: buyer cannot open an order outside their scope"
+  },
+  "N-03_1_default_order_list.png": {
+    "test": "order-insights.spec.ts::N-03: buyer filters, sorts, and changes page size"
+  },
+  "N-03_2_delivered_filter.png": {
+    "test": "order-insights.spec.ts::N-03: buyer filters, sorts, and changes page size"
+  },
+  "N-03_3_date_sort_ascending.png": {
+    "test": "order-insights.spec.ts::N-03: buyer filters, sorts, and changes page size"
+  },
+  "N-03_4_page_size_100.png": {
+    "test": "order-insights.spec.ts::N-03: buyer filters, sorts, and changes page size"
+  },
+  "N-04_1_filtered_before_reset.png": {
+    "test": "order-insights.spec.ts::N-04: buyer resets filters and exports matching orders"
+  },
+  "N-04_2_filters_reset.png": {
+    "test": "order-insights.spec.ts::N-04: buyer resets filters and exports matching orders"
+  },
+  "N-04_3_export_confirmation.png": {
+    "test": "order-insights.spec.ts::N-04: buyer resets filters and exports matching orders"
+  },
+  "N-04_4_export_completed.png": {
+    "test": "order-insights.spec.ts::N-04: buyer resets filters and exports matching orders"
+  },
+  "N-05_1_order_detail_before_invoice.png": {
+    "test": "order-insights.spec.ts::N-05: buyer downloads an invoice from order detail"
+  },
+  "N-05_2_invoice_view.png": {
+    "test": "order-insights.spec.ts::N-05: buyer downloads an invoice from order detail"
+  },
+  "A-02_1_unauthenticated_redirect.png": {
+    "test": "order-insights.spec.ts::A-02: unauthenticated visitor is denied buyer orders and API data"
+  },
+  "A-02_2_unauthenticated_orders_api_evidence.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders returned 401",
+    "test": "order-insights.spec.ts::A-02: unauthenticated visitor is denied buyer orders and API data"
+  },
+  "A-02_3_unauthenticated_login_page.png": {
+    "test": "order-insights.spec.ts::A-02: unauthenticated visitor is denied buyer orders and API data"
+  },
+  "A-03_1_reversed_dates_block_search.png": {
+    "test": "order-insights.spec.ts::A-03: reversed order date range is rejected"
+  },
+  "A-03_2_reversed_date_api_evidence.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders?from=2026-10-20&to=2026-10-01 returned 400",
+    "test": "order-insights.spec.ts::A-03: reversed order date range is rejected"
+  },
+  "A-04_1_order_list_error.png": {
+    "test": "order-insights.spec.ts::A-04: buyer order list shows a retryable error on request failure"
+  },
+  "A-04_2_order_list_retried.png": {
+    "test": "order-insights.spec.ts::A-04: buyer order list shows a retryable error on request failure"
+  },
+  "A-04_3_order_detail_error.png": {
+    "test": "order-insights.spec.ts::A-04: buyer order detail shows a retryable error on request failure"
+  },
+  "A-04_4_order_detail_retried.png": {
+    "test": "order-insights.spec.ts::A-04: buyer order detail shows a retryable error on request failure"
+  },
+  "B-01_1_empty_search_results.png": {
+    "test": "order-insights.spec.ts::B-01: buyer sees an empty state when no orders match"
+  },
+  "B-01_2_empty_state_action.png": {
+    "test": "order-insights.spec.ts::B-01: buyer sees an empty state when no orders match"
+  },
+  "B-02_1_minimum_page_size.png": {
+    "test": "order-insights.spec.ts::B-02: buyer can select the first and last supported page sizes"
+  },
+  "B-02_2_maximum_page_size.png": {
+    "test": "order-insights.spec.ts::B-02: buyer can select the first and last supported page sizes"
+  },
+  "B-03_1_mobile_order_list.png": {
+    "test": "order-insights.spec.ts::B-03: buyer can reach order list and detail controls on a narrow viewport"
+  },
+  "B-03_2_mobile_order_detail.png": {
+    "test": "order-insights.spec.ts::B-03: buyer can reach order list and detail controls on a narrow viewport"
+  },
+  "B-04_1_default_kpis.png": {
+    "test": "order-insights.spec.ts::B-04: buyer KPI tiles respond when a status filter is applied"
+  },
+  "B-04_2_filtered_kpis.png": {
+    "test": "order-insights.spec.ts::B-04: buyer KPI tiles respond when a status filter is applied"
+  },
+  "I-01_1_orders_screen_before_contract_check.png": {
+    "test": "order-insights.spec.ts::I-01: buyer orders API returns scoped rows, metadata, and summary"
+  },
+  "I-01_2_orders_api_evidence.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders?page=1&limit=10 returned 200",
+    "test": "order-insights.spec.ts::I-01: buyer orders API returns scoped rows, metadata, and summary"
+  },
+  "I-02_1_order_history_before_detail_contract.png": {
+    "test": "order-insights.spec.ts::I-02: buyer detail API returns their own order projection"
+  },
+  "I-02_2_order_detail_api_evidence.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders/647b1a43-41f6-4ca3-9904-c00f20a2d5bb returned 200",
+    "test": "order-insights.spec.ts::I-02: buyer detail API returns their own order projection"
+  },
+  "I-03_1_missing_order_api_evidence.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders/00000000-0000-4000-8000-000000000000 returned 404",
+    "test": "order-insights.spec.ts::I-03: missing buyer order detail returns 404"
+  },
+  "I-03_1_missing_order_returns_404.png": {
+    "test": "order-insights.spec.ts::I-03: missing buyer order detail returns 404"
+  },
+  "I-03_2_foreign_order_api_evidence.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders/49a09c99-5ebe-41bd-9029-232696356672 returned 404",
+    "test": "order-insights.spec.ts::I-03: missing buyer order detail returns 404"
+  },
+  "I-04_1_orders_screen_before_scope_check.png": {
+    "test": "order-insights.spec.ts::I-04: buyer cannot request an admin-selected merchant scope"
+  },
+  "I-04_merchantId_api_evidence.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders?merchantId=00000000-0000-4000-8000-000000000000 returned 403",
+    "test": "order-insights.spec.ts::I-04: buyer cannot request an admin-selected merchant scope"
+  },
+  "I-04_shopId_api_evidence.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders?shopId=00000000-0000-4000-8000-000000000000 returned 403",
+    "test": "order-insights.spec.ts::I-04: buyer cannot request an admin-selected merchant scope"
+  }
+}
