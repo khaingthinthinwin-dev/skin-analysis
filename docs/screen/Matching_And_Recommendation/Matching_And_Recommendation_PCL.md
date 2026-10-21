@@ -568,7 +568,8 @@
 
 - [x] **I-01**: `GET /api/v1/recommendations/personalized` returns recommendation data and metadata
   - **Evidence**:
-    - API test — no screenshot
+    - API request and response evidence for I-01: returns recommendations and pagination metadata → `I-01_1_api_recommendations.png`
+    - Live page evidence for I-01: renders recommendation data → `I-01_2_live_page.png`
     - Test: matching.spec.ts › "I-01: returns recommendation data and pagination metadata" — passed
   - **Precondition**: Valid buyer JWT and query parameters
   - **Steps**:
@@ -580,7 +581,8 @@
 
 - [x] **I-02**: `GET /api/v1/recommendations/personalized` rejects a missing or invalid token
   - **Evidence**:
-    - API test — no screenshot
+    - API request and response evidence for I-02: missing token is rejected → `I-02_1_missing_token.png`
+    - API request and response evidence for I-02: invalid token is rejected → `I-02_2_invalid_token.png`
     - Test: matching.spec.ts › "I-02: rejects missing and invalid tokens" — passed
   - **Precondition**: Missing or invalid JWT
   - **Steps**:
@@ -591,7 +593,7 @@
 
 - [x] **I-03**: `GET /api/v1/recommendations/similar/:productId` returns similar products
   - **Evidence**:
-    - API test — no screenshot
+    - API request and response evidence for I-03: returns similar products and excludes the source product → `I-03_1_api_similar_products.png`
     - Test: matching.spec.ts › "I-03: returns a similar-products array excluding the source product" — passed
   - **Precondition**: Product exists and eligible similar products exist
   - **Steps**:
@@ -602,7 +604,7 @@
 
 - [x] **I-04**: `GET /api/v1/recommendations/history` returns the buyer's paginated sessions
   - **Evidence**:
-    - API test — no screenshot
+    - API request and response evidence for I-04: returns paginated recommendation history for the authenticated buyer → `I-04_1_api_recommendation_history.png`
     - Test: matching.spec.ts › "I-04: returns paginated history for the authenticated buyer" — passed
   - **Precondition**: Valid buyer JWT and history sessions exist
   - **Steps**:
@@ -614,7 +616,7 @@
 
 - [x] **I-05**: `GET /api/v1/ads/panel` returns eligible ads for a placement
   - **Evidence**:
-    - API test — no screenshot
+    - API request and response evidence for I-05: returns eligible ads for the recommendation placement → `I-05_1_api_ad_panel.png`
     - Test: matching.spec.ts › "I-05: returns the ad panel contract for the recommendation placement" — passed
   - **Precondition**: Valid placement and eligible ads exist
   - **Steps**:
@@ -626,7 +628,7 @@
 
 - [x] **I-06**: `POST /api/v1/ads/track/impression` records valid ad IDs
   - **Evidence**:
-    - API test — no screenshot
+    - API request and response evidence for I-06: records impressions for submitted ad IDs → `I-06_1_api_ad_impression.png`
     - Test: matching.spec.ts › "I-06: records impressions for submitted ad IDs" — passed
   - **Precondition**: One or more valid ad IDs
   - **Steps**:
@@ -638,7 +640,7 @@
 
 - [x] **I-07**: `POST /api/v1/ads/track/click` records a valid ad click
   - **Evidence**:
-    - API test — no screenshot
+    - API request and response evidence for I-07: records a sponsored ad click → `I-07_1_api_ad_click.png`
     - Test: matching.spec.ts › "I-07: records a sponsored ad click" — passed
   - **Precondition**: Valid ad ID
   - **Steps**:
@@ -650,7 +652,9 @@
 
 - [x] **I-08**: Documents permissive handling of malformed ad tracking payloads
   - **Evidence**:
-    - API test — no screenshot
+    - API request and response evidence for I-08: handles malformed impression payload → `I-08_1_malformed_impression.png`
+    - API request and response evidence for I-08: accepts an empty impression list → `I-08_2_empty_impression.png`
+    - API request and response evidence for I-08: handles malformed click payload → `I-08_3_malformed_click.png`
     - Test: matching.spec.ts › "I-08: documents permissive handling of malformed ad tracking payloads" — passed
   - **Precondition**: Tracking controllers receive an incorrect impression/click payload.
   - **Steps**:
