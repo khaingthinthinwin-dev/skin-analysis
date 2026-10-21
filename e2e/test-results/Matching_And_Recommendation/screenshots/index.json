@@ -20,7 +20,10 @@
   "N-08_2_history_product_navigation.png": {
     "test": "matching.spec.ts::N-08: expands a recommendation history session"
   },
-  "N-07_1_product_navigation.png": {
+  "N-07_1_recommendation_grid.png": {
+    "test": "matching.spec.ts::N-07: opens the product page from a recommendation card"
+  },
+  "N-07_2_product_navigation.png": {
     "test": "matching.spec.ts::N-07: opens the product page from a recommendation card"
   },
   "N-09_1_similar_products.png": {
@@ -29,19 +32,37 @@
   "N-09_2_similar_product_navigation.png": {
     "test": "matching.spec.ts::N-09: views similar products from a product detail page"
   },
-  "N-20_1_history_expand_collapse.png": {
+  "N-20_1_history_first_five.png": {
     "test": "matching.spec.ts::N-20: expands and collapses recommendation history beyond the first five sessions"
   },
-  "N-04_1_skin_type_filtered.png": {
+  "N-20_2_history_expanded.png": {
+    "test": "matching.spec.ts::N-20: expands and collapses recommendation history beyond the first five sessions"
+  },
+  "N-20_3_history_collapsed.png": {
+    "test": "matching.spec.ts::N-20: expands and collapses recommendation history beyond the first five sessions"
+  },
+  "N-04_1_unfiltered_results.png": {
     "test": "matching.spec.ts::N-04: filters by skin type, price, category, and rating"
   },
-  "N-04_2_all_filters_applied.png": {
+  "N-04_2_skin_type_filtered.png": {
     "test": "matching.spec.ts::N-04: filters by skin type, price, category, and rating"
   },
-  "N-05_1_price_sort_page_2.png": {
+  "N-04_3_all_filters_applied.png": {
+    "test": "matching.spec.ts::N-04: filters by skin type, price, category, and rating"
+  },
+  "N-05_1_default_sort.png": {
     "test": "matching.spec.ts::N-05: sorts by ascending price and paginates results"
   },
-  "N-06_1_filters_reset.png": {
+  "N-05_2_price_sorted_page_1.png": {
+    "test": "matching.spec.ts::N-05: sorts by ascending price and paginates results"
+  },
+  "N-05_3_price_sort_page_2.png": {
+    "test": "matching.spec.ts::N-05: sorts by ascending price and paginates results"
+  },
+  "N-06_1_filters_applied.png": {
+    "test": "matching.spec.ts::N-06: resets filters and returns pagination to page 1"
+  },
+  "N-06_2_filters_reset.png": {
     "test": "matching.spec.ts::N-06: resets filters and returns pagination to page 1"
   },
   "N-13_1280_responsive.png": {
@@ -65,22 +86,49 @@
   "N-12_4_language_toggle.png": {
     "test": "matching.spec.ts::N-12: switches the app-shell language and returns to English"
   },
-  "N-17_1_grid_and_list.png": {
+  "N-17_1_list_view.png": {
     "test": "matching.spec.ts::N-17: switches between grid and list views"
   },
-  "N-18_1_price_validation.png": {
+  "N-17_2_grid_view.png": {
+    "test": "matching.spec.ts::N-17: switches between grid and list views"
+  },
+  "N-18_1_valid_filters.png": {
     "test": "matching.spec.ts::N-18: validates category, rating, and invalid price range"
   },
-  "N-19_1_default_and_fallback_sort.png": {
+  "N-18_2_price_validation.png": {
+    "test": "matching.spec.ts::N-18: validates category, rating, and invalid price range"
+  },
+  "N-19_1_default_sort.png": {
     "test": "matching.spec.ts::N-19: defaults to Newest and falls back from an unsupported sort"
   },
-  "N-21_1_mobile_filter_applied.png": {
+  "N-19_2_fallback_sort.png": {
+    "test": "matching.spec.ts::N-19: defaults to Newest and falls back from an unsupported sort"
+  },
+  "N-21_1_mobile_filter_sheet.png": {
     "test": "matching.spec.ts::N-21: opens the mobile filters sheet and applies a filter"
   },
-  "N-22_1_filter_chips_removed.png": {
+  "N-21_2_mobile_filter_applied.png": {
+    "test": "matching.spec.ts::N-21: opens the mobile filters sheet and applies a filter"
+  },
+  "N-21_3_mobile_filter_cleared.png": {
+    "test": "matching.spec.ts::N-21: opens the mobile filters sheet and applies a filter"
+  },
+  "N-22_1_filter_chips_applied.png": {
     "test": "matching.spec.ts::N-22: removes a filter chip and clears all chips"
   },
-  "N-23_1_multiple_types_and_universal_product.png": {
+  "N-22_2_filter_chip_removed.png": {
+    "test": "matching.spec.ts::N-22: removes a filter chip and clears all chips"
+  },
+  "N-22_3_filter_chips_cleared.png": {
+    "test": "matching.spec.ts::N-22: removes a filter chip and clears all chips"
+  },
+  "N-23_1_multiple_types_selected.png": {
+    "test": "matching.spec.ts::N-23: selects multiple skin types and removes one without a reload"
+  },
+  "N-23_2_one_type_removed.png": {
+    "test": "matching.spec.ts::N-23: selects multiple skin types and removes one without a reload"
+  },
+  "N-23_3_universal_product_generic_source.png": {
     "test": "matching.spec.ts::N-23: selects multiple skin types and removes one without a reload"
   },
   "N-24_1_ai_sort_options.png": {
@@ -92,7 +140,10 @@
   "N-25_1_fresh_analysis.png": {
     "test": "matching.spec.ts::N-25: hides the freshness prompt at exactly 24 hours"
   },
-  "N-14_1_mobile_pagination.png": {
+  "N-14_1_mobile_page_1.png": {
+    "test": "matching.spec.ts::N-14: changes recommendation pages on mobile with numbered pagination"
+  },
+  "N-14_2_mobile_pagination.png": {
     "test": "matching.spec.ts::N-14: changes recommendation pages on mobile with numbered pagination"
   },
   "N-10_1_sponsored_impression.png": {
@@ -104,13 +155,72 @@
   "N-11_2_ad_destination.png": {
     "test": "matching.spec.ts::N-11: tracks a sponsored ad click and follows its destination"
   },
-  "N-15_1_wishlist_toggle.png": {
+  "N-15_1_db_wishlist_before.png": {
+    "description": "wishlists row before adding the recommendation",
     "test": "matching.spec.ts::N-15: adds and removes a recommendation from the wishlist"
   },
-  "N-16_1_cart_add.png": {
+  "N-15_1_db_wishlist_before.json": {
+    "description": "wishlists row before adding the recommendation",
+    "test": "matching.spec.ts::N-15: adds and removes a recommendation from the wishlist"
+  },
+  "N-15_2_wishlist_added.png": {
+    "test": "matching.spec.ts::N-15: adds and removes a recommendation from the wishlist"
+  },
+  "N-15_3_db_wishlist_row_added.png": {
+    "description": "wishlists row after adding the recommendation",
+    "test": "matching.spec.ts::N-15: adds and removes a recommendation from the wishlist"
+  },
+  "N-15_3_db_wishlist_row_added.json": {
+    "description": "wishlists row after adding the recommendation",
+    "test": "matching.spec.ts::N-15: adds and removes a recommendation from the wishlist"
+  },
+  "N-15_4_wishlist_removed.png": {
+    "test": "matching.spec.ts::N-15: adds and removes a recommendation from the wishlist"
+  },
+  "N-15_5_db_wishlist_row_deleted.png": {
+    "description": "wishlists row after removing the recommendation",
+    "test": "matching.spec.ts::N-15: adds and removes a recommendation from the wishlist"
+  },
+  "N-15_5_db_wishlist_row_deleted.json": {
+    "description": "wishlists row after removing the recommendation",
+    "test": "matching.spec.ts::N-15: adds and removes a recommendation from the wishlist"
+  },
+  "N-16_1_db_cart_item_before.png": {
+    "description": "cart_items row before adding the recommendation",
     "test": "matching.spec.ts::N-16: adds an in-stock recommendation to the cart"
   },
-  "N-16_2_cart_duplicate_dialog.png": {
+  "N-16_1_db_cart_item_before.json": {
+    "description": "cart_items row before adding the recommendation",
+    "test": "matching.spec.ts::N-16: adds an in-stock recommendation to the cart"
+  },
+  "N-16_2_cart_add.png": {
+    "test": "matching.spec.ts::N-16: adds an in-stock recommendation to the cart"
+  },
+  "N-16_3_db_cart_item_added.png": {
+    "description": "cart_items row after adding the recommendation",
+    "test": "matching.spec.ts::N-16: adds an in-stock recommendation to the cart"
+  },
+  "N-16_3_db_cart_item_added.json": {
+    "description": "cart_items row after adding the recommendation",
+    "test": "matching.spec.ts::N-16: adds an in-stock recommendation to the cart"
+  },
+  "N-16_4_cart_duplicate_dialog.png": {
+    "test": "matching.spec.ts::N-16: adds an in-stock recommendation to the cart"
+  },
+  "N-16_5_db_cart_item_after_duplicate.png": {
+    "description": "cart_items row after the duplicate add attempt — still one row, quantity unchanged",
+    "test": "matching.spec.ts::N-16: adds an in-stock recommendation to the cart"
+  },
+  "N-16_5_db_cart_item_after_duplicate.json": {
+    "description": "cart_items row after the duplicate add attempt — still one row, quantity unchanged",
+    "test": "matching.spec.ts::N-16: adds an in-stock recommendation to the cart"
+  },
+  "N-16_6_db_cart_item_quantity_updated.png": {
+    "description": "cart_items row after the quantity was raised to 2",
+    "test": "matching.spec.ts::N-16: adds an in-stock recommendation to the cart"
+  },
+  "N-16_6_db_cart_item_quantity_updated.json": {
+    "description": "cart_items row after the quantity was raised to 2",
     "test": "matching.spec.ts::N-16: adds an in-stock recommendation to the cart"
   },
   "A-01_1_unauthenticated_redirect.png": {
@@ -124,14 +234,17 @@
     "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized",
     "test": "matching.spec.ts::A-03: rejects a non-buyer recommendation request"
   },
-  "A-04_1_retry.png": {
+  "A-04_1_error_banner.png": {
     "test": "matching.spec.ts::A-04: offers retry after a failed recommendations request"
   },
-  "A-04_2_failed_recommendation_request.png": {
+  "A-04_2_recovered.png": {
+    "test": "matching.spec.ts::A-04: offers retry after a failed recommendations request"
+  },
+  "A-04_3_failed_recommendation_request.png": {
     "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?sort=createdAt&order=desc&page=1&limit=12",
     "test": "matching.spec.ts::A-04: offers retry after a failed recommendations request"
   },
-  "A-04_3_retried_recommendation_request.png": {
+  "A-04_4_retried_recommendation_request.png": {
     "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?sort=createdAt&order=desc&page=1&limit=12",
     "test": "matching.spec.ts::A-04: offers retry after a failed recommendations request"
   },
@@ -150,13 +263,22 @@
   "A-07_1_non_buyer_unauthorized_page.png": {
     "test": "matching.spec.ts::A-07: blocks non-buyers from the recommendations page"
   },
-  "A-08_1_negative_price.png": {
+  "A-08_1_valid_price.png": {
     "test": "matching.spec.ts::A-08: rejects negative price input without applying it"
   },
-  "B-01_1_empty_results.png": {
+  "A-08_2_negative_price.png": {
+    "test": "matching.spec.ts::A-08: rejects negative price input without applying it"
+  },
+  "B-01_1_filtered_results.png": {
     "test": "matching.spec.ts::B-01: displays the empty result state"
   },
-  "B-02_1_out_of_stock.png": {
+  "B-01_2_empty_results.png": {
+    "test": "matching.spec.ts::B-01: displays the empty result state"
+  },
+  "B-02_1_in_stock.png": {
+    "test": "matching.spec.ts::B-02: shows out-of-stock products and hides cart action"
+  },
+  "B-02_2_out_of_stock.png": {
     "test": "matching.spec.ts::B-02: shows out-of-stock products and hides cart action"
   },
   "B-03_1_page_beyond_total_pages.png": {
@@ -174,13 +296,19 @@
   "B-05_1_no_history.png": {
     "test": "matching.spec.ts::B-05: displays the empty recommendation history state"
   },
-  "B-06_1_no_ads.png": {
+  "B-06_1_with_ads.png": {
+    "test": "matching.spec.ts::B-06: hides the ad panel with an empty ad response"
+  },
+  "B-06_2_no_ads.png": {
     "test": "matching.spec.ts::B-06: hides the ad panel with an empty ad response"
   },
   "B-07_1_card_fallbacks.png": {
     "test": "matching.spec.ts::B-07: uses image fallback and formats product prices"
   },
   "B-08_1_first_load_skeleton.png": {
+    "test": "matching.spec.ts::B-08: shows first-load skeleton cards while the request is pending"
+  },
+  "B-08_2_loaded_results.png": {
     "test": "matching.spec.ts::B-08: shows first-load skeleton cards while the request is pending"
   },
   "I-01_1_api_recommendations.png": {
