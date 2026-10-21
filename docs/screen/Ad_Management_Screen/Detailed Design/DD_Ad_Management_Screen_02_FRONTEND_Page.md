@@ -103,7 +103,7 @@ The Admin Ad Management module consists of five screens and multiple dialog over
 **Table details:**
 - 11 columns: Checkbox, Shop, Title, Placement (hidden below xl), Tier, Status, Payment, Fee, Submitted, Schedule, Actions (sticky right)
 - Only `pending` ads have enabled checkboxes; non-pending rows show View (Eye) icon; pending rows show Review (Pencil) icon
-- Highlighted row (from `?highlightAdId=`): purple inset outline (#a855f7), purple "NEW" badge, auto-scrolls to row, clears after 3 seconds
+- Highlighted row (from `?highlightAdId=`): the page locates the target across paginated results, opens its page, then shows a purple inset outline (#a855f7) and purple "NEW" badge, auto-scrolls to the row, and clears the highlight after 3 seconds
 - Skeleton rows (8) shown during loading
 
 **Filter bar details:**
@@ -585,7 +585,7 @@ type AdListFilters = {
 - Row checkboxes: disabled for non-pending ads
 - Fee column: `formatPrice(Number(ad.paymentAmount))` or "—" when null
 - Schedule column: `formatScheduleRange()` → "Sep 1 ~ Sep 14" format
-- Highlighted row: `?highlightAdId=:id` URL param → purple inset outline, "NEW" badge, auto-scroll
+- Highlighted row: `?highlightAdId=:id` URL param → locate the target page across paginated results, open that page, then show a purple inset outline and "NEW" badge and auto-scroll
 
 ### 4.2 Ad Review Modal Components
 
@@ -994,7 +994,7 @@ All destructive actions require explicit confirmation:
 - **Date formatting:** `formatDate()` → "Sep 1, 2026" (en-US); `formatIsoDate()` → "2026-09-01"; `formatScheduleRange()` → "Sep 1 ~ Sep 14".
 - **Responsive Viewport Design:** Full sidebar on desktop, collapsible with hamburger on mobile, bottom nav not used in admin.
 - **Accessibility:** All interactive elements keyboard navigable. ARIA labels on icon-only buttons. Error messages use `role="alert"`. Tables use semantic `<th>` elements. Dialogs use `aria-haspopup="listbox"` for multi-select.
-- **Notification deep-link:** URL param `?highlightAdId=:id` highlights the ad row with purple outline and "NEW" badge for 3 seconds; auto-scrolls to row; param auto-removed after timeout.
+- **Notification deep-link:** URL param `?highlightAdId=:id` locates the ad across list pages, opens its page, highlights the row with a purple outline and "NEW" badge for 3 seconds, auto-scrolls to the row, then removes the param.
 - **Fee Calculation Display Rule:** Total Fee = Daily Rate x Duration Days. Updates in real-time as Daily Rate or Duration changes in edit/create modals.
 - **Fee Locking Rule:** Once a Merchant has purchased a package and the advertisement fee has been determined, the paid amount is locked. Later Fee Setting changes do not affect existing advertisement paid amounts. Displayed as notice in Ad Review modal.
 - **Fee History Month Protection:** Records created in the current calendar month (UTC) cannot be deleted. This is enforced both in the UI (disabled checkboxes/buttons with tooltip) and server-side.

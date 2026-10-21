@@ -88,6 +88,14 @@ export class AdminAdManagementService {
   async listAds(
     query: AdminAdListQueryDto,
   ): Promise<PaginatedResponseDto<AdminAdvertisementResponseDto>> {
+    if (
+      query.dateFrom &&
+      query.dateTo &&
+      new Date(query.dateFrom).getTime() > new Date(query.dateTo).getTime()
+    ) {
+      throw new BadRequestException('dateFrom must be on or before dateTo');
+    }
+
     const where: Prisma.AdvertisementWhereInput = {};
     if (query.status) where.approvalStatus = query.status;
     if (query.placement) where.feeSetting = { placement: query.placement };
