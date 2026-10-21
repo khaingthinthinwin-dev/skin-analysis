@@ -6,9 +6,29 @@ import { captureScreenshot } from '../../utils/screenshot';
 
 type Source = 'ai' | 'generic';
 
-const products = [
-  { id: '11111111-1111-4111-8111-111111111111', name: 'Hydrating Serum', slug: 'hydrating-serum', brandName: 'Seed Skincare', shortDescription: 'Hydrating serum', price: '2500', compareAtPrice: '3000', avgRating: '4.5', reviewCount: 18, skinTypes: ['dry'], images: ['/uploads/products/30600511-9b38-4201-974c-04d574f5f982.png'], isInStock: true, isFeatured: true, matchScore: 92, categoryBadge: 'featured' },
-  { id: '22222222-2222-4222-8222-222222222222', name: 'Daily Moisturizer', slug: 'daily-moisturizer', brandName: 'Seed Skincare', shortDescription: 'Daily moisturizer', price: '3200', compareAtPrice: null, avgRating: '4.2', reviewCount: 12, skinTypes: ['dry', 'normal'], images: ['/uploads/products/9c043d20-4c05-43b2-b967-59904dbde58d.png'], isInStock: true, isFeatured: false, matchScore: 86, categoryBadge: null },
+/** Shape of a mocked recommendation product (mirrors RecommendationProduct + categoryId). */
+type CatalogProduct = {
+  id: string;
+  name: string;
+  slug: string;
+  brandName: string;
+  shortDescription: string | null;
+  price: string;
+  compareAtPrice: string | null;
+  avgRating: string;
+  reviewCount: number;
+  skinTypes: string[];
+  images: string[];
+  isInStock: boolean;
+  isFeatured: boolean;
+  matchScore: number;
+  categoryBadge: string | null;
+  categoryId: string;
+};
+
+const products: CatalogProduct[] = [
+  { id: '11111111-1111-4111-8111-111111111111', name: 'Hydrating Serum', slug: 'hydrating-serum', brandName: 'Seed Skincare', shortDescription: 'Hydrating serum', price: '2500', compareAtPrice: '3000', avgRating: '4.5', reviewCount: 18, skinTypes: ['dry'], images: ['/uploads/products/30600511-9b38-4201-974c-04d574f5f982.png'], isInStock: true, isFeatured: true, matchScore: 92, categoryBadge: 'featured', categoryId: 'category-serums' },
+  { id: '22222222-2222-4222-8222-222222222222', name: 'Daily Moisturizer', slug: 'daily-moisturizer', brandName: 'Seed Skincare', shortDescription: 'Daily moisturizer', price: '3200', compareAtPrice: null, avgRating: '4.2', reviewCount: 12, skinTypes: ['dry', 'normal'], images: ['/uploads/products/9c043d20-4c05-43b2-b967-59904dbde58d.png'], isInStock: true, isFeatured: false, matchScore: 86, categoryBadge: null, categoryId: 'category-moisturizers' },
 ];
 
 /** Page size the recommendations endpoint advertises (matching.schema.ts default). */
@@ -18,22 +38,25 @@ const PAGE_SIZE = 12;
  * Full result set for evidence that should look like a real recommendation page.
  * 15 products at limit 12 → page 1 holds a full grid of 12 cards, page 2 holds 3,
  * so the displayed total ("15 products") and the 1 | 2 pagination agree with each other.
- * Every product carries `dry` because the AI source scopes the grid to the analysed skin types.
+ * Every product carries `dry` (or the universal `all` tag) because the AI source
+ * scopes the grid to the analysed skin types — a product outside that scope would
+ * be dropped by the client-side skin-type filter and the grid would no longer
+ * hold a full page.
  */
-const catalogExtras: Array<[name: string, slug: string, price: number, matchScore: number]> = [
-  ['Barrier Repair Cream', 'barrier-repair-cream', 3100, 89],
-  ['Gentle Foam Cleanser', 'gentle-foam-cleanser', 1800, 84],
-  ['Niacinamide Toner', 'niacinamide-toner', 2100, 88],
-  ['Vitamin C Serum', 'vitamin-c-serum', 2950, 90],
-  ['Ceramide Lotion', 'ceramide-lotion', 1650, 82],
-  ['SPF 50 Sunscreen', 'spf-50-sunscreen', 2400, 85],
-  ['Rosewater Mist', 'rosewater-mist', 1250, 79],
-  ['Eye Repair Gel', 'eye-repair-gel', 2750, 81],
-  ['Clay Purifying Mask', 'clay-purifying-mask', 1450, 77],
-  ['Hydra Boost Essence', 'hydra-boost-essence', 3050, 91],
-  ['Overnight Recovery Oil', 'overnight-recovery-oil', 3150, 87],
-  ['Micellar Cleansing Water', 'micellar-cleansing-water', 1150, 75],
-  ['Peptide Night Cream', 'peptide-night-cream', 2850, 83],
+const catalogExtras: Array<[name: string, slug: string, price: number, matchScore: number, rating: string, categoryId: string, skinTypes: string[]]> = [
+  ['Barrier Repair Cream', 'barrier-repair-cream', 3100, 89, '4.4', 'category-serums', ['dry']],
+  ['Gentle Foam Cleanser', 'gentle-foam-cleanser', 1800, 84, '4.6', 'category-cleansers', ['dry', 'normal']],
+  ['Niacinamide Toner', 'niacinamide-toner', 2100, 88, '4.3', 'category-toners', ['dry', 'normal']],
+  ['Vitamin C Serum', 'vitamin-c-serum', 2950, 90, '4.7', 'category-serums', ['dry', 'normal']],
+  ['Ceramide Lotion', 'ceramide-lotion', 1650, 82, '4.2', 'category-moisturizers', ['dry', 'normal']],
+  ['SPF 50 Sunscreen', 'spf-50-sunscreen', 2400, 85, '4.5', 'category-sunscreens', ['all']],
+  ['Rosewater Mist', 'rosewater-mist', 1250, 79, '4.1', 'category-mists', ['dry', 'normal']],
+  ['Eye Repair Gel', 'eye-repair-gel', 2750, 81, '4.4', 'category-eye-care', ['dry']],
+  ['Clay Purifying Mask', 'clay-purifying-mask', 1450, 77, '4.0', 'category-masks', ['dry', 'normal']],
+  ['Hydra Boost Essence', 'hydra-boost-essence', 3050, 91, '4.6', 'category-serums', ['dry', 'normal']],
+  ['Overnight Recovery Oil', 'overnight-recovery-oil', 3150, 87, '4.3', 'category-oils', ['dry', 'normal']],
+  ['Micellar Cleansing Water', 'micellar-cleansing-water', 1150, 75, '4.2', 'category-cleansers', ['dry', 'normal']],
+  ['Peptide Night Cream', 'peptide-night-cream', 2850, 83, '4.7', 'category-moisturizers', ['dry', 'normal']],
 ];
 
 /**
@@ -57,21 +80,50 @@ const catalogImages = [
   '/uploads/products/30600511-9b38-4201-974c-04d574f5f982.png',
 ];
 
-const catalog: (typeof products)[number][] = [
+const catalog: CatalogProduct[] = [
   ...products,
-  ...catalogExtras.map(([name, slug, price, matchScore], index) => ({
+  ...catalogExtras.map(([name, slug, price, matchScore, avgRating, categoryId, skinTypes], index) => ({
     ...products[0],
     id: `${index + 1}0000000-0000-4000-8000-000000000000`,
     name,
     slug,
     price: String(price),
     compareAtPrice: null,
+    avgRating,
     images: [catalogImages[index % catalogImages.length]],
     isFeatured: false,
-    skinTypes: ['dry', 'normal'],
+    skinTypes,
     matchScore,
     categoryBadge: null,
+    categoryId,
   })),
+];
+
+/**
+ * Filter fixture used by the filter scenario: one product per combination of
+ * skin type / price / rating / category so a filter that the API does not apply
+ * would show up immediately as an extra card.
+ * The generic source is used on purpose — only the generic source filters by the
+ * selection alone, while the AI source additionally scopes the grid to the
+ * analysed skin types (`dry`).
+ * 14 products at a page size of 12 → two pages, so the scenario can start on
+ * page 2 and prove that a filter change resets the pagination to page 1.
+ */
+const filterCatalog: CatalogProduct[] = [
+  { ...products[0], id: 'a1111111-1111-4111-8111-111111111111', name: 'Dry Cream', slug: 'dry-cream', price: '2200', compareAtPrice: null, avgRating: '4.6', skinTypes: ['dry'], categoryId: 'category-serums' },
+  { ...products[0], id: 'a2222222-2222-4222-8222-222222222222', name: 'Normal Toner', slug: 'normal-toner', price: '2600', compareAtPrice: null, avgRating: '4.8', skinTypes: ['normal'], categoryId: 'category-toners' },
+  { ...products[0], id: 'a3333333-3333-4333-8333-333333333333', name: 'Oily Gel', slug: 'oily-gel', price: '3400', compareAtPrice: null, avgRating: '4.2', skinTypes: ['oily'], categoryId: 'category-serums' },
+  { ...products[0], id: 'a4444444-4444-4444-8444-444444444444', name: 'Universal Balm', slug: 'universal-balm', price: '2800', compareAtPrice: null, avgRating: '4.5', skinTypes: ['all'], categoryId: 'category-moisturizers' },
+  { ...products[0], id: 'a5555555-5555-4555-8555-555555555555', name: 'Dry Low Rated', slug: 'dry-low-rated', price: '2100', compareAtPrice: null, avgRating: '3.8', skinTypes: ['dry'], categoryId: 'category-toners' },
+  { ...products[0], id: 'a6666666-6666-4666-8666-666666666666', name: 'Dry Expensive', slug: 'dry-expensive', price: '5200', compareAtPrice: null, avgRating: '4.9', skinTypes: ['dry'], categoryId: 'category-serums' },
+  { ...products[0], id: 'a7777777-7777-4777-8777-777777777777', name: 'Normal Cleanser', slug: 'normal-cleanser', price: '1900', compareAtPrice: null, avgRating: '4.4', skinTypes: ['normal'], categoryId: 'category-cleansers' },
+  { ...products[0], id: 'a8888888-8888-4888-8888-888888888888', name: 'Oily Cleanser', slug: 'oily-cleanser', price: '2000', compareAtPrice: null, avgRating: '4.3', skinTypes: ['oily'], categoryId: 'category-cleansers' },
+  { ...products[0], id: 'a9999999-9999-4999-8999-999999999999', name: 'Normal Balm', slug: 'normal-balm', price: '2300', compareAtPrice: null, avgRating: '4.6', skinTypes: ['normal'], categoryId: 'category-moisturizers' },
+  { ...products[0], id: 'ab111111-1111-4111-8111-111111111111', name: 'Oily Balm', slug: 'oily-balm', price: '2400', compareAtPrice: null, avgRating: '4.5', skinTypes: ['oily'], categoryId: 'category-moisturizers' },
+  { ...products[0], id: 'ab222222-2222-4222-8222-222222222222', name: 'Normal Mist', slug: 'normal-mist', price: '1200', compareAtPrice: null, avgRating: '4.2', skinTypes: ['normal'], categoryId: 'category-mists' },
+  { ...products[0], id: 'ab333333-3333-4333-8333-333333333333', name: 'Oily Mask', slug: 'oily-mask', price: '2500', compareAtPrice: null, avgRating: '4.4', skinTypes: ['oily'], categoryId: 'category-masks' },
+  { ...products[0], id: 'ab444444-4444-4444-8444-444444444444', name: 'Normal Oil', slug: 'normal-oil', price: '2700', compareAtPrice: null, avgRating: '4.7', skinTypes: ['normal'], categoryId: 'category-oils' },
+  { ...products[0], id: 'ab555555-5555-4555-8555-555555555555', name: 'Oily Powder', slug: 'oily-powder', price: '1500', compareAtPrice: null, avgRating: '4.3', skinTypes: ['oily'], categoryId: 'category-makeup' },
 ];
 
 const emptyHistory = { data: [], meta: { page: 1, limit: 5, total: 0, totalPages: 0 } };
@@ -79,7 +131,7 @@ const emptyHistory = { data: [], meta: { page: 1, limit: 5, total: 0, totalPages
 async function mockPage(page: Page, options: {
   source?: Source;
   analysisAge?: number | null;
-  result?: typeof products;
+  result?: CatalogProduct[];
   total?: number;
   totalPages?: number;
   history?: unknown;
@@ -96,15 +148,38 @@ async function mockPage(page: Page, options: {
     const query = new URL(route.request().url()).searchParams;
     const requestedPage = Number(query.get('page') || 1);
     const result = options.result ?? products;
+    // Apply the requested filters the way the endpoint does, so the rendered
+    // grid can be checked against the filters and not only against the URL.
+    const selectedSkinTypes = (query.get('skinTypes') || '')
+      .split(',')
+      .map((type) => type.trim().toLowerCase())
+      .filter((type) => type.length > 0 && type !== 'all');
+    const categoryId = query.get('categoryId');
+    const minPrice = query.get('minPrice') !== null ? Number(query.get('minPrice')) : undefined;
+    const maxPrice = query.get('maxPrice') !== null ? Number(query.get('maxPrice')) : undefined;
+    const rating = query.get('rating') !== null ? Number(query.get('rating')) : undefined;
+    const filtered = result.filter((item) => {
+      const tags = (item.skinTypes ?? []).map((type) => type.toLowerCase());
+      // OR semantics; a product tagged `all` suits every skin type.
+      if (selectedSkinTypes.length > 0 && !tags.includes('all') && !selectedSkinTypes.some((type) => tags.includes(type))) {
+        return false;
+      }
+      if (categoryId && item.categoryId !== categoryId) return false;
+      const price = Number(item.price);
+      if (minPrice !== undefined && price < minPrice) return false;
+      if (maxPrice !== undefined && price > maxPrice) return false;
+      if (rating !== undefined && Number(item.avgRating) < rating) return false;
+      return true;
+    });
     // Honour the requested price sort so ordered, paginated evidence is truthful.
-    const sorted = [...result];
+    const sorted = [...filtered];
     if (query.get('sort') === 'price') {
       const desc = query.get('order') === 'desc';
       sorted.sort((a, b) => (desc ? Number(b.price) - Number(a.price) : Number(a.price) - Number(b.price)));
     }
     const start = (requestedPage - 1) * PAGE_SIZE;
     const responseProducts = sorted.slice(start, start + PAGE_SIZE);
-    const total = options.total ?? result.length;
+    const total = options.total ?? filtered.length;
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -126,6 +201,59 @@ async function mockPage(page: Page, options: {
   await page.route('**/search/categories**', (route) => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify({ data: { data: [{ id: 'category-serums', name: 'Serums', children: [] }] } }),
   }));
+}
+
+/**
+ * Mocks every endpoint the product-detail page fires, so a navigation target
+ * renders as a real product page (hero image, price, actions) instead of an
+ * error state — the screenshot then proves the destination, not just the URL.
+ */
+async function mockDetailPage(page: Page, slug: string, detail: Record<string, unknown>) {
+  await page.route(`**/api/v1/products/${slug}`, (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: detail }) }),
+  );
+  await page.route('**/api/v1/products/*/similar*', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }) }),
+  );
+  await page.route('**/api/v1/products/*/reviews*', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { items: [], total: 0, page: 1, limit: 10, totalPages: 0 } }) }),
+  );
+  await page.route('**/api/v1/products/*/can-review*', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { canReview: false, reason: 'not_delivered' } }) }),
+  );
+  // Only the ad LIST endpoint is stubbed — the tracking endpoints
+  // (/ads/track/impression, /ads/track/click) must reach their own handlers.
+  await page.route('**/search/ads*', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { data: [] } }) }),
+  );
+  await page.route('**/api/v1/cart**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { items: [], summary: { totalItems: 0, subtotal: '0.00', shippingEstimate: '0.00', total: '0.00', hasOutOfStock: false, canCheckout: false } } }) }),
+  );
+  await page.route('**/api/v1/wishlist**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { items: [], totalCount: 0 } }) }),
+  );
+}
+
+/** Full product payload used as the navigation destination of the card/history/ad flows. */
+function productDetail(overrides: Record<string, unknown> = {}) {
+  return {
+    ...products[0],
+    description: 'Deep hydration for dry skin',
+    sku: 'HYD-001',
+    stockQuantity: 25,
+    lowStockThreshold: 5,
+    tags: ['serum', 'hydration'],
+    ingredients: ['Hyaluronic Acid'],
+    isActive: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    merchant: { id: 'merchant-1', shopName: 'Seed Skincare', licenseStatus: 'approved' },
+    category: { id: 'category-serums', name: 'Serums', slug: 'serums' },
+    promotions: [],
+    ratingBreakdown: [],
+    images: ['/uploads/products/30600511-9b38-4201-974c-04d574f5f982.png'],
+    ...overrides,
+  };
 }
 
 async function tokenFor(page: Page): Promise<string> {
@@ -234,21 +362,51 @@ test.describe('Matching & Recommendation', () => {
       await mockPage(buyerPage, { source: 'ai', analysisAge: 25 });
       const screen = matching(buyerPage);
       await screen.goto();
+      // The stale banner must be visible ON the recommendations page, together with
+      // the match scores that stay on screen while the analysis is being refreshed.
       await expect(buyerPage.getByText('Your analysis looks outdated')).toBeVisible();
-      await buyerPage.getByRole('link', { name: /Retake Analysis/ }).click();
-      await expect(buyerPage).toHaveURL(/\/buyer\/skin-analysis/);
+      await expect(buyerPage.getByText('Retake your skin analysis to refresh these recommendations.')).toBeVisible();
+      await expect(buyerPage.getByText('92% Match')).toBeVisible();
+      // The CTA is a real link to the skin-analysis screen (not a button that
+      // does nothing), so the navigation target can be asserted up-front.
+      const retakeLink = buyerPage.getByRole('link', { name: /Retake Analysis/ });
+      await expect(retakeLink).toHaveAttribute('href', '/buyer/skin-analysis');
       await screen.capture('N-03_1_retake_analysis');
+      // Navigation flow: the CTA opens the skin-analysis screen and that screen
+      // really renders (not a blank route).
+      await retakeLink.click();
+      await expect(buyerPage).toHaveURL(/\/buyer\/skin-analysis/);
+      await expect(buyerPage.getByRole('button', { name: 'View History' })).toBeVisible();
+      await screen.capture('N-03_2_retake_navigation');
     });
 
     test('N-08: expands a recommendation history session', async ({ buyerPage }) => {
       const history = { data: [{ sessionId: 'session-1', sessionDate: '2026-10-01T00:00:00.000Z', skinTypesUsed: ['dry'], products: [{ id: products[0].id, name: products[0].name, slug: products[0].slug, price: '2500', images: [], matchScore: 92 }] }], meta: { page: 1, limit: 5, total: 1, totalPages: 1 } };
       await mockPage(buyerPage, { history });
+      await mockDetailPage(buyerPage, 'hydrating-serum', productDetail());
       const screen = matching(buyerPage);
       await screen.goto();
       await expect(buyerPage.getByText('Previously Recommended')).toBeVisible();
       const historySection = buyerPage.getByRole('heading', { name: 'Previously Recommended' }).locator('..');
-      await expect(historySection.getByRole('link', { name: /Hydrating Serum/ })).toHaveAttribute('href', '/buyer/products/hydrating-serum');
+      // The session is grouped under a date header that also states the skin type.
+      const sessionHeader = buyerPage.getByRole('button', { name: /Recommended on \d{4}\/\d{2}\/\d{2} · Dry/ });
+      await expect(sessionHeader).toBeVisible();
+      await expect(buyerPage.getByText('1 products recommended')).toBeVisible();
+      // The expanded session lists the recommended product as a mini-card.
+      const miniCard = historySection.getByRole('link', { name: /Hydrating Serum/ });
+      await expect(miniCard).toBeVisible();
+      await expect(miniCard).toHaveAttribute('href', '/buyer/products/hydrating-serum');
+      // The session really expands/collapses — not just statically rendered.
+      await sessionHeader.click();
+      await expect(miniCard).toBeHidden();
+      await sessionHeader.click();
+      await expect(miniCard).toBeVisible();
       await screen.capture('N-08_1_history_session');
+      // Navigation flow: the mini-card opens the product page.
+      await miniCard.click();
+      await expect(buyerPage).toHaveURL(/\/buyer\/products\/hydrating-serum/);
+      await expect(buyerPage.getByRole('heading', { level: 1, name: 'Hydrating Serum' })).toBeVisible();
+      await screen.capture('N-08_2_history_product_navigation');
     });
 
     test('N-07: opens the product page from a recommendation card', async ({ buyerPage }) => {
@@ -346,6 +504,11 @@ test.describe('Matching & Recommendation', () => {
       await similarLink.first().click();
       await expect(buyerPage).toHaveURL(/daily-moisturizer/);
       await expect(buyerPage.getByRole('heading', { level: 1, name: 'Daily Moisturizer' })).toBeVisible();
+      // The destination is a real product page, not an empty route.
+      const destinationImage = buyerPage.locator('main img').first();
+      await expect(destinationImage).toBeVisible();
+      await expect.poll(() => destinationImage.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+      await screen.capture('N-09_2_similar_product_navigation');
     });
 
     test('N-20: expands and collapses recommendation history beyond the first five sessions', async ({ buyerPage }) => {
@@ -354,27 +517,54 @@ test.describe('Matching & Recommendation', () => {
       await buyerPage.route('**/recommendations/history?page=1&limit=50**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { data: sessions, meta: { page: 1, limit: 50, total: 6, totalPages: 1 } } }) }));
       const screen = matching(buyerPage);
       await screen.goto();
+      const sessionHeaders = buyerPage.getByRole('button', { name: /Recommended on/ });
+      // Collapsed: only the first five sessions are rendered.
+      await expect(sessionHeaders).toHaveCount(5);
+      const urlBefore = buyerPage.url();
       await buyerPage.getByRole('button', { name: /See \d+ more/ }).click();
+      await expect(sessionHeaders).toHaveCount(6);
       await expect(buyerPage.getByRole('button', { name: 'Show less' })).toBeVisible();
+      // "See more" expands in place — it does not navigate away.
+      expect(buyerPage.url()).toBe(urlBefore);
       await buyerPage.getByRole('button', { name: 'Show less' }).click();
+      await expect(sessionHeaders).toHaveCount(5);
       await screen.capture('N-20_1_history_expand_collapse');
     });
   });
 
   test.describe('Filters, Sorting, and Responsive Views', () => {
     test('N-04: filters by skin type, price, category, and rating', async ({ buyerPage }) => {
-      await mockPage(buyerPage, { result: catalog });
+      // The generic source filters by the selection alone (the AI source also
+      // scopes the grid to the analysed skin types), so every filter in this
+      // scenario is visible in the rendered result set.
+      await mockPage(buyerPage, { source: 'generic', result: filterCatalog });
       const screen = matching(buyerPage);
       await buyerPage.goto('/buyer/recommendations?page=2&skinTypes=all');
       await expect(screen.recommendationSection).toBeVisible();
+      const grid = buyerPage.locator('div[class*="grid-cols-1"]').first();
+      // The scenario starts on page 2 of the unfiltered result set.
+      await expect(grid.locator(':scope > *')).toHaveCount(2);
+      await expect(buyerPage.getByRole('button', { name: 'Go to page 2' })).toHaveAttribute('aria-current', 'page');
+
+      // 1. Skin type — only Dry (and the universal "all") products remain, and
+      //    the pagination is reset to page 1.
       const dryFilter = buyerPage.getByRole('checkbox', { name: 'Dry' });
       await expect(dryFilter).not.toBeChecked();
       await dryFilter.click();
       await expect(dryFilter).toBeChecked();
       await expect(buyerPage).toHaveURL(/skinTypes=dry/);
+      await expect(buyerPage).toHaveURL(/page=1/);
+      // The filtered set fits on one page, so the pager collapses and the
+      // results are back on page 1.
+      await expect(buyerPage.getByRole('navigation', { name: 'Pagination' })).toHaveCount(0);
+      await expect(grid.locator(':scope > *')).toHaveCount(4);
+      await expect(buyerPage.getByText('Dry Cream')).toBeVisible();
+      await expect(buyerPage.getByText('Universal Balm')).toBeVisible();
+      await expect(buyerPage.getByText('Normal Toner')).toHaveCount(0);
+      await expect(buyerPage.getByText('Oily Gel')).toHaveCount(0);
       await screen.capture('N-04_1_skin_type_filtered');
-      await buyerPage.getByRole('button', { name: 'Serums' }).click();
-      await expect(buyerPage).toHaveURL(/categoryId=category-serums/);
+
+      // 2. Price range — the product above the maximum price drops out.
       await buyerPage.getByPlaceholder('Min').fill('2000');
       await buyerPage.getByPlaceholder('Min').blur();
       await expect(buyerPage).toHaveURL(/minPrice=2000/);
@@ -383,19 +573,30 @@ test.describe('Matching & Recommendation', () => {
       await buyerPage.getByPlaceholder('Max').blur();
       await expect(buyerPage).toHaveURL(/maxPrice=5000/);
       await expect(buyerPage.getByPlaceholder('Min')).toHaveValue('2000');
+      await expect(buyerPage.getByText('Dry Expensive')).toHaveCount(0);
+      await expect(grid.locator(':scope > *')).toHaveCount(3);
+
+      // 3. Category — only the serum stays.
+      await buyerPage.getByRole('button', { name: 'Serums' }).click();
+      await expect(buyerPage).toHaveURL(/categoryId=category-serums/);
+      await expect(buyerPage.getByText('Dry Cream')).toBeVisible();
+      await expect(buyerPage.getByText('Universal Balm')).toHaveCount(0);
+      await expect(grid.locator(':scope > *')).toHaveCount(1);
+
+      // 4. Rating — the low-rated product is gone, the remaining one qualifies.
       const ratingFilter = buyerPage.getByRole('radio', { name: '4.5 Stars & Up' });
       await ratingFilter.click();
       await expect(ratingFilter).toBeChecked();
       await expect(buyerPage).toHaveURL(/rating=4.5/);
       await expect(buyerPage).toHaveURL(/minPrice=2000/);
       await expect(buyerPage).toHaveURL(/maxPrice=5000/);
-      await expect(buyerPage).toHaveURL(/rating=4.5/);
       await expect(buyerPage).toHaveURL(/page=1/);
-      // With the mocked catalog the filter query params are echoed but
-      // the mock returns the full catalog; just verify the grid is non-empty
-      // and the URL reflects all applied filters.
-      const grid = buyerPage.locator('div[class*="grid-cols-1"]').first();
-      await expect(grid.locator(':scope > *')).toHaveCount(12);
+      // The result set really satisfies every filter: one card, and the
+      // remaining product is the only one that matches all four filters.
+      await expect(grid.locator(':scope > *')).toHaveCount(1);
+      await expect(buyerPage.getByText('Dry Cream')).toBeVisible();
+      await expect(buyerPage.getByText('Dry Low Rated')).toHaveCount(0);
+      await expect(buyerPage.getByText('Universal Balm')).toHaveCount(0);
       await screen.capture('N-04_2_all_filters_applied');
     });
 
@@ -403,12 +604,27 @@ test.describe('Matching & Recommendation', () => {
       await mockPage(buyerPage, { result: catalog });
       const screen = matching(buyerPage);
       await screen.goto();
+      const grid = buyerPage.locator('div[class*="grid-cols-1"]').first();
       await buyerPage.getByRole('combobox').first().click();
       await buyerPage.getByRole('option', { name: 'Price: Low to High' }).click();
       await expect(buyerPage).toHaveURL(/sort=price/);
       await expect(buyerPage).toHaveURL(/order=asc/);
+      // The rendered order really is ascending by price — cheapest first, and
+      // the page break happens after the 12th cheapest product.
+      const expectedFirstPage = [
+        'Micellar Cleansing Water', 'Rosewater Mist', 'Clay Purifying Mask', 'Ceramide Lotion',
+        'Gentle Foam Cleanser', 'Niacinamide Toner', 'SPF 50 Sunscreen', 'Hydrating Serum',
+        'Eye Repair Gel', 'Peptide Night Cream', 'Vitamin C Serum', 'Hydra Boost Essence',
+      ];
+      await expect(grid.locator('h3')).toHaveCount(expectedFirstPage.length);
+      // The grid keeps the previous page's data while the new query is in
+      // flight (placeholderData), so the order is polled until it settles.
+      await expect.poll(async () => grid.locator('h3').allInnerTexts()).toEqual(expectedFirstPage);
       await buyerPage.getByRole('button', { name: /Go to page 2/ }).click();
-      await expect(buyerPage.getByText('Daily Moisturizer')).toBeVisible();
+      await expect(buyerPage).toHaveURL(/page=2/);
+      await expect(buyerPage.getByRole('button', { name: 'Go to page 2' })).toHaveAttribute('aria-current', 'page');
+      const expectedSecondPage = ['Barrier Repair Cream', 'Overnight Recovery Oil', 'Daily Moisturizer'];
+      await expect.poll(async () => grid.locator('h3').allInnerTexts()).toEqual(expectedSecondPage);
       await screen.capture('N-05_1_price_sort_page_2');
     });
 
@@ -450,10 +666,20 @@ test.describe('Matching & Recommendation', () => {
         ja: 'あなたへのおすすめ',
       } as const;
       const languageMenuNames = { en: 'English', my: 'မြန်မာ', ja: '日本語' } as const;
+      // The screen's own strings are localized too (matchingPage.* namespace):
+      // the filter panel heading proves the screen re-renders in the new language.
+      const filterHeadings = {
+        en: 'Filters',
+        my: 'စစ်ထုတ်မှုများ',
+        ja: '絞り込み',
+      } as const;
       async function switchAppLanguage(lang: 'en' | 'my' | 'ja') {
         await buyerPage.locator('button:has(svg.lucide-globe)').click();
         await buyerPage.getByRole('menuitem', { name: languageMenuNames[lang], exact: true }).click();
         await expect(buyerPage.getByRole('heading', { level: 1, name: pageTitles[lang] })).toBeVisible();
+        await expect(buyerPage.getByRole('heading', { name: filterHeadings[lang] })).toBeVisible();
+        // Switching the language must not navigate away from the screen.
+        await expect(buyerPage).toHaveURL(/\/buyer\/recommendations/);
       }
       // One capture per display language, then back to English.
       await screen.capture('N-12_1_language_en');
@@ -471,10 +697,20 @@ test.describe('Matching & Recommendation', () => {
       await mockPage(buyerPage);
       const screen = matching(buyerPage);
       await screen.goto();
+      const urlBefore = buyerPage.url();
+      // Grid view: every card carries an image link and a title link.
+      const serumLinks = buyerPage.locator('a[href="/buyer/products/hydrating-serum"]');
+      await expect(serumLinks).toHaveCount(2);
       await buyerPage.getByRole('button', { name: 'List view' }).click();
       await expect(buyerPage.getByRole('button', { name: 'List view' })).toHaveAttribute('aria-pressed', 'true');
+      // List view: the card is a single wrapping link — the layout really changed.
+      await expect(serumLinks).toHaveCount(1);
+      // The view is local state only — the query string is untouched.
+      expect(buyerPage.url()).toBe(urlBefore);
       await buyerPage.getByRole('button', { name: 'Grid view' }).click();
       await expect(buyerPage.getByRole('button', { name: 'Grid view' })).toHaveAttribute('aria-pressed', 'true');
+      await expect(serumLinks).toHaveCount(2);
+      expect(buyerPage.url()).toBe(urlBefore);
       await screen.capture('N-17_1_grid_and_list');
     });
 
@@ -482,6 +718,10 @@ test.describe('Matching & Recommendation', () => {
       await mockPage(buyerPage);
       const screen = matching(buyerPage);
       await screen.goto();
+      // Category — the selection reaches the query and resets the pagination.
+      await buyerPage.getByRole('button', { name: 'Serums' }).click();
+      await expect(buyerPage).toHaveURL(/categoryId=category-serums/);
+      await expect(buyerPage).toHaveURL(/page=1/);
       const ratingFilter = buyerPage.getByRole('radio', { name: '4.5 Stars & Up' });
       await ratingFilter.click();
       await expect(ratingFilter).toBeChecked();
@@ -520,6 +760,10 @@ test.describe('Matching & Recommendation', () => {
       await buyerPage.getByRole('button', { name: /Show .* Products/ }).click();
       await expect(buyerPage).toHaveURL(/minPrice=2000/);
       await screen.capture('N-21_1_mobile_filter_applied');
+      // Reopen the sheet and reset the filter from its footer.
+      await buyerPage.getByRole('button', { name: 'Filters' }).click();
+      await mobileSheet.getByRole('button', { name: 'Clear All' }).click();
+      await expect(buyerPage).not.toHaveURL(/minPrice/);
     });
 
     test('N-22: removes a filter chip and clears all chips', async ({ buyerPage }) => {
@@ -602,15 +846,22 @@ test.describe('Matching & Recommendation', () => {
     test('N-24: offers Match Score sort only for AI recommendations', async ({ buyerPage }) => {
       await mockPage(buyerPage, { source: 'ai' });
       const screen = matching(buyerPage);
+      // A tall viewport keeps the opened dropdown on screen: the full-page
+      // capture resizes the viewport, and the Radix select closes on resize.
+      await buyerPage.setViewportSize({ width: 1280, height: 2100 });
       await screen.goto();
       await buyerPage.getByRole('combobox').first().click();
-      await expect(buyerPage.getByRole('option', { name: 'Match Score' })).toBeVisible();
+      const aiOptions = (await buyerPage.getByRole('option').allInnerTexts()).map((text) => text.trim());
+      expect(aiOptions).toEqual(['Newest', 'Match Score', 'Price: Low to High', 'Price: High to Low', 'Highest Rated']);
+      await screen.capture('N-24_1_ai_sort_options');
       await buyerPage.keyboard.press('Escape');
       await mockPage(buyerPage, { source: 'generic' });
       await buyerPage.reload();
       await buyerPage.getByRole('combobox').first().click();
-      await expect(buyerPage.getByRole('option', { name: 'Match Score' })).toHaveCount(0);
-      await screen.capture('N-24_1_source_sort_options');
+      const genericOptions = (await buyerPage.getByRole('option').allInnerTexts()).map((text) => text.trim());
+      expect(genericOptions).toEqual(['Newest', 'Price: Low to High', 'Price: High to Low', 'Highest Rated']);
+      expect(genericOptions).not.toContain('Match Score');
+      await screen.capture('N-24_2_generic_sort_options');
     });
 
     test('N-25: hides the freshness prompt at exactly 24 hours', async ({ buyerPage }) => {
@@ -627,10 +878,18 @@ test.describe('Matching & Recommendation', () => {
       await buyerPage.setViewportSize({ width: 390, height: 844 });
       const screen = matching(buyerPage);
       await screen.goto();
+      const grid = buyerPage.locator('div[class*="grid-cols-1"]').first();
       await expect(buyerPage.getByText('Hydrating Serum')).toBeVisible();
+      await expect(buyerPage.getByText('Overnight Recovery Oil')).toHaveCount(0);
+      // Numbered pagination is available on mobile and moves the result set.
       await buyerPage.getByRole('button', { name: 'Go to page 2' }).click();
       await expect(buyerPage).toHaveURL(/page=2/);
-      await expect(buyerPage.getByText('Overnight Recovery Oil')).toBeVisible();
+      await expect(buyerPage.getByRole('button', { name: 'Go to page 2' })).toHaveAttribute('aria-current', 'page');
+      await expect(buyerPage.getByText('Hydrating Serum')).toHaveCount(0);
+      const expectedSecondPage = ['Overnight Recovery Oil', 'Micellar Cleansing Water', 'Peptide Night Cream'];
+      await expect.poll(async () => grid.locator('h3').allInnerTexts()).toEqual(expectedSecondPage);
+      // The mobile filters stay reachable while paginating.
+      await expect(buyerPage.getByRole('button', { name: 'Filters' })).toBeVisible();
       await screen.capture('N-14_1_mobile_pagination');
     });
   });
@@ -645,22 +904,38 @@ test.describe('Matching & Recommendation', () => {
       await screen.goto();
       await expect(screen.adPanel).toBeVisible();
       await expect(screen.adPanel.getByRole('heading', { name: 'Sponsored Serum' })).toBeVisible();
+      // The ad is disclosed as sponsored, not shown as an organic recommendation.
+      await expect(screen.adPanel.getByText('SPONSORED', { exact: true })).toBeVisible();
       await screen.adPanel.scrollIntoViewIfNeeded();
-      await impressionRequest;
+      const trackedImpression = await impressionRequest;
+      // The impression carries the visible ad id, so the analytics record is traceable.
+      expect(trackedImpression.postDataJSON()).toMatchObject({ adIds: ['e2e-ad-1'] });
       await screen.capture('N-10_1_sponsored_impression');
     });
 
     test('N-11: tracks a sponsored ad click and follows its destination', async ({ buyerPage }) => {
       const ad = { id: 'e2e-ad-1', placement: 'recommendation_page_banner', title: 'Sponsored Serum', description: 'Sponsored skincare', content: null, imageUrl: null, sku: null, announcement_message: 'SPONSORED', linkUrl: '/buyer/products/hydrating-serum', tier: 'premium', approvalStatus: 'approved', startsAt: '2026-01-01T00:00:00.000Z', expiresAt: '2030-01-01T00:00:00.000Z' };
+      // The detail-page stubs are registered BEFORE mockPage so the mocked ad
+      // panel (registered later) keeps winning the /search/ads route.
+      await mockDetailPage(buyerPage, 'hydrating-serum', productDetail());
       await mockPage(buyerPage, { ads: [ad] });
       await buyerPage.route('**/ads/track/click', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { recorded: true } }) }));
       const screen = matching(buyerPage);
       const clickRequest = buyerPage.waitForRequest((request) => request.url().includes('/ads/track/click'));
       await screen.goto();
+      // The panel discloses the sponsorship and offers the call to action.
+      await expect(screen.adPanel).toBeVisible();
+      await expect(screen.adPanel.getByText('SPONSORED', { exact: true })).toBeVisible();
+      await expect(buyerPage.getByRole('button', { name: /Learn more/i })).toBeVisible();
+      await screen.capture('N-11_1_sponsored_cta');
       await buyerPage.getByRole('button', { name: /Learn more/i }).click();
-      await clickRequest;
+      const trackedClick = await clickRequest;
+      // The click is tracked with the ad id before the destination is opened.
+      expect(trackedClick.postDataJSON()).toMatchObject({ adId: 'e2e-ad-1' });
       await expect(buyerPage).toHaveURL(/\/buyer\/products\/hydrating-serum/);
-      await screen.capture('N-11_1_ad_destination');
+      // The destination renders as a product page, not an empty route.
+      await expect(buyerPage.getByRole('heading', { level: 1, name: 'Hydrating Serum' })).toBeVisible();
+      await screen.capture('N-11_2_ad_destination');
     });
 
     test('N-15: adds and removes a recommendation from the wishlist', async ({ buyerPage }) => {
@@ -676,22 +951,41 @@ test.describe('Matching & Recommendation', () => {
       await screen.goto();
       const add = buyerPage.getByRole('button', { name: /add to wishlist/i }).first();
       await add.click();
+      // The card flips to the saved state and the success toast confirms the add.
       await expect(buyerPage.getByRole('button', { name: /remove from wishlist/i }).first()).toBeVisible();
+      await expect(buyerPage.getByText('Added to wishlist')).toBeVisible();
       await buyerPage.getByRole('button', { name: /remove from wishlist/i }).first().click();
+      // Removing flips it back and reports the removal.
       await expect(buyerPage.getByRole('button', { name: /add to wishlist/i }).first()).toBeVisible();
+      await expect(buyerPage.getByText('Removed from wishlist')).toBeVisible();
       await screen.capture('N-15_1_wishlist_toggle');
     });
 
     test('N-16: adds an in-stock recommendation to the cart', async ({ buyerPage }) => {
-      await mockPage(buyerPage);
-      await buyerPage.route('**/cart', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { items: [], summary: { totalItems: 0, subtotal: '0', shippingEstimate: '0', total: '0', hasOutOfStock: false, canCheckout: false } } }) }));
+      let inCart = false;
       let added = false;
-      await buyerPage.route('**/cart/items', (route) => { added = true; return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ data: { id: 'cart-item-1' } }) }); });
+      await mockPage(buyerPage);
+      await buyerPage.route('**/cart/items', (route) => {
+        if (route.request().method() === 'POST') { added = true; inCart = true; }
+        return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ data: { id: 'cart-item-1' } }) });
+      });
+      await buyerPage.route('**/api/v1/cart', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: { items: inCart ? [{ cartItemId: 'cart-item-1', productId: products[0].id, quantity: 1 }] : [], summary: { totalItems: inCart ? 1 : 0, subtotal: '0', shippingEstimate: '0', total: '0', hasOutOfStock: false, canCheckout: false } } }),
+      }));
       const screen = matching(buyerPage);
       await screen.goto();
       await buyerPage.getByRole('button', { name: /add to cart/i }).first().click();
+      // The item is persisted and the buyer is told about it.
       await expect.poll(() => added).toBe(true);
+      await expect(buyerPage.getByText('Added to cart')).toBeVisible();
       await screen.capture('N-16_1_cart_add');
+      // Adding the same product again opens the duplicate guard instead of a second call.
+      await buyerPage.reload();
+      await buyerPage.getByRole('button', { name: /add to cart/i }).first().click();
+      await expect(buyerPage.getByRole('dialog')).toContainText('Already in your cart');
+      await screen.capture('N-16_2_cart_duplicate_dialog');
     });
   });
 
@@ -768,6 +1062,15 @@ test.describe('Matching & Recommendation', () => {
     test('A-07: blocks non-buyers from the recommendations page', async ({ merchantPage }) => {
       await merchantPage.goto('/buyer/recommendations');
       await expect(merchantPage).toHaveURL(/\/unauthorized/);
+      // The access-denied screen is lazy-loaded — right after the redirect the
+      // route still shows the Suspense fallback, so the evidence has to wait for
+      // the rendered page.
+      await expect(merchantPage.getByRole('heading', { level: 1, name: 'Access Denied' })).toBeVisible();
+      await expect(merchantPage.getByRole('link', { name: 'Go Home' })).toBeVisible();
+      // No recommendation content leaks into the blocked screen.
+      await expect(merchantPage.locator('a[href^="/buyer/products/"]')).toHaveCount(0);
+      await expect(merchantPage.getByRole('button', { name: /Add to Cart/i })).toHaveCount(0);
+      await expect(merchantPage.getByRole('button', { name: /Add to Wishlist/i })).toHaveCount(0);
       await captureScreenshot(merchantPage, 'A-07_1_non_buyer_unauthorized_page');
     });
 
@@ -861,9 +1164,13 @@ test.describe('Matching & Recommendation', () => {
       const navigation = screen.goto();
       const skeletons = buyerPage.locator('.animate-pulse');
       await expect(skeletons.first()).toBeVisible();
+      // One skeleton card per page slot (`SkeletonGrid count={meta.limit}`).
+      await expect(buyerPage.locator('.animate-pulse.aspect-square')).toHaveCount(12);
+      // The evidence has to be taken while the request is still pending —
+      // afterwards the grid is replaced by the (empty) result state.
+      await screen.capture('B-08_1_first_load_skeleton');
       release();
       await navigation;
-      await screen.capture('B-08_1_first_load_skeleton');
     });
   });
 
