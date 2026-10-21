@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-20T03:19:10.182Z",
+  "capturedAt": "2026-10-20T10:27:15.304Z",
   "description": "Promotion row after active status toggle",
   "results": [
     {
@@ -7,19 +7,19 @@
       "rowCount": 1,
       "rows": [
         {
-          "id": "0b46f579-94f4-4f59-ac95-0faf720a41fc",
+          "id": "a4ea2c2a-bf89-4ea4-b5f2-67df68f4cc26",
           "merchant_id": "35c44c85-a7f0-4000-b5bd-f377a1077bd0",
-          "code": "E2Ecb20cc00",
+          "code": "E2E1f10efc6",
           "description": "E2E API-created promotion",
           "discount_type": "percentage",
           "discount_value": "10.00",
           "min_order_amount": "0.00",
           "max_uses": 100,
           "used_count": 0,
-          "starts_at": "2026-10-19T20:49:06.455Z",
-          "expires_at": "2026-11-18T20:49:06.455Z",
+          "starts_at": "2026-10-20T03:57:12.076Z",
+          "expires_at": "2026-11-19T03:57:12.076Z",
           "is_active": false,
-          "created_at": "2026-10-19T20:49:06.472Z"
+          "created_at": "2026-10-20T03:57:12.101Z"
         }
       ]
     }

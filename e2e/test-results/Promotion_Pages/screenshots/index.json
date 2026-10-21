@@ -67,6 +67,9 @@
   "N-08_1_promotion_list_pagination.png": {
     "test": "promotion-management.spec.ts::N-08: should paginate the promotion list"
   },
+  "N-09_1_validate_valid_coupon.png": {
+    "test": "promotion-management.spec.ts::N-09: should validate a valid coupon code at checkout"
+  },
   "N-10_1_language_toggle.png": {
     "test": "promotion-management.spec.ts::N-10: should toggle language on screen"
   },
@@ -118,6 +121,12 @@
   },
   "A-08_1_unauthenticated_redirect.png": {
     "test": "promotion-management.spec.ts::A-08: should redirect to login when accessing promotion pages without authentication"
+  },
+  "A-09_1_invalid_coupon_format.png": {
+    "test": "promotion-management.spec.ts::A-09: should reject invalid coupon code format at checkout"
+  },
+  "A-10_1_expired_inactive_maxuses_coupon.png": {
+    "test": "promotion-management.spec.ts::A-10: should reject expired / inactive / max-uses coupon"
   },
   "A-11_1_one_coupon_per_merchant.png": {
     "test": "promotion-management.spec.ts::A-11: should keep one replaceable coupon per merchant at checkout"
@@ -199,5 +208,50 @@
   },
   "B-08_1_empty_state.png": {
     "test": "promotion-management.spec.ts::B-08: should handle empty state when merchant has no promotions"
+  },
+  "B-09_1_coupon_below_min_order_amount.png": {
+    "test": "promotion-management.spec.ts::B-09: should reject coupon when order amount below minimum order amount"
+  },
+  "B-10_1_discount_capped_at_order_total.png": {
+    "test": "promotion-management.spec.ts::B-10: should cap discount at order total (finalAmount never negative)"
+  },
+  "I-01_1_promotions_list_pagination.png": {
+    "test": "promotion-management.spec.ts::I-01: GET /api/v1/promotions should return 200 with list and pagination"
+  },
+  "I-02_1_promotion_created.png": {
+    "test": "promotion-management.spec.ts::I-02: POST /api/v1/promotions should return 201 with created promotion"
+  },
+  "I-03_1_duplicate_code_error.png": {
+    "test": "promotion-management.spec.ts::I-03: POST /api/v1/promotions duplicate code should return 400"
+  },
+  "I-04_1_promotion_updated.png": {
+    "test": "promotion-management.spec.ts::I-04: PATCH /api/v1/promotions/:id should return 200 with updated promotion"
+  },
+  "I-05_1_used_promotion_edit_error.png": {
+    "test": "promotion-management.spec.ts::I-05: PATCH /api/v1/promotions/:id used promotion should return 409"
+  },
+  "I-06_1_promotion_deleted.png": {
+    "test": "promotion-management.spec.ts::I-06: DELETE /api/v1/promotions/:id should return 204 on success"
+  },
+  "I-07_1_used_promotion_delete_error.png": {
+    "test": "promotion-management.spec.ts::I-07: DELETE /api/v1/promotions/:id used promotion should return 409"
+  },
+  "I-08_1_nonexistent_id_error.png": {
+    "test": "promotion-management.spec.ts::I-08: PATCH /api/v1/promotions/:id non-existent ID should return 404"
+  },
+  "I-09_1_validate_valid_coupon.png": {
+    "test": "promotion-management.spec.ts::I-09: POST /api/v1/promotions/validate valid coupon should return 200 with discount payload"
+  },
+  "I-10_1_validate_expired_coupon.png": {
+    "test": "promotion-management.spec.ts::I-10: POST /api/v1/promotions/validate expired coupon should return 400"
+  },
+  "I-11_1_unauthorized_no_jwt.png": {
+    "test": "promotion-management.spec.ts::I-11: GET /api/v1/promotions should return 401 without JWT"
+  },
+  "I-12_1_pending_rejected_merchant_forbidden.png": {
+    "test": "promotion-management.spec.ts::I-12: POST /api/v1/promotions pending/rejected merchant should return 403"
+  },
+  "I-13_1_standard_error_format.png": {
+    "test": "promotion-management.spec.ts::I-13: error response should follow standard API format"
   }
 }
