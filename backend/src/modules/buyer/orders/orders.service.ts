@@ -81,6 +81,16 @@ export class OrdersService {
         if (promotion && promotion.isActive) {
           const now = new Date();
           if (now >= promotion.startsAt && now <= promotion.expiresAt) {
+            // Per-user guard: skip applying the voucher if user already used it
+            const alreadyUsed = await this.prisma.order.count({
+              where: { buyerId: userId, couponCode: code },
+            });
+            if (alreadyUsed > 0) {
+              throw new BadRequestException(
+                `You have already used voucher "${code}"`,
+              );
+            }
+
             const discountValue = parseFloat(
               promotion.discountValue.toString(),
             );
@@ -164,6 +174,13 @@ export class OrdersService {
         let groupCouponCode: string | null = null;
 
         if (!voucherBreakdown[merchantId] && payload.couponCode) {
+          // Per-user guard for legacy single coupon
+          const alreadyUsed = await tx.order.count({
+            where: { buyerId: userId, couponCode: payload.couponCode },
+          });
+          if (alreadyUsed > 0) {
+            throw new BadRequestException('You have already used this coupon');
+          }
           // Legacy single coupon fallback — recompute per merchant group
           groupCouponCode = payload.couponCode;
           groupDiscount = await this.computeLegacyCouponDiscount(
@@ -221,6 +238,32 @@ export class OrdersService {
             entityId: newOrder.id,
           },
         });
+
+        if (groupCouponCode) {
+          try {
+            const redeemedPromotion = await tx.promotion.findUnique({
+              where: { code: groupCouponCode },
+              select: { id: true, merchantId: true },
+            });
+            if (
+              redeemedPromotion &&
+              redeemedPromotion.merchantId === merchantId
+            ) {
+              await tx.notification.create({
+                data: {
+                  userId: merchant.userId,
+                  type: 'PROMO_REDEEMED',
+                  title: 'Promotion Redeemed',
+                  message: `A buyer used your promotion code "${groupCouponCode}" on order ${newOrder.orderNumber}.`,
+                  entityType: 'promotion',
+                  entityId: redeemedPromotion.id,
+                },
+              });
+            }
+          } catch {
+            // notification is best-effort and should not block order placement
+          }
+        }
 
         for (const item of group.items) {
           const unitPriceNum = parseFloat(item.product.price.toString());

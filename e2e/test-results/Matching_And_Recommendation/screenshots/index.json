@@ -1,0 +1,215 @@
+{
+  "matching_page_loaded.png": {
+    "test": "matching.spec.ts::I-01: renders live recommendation data without mocks"
+  },
+  "N-01_1_personalized.png": {
+    "test": "matching.spec.ts::N-01: displays personalized recommendations and match scores"
+  },
+  "N-02_1_generic.png": {
+    "test": "matching.spec.ts::N-02: displays generic recommendations without match scores"
+  },
+  "N-03_1_retake_analysis.png": {
+    "test": "matching.spec.ts::N-03: shows the stale analysis prompt and retake navigation"
+  },
+  "N-08_1_history_session.png": {
+    "test": "matching.spec.ts::N-08: expands a recommendation history session"
+  },
+  "N-07_1_product_navigation.png": {
+    "test": "matching.spec.ts::N-07: opens the product page from a recommendation card"
+  },
+  "N-09_1_similar_products.png": {
+    "test": "matching.spec.ts::N-09: views similar products from a product detail page"
+  },
+  "N-20_1_history_expand_collapse.png": {
+    "test": "matching.spec.ts::N-20: expands and collapses recommendation history beyond the first five sessions"
+  },
+  "N-04_1_skin_type_filtered.png": {
+    "test": "matching.spec.ts::N-04: filters by skin type, price, category, and rating"
+  },
+  "N-04_2_all_filters_applied.png": {
+    "test": "matching.spec.ts::N-04: filters by skin type, price, category, and rating"
+  },
+  "N-05_1_price_sort_page_2.png": {
+    "test": "matching.spec.ts::N-05: sorts by ascending price and paginates results"
+  },
+  "N-06_1_filters_reset.png": {
+    "test": "matching.spec.ts::N-06: resets filters and returns pagination to page 1"
+  },
+  "N-13_1280_responsive.png": {
+    "test": "matching.spec.ts::N-13: renders the product grid at desktop, tablet, and mobile widths"
+  },
+  "N-13_768_responsive.png": {
+    "test": "matching.spec.ts::N-13: renders the product grid at desktop, tablet, and mobile widths"
+  },
+  "N-13_390_responsive.png": {
+    "test": "matching.spec.ts::N-13: renders the product grid at desktop, tablet, and mobile widths"
+  },
+  "N-12_1_language_en.png": {
+    "test": "matching.spec.ts::N-12: switches the app-shell language and returns to English"
+  },
+  "N-12_2_language_my.png": {
+    "test": "matching.spec.ts::N-12: switches the app-shell language and returns to English"
+  },
+  "N-12_3_language_ja.png": {
+    "test": "matching.spec.ts::N-12: switches the app-shell language and returns to English"
+  },
+  "N-12_4_language_toggle.png": {
+    "test": "matching.spec.ts::N-12: switches the app-shell language and returns to English"
+  },
+  "N-17_1_grid_and_list.png": {
+    "test": "matching.spec.ts::N-17: switches between grid and list views"
+  },
+  "N-18_1_price_validation.png": {
+    "test": "matching.spec.ts::N-18: validates category, rating, and invalid price range"
+  },
+  "N-19_1_default_and_fallback_sort.png": {
+    "test": "matching.spec.ts::N-19: defaults to Newest and falls back from an unsupported sort"
+  },
+  "N-21_1_mobile_filter_applied.png": {
+    "test": "matching.spec.ts::N-21: opens the mobile filters sheet and applies a filter"
+  },
+  "N-22_1_filter_chips_removed.png": {
+    "test": "matching.spec.ts::N-22: removes a filter chip and clears all chips"
+  },
+  "N-23_1_multiple_types_and_universal_product.png": {
+    "test": "matching.spec.ts::N-23: selects multiple skin types and removes one without a reload"
+  },
+  "N-24_1_source_sort_options.png": {
+    "test": "matching.spec.ts::N-24: offers Match Score sort only for AI recommendations"
+  },
+  "N-25_1_fresh_analysis.png": {
+    "test": "matching.spec.ts::N-25: hides the freshness prompt at exactly 24 hours"
+  },
+  "N-14_1_mobile_pagination.png": {
+    "test": "matching.spec.ts::N-14: changes recommendation pages on mobile with numbered pagination"
+  },
+  "N-10_1_sponsored_impression.png": {
+    "test": "matching.spec.ts::N-10: displays sponsored ads and records a panel impression"
+  },
+  "N-11_1_ad_destination.png": {
+    "test": "matching.spec.ts::N-11: tracks a sponsored ad click and follows its destination"
+  },
+  "N-15_1_wishlist_toggle.png": {
+    "test": "matching.spec.ts::N-15: adds and removes a recommendation from the wishlist"
+  },
+  "N-16_1_cart_add.png": {
+    "test": "matching.spec.ts::N-16: adds an in-stock recommendation to the cart"
+  },
+  "A-01_1_unauthenticated_redirect.png": {
+    "test": "matching.spec.ts::A-01: redirects unauthenticated visitors to login"
+  },
+  "A-02_1_invalid_recommendation_query.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?sort=invalid",
+    "test": "matching.spec.ts::A-02: rejects an invalid recommendation query"
+  },
+  "A-03_1_non_buyer_forbidden.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized",
+    "test": "matching.spec.ts::A-03: rejects a non-buyer recommendation request"
+  },
+  "A-04_1_retry.png": {
+    "test": "matching.spec.ts::A-04: offers retry after a failed recommendations request"
+  },
+  "A-04_2_failed_recommendation_request.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?sort=createdAt&order=desc&page=1&limit=12",
+    "test": "matching.spec.ts::A-04: offers retry after a failed recommendations request"
+  },
+  "A-04_3_retried_recommendation_request.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?sort=createdAt&order=desc&page=1&limit=12",
+    "test": "matching.spec.ts::A-04: offers retry after a failed recommendations request"
+  },
+  "A-05_1_malformed_similar_product_id.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/similar/not-a-uuid",
+    "test": "matching.spec.ts::A-05: records malformed and missing similar-product ID behavior"
+  },
+  "A-05_2_missing_similar_product.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/similar/11111111-1111-4111-8111-111111111111",
+    "test": "matching.spec.ts::A-05: records malformed and missing similar-product ID behavior"
+  },
+  "A-06_1_request_above_rate_limit_threshold.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized",
+    "test": "matching.spec.ts::A-06: accepts requests above the documented rate-limit threshold"
+  },
+  "A-07_1_non_buyer_unauthorized_page.png": {
+    "test": "matching.spec.ts::A-07: blocks non-buyers from the recommendations page"
+  },
+  "A-08_1_negative_price.png": {
+    "test": "matching.spec.ts::A-08: rejects negative price input without applying it"
+  },
+  "B-01_1_empty_results.png": {
+    "test": "matching.spec.ts::B-01: displays the empty result state"
+  },
+  "B-02_1_out_of_stock.png": {
+    "test": "matching.spec.ts::B-02: shows out-of-stock products and hides cart action"
+  },
+  "B-03_1_page_beyond_total_pages.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?page=999",
+    "test": "matching.spec.ts::B-03: returns an empty page beyond total pages"
+  },
+  "B-04_1_maximum_allowed_limit.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?limit=50",
+    "test": "matching.spec.ts::B-04: accepts limit 50 and rejects limit 51"
+  },
+  "B-04_2_limit_above_maximum.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?limit=51",
+    "test": "matching.spec.ts::B-04: accepts limit 50 and rejects limit 51"
+  },
+  "B-05_1_no_history.png": {
+    "test": "matching.spec.ts::B-05: displays the empty recommendation history state"
+  },
+  "B-06_1_no_ads.png": {
+    "test": "matching.spec.ts::B-06: hides the ad panel with an empty ad response"
+  },
+  "B-07_1_card_fallbacks.png": {
+    "test": "matching.spec.ts::B-07: uses image fallback and formats product prices"
+  },
+  "B-08_1_first_load_skeleton.png": {
+    "test": "matching.spec.ts::B-08: shows first-load skeleton cards while the request is pending"
+  },
+  "I-01_1_api_recommendations.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?page=1&limit=12",
+    "test": "matching.spec.ts::I-01: returns recommendation data and pagination metadata"
+  },
+  "I-01_2_live_page.png": {
+    "test": "matching.spec.ts::I-01: renders live recommendation data without mocks"
+  },
+  "I-02_1_missing_token.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized",
+    "test": "matching.spec.ts::I-02: rejects missing and invalid tokens"
+  },
+  "I-02_2_invalid_token.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized",
+    "test": "matching.spec.ts::I-02: rejects missing and invalid tokens"
+  },
+  "I-03_1_api_similar_products.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/similar/11111111-1111-4111-8111-111111111111",
+    "test": "matching.spec.ts::I-03: returns a similar-products array excluding the source product"
+  },
+  "I-04_1_api_recommendation_history.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/recommendations/history?page=1&limit=5",
+    "test": "matching.spec.ts::I-04: returns paginated history for the authenticated buyer"
+  },
+  "I-05_1_api_ad_panel.png": {
+    "description": "API response evidence for GET http://localhost:8080/api/v1/ads/panel?placement=recommendation_page_banner",
+    "test": "matching.spec.ts::I-05: returns the ad panel contract for the recommendation placement"
+  },
+  "I-06_1_api_ad_impression.png": {
+    "description": "API response evidence for POST http://localhost:8080/api/v1/ads/track/impression",
+    "test": "matching.spec.ts::I-06: records impressions for submitted ad IDs"
+  },
+  "I-07_1_api_ad_click.png": {
+    "description": "API response evidence for POST http://localhost:8080/api/v1/ads/track/click",
+    "test": "matching.spec.ts::I-07: records a sponsored ad click"
+  },
+  "I-08_1_malformed_impression.png": {
+    "description": "API response evidence for POST http://localhost:8080/api/v1/ads/track/impression",
+    "test": "matching.spec.ts::I-08: documents permissive handling of malformed ad tracking payloads"
+  },
+  "I-08_2_empty_impression.png": {
+    "description": "API response evidence for POST http://localhost:8080/api/v1/ads/track/impression",
+    "test": "matching.spec.ts::I-08: documents permissive handling of malformed ad tracking payloads"
+  },
+  "I-08_3_malformed_click.png": {
+    "description": "API response evidence for POST http://localhost:8080/api/v1/ads/track/click",
+    "test": "matching.spec.ts::I-08: documents permissive handling of malformed ad tracking payloads"
+  }
+}

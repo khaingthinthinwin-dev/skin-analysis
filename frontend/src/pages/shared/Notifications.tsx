@@ -109,6 +109,12 @@ const ORDER_NOTIFICATION_TYPES = new Set([
   'ORDER_STATUS_UPDATED',
 ])
 
+// PROMO_CREATED is broadcast to every user when a merchant publishes a
+// promotion; PROMO_REDEEMED tells the promotion's merchant a buyer used their
+// code. Both deep-link merchants to the Promotions page with the record
+// highlighted.
+const PROMO_NOTIFICATION_TYPES = new Set(['PROMO_CREATED', 'PROMO_REDEEMED'])
+
 // Advertisement review decisions the admin makes, and the submission that
 // triggers them. AD_SUBMITTED goes to admins, AD_APPROVED / AD_REJECTED go back
 // to the shop owner (written by AdminAdManagementService).
@@ -246,6 +252,12 @@ function orderActionHint(item: NotificationItem): string | null {
     : null
 }
 
+function promoActionHint(item: NotificationItem): string | null {
+  return PROMO_NOTIFICATION_TYPES.has(normalizeNotificationType(item.type))
+    ? 'View promotion →'
+    : null
+}
+
 // Review notifications deep-link straight to the queue entry they are about so
 // the admin does not have to hunt for it. `entityId` is the review id for a
 // REVIEW_CREATED notification and the report id for a REVIEW_REPORTED one
@@ -348,6 +360,7 @@ function NotificationCard({
       ? 'Moderate in Review Management →'
       : null
   const orderHint = orderActionHint(item)
+  const promoHint = promoActionHint(item)
   const displayMessage = isMerchantRejectedNotification(item)
     ? MERCHANT_REJECTION_TEXT
     : item.message
@@ -394,18 +407,21 @@ function NotificationCard({
             {orderHint && (
               <p className="text-xs font-semibold text-purple-600">{orderHint}</p>
             )}
+            {promoHint && (
+              <p className="text-xs font-semibold text-purple-600">{promoHint}</p>
+            )}
           </button>
           {approvedProductId && (
             <Link
               to={
                 isMerchant
-                  ? `/merchant/product-review?highlight=${encodeURIComponent(approvedProductId)}`
+                  ? `/merchant/products/${encodeURIComponent(approvedProductId)}/view#reviews`
                   : `/buyer/products/${encodeURIComponent(approvedProductId)}#reviews`
               }
               onClick={() => onOpen(item)}
               className="block text-xs font-semibold text-purple-600 hover:underline"
             >
-              {isMerchant ? 'View in Product Review →' : 'View your review →'}
+              {isMerchant ? 'View the review →' : 'View your review →'}
             </Link>
           )}
         </div>
@@ -539,6 +555,12 @@ export default function Notifications() {
       return
     }
     if (MERCHANT_ADMIN_ACTION_TYPES.has(type)) {
+      // Merchant receives their own approve/reject decision → review at Store Profile.
+      // (Reject already opened the rejection-details dialog above; this covers approve.)
+      if (user?.role === 'merchant') {
+        navigate('/merchant/profile')
+        return
+      }
       if (!isAdmin) return
       // Navigate to admin merchants page with merchantId to highlight the row
       if (item.entityId) {
@@ -595,8 +617,38 @@ export default function Notifications() {
       navigate(`${basePath}/orders/${item.entityId}`)
       return
     }
-    // Merchant account approved - only mark as read, no navigation
+    // Promotion notifications: the merchant jumps to the Promotions page with
+    // the specific record highlighted. Buyers have no dedicated promo screen,
+    // so their click only dismisses the card.
+    if (
+      PROMO_NOTIFICATION_TYPES.has(type) &&
+      item.entityType === 'promotion' &&
+      item.entityId
+    ) {
+      if (user?.role === 'merchant') {
+        navigate(
+          `/merchant/promotions?highlightPromoId=${encodeURIComponent(item.entityId)}`,
+        )
+      }
+      return
+    }
+    // Approved review: jump to the product's reviews so the merchant sees the
+    // buyer's review (merchant view always opens the Reviews tab). The buyer
+    // (review author) lands on their own review via the #reviews deep link.
+    if (type === 'REVIEW_APPROVED' && item.entityType === 'Product' && item.entityId) {
+      const encodedProductId = encodeURIComponent(item.entityId)
+      if (user?.role === 'merchant') {
+        navigate(`/merchant/products/${encodedProductId}/view#reviews`)
+      } else if (user?.role === 'buyer') {
+        navigate(`/buyer/products/${encodedProductId}#reviews`)
+      }
+      return
+    }
+    // Merchant account approved - merchant reviews at Store Profile; admins have no action here
     if (type === 'MERCHANT_APPROVED' || type === 'MERCHANT_STATUS_APPROVED') {
+      if (user?.role === 'merchant') {
+        navigate('/merchant/profile')
+      }
       return
     }
   }

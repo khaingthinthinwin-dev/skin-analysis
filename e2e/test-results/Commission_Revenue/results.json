@@ -1,0 +1,455 @@
+{
+  "module": "Commission_Revenue",
+  "timestamp": "2026-10-20T09:08:54.588Z",
+  "total": 74,
+  "passed": 74,
+  "failed": 0,
+  "skipped": 0,
+  "durationMs": 213104,
+  "tests": [
+    {
+      "title": "N-01: loads the Commission tab by default with rate and reports",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3226
+    },
+    {
+      "title": "N-02: updates the commission rate successfully",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2872
+    },
+    {
+      "title": "N-03 and N-04: applies and resets commission report date filters",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3277
+    },
+    {
+      "title": "N-05: changes report page size and advances pagination when another page exists",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2701
+    },
+    {
+      "title": "N-21: switches report grouping by merchant, day, and order",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2836
+    },
+    {
+      "title": "N-22: canceling rate edits preserves the saved value",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2522
+    },
+    {
+      "title": "N-31: historical rate locking for existing report rows after a rate change",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2872
+    },
+    {
+      "title": "N-06 and N-20: loads revenue KPIs, chart, target, panels, and payout columns",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3321
+    },
+    {
+      "title": "N-07: changes the revenue trend range",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3870
+    },
+    {
+      "title": "N-09 and N-11: saves a revenue target and changes its period",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 4280
+    },
+    {
+      "title": "N-10: displays the AI forecast legend when forecast data is available",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2847
+    },
+    {
+      "title": "N-12: displays ad fee revenue and payment status panels",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2894
+    },
+    {
+      "title": "N-23 to N-25: filters, searches, and resets payout rows",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 4404
+    },
+    {
+      "title": "N-30: applies and removes multiple payout filters simultaneously",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3720
+    },
+    {
+      "title": "N-27: opens payout details for a listed payout",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2981
+    },
+    {
+      "title": "N-29: payout processing dialog shows payout amounts",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3372
+    },
+    {
+      "title": "N-08: processes a pending payout after confirmation",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3778
+    },
+    {
+      "title": "N-26: paginates the payout table",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3030
+    },
+    {
+      "title": "N-28: selects and deletes an eligible payout row",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3576
+    },
+    {
+      "title": "N-13: exports the commission report as CSV",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2827
+    },
+    {
+      "title": "N-14: exports the revenue report as XLSX",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3428
+    },
+    {
+      "title": "N-15: exports payout history as CSV",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3544
+    },
+    {
+      "title": "N-18 and N-19: keeps the dashboard usable at desktop and mobile widths",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3380
+    },
+    {
+      "title": "N-16: language toggle works on screen",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3594
+    },
+    {
+      "title": "N-17: theme toggle works on screen",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2741
+    },
+    {
+      "title": "A-01 to A-03 and B-14: blocks empty, invalid, above-limit, and zero commission rates",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 4835
+    },
+    {
+      "title": "A-04: rejects a commission report range where From is after To",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2338
+    },
+    {
+      "title": "A-07 and A-08: blocks empty and non-positive revenue targets",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3459
+    },
+    {
+      "title": "A-09 to A-11: validates export date ranges before generating",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3665
+    },
+    {
+      "title": "B-11: accepts an export date range at the 365-day limit",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3083
+    },
+    {
+      "title": "B-06: shows a way to set a target when none exists",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 4770
+    },
+    {
+      "title": "B-09 and B-10: renders forecast and ad fee empty or zero data without breaking the dashboard",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3242
+    },
+    {
+      "title": "A-05: processing an already-processed payout is blocked",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2672
+    },
+    {
+      "title": "A-06: returns 404 when processing a non-existent payout",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 659
+    },
+    {
+      "title": "A-12: buyer access denied to admin route",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3244
+    },
+    {
+      "title": "A-13: merchant access denied to admin route",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3141
+    },
+    {
+      "title": "A-14: server error on revenue dashboard load falls back to empty states",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 5883
+    },
+    {
+      "title": "A-15: network error during a commission rate update",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3591
+    },
+    {
+      "title": "A-16: delete action is disabled when no payout row is selected",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2382
+    },
+    {
+      "title": "A-17: ineligible payout deletion displays the 409 error and keeps rows",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 4354
+    },
+    {
+      "title": "A-18: non-409 payout deletion failure keeps the list unchanged",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 4213
+    },
+    {
+      "title": "A-19: grouped payout processing reports partial success and refreshes data",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 4086
+    },
+    {
+      "title": "A-20: commission export failure leaves the dialog open and resets progress",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2476
+    },
+    {
+      "title": "A-21: failed target save keeps the existing target unchanged",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 4358
+    },
+    {
+      "title": "A-22: failed commission update keeps the saved rate unchanged",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3709
+    },
+    {
+      "title": "B-01: accepts the minimum commission rate of 0.01",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2493
+    },
+    {
+      "title": "B-02: accepts the maximum commission rate of 100",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2963
+    },
+    {
+      "title": "B-03: accepts and renders a commission rate with two decimals",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2736
+    },
+    {
+      "title": "B-04: saves a revenue target with two decimal places",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3190
+    },
+    {
+      "title": "B-05: clamps target progress above 100 percent",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2671
+    },
+    {
+      "title": "B-07: shows the commission report empty state for an empty response",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2340
+    },
+    {
+      "title": "B-08: shows the payout empty state without row actions",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2676
+    },
+    {
+      "title": "B-12: shows the rate placeholder and default edit value while settings are loading",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2053
+    },
+    {
+      "title": "B-13: keeps commission export disabled when reports are empty",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2500
+    },
+    {
+      "title": "B-15: rejects a target amount with more than two decimal places",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3036
+    },
+    {
+      "title": "B-16: select-all retains only selections made on each visible payout page",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3976
+    },
+    {
+      "title": "B-17: shows the export progress state until the response settles",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 3918
+    },
+    {
+      "title": "B-18: payout search at the 100 / 101 character boundary",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 729
+    },
+    {
+      "title": "I-01 and I-03: returns commission settings and paginated reports for an admin",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 998
+    },
+    {
+      "title": "I-05 to I-10 and I-12: returns revenue dashboard payloads for an admin",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 5094
+    },
+    {
+      "title": "I-02: PATCH commission returns the updated rate",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 863
+    },
+    {
+      "title": "I-11: payment status endpoint returns payout status counts",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 732
+    },
+    {
+      "title": "I-13: process endpoint returns the completed payout contract",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2570
+    },
+    {
+      "title": "I-14: processing an already-processed payout returns the standard 409 contract",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2380
+    },
+    {
+      "title": "I-15: commission export responds with a CSV file stream",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 649
+    },
+    {
+      "title": "I-16: revenue export responds with an XLSX file stream",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 712
+    },
+    {
+      "title": "I-17: payout export responds with a file stream",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 708
+    },
+    {
+      "title": "I-18: error responses include the standard API fields",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 788
+    },
+    {
+      "title": "I-21: payout merchant endpoint returns merchant options",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2562
+    },
+    {
+      "title": "I-22: review endpoint transitions pending status and leaves processing unchanged",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2348
+    },
+    {
+      "title": "I-23: delete endpoint returns success, conflict, not-found, and validation responses",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 2353
+    },
+    {
+      "title": "I-20: rejects an admin endpoint request without an authorization token",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 785
+    },
+    {
+      "title": "I-04: rejects a commission report range where the start is after the end",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 836
+    },
+    {
+      "title": "I-19: denies commission access to buyer and merchant accounts",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
+      "status": "passed",
+      "duration": 1392
+    }
+  ]
+}

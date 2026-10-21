@@ -488,6 +488,45 @@
       "closeButton": "キャンセル"
     }
   },
+  "notifications": {
+    "title": "通知センター",
+    "subtitle": "アカウントと注文に関する最新情報",
+    "markAllRead": "すべて既読にする",
+    "loading": "通知を読み込み中",
+    "loadError": "通知を読み込めませんでした。もう一度お試しください。",
+    "retry": "再試行",
+    "emptyTitle": "通知はありません",
+    "emptyDescription": "新しい販売者の登録や審査の通知がここに表示されます。",
+    "rejectionDetails": "却下の詳細",
+    "rejectionReason": "却下理由",
+    "reviewStoreProfile": "申請を再送信する前に、店舗プロフィールを確認してください。",
+    "close": "閉じる",
+    "resubmit": "店舗プロフィールから再送信",
+    "accountDeactivated": "アカウントが停止されました",
+    "deactivatedByAdmin": "管理者によってアカウントが停止されました",
+    "accountStatus": "アカウントの状態",
+    "deactivatedMessage": "アカウントが停止されています。管理者が再開するまで一部の機能を利用できない場合があります。",
+    "deactivationReason": "停止理由",
+    "contactSupport": "詳しくはサポートに問い合わせるか、プロフィールをご確認ください。",
+    "goToProfile": "プロフィールへ",
+    "viewMerchantManagement": "販売者管理で表示 →",
+    "viewProductReview": "商品レビューで表示 →",
+    "viewYourReview": "自分のレビューを表示 →",
+    "viewOrder": "注文を表示 →",
+    "reviewReport": "レビュー管理で確認 →",
+    "reviewSubmission": "レビュー管理で審査 →",
+    "analysisCompleted": "肌分析が完了しました 🔔",
+    "analysisCompletedMessage": "肌分析の結果が届きました。結果とあなたに合ったおすすめをご確認ください。",
+    "reanalysisReminder": "再分析のお知らせ 📅",
+    "reanalysisReminderMessage": "前回の肌分析からしばらく経ちました。肌の状態を確認するため、もう一度分析してください。",
+    "orderStatusTitle": "注文 {{status}}",
+    "orderStatusMessage": "注文 {{orderNumber}} は現在{{status}}です。",
+    "orderPlaced": "注文が完了しました",
+    "orderPlacedMessage": "注文を受け付けました。",
+    "newOrderReceived": "新しい注文を受け付けました",
+    "newOrderReceivedMessage": "購入者が注文 {{orderNumber}} をしました。",
+    "time": { "justNow": "たった今", "minutes": "{{count}} 分前", "hours": "{{count}} 時間前", "days": "{{count}} 日前" }
+  },
   "buyer": {
     "orders": {
       "exportCsv": "CSVをエクスポート",
@@ -2244,6 +2283,9 @@
         "images": "商品画像"
       },
       "action": { "deactivate": "無効化", "reactivate": "再有効化" },
+      "tooltip": {
+        "pendingOrders": "注文の配送が完了するまで無効化できません。"
+      },
       "dialog": {
         "deactivateTitle": "商品を無効化",
         "reactivateTitle": "商品を再有効化"

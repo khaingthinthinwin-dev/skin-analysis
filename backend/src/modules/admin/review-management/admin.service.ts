@@ -609,7 +609,36 @@ export class AdminService {
       this.prisma.product.count({ where }),
     ]);
 
-    return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+    const productIds = items.map((p) => p.id);
+    const pendingProductIds = new Set<string>();
+    if (productIds.length > 0) {
+      const pendingOrders = await this.prisma.order.findMany({
+        where: {
+          items: { some: { productId: { in: productIds } } },
+          status: { isTerminalState: false },
+        },
+        select: {
+          items: {
+            where: { productId: { in: productIds } },
+            select: { productId: true },
+          },
+        },
+      });
+      for (const order of pendingOrders) {
+        for (const item of order.items) pendingProductIds.add(item.productId);
+      }
+    }
+
+    return {
+      items: items.map((p) => ({
+        ...p,
+        hasPendingOrders: pendingProductIds.has(p.id),
+      })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async getProductById(productId: string) {
@@ -627,7 +656,14 @@ export class AdminService {
       },
     });
     if (!product) throw new NotFoundException('Product not found');
-    return product;
+    const pendingOrder = await this.prisma.order.findFirst({
+      where: {
+        items: { some: { productId } },
+        status: { isTerminalState: false },
+      },
+      select: { id: true },
+    });
+    return { ...product, hasPendingOrders: !!pendingOrder };
   }
 
   async moderateProduct(
@@ -646,15 +682,12 @@ export class AdminService {
       if (!dto.reason || dto.reason.trim().length === 0) {
         throw new BadRequestException('Deactivation reason is required');
       }
-      const hasPendingOrders = await this.prisma.orderStatusHistory.findFirst({
+      const hasPendingOrders = await this.prisma.order.findFirst({
         where: {
-          statusId: { not: 6 },
-          order: {
-            items: {
-              some: { productId },
-            },
-          },
+          items: { some: { productId } },
+          status: { isTerminalState: false },
         },
+        select: { id: true },
       });
       if (hasPendingOrders) {
         throw new BadRequestException(
@@ -695,14 +728,25 @@ export class AdminService {
           newValue: { isActive: dto.isActive, reason: dto.reason },
         });
 
-        if (!dto.isActive) {
-          const merchant = await tx.merchant.findUnique({
-            where: { id: product.merchantId },
-            select: { userId: true },
-          });
+        const merchant = await tx.merchant.findUnique({
+          where: { id: product.merchantId },
+          select: { userId: true },
+        });
 
-          if (merchant) {
-            try {
+        if (merchant) {
+          try {
+            if (dto.isActive) {
+              await tx.notification.create({
+                data: {
+                  userId: merchant.userId,
+                  type: 'PRODUCT_REACTIVATED',
+                  title: 'Product Reactivated',
+                  message: `Your product "${product.name}" is active again and is now available to shoppers.`,
+                  entityType: 'product',
+                  entityId: productId,
+                },
+              });
+            } else {
               await tx.notification.create({
                 data: {
                   userId: merchant.userId,
@@ -713,9 +757,9 @@ export class AdminService {
                   entityId: productId,
                 },
               });
-            } catch {
-              // notification is best-effort and should not block moderation
             }
+          } catch {
+            // notification is best-effort and should not block moderation
           }
         }
 

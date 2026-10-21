@@ -9,9 +9,9 @@
 | **Document ID** | SKM-PCL-SIGNUP-001 |
 | **Target Screen** | Sign-up / Login / Forgot Password / Verification Code / Password Reset |
 | **Subsystem** | Authentication |
-| **Version** | 2.6 |
+| **Version** | 2.7 |
 | **Created** | 2026-09-16 |
-| **Last Updated** | 2026-10-16 |
+| **Last Updated** | 2026-10-20 |
 | **Status** | Active |
 
 ---
@@ -102,6 +102,7 @@
 - [x] **N-06**: Password visibility toggle works on register page
   - **Evidence**:
     - `N-06_1_password_visible.png`
+    - `N-06_2_confirm_password_visible.png`
     - Test: register.spec.ts › "should toggle password visibility" — passed
   - **Precondition**: User is on register page
   - **Steps**:
@@ -189,13 +190,14 @@
 
 - [x] **N-13**: Navigate back to login from forgot password
   - **Evidence**:
-    - `N-13_1_forgot_password_page.png`
     - `N-13_2_back_to_login_link.png`
+    - `N-13_1_forgot_password_page.png`
     - Test: forgot-password.spec.ts › "should have back to login link on forgot password page" — passed
   - **Precondition**: User is on forgot password page
   - **Steps**:
     1. Click "Back to Login" link
   - **Expected Result**: Open Login page — redirect to `/login` (from Forgot Password)
+  - **Business Rules**: None (navigation)
 
 - [x] **N-14**: Reset password with valid verification code
   - **Evidence**:
@@ -230,6 +232,7 @@
 - [x] **N-16**: Responsive layout on desktop viewport
   - **Evidence**:
     - `N-16_1_desktop_login.png`
+    - `N-16_2_desktop_register.png`
     - Test: auth.spec.ts › "should display login correctly on desktop viewport" — passed
   - **Precondition**: User is on any auth page (login / register / forgot-password / reset-password)
   - **Steps**:
@@ -242,6 +245,7 @@
 - [x] **N-17**: Responsive layout on mobile viewport
   - **Evidence**:
     - `N-17_1_mobile_login.png`
+    - `N-17_2_mobile_register.png`
     - Test: auth.spec.ts › "should display login correctly on mobile viewport" — passed
   - **Precondition**: User is on any auth page
   - **Steps**:
@@ -767,6 +771,7 @@
 - [x] **A-16**: Access protected route without authentication
   - **Evidence**:
     - `A-16_1_redirect_to_login.png`
+    - `A-16_2_buyer_redirect_to_login.png`
     - Test: auth.spec.ts › "should redirect to login when accessing protected route without authentication" — passed
   - **Precondition**: User is not authenticated
   - **Steps**:

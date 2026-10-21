@@ -111,14 +111,14 @@ describe('filterProductsBySkinType', () => {
     ).toEqual([UNIVERSAL, SENSITIVE_UNIVERSAL])
   })
 
-  it('filters generic results by the selection as-is', () => {
+  it('filters generic results by the selection and includes universal products', () => {
     expect(
       filterProductsBySkinType(CATALOG, {
         source: 'generic',
         analysisSkinTypes: [],
         requestedSkinTypes: ['dry'],
       }),
-    ).toEqual([DRY])
+    ).toEqual([DRY, UNIVERSAL, SENSITIVE_UNIVERSAL])
   })
 
   it('keeps every product for generic results without a selection', () => {

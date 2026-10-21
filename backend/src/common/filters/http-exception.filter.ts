@@ -35,6 +35,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
     let errorCode: string = ERROR_CODES.INTERNAL_SERVER_ERROR;
+    let error = HttpStatus[status];
     let message: string | string[] = 'Internal server error';
     let details: Record<string, unknown> | undefined;
 
@@ -43,6 +44,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
       if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
         const responseObj = exceptionResponse as Record<string, unknown>;
+
+        if (typeof responseObj.error === 'string') {
+          error = responseObj.error;
+        }
 
         // Use custom error code if provided
         if (typeof responseObj.errorCode === 'string') {
@@ -93,7 +98,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const errorResponse: ErrorResponse = {
       statusCode: status,
-      error: HttpStatus[status],
+      error,
       errorCode,
       message,
       timestamp: new Date().toISOString(),

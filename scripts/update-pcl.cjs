@@ -145,6 +145,27 @@ function buildEvidenceLines(moduleName, pclId, refs, statusLookup) {
     if (shown.length === 0) {
         lines.push('    - Screenshots: (none captured)');
     } else {
+        const shots = listScreenshots(moduleName, pclId);
+        const withMeta = shots.map(shot => ({
+            shot,
+            meta: normalizeIndexEntry(descIndex[shot]),
+        }));
+        let shown = withMeta.filter(
+            ({ meta }) => !meta.test || refKeys.includes(meta.test)
+        );
+        if (shown.length === 0 && withMeta.length > 0) {
+            shown = withMeta;
+        }
+
+        if (shown.length === 0) {
+            lines.push('    - Screenshots: (none captured)');
+        } else {
+            for (const { shot, meta } of shown) {
+                if (meta.description) {
+                    lines.push(`    - ${meta.description} \u2192 \`${shot}\``);
+                } else {
+                    lines.push(`    - \`${shot}\``);
+                }
         for (const { shot, meta } of shown) {
             if (meta.description) {
                 lines.push(`    - ${meta.description} \u2192 \`${shot}\``);

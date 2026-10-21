@@ -1,5 +1,5 @@
-import { useState, useCallback, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useState, useCallback, useEffect, useMemo } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Tag, Plus, Search, Filter, Trash2, Pencil, ShieldAlert, Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -27,7 +27,7 @@ import {
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { useTranslation } from 'react-i18next'
-import { usePromotions, useDeletePromotion, useTogglePromotionActive, getPromotionErrorInfo } from '@/hooks/usePromotions'
+import { usePromotions, usePromotion, useDeletePromotion, useTogglePromotionActive, getPromotionErrorInfo } from '@/hooks/usePromotions'
 import { useAuth } from '@/hooks/useAuth'
 import { useMerchantProductsGuard } from '@/features/merchant/products/guards/merchantProducts.guard'
 import { AccountDeactivatedBanner } from '@/components/merchant/AccountDeactivatedBanner'
@@ -52,6 +52,8 @@ export default function Promotions() {
   const showCrudActions = guard.showCrudActions && !isPending && !isDeactivated
 
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const highlightPromoId = searchParams.get('highlightPromoId')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | PromotionQueryParams['status']>('all')
   const [sortBy, setSortBy] = useState<PromotionQueryParams['sortBy']>('newest')
@@ -72,10 +74,56 @@ export default function Promotions() {
   const deletePromotion = useDeletePromotion()
   const toggleActive = useTogglePromotionActive()
 
-  const promotions = useMemo<Promotion[]>(() => data?.items || [], [data?.items])
   const meta = data?.meta
 
   const now = useMemo(() => new Date(), [])
+
+  const { data: highlightedPromotion } = usePromotion(highlightPromoId ?? '')
+
+  // Coming from a notification, the record may sit on another page — fetch it
+  // directly and prepend it so it is always displayed.
+  const promotions = useMemo<Promotion[]>(() => {
+    const items = data?.items || []
+    if (
+      !highlightedPromotion ||
+      items.some((p) => p.id === highlightedPromotion.id)
+    ) {
+      return items
+    }
+    return [highlightedPromotion, ...items]
+  }, [data?.items, highlightedPromotion])
+
+  const isHighlighted = useCallback(
+    (promo: Promotion) => highlightPromoId === promo.id,
+    [highlightPromoId],
+  )
+
+  // Scroll to the highlighted promotion whenever the list updates.
+  useEffect(() => {
+    if (!highlightPromoId) return
+    const timer = window.setTimeout(() => {
+      const element = document.querySelector(
+        `[id^="highlighted-promo-${highlightPromoId}"]`,
+      )
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 100)
+    return () => window.clearTimeout(timer)
+  }, [highlightPromoId, promotions])
+
+  // Auto-clear the highlight after 5 seconds.
+  useEffect(() => {
+    if (!highlightPromoId) return
+    const clearTimer = window.setTimeout(() => {
+      setSearchParams((prev) => {
+        const params = new URLSearchParams(prev)
+        params.delete('highlightPromoId')
+        return params
+      })
+    }, 5000)
+    return () => window.clearTimeout(clearTimer)
+  }, [highlightPromoId, setSearchParams])
 
   const getStatusBadge = useCallback(
     (promo: Promotion) => {
@@ -285,7 +333,15 @@ export default function Promotions() {
             {/* Mobile Card Layout */}
             <div className="space-y-3 md:hidden px-5 pb-5">
             {promotions.map((promo) => (
-              <Card key={promo.id} className="overflow-hidden">
+              <Card
+                key={promo.id}
+                id={isHighlighted(promo) ? `highlighted-promo-${promo.id}-card` : undefined}
+                className={`overflow-hidden transition-all duration-300 ${
+                  isHighlighted(promo)
+                    ? 'ring-4 ring-violet-500 ring-offset-4 ring-offset-background scale-[1.02] shadow-2xl shadow-violet-500/30 animate-pulse'
+                    : ''
+                }`}
+              >
                 <CardContent className="p-4 space-y-3">
                   {/* Code + Status Row */}
                   <div className="flex items-center justify-between gap-2">
@@ -409,67 +465,37 @@ export default function Promotions() {
 
           {/* Desktop Table Layout */}
           <div
-            className={`hidden md:block rounded-md border bg-card overflow-hidden mx-5 ${meta ? '' : 'mb-5'}`}
+            className={`hidden md:block rounded-md border bg-card overflow-x-auto mx-5 ${meta ? '' : 'mb-5'}`}
           >
-            <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
-              <colgroup>
-                <col className="w-[8%]" />
-                <col className="w-[15%]" />
-                <col className="w-[10%]" />
-                <col className="w-[10%]" />
-                <col className="w-[12%] hidden lg:table-column" />
-                <col className="w-[8%] hidden xl:table-column" />
-                <col className="w-[10%]" />
-                <col className="w-[10%]" />
-                <col className="w-[8%]" />
-                {showCrudActions && <col className="w-[9%]" />}
-              </colgroup>
+            <table className="w-full min-w-[1000px] border-separate border-spacing-0 text-sm">
               <thead className="sticky top-0 z-10">
                 <tr>
-                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted">
-                    <span className="block truncate" title={t('merchant.promotions.code')}>
-                      {t('merchant.promotions.code')}
-                    </span>
+                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted whitespace-nowrap min-w-[140px] max-w-[200px]">
+                    {t('merchant.promotions.code')}
                   </th>
-                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted">
-                    <span className="block truncate" title={t('merchant.promotions.description')}>
-                      {t('merchant.promotions.description')}
-                    </span>
+                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted min-w-[160px] max-w-[220px]">
+                    {t('merchant.promotions.description')}
                   </th>
-                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted">
-                    <span className="block truncate" title={t('merchant.promotions.discountType')}>
-                      {t('merchant.promotions.discountType')}
-                    </span>
+                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted whitespace-nowrap">
+                    {t('merchant.promotions.discountType')}
                   </th>
-                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted">
-                    <span className="block truncate" title={t('merchant.promotions.discountValue')}>
-                      {t('merchant.promotions.discountValue')}
-                    </span>
+                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted whitespace-nowrap">
+                    {t('merchant.promotions.discountValue')}
                   </th>
-                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted hidden lg:table-cell">
-                    <span className="block truncate" title={t('merchant.promotions.minOrderAmount')}>
-                      {t('merchant.promotions.minOrderAmount')}
-                    </span>
+                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted whitespace-nowrap hidden lg:table-cell">
+                    {t('merchant.promotions.minOrderAmount')}
                   </th>
-                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted hidden xl:table-cell">
-                    <span className="block truncate" title={t('merchant.promotions.usage')}>
-                      {t('merchant.promotions.usage')}
-                    </span>
+                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted whitespace-nowrap hidden xl:table-cell">
+                    {t('merchant.promotions.usage')}
                   </th>
-                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted">
-                    <span className="block truncate" title={t('merchant.promotions.expiresAt')}>
-                      {t('merchant.promotions.expiresAt')}
-                    </span>
+                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted whitespace-nowrap">
+                    {t('merchant.promotions.expiresAt')}
                   </th>
-                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted">
-                    <span className="block truncate" title={t('merchant.promotions.status')}>
-                      {t('merchant.promotions.status')}
-                    </span>
+                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted whitespace-nowrap">
+                    {t('merchant.promotions.status')}
                   </th>
-                  <th scope="col" className="text-left align-middle h-12 px-3 text-sm font-bold text-muted-foreground border-b border-border bg-muted">
-                    <span className="block truncate" title={t('merchant.promotions.isActive')}>
-                      {t('merchant.promotions.isActive')}
-                    </span>
+                  <th scope="col" className="text-left align-middle h-12 px-3 text-sm font-bold text-muted-foreground border-b border-border bg-muted whitespace-nowrap">
+                    {t('merchant.promotions.isActive')}
                   </th>
                   {showCrudActions && (
                     <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted text-right">
@@ -482,11 +508,16 @@ export default function Promotions() {
                 {promotions.map((promo) => (
                   <tr
                     key={promo.id}
-                    className="transition-colors duration-150 ease-in-out hover:bg-muted/40"
+                    id={isHighlighted(promo) ? `highlighted-promo-${promo.id}-row` : undefined}
+                    className={`transition-colors duration-150 ease-in-out hover:bg-muted/40 ${
+                      isHighlighted(promo)
+                        ? 'bg-violet-500/10 outline outline-2 outline-violet-500 animate-pulse'
+                        : ''
+                    }`}
                   >
-                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card text-foreground font-medium">
+                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card text-foreground font-medium max-w-[200px]">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-mono text-xs font-bold">{promo.code}</span>
+                        <span className="font-mono text-xs font-bold truncate" title={promo.code}>{promo.code}</span>
                         <button
                           onClick={() => handleCopyCode(promo.code)}
                           className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
@@ -501,44 +532,38 @@ export default function Promotions() {
                       </div>
                     </td>
                     <td
-                      className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card"
+                      className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card max-w-[220px]"
                       title={promo.description || undefined}
                     >
                       <span className="block truncate">{promo.description || '-'}</span>
                     </td>
-                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card">
-                      <span className="block truncate">
-                        {promo.discountTypeCode === 'percentage'
-                          ? t('merchant.promotions.form.percentage')
-                          : t('merchant.promotions.form.fixed')}
-                      </span>
+                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card whitespace-nowrap">
+                      {promo.discountTypeCode === 'percentage'
+                        ? t('merchant.promotions.form.percentage')
+                        : t('merchant.promotions.form.fixed')}
                     </td>
-                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card font-medium">
-                      <span className="block truncate">
-                        {promo.discountTypeCode === 'percentage'
-                          ? `${promo.discountValue}%`
-                          : `${Number(promo.discountValue).toLocaleString()} MMK`}
-                      </span>
+                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card font-medium whitespace-nowrap">
+                      {promo.discountTypeCode === 'percentage'
+                        ? `${promo.discountValue}%`
+                        : `${Number(promo.discountValue).toLocaleString()} MMK`}
                     </td>
-                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card hidden lg:table-cell">
-                      <span className="block truncate">
-                        {promo.minOrderAmount
-                          ? `${Number(promo.minOrderAmount).toLocaleString()} MMK`
-                          : '-'}
-                      </span>
+                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card whitespace-nowrap hidden lg:table-cell">
+                      {promo.minOrderAmount
+                        ? `${Number(promo.minOrderAmount).toLocaleString()} MMK`
+                        : '-'}
                     </td>
-                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card hidden xl:table-cell">
-                      <span className="block truncate">{formatUsage(promo)}</span>
+                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card whitespace-nowrap hidden xl:table-cell">
+                      {formatUsage(promo)}
                     </td>
                     <td
-                      className={`py-3 px-4 text-[13px] border-b border-border bg-card ${
+                      className={`py-3 px-4 text-[13px] border-b border-border bg-card whitespace-nowrap ${
                         isExpired(promo) ? 'text-red-600 font-medium' : 'text-muted-foreground'
                       }`}
                     >
-                      <span className="block truncate">{formatDate(promo.expiresAt)}</span>
+                      {formatDate(promo.expiresAt)}
                     </td>
-                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card">
-                      <span className="block truncate">{getStatusBadge(promo)}</span>
+                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card whitespace-nowrap">
+                      {getStatusBadge(promo)}
                     </td>
                     <td className="py-3 px-3 text-[13px] text-muted-foreground border-b border-border bg-card">
                       {showCrudActions ? (
@@ -615,14 +640,14 @@ export default function Promotions() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-xl border-border p-6 shadow-2xl sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>{t('merchant.promotions.delete')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('merchant.promotions.deleteConfirm')}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
             <AlertDialogCancel disabled={deletePromotion.isPending}>
               {t('merchant.promotions.cancel')}
             </AlertDialogCancel>

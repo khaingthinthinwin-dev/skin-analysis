@@ -78,12 +78,8 @@ export function filterProductsBySkinType<
 
   if (!restrict) return products
 
-  // A product tagged for every skin type is compatible with the analysis result
-  // and with whichever skin type the buyer selected.
-  const universalMatches = input.source === 'ai'
-
   const matches = (product: { skinTypes: string[] }, types: string[]): boolean => {
-    if (universalMatches && product.skinTypes.some(isUniversal)) return true
+    if (product.skinTypes.some(isUniversal)) return true
 
     const normalized = normalize(product.skinTypes)
     return normalized.some((type) => types.includes(type))

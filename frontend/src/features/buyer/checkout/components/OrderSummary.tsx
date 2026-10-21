@@ -14,7 +14,7 @@ interface OrderSummaryProps {
 	items: CheckoutItem[];
 	subtotal: string;
 	appliedByMerchant: Record<string, MerchantCoupon>;
-	onApplyCoupon: (merchantId: string, code: string, shopSubtotal: number) => void;
+	onApplyCoupon: (merchantId: string, code: string, shopSubtotal: number) => Promise<void>;
 	onRemoveCoupon: (merchantId: string) => void;
 	isCouponLoading: boolean;
 }
