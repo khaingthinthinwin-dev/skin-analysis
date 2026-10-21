@@ -156,6 +156,15 @@ export class CheckoutService {
       throw new BadRequestException('Coupon has expired or is not yet valid');
     }
 
+    // Per-user check: each user may only use a coupon once
+    const userUsage = await this.prisma.order.count({
+      where: { buyerId: userId, couponCode },
+    });
+    if (userUsage > 0) {
+      throw new BadRequestException('You have already used this coupon');
+    }
+
+    // Global cap: total unique users who redeemed the coupon
     if (promotion.maxUses && promotion.usedCount >= promotion.maxUses) {
       throw new BadRequestException('Coupon has reached maximum usage');
     }
@@ -189,7 +198,7 @@ export class CheckoutService {
     };
   }
 
-  async getMerchantPromotions(merchantId: string) {
+  async getMerchantPromotions(merchantId: string, userId: string) {
     const now = new Date();
 
     const promotions = await this.prisma.promotion.findMany({
@@ -203,8 +212,17 @@ export class CheckoutService {
       orderBy: { createdAt: 'desc' },
     });
 
+    // Batch-check how many times the current user has used each code
+    const codes = promotions.map((p) => p.code);
+    const userOrders = await this.prisma.order.findMany({
+      where: { buyerId: userId, couponCode: { in: codes } },
+      select: { couponCode: true },
+    });
+    const usedByUser = new Set(userOrders.map((o) => o.couponCode));
+
     return promotions
       .filter((p) => {
+        // Hide promotions where the global cap is fully exhausted
         if (p.maxUses) {
           return p.usedCount < p.maxUses;
         }
@@ -220,6 +238,7 @@ export class CheckoutService {
         maxUses: p.maxUses,
         usedCount: p.usedCount,
         expiresAt: p.expiresAt.toISOString(),
+        userAlreadyUsed: usedByUser.has(p.code),
       }));
   }
 }

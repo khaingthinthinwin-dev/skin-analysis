@@ -58,7 +58,7 @@ const mockPrisma = {
     findUnique: jest.fn(),
     update: jest.fn(),
   },
-  shop: { updateMany: jest.fn() },
+  shop: { create: jest.fn(), findFirst: jest.fn(), updateMany: jest.fn() },
   user: { findMany: jest.fn() },
   notification: { createMany: jest.fn(), findMany: jest.fn() },
   $transaction: jest.fn(),
@@ -133,6 +133,7 @@ describe('AuthService', () => {
         name: 'Test',
         roleCode: 'buyer',
         avatarUrl: null,
+        emailVerified: true,
       });
       mockJwtService.signAsync.mockResolvedValue('token');
       mockPrisma.refreshToken.create.mockResolvedValue({});
@@ -144,9 +145,12 @@ describe('AuthService', () => {
       });
 
       expect(result.user.email).toBe('test@test.com');
+      expect(result.user.emailVerified).toBe(true);
       expect(result.accessToken).toBe('token');
       expect(result.refreshToken).toBe('token');
-      expect(mockUsersService.create).toHaveBeenCalled();
+      expect(mockUsersService.create).toHaveBeenCalledWith(
+        expect.objectContaining({ emailVerified: true }),
+      );
     });
 
     it('should throw ConflictException if email exists', async () => {
@@ -189,6 +193,99 @@ describe('AuthService', () => {
           licenseStatus: 'pending',
         }),
       });
+    });
+
+    it('should create an unapproved shop row when a merchant registers', async () => {
+      mockUsersService.findByEmail.mockResolvedValue(null);
+      mockUsersService.create.mockResolvedValue({
+        id: 'user-1',
+        email: 'merchant@test.com',
+        name: 'Glow Beauty',
+        roleCode: 'merchant',
+        avatarUrl: null,
+        emailVerified: true,
+      });
+      mockPrisma.merchant.create.mockResolvedValue({ id: 'merchant-1' });
+      mockPrisma.shop.findFirst.mockResolvedValue(null);
+      mockPrisma.shop.create.mockResolvedValue({});
+      mockJwtService.signAsync.mockResolvedValue('token');
+      mockPrisma.refreshToken.create.mockResolvedValue({});
+
+      await service.register({
+        email: 'merchant@test.com',
+        name: 'Glow Beauty',
+        password: 'Password1!',
+        role: 'merchant',
+        address: '123 Yangon Street, Yangon',
+        phone: '+95912345678',
+      });
+
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(mockPrisma.shop.create).toHaveBeenCalledWith({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        data: expect.objectContaining({
+          userId: 'user-1',
+          name: 'Glow Beauty',
+          slug: 'glow-beauty',
+          email: 'merchant@test.com',
+          address: '123 Yangon Street, Yangon',
+          phone: '+95912345678',
+          isApproved: false,
+        }),
+      });
+    });
+
+    it('should suffix the shop slug when the generated slug already exists', async () => {
+      mockUsersService.findByEmail.mockResolvedValue(null);
+      mockUsersService.create.mockResolvedValue({
+        id: 'user-2',
+        email: 'merchant2@test.com',
+        name: 'Glow Beauty',
+        roleCode: 'merchant',
+        avatarUrl: null,
+        emailVerified: true,
+      });
+      mockPrisma.merchant.create.mockResolvedValue({ id: 'merchant-2' });
+      mockPrisma.shop.findFirst
+        .mockResolvedValueOnce({ id: 'existing-shop' })
+        .mockResolvedValueOnce(null);
+      mockPrisma.shop.create.mockResolvedValue({});
+      mockJwtService.signAsync.mockResolvedValue('token');
+      mockPrisma.refreshToken.create.mockResolvedValue({});
+
+      await service.register({
+        email: 'merchant2@test.com',
+        name: 'Glow Beauty',
+        password: 'Password1!',
+        role: 'merchant',
+      });
+
+      expect(mockPrisma.shop.create).toHaveBeenCalledWith({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        data: expect.objectContaining({ slug: 'glow-beauty-1' }),
+      });
+    });
+
+    it('should not create a shop row when a buyer registers', async () => {
+      mockUsersService.findByEmail.mockResolvedValue(null);
+      mockUsersService.create.mockResolvedValue({
+        id: 'user-3',
+        email: 'buyer@test.com',
+        name: 'Buyer',
+        roleCode: 'buyer',
+        avatarUrl: null,
+        emailVerified: true,
+      });
+      mockJwtService.signAsync.mockResolvedValue('token');
+      mockPrisma.refreshToken.create.mockResolvedValue({});
+
+      await service.register({
+        email: 'buyer@test.com',
+        name: 'Buyer',
+        password: 'Password1!',
+      });
+
+      expect(mockPrisma.shop.create).not.toHaveBeenCalled();
     });
 
     it('should notify all admins when a merchant registers', async () => {

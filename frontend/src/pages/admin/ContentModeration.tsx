@@ -31,6 +31,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { TablePagination } from '@/components/ui/pagination';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   Search,
   Eye,
   Package,
@@ -459,7 +465,10 @@ export default function ContentModeration() {
                 disabled={
                   selectedIds.length === 0 ||
                   !products.some(
-                    (p) => selectedIds.includes(p.id) && p.isActive,
+                    (p) =>
+                      selectedIds.includes(p.id) &&
+                      p.isActive &&
+                      !p.hasPendingOrders,
                   )
                 }
                 onClick={() => openBulkModerateDialog('deactivate')}
@@ -569,14 +578,36 @@ export default function ContentModeration() {
                           <Eye className="h-4 w-4" />
                         </Button>
                         {product.isActive ? (
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8"
-                            onClick={() => openModerate(product, 'deactivate')}
-                          >
-                            <Ban className="h-4 w-4 text-destructive" />
-                          </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                {/* wrapper: disabled buttons don't fire pointer events */}
+                                <span>
+                                  <Button
+                                    size="icon"
+                                    variant="outline"
+                                    className="h-8 w-8 disabled:cursor-not-allowed disabled:opacity-50"
+                                    disabled={product.hasPendingOrders}
+                                    onClick={() =>
+                                      openModerate(product, 'deactivate')
+                                    }
+                                  >
+                                    <Ban className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </span>
+                              </TooltipTrigger>
+                              {product.hasPendingOrders && (
+                                <TooltipContent>
+                                  <p>
+                                    {t(
+                                      'admin.content.tooltip.pendingOrders',
+                                      'Cannot deactivate until the order delivery is completed.',
+                                    )}
+                                  </p>
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+                          </TooltipProvider>
                         ) : (
                           <Button
                             size="icon"
@@ -729,15 +760,35 @@ export default function ContentModeration() {
                   {t('common.cancel', 'Cancel')}
                 </Button>
                 {detailProduct.isActive ? (
-                  <Button
-                    variant="destructive"
-                    onClick={() => {
-                      setDetailProduct(null);
-                      openModerate(detailProduct, 'deactivate');
-                    }}
-                  >
-                    <Ban className="h-4 w-4 mr-1" /> {t('admin.content.action.deactivate', 'Deactivate')}
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Button
+                            variant="destructive"
+                            disabled={detailProduct.hasPendingOrders}
+                            onClick={() => {
+                              setDetailProduct(null);
+                              openModerate(detailProduct, 'deactivate');
+                            }}
+                          >
+                            <Ban className="h-4 w-4 mr-1" />{' '}
+                            {t('admin.content.action.deactivate', 'Deactivate')}
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      {detailProduct.hasPendingOrders && (
+                        <TooltipContent>
+                          <p>
+                            {t(
+                              'admin.content.tooltip.pendingOrders',
+                              'Cannot deactivate until the order delivery is completed.',
+                            )}
+                          </p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
                 ) : (
                   <Button
                     className="bg-[#7C3AED] text-white hover:bg-[#6D28D9]"

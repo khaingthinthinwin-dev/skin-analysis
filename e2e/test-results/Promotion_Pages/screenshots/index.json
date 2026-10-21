@@ -1,0 +1,257 @@
+{
+  "N-01_1_promotion_list.png": {
+    "test": "promotion-management.spec.ts::N-01: should display promotion management page"
+  },
+  "N-02_1_create_form_filled.png": {
+    "test": "promotion-management.spec.ts::N-02: should create a new promotion with valid data"
+  },
+  "N-02_2_list_after_create.png": {
+    "test": "promotion-management.spec.ts::N-02: should create a new promotion with valid data"
+  },
+  "N-02_3_db_promotion.png": {
+    "description": "Promotion row after successful creation",
+    "test": "promotion-management.spec.ts::N-02: should create a new promotion with valid data"
+  },
+  "N-02_3_db_promotion.json": {
+    "description": "Promotion row after successful creation",
+    "test": "promotion-management.spec.ts::N-02: should create a new promotion with valid data"
+  },
+  "N-03_1_edit_form_filled.png": {
+    "test": "promotion-management.spec.ts::N-03: should edit an existing unused promotion"
+  },
+  "N-03_2_list_after_edit.png": {
+    "test": "promotion-management.spec.ts::N-03: should edit an existing unused promotion"
+  },
+  "N-03_3_db_promotion.png": {
+    "description": "Promotion row after successful update",
+    "test": "promotion-management.spec.ts::N-03: should edit an existing unused promotion"
+  },
+  "N-03_3_db_promotion.json": {
+    "description": "Promotion row after successful update",
+    "test": "promotion-management.spec.ts::N-03: should edit an existing unused promotion"
+  },
+  "N-04_1_delete_confirmation.png": {
+    "test": "promotion-management.spec.ts::N-04: should delete a promotion via confirmation dialog"
+  },
+  "N-04_2_list_after_delete.png": {
+    "test": "promotion-management.spec.ts::N-04: should delete a promotion via confirmation dialog"
+  },
+  "N-04_3_db_promotion.png": {
+    "description": "Promotion lookup after deletion (expected zero rows)",
+    "test": "promotion-management.spec.ts::N-04: should delete a promotion via confirmation dialog"
+  },
+  "N-04_3_db_promotion.json": {
+    "description": "Promotion lookup after deletion (expected zero rows)",
+    "test": "promotion-management.spec.ts::N-04: should delete a promotion via confirmation dialog"
+  },
+  "N-05_1_list_after_status_toggle.png": {
+    "test": "promotion-management.spec.ts::N-05: should toggle promotion active status"
+  },
+  "N-05_2_db_promotion.png": {
+    "description": "Promotion row after active status toggle",
+    "test": "promotion-management.spec.ts::N-05: should toggle promotion active status"
+  },
+  "N-05_2_db_promotion.json": {
+    "description": "Promotion row after active status toggle",
+    "test": "promotion-management.spec.ts::N-05: should toggle promotion active status"
+  },
+  "N-06_1_search_results.png": {
+    "test": "promotion-management.spec.ts::N-06: should search promotions by code fragment"
+  },
+  "N-07_1_active_filter_results.png": {
+    "test": "promotion-management.spec.ts::N-07: should filter promotions by status"
+  },
+  "N-07_2_expired_filter_results.png": {
+    "test": "promotion-management.spec.ts::N-07: should filter promotions by status"
+  },
+  "N-08_1_promotion_list_pagination.png": {
+    "test": "promotion-management.spec.ts::N-08: should paginate the promotion list"
+  },
+  "N-09_1_validate_valid_coupon.png": {
+    "test": "promotion-management.spec.ts::N-09: should validate a valid coupon code at checkout"
+  },
+  "N-10_1_language_toggle.png": {
+    "test": "promotion-management.spec.ts::N-10: should toggle language on screen"
+  },
+  "N-11_1_theme_toggle.png": {
+    "test": "promotion-management.spec.ts::N-11: should toggle theme on screen"
+  },
+  "N-12_1_desktop_viewport.png": {
+    "test": "promotion-management.spec.ts::N-12: should display responsive layout on desktop viewport"
+  },
+  "N-13_1_mobile_viewport.png": {
+    "test": "promotion-management.spec.ts::N-13: should display responsive layout on mobile viewport"
+  },
+  "A-01_1_empty_form_errors.png": {
+    "test": "promotion-management.spec.ts::A-01: should show validation errors when submitting empty create form"
+  },
+  "A-02_1_duplicate_code_error.png": {
+    "test": "promotion-management.spec.ts::A-02: should show error when creating a promotion with duplicate code"
+  },
+  "A-02_2_db_promotion.png": {
+    "description": "Existing promotion row after duplicate-code rejection",
+    "test": "promotion-management.spec.ts::A-02: should show error when creating a promotion with duplicate code"
+  },
+  "A-02_2_db_promotion.json": {
+    "description": "Existing promotion row after duplicate-code rejection",
+    "test": "promotion-management.spec.ts::A-02: should show error when creating a promotion with duplicate code"
+  },
+  "A-03_1_expiry_not_after_start.png": {
+    "test": "promotion-management.spec.ts::A-03: should reject expiry date not after start date"
+  },
+  "A-04_1_percentage_out_of_range.png": {
+    "test": "promotion-management.spec.ts::A-04: should reject percentage discount value outside 1–99"
+  },
+  "A-05_1_used_promotion_controls.png": {
+    "test": "promotion-management.spec.ts::A-05: should block edit/delete of a promotion with used_count > 0"
+  },
+  "A-05_2_db_promotion.png": {
+    "description": "Promotion row with usage count restricting edits and deletion",
+    "test": "promotion-management.spec.ts::A-05: should block edit/delete of a promotion with used_count > 0"
+  },
+  "A-05_2_db_promotion.json": {
+    "description": "Promotion row with usage count restricting edits and deletion",
+    "test": "promotion-management.spec.ts::A-05: should block edit/delete of a promotion with used_count > 0"
+  },
+  "A-06_1_pending_merchant_readonly.png": {
+    "test": "promotion-management.spec.ts::A-06: pending merchant sees read-only list with banner, no mutation controls"
+  },
+  "A-07_1_rejected_merchant_readonly.png": {
+    "test": "promotion-management.spec.ts::A-07: rejected merchant sees read-only list with rejection reason"
+  },
+  "A-08_1_unauthenticated_redirect.png": {
+    "test": "promotion-management.spec.ts::A-08: should redirect to login when accessing promotion pages without authentication"
+  },
+  "A-09_1_invalid_coupon_format.png": {
+    "test": "promotion-management.spec.ts::A-09: should reject invalid coupon code format at checkout"
+  },
+  "A-10_1_expired_inactive_maxuses_coupon.png": {
+    "test": "promotion-management.spec.ts::A-10: should reject expired / inactive / max-uses coupon"
+  },
+  "A-11_1_one_coupon_per_merchant.png": {
+    "test": "promotion-management.spec.ts::A-11: should keep one replaceable coupon per merchant at checkout"
+  },
+  "B-01_1_min_length_promotion_created.png": {
+    "test": "promotion-management.spec.ts::B-01: should accept promotion code at minimum length (1 character)"
+  },
+  "B-01_2_db_promotion.png": {
+    "description": "Promotion row created with a one-character code",
+    "test": "promotion-management.spec.ts::B-01: should accept promotion code at minimum length (1 character)"
+  },
+  "B-01_2_db_promotion.json": {
+    "description": "Promotion row created with a one-character code",
+    "test": "promotion-management.spec.ts::B-01: should accept promotion code at minimum length (1 character)"
+  },
+  "B-02_1_max_length_promotion_created.png": {
+    "test": "promotion-management.spec.ts::B-02: should accept promotion code at maximum length (50 characters)"
+  },
+  "B-02_2_db_promotion.png": {
+    "description": "Promotion row created with a 50-character code",
+    "test": "promotion-management.spec.ts::B-02: should accept promotion code at maximum length (50 characters)"
+  },
+  "B-02_2_db_promotion.json": {
+    "description": "Promotion row created with a 50-character code",
+    "test": "promotion-management.spec.ts::B-02: should accept promotion code at maximum length (50 characters)"
+  },
+  "B-03_1_code_exceeds_max_length.png": {
+    "test": "promotion-management.spec.ts::B-03: should reject promotion code exceeding maximum length (51 characters)"
+  },
+  "B-04_1_description_max_length_created.png": {
+    "test": "promotion-management.spec.ts::B-04: should accept description at maximum length (500 characters)"
+  },
+  "B-04_2_db_promotion.png": {
+    "description": "Promotion row created with a 500-character description",
+    "test": "promotion-management.spec.ts::B-04: should accept description at maximum length (500 characters)"
+  },
+  "B-04_2_db_promotion.json": {
+    "description": "Promotion row created with a 500-character description",
+    "test": "promotion-management.spec.ts::B-04: should accept description at maximum length (500 characters)"
+  },
+  "B-05_1_description_exceeds_max_length.png": {
+    "test": "promotion-management.spec.ts::B-05: should reject description exceeding maximum length (501 characters)"
+  },
+  "B-06_1_percentage_1_percent.png": {
+    "test": "promotion-management.spec.ts::B-06: should accept percentage discount at boundary values (1, 99) and reject 100"
+  },
+  "B-06_2_db_promotion_1_percent.png": {
+    "description": "Promotion row created at the 1 percent boundary",
+    "test": "promotion-management.spec.ts::B-06: should accept percentage discount at boundary values (1, 99) and reject 100"
+  },
+  "B-06_2_db_promotion_1_percent.json": {
+    "description": "Promotion row created at the 1 percent boundary",
+    "test": "promotion-management.spec.ts::B-06: should accept percentage discount at boundary values (1, 99) and reject 100"
+  },
+  "B-06_3_percentage_99_percent.png": {
+    "test": "promotion-management.spec.ts::B-06: should accept percentage discount at boundary values (1, 99) and reject 100"
+  },
+  "B-06_4_db_promotion_99_percent.png": {
+    "description": "Promotion row created at the 99 percent boundary",
+    "test": "promotion-management.spec.ts::B-06: should accept percentage discount at boundary values (1, 99) and reject 100"
+  },
+  "B-06_4_db_promotion_99_percent.json": {
+    "description": "Promotion row created at the 99 percent boundary",
+    "test": "promotion-management.spec.ts::B-06: should accept percentage discount at boundary values (1, 99) and reject 100"
+  },
+  "B-06_5_percentage_100_percent_rejected.png": {
+    "test": "promotion-management.spec.ts::B-06: should accept percentage discount at boundary values (1, 99) and reject 100"
+  },
+  "B-07_1_optional_min_values_created.png": {
+    "test": "promotion-management.spec.ts::B-07: should accept optional fields at minimum values (minOrderAmount = 0, maxUses = 1)"
+  },
+  "B-07_2_db_promotion.png": {
+    "description": "Promotion row created with minimum optional-field values",
+    "test": "promotion-management.spec.ts::B-07: should accept optional fields at minimum values (minOrderAmount = 0, maxUses = 1)"
+  },
+  "B-07_2_db_promotion.json": {
+    "description": "Promotion row created with minimum optional-field values",
+    "test": "promotion-management.spec.ts::B-07: should accept optional fields at minimum values (minOrderAmount = 0, maxUses = 1)"
+  },
+  "B-08_1_empty_state.png": {
+    "test": "promotion-management.spec.ts::B-08: should handle empty state when merchant has no promotions"
+  },
+  "B-09_1_coupon_below_min_order_amount.png": {
+    "test": "promotion-management.spec.ts::B-09: should reject coupon when order amount below minimum order amount"
+  },
+  "B-10_1_discount_capped_at_order_total.png": {
+    "test": "promotion-management.spec.ts::B-10: should cap discount at order total (finalAmount never negative)"
+  },
+  "I-01_1_promotions_list_pagination.png": {
+    "test": "promotion-management.spec.ts::I-01: GET /api/v1/promotions should return 200 with list and pagination"
+  },
+  "I-02_1_promotion_created.png": {
+    "test": "promotion-management.spec.ts::I-02: POST /api/v1/promotions should return 201 with created promotion"
+  },
+  "I-03_1_duplicate_code_error.png": {
+    "test": "promotion-management.spec.ts::I-03: POST /api/v1/promotions duplicate code should return 400"
+  },
+  "I-04_1_promotion_updated.png": {
+    "test": "promotion-management.spec.ts::I-04: PATCH /api/v1/promotions/:id should return 200 with updated promotion"
+  },
+  "I-05_1_used_promotion_edit_error.png": {
+    "test": "promotion-management.spec.ts::I-05: PATCH /api/v1/promotions/:id used promotion should return 409"
+  },
+  "I-06_1_promotion_deleted.png": {
+    "test": "promotion-management.spec.ts::I-06: DELETE /api/v1/promotions/:id should return 204 on success"
+  },
+  "I-07_1_used_promotion_delete_error.png": {
+    "test": "promotion-management.spec.ts::I-07: DELETE /api/v1/promotions/:id used promotion should return 409"
+  },
+  "I-08_1_nonexistent_id_error.png": {
+    "test": "promotion-management.spec.ts::I-08: PATCH /api/v1/promotions/:id non-existent ID should return 404"
+  },
+  "I-09_1_validate_valid_coupon.png": {
+    "test": "promotion-management.spec.ts::I-09: POST /api/v1/promotions/validate valid coupon should return 200 with discount payload"
+  },
+  "I-10_1_validate_expired_coupon.png": {
+    "test": "promotion-management.spec.ts::I-10: POST /api/v1/promotions/validate expired coupon should return 400"
+  },
+  "I-11_1_unauthorized_no_jwt.png": {
+    "test": "promotion-management.spec.ts::I-11: GET /api/v1/promotions should return 401 without JWT"
+  },
+  "I-12_1_pending_rejected_merchant_forbidden.png": {
+    "test": "promotion-management.spec.ts::I-12: POST /api/v1/promotions pending/rejected merchant should return 403"
+  },
+  "I-13_1_standard_error_format.png": {
+    "test": "promotion-management.spec.ts::I-13: error response should follow standard API format"
+  }
+}

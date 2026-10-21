@@ -8,6 +8,8 @@ import { I18nextProvider, initReactI18next } from 'react-i18next'
 import en from '../../../public/locales/en/translation.json'
 import ContentModeration from './ContentModeration'
 import { adminService } from '@/features/admin/content-moderation/services/moderation.service'
+import type { AdminProduct } from '@/features/admin/content-moderation/services/moderation.service'
+import type { ReactNode } from 'react'
 
 const testI18n = i18n.createInstance()
 
@@ -22,6 +24,18 @@ beforeAll(async () => {
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
+}))
+
+// Radix Tooltip starves the jsdom event loop once triggered (plain setTimeout
+// callbacks stop firing), which hangs waitFor/findBy*. Hover mechanics are
+// library behavior; the wiring under test here is our conditional rendering.
+vi.mock('@/components/ui/tooltip', () => ({
+  TooltipProvider: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  Tooltip: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  TooltipContent: ({ children }: { children?: ReactNode }) => (
+    <div role="tooltip">{children}</div>
+  ),
 }))
 
 vi.mock('@/features/admin/content-moderation/services/moderation.service', async (importOriginal) => {
@@ -212,5 +226,78 @@ describe('ContentModeration bulk moderation modals', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
     expect(bulkModerateProducts).not.toHaveBeenCalled()
+  }, 20_000)
+})
+
+describe('ContentModeration pending-order deactivation guard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    bulkModerateProducts.mockResolvedValue({ processed: 0, failed: 0, results: [] })
+  })
+
+  async function renderWithProducts(items: AdminProduct[]) {
+    vi.mocked(adminService.getProducts).mockResolvedValue({
+      items,
+      total: items.length,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    })
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
+    render(
+      <I18nextProvider i18n={testI18n}>
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter>
+            <ContentModeration />
+          </MemoryRouter>
+        </QueryClientProvider>
+      </I18nextProvider>,
+    )
+    await screen.findByText('Hydrating Serum')
+  }
+
+  it('disables deactivate and shows a tooltip while orders are undelivered', async () => {
+    await renderWithProducts([
+      { ...activeProducts[0], hasPendingOrders: true },
+      activeProducts[1],
+    ])
+
+    const blockedRow = screen
+      .getByText('Hydrating Serum')
+      .closest('tr') as HTMLElement
+    const allowedRow = screen
+      .getByText('Clay Mask')
+      .closest('tr') as HTMLElement
+
+    // RTL getByRole has no `disabled` option — filter on the property instead
+    const disabledIn = (row: HTMLElement) =>
+      within(row)
+        .getAllByRole('button')
+        .filter((btn) => (btn as HTMLButtonElement).disabled)
+
+    const [blockedButton] = disabledIn(blockedRow)
+    expect(blockedButton).toBeDefined()
+    expect(blockedButton).toBeDisabled()
+    expect(disabledIn(allowedRow)).toHaveLength(0)
+
+    const tooltip = within(blockedRow).getByRole('tooltip')
+    expect(tooltip).toHaveTextContent(
+      'Cannot deactivate until the order delivery is completed.',
+    )
+    expect(within(allowedRow).queryByRole('tooltip')).not.toBeInTheDocument()
+  }, 20_000)
+
+  it('keeps Deactivate All disabled when every selected product has undelivered orders', async () => {
+    await renderWithProducts([
+      { ...activeProducts[0], hasPendingOrders: true },
+      { ...activeProducts[1], hasPendingOrders: true },
+    ])
+
+    await user.click(screen.getAllByRole('checkbox')[0])
+    await screen.findByText('2 selected')
+
+    expect(screen.getByRole('button', { name: 'Deactivate All' })).toBeDisabled()
   }, 20_000)
 })

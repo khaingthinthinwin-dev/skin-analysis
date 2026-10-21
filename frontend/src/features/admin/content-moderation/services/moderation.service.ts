@@ -68,6 +68,7 @@ export interface AdminProduct {
   images: string[];
   price: number;
   isActive: boolean;
+  hasPendingOrders?: boolean;
   avgRating: number;
   reviewCount: number;
   createdAt: string;
