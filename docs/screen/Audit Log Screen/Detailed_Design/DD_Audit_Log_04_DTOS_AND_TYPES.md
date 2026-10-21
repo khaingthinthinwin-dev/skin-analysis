@@ -1,13 +1,13 @@
 # DD_AUDIT_04 — DTOs and Types
 
-> **Doc ID:** SKM-DD-AUDIT-04 | **Version:** 1.2 | **Status:** Draft  
-> **Last Updated:** 2026-09-09
+> **Doc ID:** SKM-DD-AUDIT-04 | **Version:** 1.3 | **Status:** Draft  
+> **Last Updated:** 2026-10-21
 
 ---
 
 ## 1. Overview
 
-Request DTOs reside in `src/modules/admin/audit-logs/dto/` and use `class-validator` with a global whitelist/forbid-non-whitelisted validation pipe. Dates are ISO-8601 dates or UTC datetimes as defined by the API contract.
+Request DTOs reside in `src/modules/admin/audit-logs/dto/` and use `class-validator` with a global whitelist/forbid-non-whitelisted validation pipe. Dates are ISO-8601 dates or datetimes with an explicit offset; date-only values are expanded to Myanmar Time (UTC+6:30) day boundaries by the service.
 
 ## 2. Shared Enums
 
@@ -35,43 +35,47 @@ export enum ExportFormat {
 ```typescript
 export class ListAuditLogsDto {
   @IsOptional()
+  @Transform(({ value }) => (value === undefined || value === '' ? undefined : value))
   @IsUUID()
   userId?: string;
 
   @IsOptional()
-  @Transform(({ value }) =>
-    value === undefined ? undefined : Array.isArray(value) ? value : [value],
-  )
+  @Transform(toStringArray)
   @IsArray()
   @IsString({ each: true })
+  @MaxLength(100, { each: true })
   action?: string[];
 
   @IsOptional()
-  @Transform(({ value }) =>
-    value === undefined ? undefined : Array.isArray(value) ? value : [value],
-  )
+  @Transform(toStringArray)
   @IsArray()
   @IsString({ each: true })
+  @MaxLength(100, { each: true })
   entityType?: string[];
 
   @IsOptional()
+  @Transform(({ value }) => (value === undefined || value === '' ? undefined : value))
   @IsUUID()
   entityId?: string;
 
   @IsOptional()
+  @Transform(({ value }) => (value === undefined || value === '' ? undefined : value))
   @IsDateString()
   dateFrom?: string;
 
   @IsOptional()
+  @Transform(({ value }) => (value === undefined || value === '' ? undefined : value))
   @IsDateString()
   dateTo?: string;
 
   @IsOptional()
+  @Transform(({ value }) => (value === undefined || value === '' ? undefined : value))
   @IsString()
   @MaxLength(45)
   ipAddress?: string;
 
   @IsOptional()
+  @Transform(({ value }) => (value === undefined || value === '' ? undefined : value))
   @IsString()
   @MaxLength(255)
   search?: string;
@@ -99,6 +103,8 @@ export class ListAuditLogsDto {
 }
 ```
 
+`toStringArray` normalizes a single or repeated query value into an array and drops empty entries. The server default `limit` is 50; the Admin Audit Log screen requests 10 and offers 10/20/50/100.
+
 ### 3.2 ExportAuditLogsDto
 
 ```typescript
@@ -116,16 +122,17 @@ export class ExportAuditLogsDto extends OmitType(ListAuditLogsDto, [
 Export-specific validation (applied in service, not DTO):
 - `dateFrom` and `dateTo` must both be provided if either is given (partial range rejected).
 - `dateTo >= dateFrom`.
-- Maximum range: 365 days.
+- Maximum range: 365 days (measured to the end of the selected end day).
 - Maximum matching rows: 10,000 (checked after query count, before file generation).
 
-### 3.3 DeleteAuditLogsAndFilesDto
+### 3.3 DeleteAuditLogsDto
 
 ```typescript
-export class DeleteAuditLogsAndFilesDto {
+export class DeleteAuditLogsDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
+  @Min(1)
   // The service validates this value against AUDIT_LOG_MIN_RETENTION_DAYS; 90 is its default.
   olderThanDays: number = 90;
 
@@ -134,6 +141,8 @@ export class DeleteAuditLogsAndFilesDto {
   @IsUUID('4', { each: true })
   recordIds?: string[];
 
+  // Accepted for API-contract compatibility; CSV exports are streamed
+  // directly and no export-file metadata table exists to delete from.
   @IsOptional()
   @IsArray()
   @IsUUID('4', { each: true })
@@ -143,8 +152,9 @@ export class DeleteAuditLogsAndFilesDto {
 
 Delete-specific validation (applied in service):
 - `olderThanDays` is always validated server-side against `AUDIT_LOG_MIN_RETENTION_DAYS` (defaults to 90).
-- If `recordIds` or `fileIds` are provided, the request is atomic: every target must exist and be eligible (`created_at < now - olderThanDays`), or the service rejects the entire request and deletes nothing.
-- If no IDs are provided, all eligible records and CSV export files older than `olderThanDays` are deleted.
+- If `recordIds` are provided, the request is atomic: every target must exist and be eligible (`created_at < now - olderThanDays`), or the service rejects the entire request and deletes nothing.
+- If no IDs are provided, all eligible records older than `olderThanDays` are deleted.
+- `fileIds` is accepted but ignored; `deletedFiles` is always `0`.
 
 ## 4. Response Types
 
@@ -156,15 +166,16 @@ export interface AuditLogListItemDto {
   userId: string | null;
   userName: string | null;
   userEmail: string | null;
-  userRole: 'admin' | 'merchant' | 'buyer' | null;
+  userRole: string | null;
   action: string;
   entityType: string;
-  entityId: string | null;
   summary: string;
   ipAddress: string | null;
   createdAt: Date;
 }
 ```
+
+`entityId` is intentionally excluded from the response DTOs — it is stored in the database and accepted as a filter, but never returned to the client.
 
 ### 4.2 AuditLogDetailDto
 
@@ -199,21 +210,23 @@ export interface AuditFilterOptionsDto {
 }
 ```
 
-### 4.5 ExportAuditLogsResponseDto
+### 4.5 CsvExportFile
 
 ```typescript
-export interface ExportAuditLogsResponseDto {
-  downloadUrl: string;
-  expiresAt: Date;
+export interface CsvExportFile {
+  filename: string;
+  content: Buffer;
 }
 ```
+
+The export response is the CSV attachment itself (`Content-Type: text/csv; charset=utf-8`, `Content-Disposition: attachment`). There is no `downloadUrl` and no `expiresAt` — nothing is stored server-side.
 
 ### 4.6 DeleteAuditLogsResponseDto
 
 ```typescript
 export interface DeleteAuditLogsResponseDto {
   deletedRecords: number;
-  deletedFiles: number;
+  deletedFiles: number; // always 0
 }
 ```
 
@@ -233,19 +246,13 @@ export interface AuditLogRecord {
   createdAt: Date;
 }
 
-export interface AuditExportFile {
-  id: string;
-  createdAt: Date;
-  storageKey: string;
-  status: 'queued' | 'processing' | 'completed' | 'failed' | 'deleted';
-  deletedAt: Date | null;
-}
-
 export interface DeleteResult {
   deletedRecords: number;
-  deletedFiles: number;
+  deletedFiles: number; // always 0
 }
 ```
+
+No export-file metadata type exists: exports are streamed and never persisted.
 
 ## 6. Error Contract
 

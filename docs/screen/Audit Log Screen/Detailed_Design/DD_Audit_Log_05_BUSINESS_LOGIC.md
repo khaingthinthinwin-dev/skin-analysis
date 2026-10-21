@@ -1,7 +1,7 @@
 # DD_AUDIT_05 — Business Logic
 
-> **Doc ID:** SKM-DD-AUDIT-05 | **Version:** 1.1 | **Status:** Draft  
-> **Last Updated:** 2026-09-09
+> **Doc ID:** SKM-DD-AUDIT-05 | **Version:** 1.2 | **Status:** Draft  
+> **Last Updated:** 2026-10-21
 
 ---
 
@@ -12,27 +12,27 @@
 ## 2. List and Detail Algorithms
 
 1. Guard verifies a valid JWT and `admin` role.
-2. Normalize default paging and sorting; normalize a single or repeated action/entity query value to an array; reject unknown fields, invalid IDs/dates, or incomplete/descending date ranges. Normalize date-only values to UTC day boundaries and require an offset for datetime values.
-3. Build parameterized predicates: all supplied filters use AND; text search applies to action, entity type, joined user name, and email.
-4. Fetch matching rows and joined actor data; paginate and map to list DTOs. Append `id` as a stable secondary sort key. Null actor maps to System at presentation time.
+2. Normalize default paging and sorting; normalize a single or repeated action/entity query value to an array; reject unknown fields, invalid IDs/dates, or incomplete/descending date ranges. Normalize date-only values to Myanmar Time (UTC+6:30) day boundaries — `dateFrom` = `T00:00:00.000+06:30`, `dateTo` = `T23:59:59.999+06:30` — and require an offset for datetime values.
+3. Build parameterized predicates: all supplied filters use AND; text search applies to action, entity type, joined user name, and email; the IP filter matches the stored address and its variants (`::ffff:`-prefixed IPv4, IPv4-mapped IPv6) with `contains`; selecting `AUDIT_LOG_DELETE` also matches rows stored under the legacy `audit.admin.delete` label.
+4. Fetch matching rows and joined actor data; paginate and map to list DTOs. Append `id` as a stable secondary sort key. Null actor maps to System at presentation time. `entityId` is never included in the response.
 5. Detail retrieval fetches exactly one row plus actor, returns 404 if absent, then masks sensitive JSON keys before response.
 
 ## 3. Export Algorithm
 
 1. Validate `format='csv'`, all filters, complete date range when used, and maximum 365-day span.
 2. Reuse the list predicate without pagination. Count rows first.
-3. If count exceeds 10,000, fail `400` without storage, purge, archive, or other mutation of audit records.
-4. Stream sanitized rows to CSV with the defined columns; escape CSV fields and serialize masked JSON safely.
-5. Store the private object and `audit_export_files` metadata as completed. Return a signed, single-file URL with a five-minute expiry. An optional `audit.export` record describes the export but never modifies source data.
+3. If count exceeds 10,000, fail `400` without any mutation of audit records.
+4. Stream sanitized rows to CSV with the defined columns (Timestamp, Actor Name, Actor Email, Actor Role, Action, Entity Type, Old Value, New Value, IP Address, User Agent); escape CSV fields and serialize masked JSON safely. Timestamps are rendered in Myanmar Time.
+5. Prefix the content with a UTF-8 BOM, join rows with CRLF, and name the file `audit-logs-startDate-endDate(today).csv` (Myanmar dates). Stream it to the client as an attachment — nothing is stored server-side, so there is no export-file row to create or delete. An `AUDIT_EXPORT` record describes the export but never modifies source data; a failure to write that event never fails the export.
 
 ## 4. Manual Deletion Algorithm
 
 1. Validate admin role and `olderThanDays >= AUDIT_LOG_MIN_RETENTION_DAYS`; use the configured default (90) if omitted.
-2. Calculate UTC cutoff `now - olderThanDays`.
-3. Select only requested records/files, or all candidates when no explicit IDs are provided, where `created_at < cutoff`.
+2. Calculate the cutoff `now - olderThanDays`.
+3. Select only requested records, or all candidates when no explicit IDs are provided, where `created_at < cutoff`.
 4. For explicit IDs, reject the complete request if any target is absent or ineligible; otherwise delete precisely those targets. For retention-wide deletion, reject if no eligible target exists. Never broaden explicit-ID deletion to ineligible data.
-5. Delete audit records and storage objects in controlled, transactional or compensating batches. Mark export metadata `DELETED` with `deletedAt` after its object is removed, preserving only the non-downloadable lifecycle trace. Report precise deleted counts.
-6. Optionally append an `audit.admin.delete` event containing admin ID, counts, and threshold. No automatic or scheduled purge is allowed.
+5. Delete audit records in controlled batches and report the precise deleted count. `deletedFiles` is always `0` because no export-file storage exists.
+6. Append an `AUDIT_LOG_DELETE` event containing the admin ID, counts, threshold, and selected IDs. No automatic or scheduled purge is allowed.
 
 ## 5. JSON Sanitization
 
@@ -40,11 +40,11 @@ Before persistence, response mapping, and CSV generation, recursively mask forbi
 
 ## 6. Auto-Refresh Logic
 
-The UI interval defaults to 30,000 ms. It invokes only the list read path with the current normalized query. Skip while a prior refresh is pending or the page is hidden. On error retain the last successful data, expose non-blocking feedback, and permit the next scheduled retry.
+The UI interval defaults to 30,000 ms. It invokes only the list read path with the current normalized query. Skip while a prior refresh is pending or the page is hidden, and never refresh in the background. On error retain the last successful data, expose non-blocking feedback, and permit the next scheduled retry.
 
-## 7. Entity Link Mapping
+## 7. Filter Option Catalog
 
-`Merchant → /admin/merchants/:id`, `Product → /admin/products/:id`, `Order → /admin/orders/:id`, `Advertisement → /admin/advertisements/:id`, `User → /admin/users/:id`. Unknown types or null IDs are plain text, not navigable links.
+`GET /filters` returns the union of the audit catalog (every action and entity type the application can record) and the values already present in `audit_logs`, de-duplicated and sorted. The legacy `audit.admin.delete` label is hidden from the action list; rows stored under it stay findable through `AUDIT_LOG_DELETE`.
 
 ## 8. Performance and Integrity
 
