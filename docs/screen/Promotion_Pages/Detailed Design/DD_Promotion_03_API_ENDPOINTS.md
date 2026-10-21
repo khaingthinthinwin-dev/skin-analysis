@@ -1,7 +1,7 @@
 # DD_PROMO_03 — API Endpoint Design
 
-> **Doc ID:** SKM-DD-PROMO-03 | **Version:** 2.0 | **Status:** Updated  
-> **Last Updated:** 2026-10-15
+> **Doc ID:** SKM-DD-PROMO-03 | **Version:** 2.1 | **Status:** Updated  
+> **Last Updated:** 2026-10-21
 
 ---
 

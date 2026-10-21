@@ -1,7 +1,7 @@
 # DD_PROMO_05 — Business Logic
 
-> **Doc ID:** SKM-DD-PROMO-05 | **Version:** 2.0 | **Status:** Updated  
-> **Last Updated:** 2026-10-15
+> **Doc ID:** SKM-DD-PROMO-05 | **Version:** 2.1 | **Status:** Updated  
+> **Last Updated:** 2026-10-21
 
 ---
 

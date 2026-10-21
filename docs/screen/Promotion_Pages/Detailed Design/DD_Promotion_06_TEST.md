@@ -1,7 +1,7 @@
 # DD_PROMO_06 — Test Design
 
-> **Doc ID:** SKM-DD-PROMO-06 | **Version:** 2.0 | **Status:** Updated  
-> **Last Updated:** 2026-10-15
+> **Doc ID:** SKM-DD-PROMO-06 | **Version:** 2.1 | **Status:** Updated  
+> **Last Updated:** 2026-10-21
 
 ---
 
