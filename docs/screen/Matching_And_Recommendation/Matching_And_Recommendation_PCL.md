@@ -60,8 +60,9 @@
 
 - [x] **N-04**: Filter recommendations by skin type, price, category, and rating
   - **Evidence**:
-    - `N-04_1_skin_type_filtered.png` — after the skin-type filter: only the matching products remain
-    - `N-04_2_all_filters_applied.png` — after skin type + price + category + rating: the single remaining product
+    - `N-04_1_unfiltered_results.png` — before: page 2 of the unfiltered result set, no filter chips
+    - `N-04_2_skin_type_filtered.png` — after the skin-type filter: only the matching products remain, filter shown as a chip
+    - `N-04_3_all_filters_applied.png` — after skin type + price + category + rating: the single remaining product
     - Test: matching.spec.ts › "N-04: filters by skin type, price, category, and rating" — passed
   - **Precondition**: Authenticated buyer is on the recommendations page; products matching the chosen filters exist. No ingredient picker is rendered — `FiltersPanel` offers category, price, skin type, and rating only; `ingredients` remains an API-level filter (`matchQuerySchema`) with no UI control.
   - **Steps**:
@@ -77,7 +78,9 @@
 
 - [x] **N-05**: Sort and paginate recommendation results
   - **Evidence**:
-    - `N-05_1_price_sort_page_2.png` — page 2 of the price-ascending order
+    - `N-05_1_default_sort.png` — before: the default `Newest` order
+    - `N-05_2_price_sorted_page_1.png` — after the sort: cheapest products first on page 1
+    - `N-05_3_price_sort_page_2.png` — after the pagination: the three most expensive products on page 2
     - Test: matching.spec.ts › "N-05: sorts by ascending price and paginates results" — passed
   - **Precondition**: Recommendation result set contains enough products for multiple pages
   - **Steps**:
@@ -91,7 +94,8 @@
 
 - [x] **N-06**: Reset applied filters
   - **Evidence**:
-    - `N-06_1_filters_reset.png` — cleared filter state and page 1 marked as the current page
+    - `N-06_1_filters_applied.png` — before: the applied filter chip and the pager on page 2
+    - `N-06_2_filters_reset.png` — after: no chips left and the pagination back on page 1
     - Test: matching.spec.ts › "N-06: resets filters and returns pagination to page 1" — passed
   - **Precondition**: At least one recommendation filter is applied
   - **Steps**:
@@ -103,7 +107,8 @@
 
 - [x] **N-07**: Open a recommended product
   - **Evidence**:
-    - `N-07_1_product_navigation.png` — destination of the card link: the product page with its heading and loaded hero image
+    - `N-07_1_recommendation_grid.png` — before: the recommendation grid the card is clicked in
+    - `N-07_2_product_navigation.png` — after: the destination of the card link, with heading and loaded hero image
     - Test: matching.spec.ts › "N-07: opens the product page from a recommendation card" — passed
   - **Precondition**: Recommendation cards are displayed
   - **Steps**:
@@ -197,7 +202,8 @@
 
 - [x] **N-14**: Navigate recommendation pages on mobile
   - **Evidence**:
-    - `N-14_1_mobile_pagination.png` — page 2 of the recommendation list on a 390px viewport
+    - `N-14_1_mobile_page_1.png` — before: page 1 of the recommendation list on a 390px viewport
+    - `N-14_2_mobile_pagination.png` — after: page 2 of the recommendation list on a 390px viewport
     - Test: matching.spec.ts › "N-14: changes recommendation pages on mobile with numbered pagination" — passed
   - **Steps**:
     1. Set viewport to mobile width (below 768px)
@@ -210,32 +216,41 @@
 
 - [x] **N-15**: Toggle wishlist from a recommendation card
   - **Evidence**:
-    - `N-15_1_wishlist_toggle.png` — card heart toggled back to the unsaved state after the removal
+    - `N-15_1_db_wishlist_before.png` — before: no `wishlists` row for the buyer and product
+    - `N-15_2_wishlist_added.png` — after the add: filled heart and the `Added to wishlist` toast
+    - `N-15_3_db_wishlist_row_added.png` — after the add: the `wishlists` row is persisted
+    - `N-15_4_wishlist_removed.png` — after the removal: the card is back to the unsaved state
+    - `N-15_5_db_wishlist_row_deleted.png` — after the removal: the `wishlists` row is deleted again
     - Test: matching.spec.ts › "N-15: adds and removes a recommendation from the wishlist" — passed
-  - **Precondition**: Recommendation cards are displayed (`MatchingRecommendations.tsx` `handleWishlistToggle`)
+  - **Precondition**: Recommendation cards are displayed (`MatchingRecommendations.tsx` `handleWishlistToggle`). The card renders a live catalogue product, so the wishlist API writes a real `wishlists` row that the DB evidence can show.
   - **Steps**:
     1. Click the heart button on a card not in the wishlist
     2. Click the heart button on a card already in the wishlist
-  - **Expected Result**: Add shows `Added to wishlist` toast and flips the card heart to `Remove from Wishlist`; remove shows `Removed from wishlist` toast and flips it back to `Add to Wishlist`; duplicate (409) shows `Already in your wishlist` info toast
+  - **Expected Result**: Add shows `Added to wishlist` toast and flips the card heart to `Remove from Wishlist`, and the `wishlists` row for that buyer and product is created; remove shows `Removed from wishlist` toast, flips it back to `Add to Wishlist` and deletes the row again; duplicate (409) shows `Already in your wishlist` info toast
   - **Business Rules**: None (wishlist integration; owned by Wishlist team)
-  - **API**: Wishlist add/remove endpoints
+  - **API**: `POST /api/v1/wishlist/:productId`; `DELETE /api/v1/wishlist/:productId`
 
 - [x] **N-16**: Add to cart from a recommendation card
   - **Evidence**:
-    - `N-16_1_cart_add.png` — item added, `Added to cart` confirmation
-    - `N-16_2_cart_duplicate_dialog.png` — `Already in your cart` duplicate guard
+    - `N-16_1_db_cart_item_before.png` — before: no `cart_items` row for the buyer and product
+    - `N-16_2_cart_add.png` — after: the `Added to cart` confirmation
+    - `N-16_3_db_cart_item_added.png` — after the add: the `cart_items` row with quantity 1
+    - `N-16_4_cart_duplicate_dialog.png` — after: the `Already in your cart` duplicate guard
+    - `N-16_5_db_cart_item_after_duplicate.png` — the duplicate attempt created no second row, quantity unchanged
+    - `N-16_6_db_cart_item_quantity_updated.png` — the same row after the quantity was raised to 2
     - Test: matching.spec.ts › "N-16: adds an in-stock recommendation to the cart" — passed
-  - **Precondition**: Recommendation cards are displayed for in-stock products (`handleAddToCart`); out-of-stock cards hide the cart button
+  - **Precondition**: Recommendation cards are displayed for in-stock products (`handleAddToCart`); out-of-stock cards hide the cart button. The card renders a live catalogue product, so the cart API writes a real `cart_items` row that the DB evidence can show.
   - **Steps**:
     1. Click the cart button on an in-stock card
     2. Click the cart button on a card already in the cart (or when API returns 409)
-  - **Expected Result**: First add posts the item and shows the `Added to cart` toast; adding the same product again opens the `Already in your cart` dialog instead of a second request; out-of-stock cards show no cart button
+  - **Expected Result**: First add posts the item, shows the `Added to cart` toast and creates one `cart_items` row with quantity 1; adding the same product again opens the `Already in your cart` dialog instead of a second request and leaves the single row untouched; the quantity of that row can be raised through `PATCH /api/v1/cart/items/:id`; out-of-stock cards show no cart button
   - **Business Rules**: None (cart integration; owned by Cart team)
-  - **API**: `POST /api/v1/cart/items`
+  - **API**: `POST /api/v1/cart/items`; `PATCH /api/v1/cart/items/:id`
 
 - [x] **N-17**: Switch product grid between grid and list views
   - **Evidence**:
-    - `N-17_1_grid_and_list.png` — grid view restored after the list view
+    - `N-17_1_list_view.png` — after the switch: the stacked list layout
+    - `N-17_2_grid_view.png` — after switching back: the responsive card grid
     - Test: matching.spec.ts › "N-17: switches between grid and list views" — passed
   - **Precondition**: Recommendation results are displayed (`ViewToggle` in the sort bar)
   - **Steps**:
@@ -247,7 +262,8 @@
 
 - [x] **N-18**: Filter by category, rating, and price validation states
   - **Evidence**:
-    - `N-18_1_price_validation.png` — inline `Minimum price cannot exceed maximum price` alert
+    - `N-18_1_valid_filters.png` — before: category and rating applied, no validation alert
+    - `N-18_2_price_validation.png` — after: inline `Minimum price cannot exceed maximum price` alert
     - Test: matching.spec.ts › "N-18: validates category, rating, and invalid price range" — passed
   - **Precondition**: Recommendations page is open (`FiltersPanel`: `CategorySelect`, price Min/Max, `RATING_OPTIONS` 4.5/4.0/3.5/3.0)
   - **Steps**:
@@ -260,7 +276,8 @@
 
 - [x] **N-19**: Default sort is Newest and invalid sorts fall back to Newest
   - **Evidence**:
-    - `N-19_1_default_and_fallback_sort.png` — sort select showing Newest after the fallback
+    - `N-19_1_default_sort.png` — before: the bare URL pinned to `Newest`
+    - `N-19_2_fallback_sort.png` — after: the unsupported sort falls back to `Newest`
     - Test: matching.spec.ts › "N-19: defaults to Newest and falls back from an unsupported sort" — passed
   - **Precondition**: Recommendations page loads with no explicit sort (`resolveMatchingSort`, `DEFAULT_MATCHING_SORT`)
   - **Steps**:
@@ -272,7 +289,9 @@
 
 - [x] **N-20**: Expand all history sessions with See more
   - **Evidence**:
-    - `N-20_1_history_expand_collapse.png` — history section after `See more` / `Show less`
+    - `N-20_1_history_first_five.png` — before: the collapsed history with the `See more` action
+    - `N-20_2_history_expanded.png` — after: all six sessions expanded, in place
+    - `N-20_3_history_collapsed.png` — after `Show less`: back to the first five sessions
     - Test: matching.spec.ts › "N-20: expands and collapses recommendation history beyond the first five sessions" — passed
   - **Precondition**: Buyer has more than 5 history sessions (page initially fetches 5, expanded fetches 50)
   - **Steps**:
@@ -285,7 +304,9 @@
 
 - [x] **N-21**: Open and apply filters from the mobile filter sheet
   - **Evidence**:
-    - `N-21_1_mobile_filter_applied.png` — mobile filter sheet closed after `Show N Products`, with the filter in the URL
+    - `N-21_1_mobile_filter_sheet.png` — before: the filter sheet with the new price value
+    - `N-21_2_mobile_filter_applied.png` — after: the sheet is closed and the filter is applied
+    - `N-21_3_mobile_filter_cleared.png` — after `Clear All`: the filter is removed again
     - Test: matching.spec.ts › "N-21: opens the mobile filters sheet and applies a filter" — passed
   - **Precondition**: Viewport below `lg` (`mobileFilterOpen` `Sheet`, `setMobileFilterOpen`; `Show {meta.total} Products` confirm button, `Clear All` reset)
   - **Steps**:
@@ -298,7 +319,9 @@
 
 - [x] **N-22**: Remove individual filters via filter chips
   - **Evidence**:
-    - `N-22_1_filter_chips_removed.png` — chips row after the single chip and the `Clear All` removal
+    - `N-22_1_filter_chips_applied.png` — before: both applied filters shown as chips
+    - `N-22_2_filter_chip_removed.png` — after removing one chip: only the rating chip is left
+    - `N-22_3_filter_chips_cleared.png` — after `Clear All`: no chips are left
     - Test: matching.spec.ts › "N-22: removes a filter chip and clears all chips" — passed
   - **Precondition**: Filters are applied (`hasFilterChips`, `MatchingFilterChips` with `handleRemoveFilterChip`: per-chip X buttons in the desktop sidebar and the mobile row below `lg`, plus `Clear All`/`onClearAll`)
   - **Steps**:
@@ -311,7 +334,9 @@
 
 - [x] **N-23**: Select multiple skin types simultaneously
   - **Evidence**:
-    - `N-23_1_multiple_types_and_universal_product.png` — `Dry` + `Oily` selected, then `Oily` removed, with the universal `all` product still listed
+    - `N-23_1_multiple_types_selected.png` — before: `Dry` + `Oily` selected, two filter chips
+    - `N-23_2_one_type_removed.png` — after: only the `Dry` chip is left, no page reload
+    - `N-23_3_universal_product_generic_source.png` — the universal `all` product stays eligible on the generic source
     - Test: matching.spec.ts › "N-23: selects multiple skin types and removes one without a reload" — passed
   - **Precondition**: Recommendations page is open (`FiltersPanel` renders one skin-type option per `SKIN_TYPES` entry — a `Checkbox` in the desktop sidebar, a toggle button in the mobile sheet; both call `toggleSkinType`). Each toggle calls `toggleSkinType` → `onUpdate({ skinTypes })` immediately — there is no Apply button (the mobile sheet's `Show {N} Products` button only closes the sheet); values are comma-joined into the `skinTypes` URL param (`'all'` sentinel when cleared, which the schema drops from the API request). Products matching the selected types and products tagged `all` exist.
   - **Steps**:
@@ -391,9 +416,10 @@
 
 - [x] **A-04**: Handle recommendations request failure and retry
   - **Evidence**:
-    - `A-04_1_retry.png` — error banner with the `Retry` action
-    - API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?sort=createdAt&order=desc&page=1&limit=12 → `A-04_2_failed_recommendation_request.png`
-    - API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?sort=createdAt&order=desc&page=1&limit=12 → `A-04_3_retried_recommendation_request.png`
+    - `A-04_1_error_banner.png` — before: the error banner with the `Retry` action
+    - `A-04_2_recovered.png` — after: the recommendations are back and the error banner is gone
+    - API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?sort=createdAt&order=desc&page=1&limit=12 → `A-04_3_failed_recommendation_request.png`
+    - API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?sort=createdAt&order=desc&page=1&limit=12 → `A-04_4_retried_recommendation_request.png`
     - Test: matching.spec.ts › "A-04: offers retry after a failed recommendations request" — passed
   - **Precondition**: Recommendations page is open and the API can be made to fail once
   - **Steps**:
@@ -446,7 +472,8 @@
 
 - [x] **A-08**: Price filter rejects invalid input
   - **Evidence**:
-    - `A-08_1_negative_price.png` — inline `Price cannot be negative` alert, filter not applied to the URL
+    - `A-08_1_valid_price.png` — before: a valid price is accepted, no error shown
+    - `A-08_2_negative_price.png` — after: inline `Price cannot be negative` alert, the value is not applied
     - Test: matching.spec.ts › "A-08: rejects negative price input without applying it" — passed
   - **Precondition**: Filters panel is open (`commitPrice` in `FiltersPanel.tsx` → `validatePriceRange`: the guards are `Number.isNaN`, `< 0` and `min > max`; negative/NaN block the commit, a min>max range is committed as-is)
   - **Steps**:
@@ -462,7 +489,8 @@
 
 - [x] **B-01**: Handle an empty recommendation result set
   - **Evidence**:
-    - `B-01_1_empty_results.png` — empty state with the `Reset Filters` action
+    - `B-01_1_filtered_results.png` — before: the filter still returns products
+    - `B-01_2_empty_results.png` — after: empty state with the `Reset Filters` action
     - Test: matching.spec.ts › "B-01: displays the empty result state" — passed
   - **Precondition**: Selected filters produce zero matching products
   - **Steps**:
@@ -472,7 +500,8 @@
 
 - [x] **B-02**: Keep out-of-stock products visible with an availability indicator
   - **Evidence**:
-    - `B-02_1_out_of_stock.png` — `Out of Stock` badge on the card, no cart action
+    - `B-02_1_in_stock.png` — before: the in-stock card with its cart action
+    - `B-02_2_out_of_stock.png` — after: the out-of-stock product stays listed, `Out of Stock` badge, no cart action
     - Test: matching.spec.ts › "B-02: shows out-of-stock products and hides cart action" — passed
   - **Precondition**: Matching result set includes an out-of-stock active product from an approved shop
   - **Steps**:
@@ -519,7 +548,8 @@
 
 - [x] **B-06**: Hide the ad panel when no eligible ads exist
   - **Evidence**:
-    - `B-06_1_no_ads.png` — recommendations page without an ad panel
+    - `B-06_1_with_ads.png` — before: an eligible ad is rendered in the panel
+    - `B-06_2_no_ads.png` — after: the recommendations page without an ad panel
     - Test: matching.spec.ts › "B-06: hides the ad panel with an empty ad response" — passed
   - **Precondition**: No eligible ad exists for the panel placement
   - **Steps**:
@@ -530,7 +560,7 @@
 
 - [x] **B-07**: Card image and price display fallbacks
   - **Evidence**:
-    - `B-07_1_card_fallbacks.png` — 🧴 image placeholder, `2,500Ks` price and struck-through `3,000Ks`
+    - `B-07_1_card_fallbacks.png` — a card with a real product image next to a card with the 🧴 placeholder, `2,500Ks` / struck-through `3,000Ks` and `3,200Ks`
     - Test: matching.spec.ts › "B-07: uses image fallback and formats product prices" — passed
   - **Precondition**: Recommendation cards are displayed (`ProductImage` in `MatchingRecommendations.tsx`)
   - **Steps**:
@@ -542,7 +572,8 @@
 
 - [x] **B-08**: First-load skeleton grid matches the active view
   - **Evidence**:
-    - `B-08_1_first_load_skeleton.png` — skeleton cards while the first request is pending
+    - `B-08_1_first_load_skeleton.png` — before: skeleton cards while the first request is pending
+    - `B-08_2_loaded_results.png` — after: the skeleton is replaced by the real product cards
     - Test: matching.spec.ts › "B-08: shows first-load skeleton cards while the request is pending" — passed
   - **Precondition**: Recommendations query is in `isLoading` (no cached data yet). Present in code: `SkeletonGrid count={meta.limit}` on grid view (the endpoint advertises a page size of 12); list view renders 4 pulsing rows (`animate-pulse`, `h-28`).
   - **Steps**:
@@ -664,6 +695,6 @@
 |------|--------|
 | Test scenarios defined (N, A, B, I) | ☑ 25 normal, 8 abnormal, 8 boundary, 8 interface |
 | E2E tests implemented | ☑ `e2e/tests/Matching_And_Recommendation/matching.spec.ts` — 50 Playwright tests, all passing |
-| Evidence captured | ☑ One screenshot per scenario (API request/response captures for the interface scenarios) in `e2e/test-results/Matching_And_Recommendation/screenshots/` |
+| Evidence captured | ☑ 101 screenshots + 8 DB query captures (`.png` + `.json`) in `e2e/test-results/Matching_And_Recommendation/screenshots/` — before/after pairs for every state-changing scenario, API request/response captures for the interface scenarios, and live `wishlists` / `cart_items` rows for the wishlist and cart scenarios |
 | PCL auto-update verified | ☐ `scripts/update-pcl.cjs` currently fails to parse (unresolved merge-conflict markers in the shared script); the Evidence blocks in this file were therefore maintained by hand |
 | Next review date | 2026-11-14 |

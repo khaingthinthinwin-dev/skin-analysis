@@ -3,6 +3,14 @@ import type { Page, Route } from '@playwright/test';
 import { MatchingPage } from '../../pages/Matching_And_Recommendation/MatchingPage';
 import { API_BASE_URL } from '../../utils/constants';
 import { captureScreenshot } from '../../utils/screenshot';
+import { authHeaders } from '../../utils/api-auth';
+import {
+  captureCartDbEvidence,
+  captureWishlistDbEvidence,
+} from '../../utils/db-evidence';
+
+/** Seed buyer — the account the recommendation cards act on behalf of. */
+const BUYER_EMAIL = 'eem@gmail.com';
 
 type Source = 'ai' | 'generic';
 
@@ -262,6 +270,54 @@ async function tokenFor(page: Page): Promise<string> {
   return token;
 }
 
+/**
+ * A live catalogue product, mapped to the recommendation shape the page renders.
+ * The wishlist/cart scenarios use it so the API writes a real row for a product
+ * that actually exists in the database — the DB evidence then shows that row.
+ */
+async function liveProduct(page: Page, slug: string): Promise<CatalogProduct> {
+  const headers = await authHeaders(page);
+  const response = await page.request.get(`${API_BASE_URL}/products/${slug}`, { headers });
+  expect(response.ok(), `product ${slug} should be readable`).toBeTruthy();
+  const body = await response.json();
+  const product = (body.data?.data ?? body.data ?? body) as Record<string, any>;
+  const images = Array.isArray(product.images)
+    ? product.images
+        .map((image: unknown) => (typeof image === 'string' ? image : (image as { url?: string })?.url ?? ''))
+        .filter(Boolean)
+    : [];
+  return {
+    id: String(product.id),
+    name: String(product.name),
+    slug: String(product.slug ?? slug),
+    brandName: product.merchant?.shopName ?? product.brandName ?? 'Seed Skincare',
+    shortDescription: product.shortDescription ?? null,
+    price: String(product.price ?? '0'),
+    compareAtPrice: product.compareAtPrice != null ? String(product.compareAtPrice) : null,
+    avgRating: String(product.avgRating ?? product.rating ?? '4.5'),
+    reviewCount: Number(product.reviewCount ?? 0),
+    skinTypes: Array.isArray(product.skinTypes) && product.skinTypes.length ? product.skinTypes : ['all'],
+    images: images.length ? images : ['/uploads/products/30600511-9b38-4201-974c-04d574f5f982.png'],
+    isInStock: Number(product.stockQuantity ?? 0) > 0,
+    isFeatured: false,
+    matchScore: 88,
+    categoryBadge: null,
+    categoryId: product.category?.id ?? 'category-serums',
+  };
+}
+
+/** Removes a cart row for the product so the scenario starts from a clean cart. */
+async function clearCartRow(page: Page, productId: string): Promise<void> {
+  const headers = await authHeaders(page);
+  const response = await page.request.get(`${API_BASE_URL}/cart`, { headers });
+  if (!response.ok()) return;
+  const body = await response.json();
+  const items = (body.data?.data?.items ?? body.data?.items ?? []) as Array<{ id: string; productId: string }>;
+  for (const item of items.filter((entry) => entry.productId === productId)) {
+    await page.request.delete(`${API_BASE_URL}/cart/items/${item.id}`, { headers });
+  }
+}
+
 function matching(page: Page) { return new MatchingPage(page); }
 
 async function captureApiEvidence(
@@ -436,6 +492,8 @@ test.describe('Matching & Recommendation', () => {
       // either one performs the same navigation.
       const cardLink = buyerPage.getByRole('link', { name: 'Hydrating Serum' }).first();
       await expect(cardLink).toHaveAttribute('href', '/buyer/products/hydrating-serum');
+      // Before: the recommendation grid the buyer navigates from.
+      await screen.capture('N-07_1_recommendation_grid');
       await cardLink.click();
       await expect(buyerPage).toHaveURL(/\/buyer\/products\/hydrating-serum/);
       // The product page really rendered: heading + a product image that loaded.
@@ -445,7 +503,8 @@ test.describe('Matching & Recommendation', () => {
       await expect.poll(() => heroImage.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
       // Grow the viewport so the whole hero (image, price, actions) is in frame.
       await buyerPage.setViewportSize({ width: 1280, height: 1400 });
-      await screen.capture('N-07_1_product_navigation');
+      // After: the product page the card opened.
+      await screen.capture('N-07_2_product_navigation');
     });
 
     test('N-09: views similar products from a product detail page', async ({ buyerPage }) => {
@@ -521,14 +580,19 @@ test.describe('Matching & Recommendation', () => {
       // Collapsed: only the first five sessions are rendered.
       await expect(sessionHeaders).toHaveCount(5);
       const urlBefore = buyerPage.url();
+      // Before: the collapsed history with the "See more" action.
+      await screen.capture('N-20_1_history_first_five');
       await buyerPage.getByRole('button', { name: /See \d+ more/ }).click();
       await expect(sessionHeaders).toHaveCount(6);
       await expect(buyerPage.getByRole('button', { name: 'Show less' })).toBeVisible();
       // "See more" expands in place — it does not navigate away.
       expect(buyerPage.url()).toBe(urlBefore);
+      // After: all sessions expanded.
+      await screen.capture('N-20_2_history_expanded');
       await buyerPage.getByRole('button', { name: 'Show less' }).click();
       await expect(sessionHeaders).toHaveCount(5);
-      await screen.capture('N-20_1_history_expand_collapse');
+      // After collapsing: back to the first five sessions.
+      await screen.capture('N-20_3_history_collapsed');
     });
   });
 
@@ -545,6 +609,9 @@ test.describe('Matching & Recommendation', () => {
       // The scenario starts on page 2 of the unfiltered result set.
       await expect(grid.locator(':scope > *')).toHaveCount(2);
       await expect(buyerPage.getByRole('button', { name: 'Go to page 2' })).toHaveAttribute('aria-current', 'page');
+      // Before: the unfiltered result set (no filter chips yet).
+      await expect(buyerPage.getByRole('button', { name: /Remove filter/ })).toHaveCount(0);
+      await screen.capture('N-04_1_unfiltered_results');
 
       // 1. Skin type — only Dry (and the universal "all") products remain, and
       //    the pagination is reset to page 1.
@@ -562,7 +629,9 @@ test.describe('Matching & Recommendation', () => {
       await expect(buyerPage.getByText('Universal Balm')).toBeVisible();
       await expect(buyerPage.getByText('Normal Toner')).toHaveCount(0);
       await expect(buyerPage.getByText('Oily Gel')).toHaveCount(0);
-      await screen.capture('N-04_1_skin_type_filtered');
+      // The applied filter is visible as a chip.
+      await expect(buyerPage.getByRole('button', { name: 'Remove filter' }).first()).toBeVisible();
+      await screen.capture('N-04_2_skin_type_filtered');
 
       // 2. Price range — the product above the maximum price drops out.
       await buyerPage.getByPlaceholder('Min').fill('2000');
@@ -597,7 +666,7 @@ test.describe('Matching & Recommendation', () => {
       await expect(buyerPage.getByText('Dry Cream')).toBeVisible();
       await expect(buyerPage.getByText('Dry Low Rated')).toHaveCount(0);
       await expect(buyerPage.getByText('Universal Balm')).toHaveCount(0);
-      await screen.capture('N-04_2_all_filters_applied');
+      await screen.capture('N-04_3_all_filters_applied');
     });
 
     test('N-05: sorts by ascending price and paginates results', async ({ buyerPage }) => {
@@ -605,6 +674,9 @@ test.describe('Matching & Recommendation', () => {
       const screen = matching(buyerPage);
       await screen.goto();
       const grid = buyerPage.locator('div[class*="grid-cols-1"]').first();
+      // Before: the default (Newest) order.
+      await expect(buyerPage.getByRole('combobox').first()).toContainText('Newest');
+      await screen.capture('N-05_1_default_sort');
       await buyerPage.getByRole('combobox').first().click();
       await buyerPage.getByRole('option', { name: 'Price: Low to High' }).click();
       await expect(buyerPage).toHaveURL(/sort=price/);
@@ -620,23 +692,32 @@ test.describe('Matching & Recommendation', () => {
       // The grid keeps the previous page's data while the new query is in
       // flight (placeholderData), so the order is polled until it settles.
       await expect.poll(async () => grid.locator('h3').allInnerTexts()).toEqual(expectedFirstPage);
+      // After the sort: cheapest products first on page 1.
+      await screen.capture('N-05_2_price_sorted_page_1');
       await buyerPage.getByRole('button', { name: /Go to page 2/ }).click();
       await expect(buyerPage).toHaveURL(/page=2/);
       await expect(buyerPage.getByRole('button', { name: 'Go to page 2' })).toHaveAttribute('aria-current', 'page');
       const expectedSecondPage = ['Barrier Repair Cream', 'Overnight Recovery Oil', 'Daily Moisturizer'];
       await expect.poll(async () => grid.locator('h3').allInnerTexts()).toEqual(expectedSecondPage);
-      await screen.capture('N-05_1_price_sort_page_2');
+      // After the pagination: the three most expensive products on page 2.
+      await screen.capture('N-05_3_price_sort_page_2');
     });
 
     test('N-06: resets filters and returns pagination to page 1', async ({ buyerPage }) => {
       await mockPage(buyerPage, { result: catalog });
       const screen = matching(buyerPage);
-      await buyerPage.goto('/buyer/recommendations?page=2&minPrice=2000');
+      await buyerPage.goto('/buyer/recommendations?page=2&minPrice=1000');
+      // Before: the applied filter is visible as a chip and the pager is on page 2.
+      await expect(buyerPage.getByRole('button', { name: 'Remove filter' }).first()).toBeVisible();
+      await expect(buyerPage.getByRole('button', { name: 'Go to page 2' })).toHaveAttribute('aria-current', 'page');
+      await screen.capture('N-06_1_filters_applied');
       await buyerPage.getByRole('button', { name: 'Reset Filters' }).click();
       await expect(buyerPage).toHaveURL(/\/buyer\/recommendations(?:\?.*)?$/);
       await expect(buyerPage).not.toHaveURL(/minPrice/);
       await expect(buyerPage.getByRole('button', { name: 'Go to page 1' })).toHaveAttribute('aria-current', 'page');
-      await screen.capture('N-06_1_filters_reset');
+      // After: the chips are gone and the pagination is back on page 1.
+      await expect(buyerPage.getByRole('button', { name: 'Remove filter' })).toHaveCount(0);
+      await screen.capture('N-06_2_filters_reset');
     });
 
     test('N-13: renders the product grid at desktop, tablet, and mobile widths', async ({ buyerPage }) => {
@@ -707,11 +788,14 @@ test.describe('Matching & Recommendation', () => {
       await expect(serumLinks).toHaveCount(1);
       // The view is local state only — the query string is untouched.
       expect(buyerPage.url()).toBe(urlBefore);
+      // After the switch: the stacked list layout.
+      await screen.capture('N-17_1_list_view');
       await buyerPage.getByRole('button', { name: 'Grid view' }).click();
       await expect(buyerPage.getByRole('button', { name: 'Grid view' })).toHaveAttribute('aria-pressed', 'true');
       await expect(serumLinks).toHaveCount(2);
       expect(buyerPage.url()).toBe(urlBefore);
-      await screen.capture('N-17_1_grid_and_list');
+      // After switching back: the responsive card grid.
+      await screen.capture('N-17_2_grid_view');
     });
 
     test('N-18: validates category, rating, and invalid price range', async ({ buyerPage }) => {
@@ -730,10 +814,14 @@ test.describe('Matching & Recommendation', () => {
       await buyerPage.getByPlaceholder('Min').blur();
       await expect(buyerPage).toHaveURL(/minPrice=5000/);
       await expect(buyerPage.getByPlaceholder('Min')).toHaveValue('5000');
+      // Before the invalid range: the valid filters are applied and no alert shows.
+      await expect(buyerPage.getByRole('alert')).toHaveCount(0);
+      await screen.capture('N-18_1_valid_filters');
       await buyerPage.getByPlaceholder('Max').fill('2000');
       await buyerPage.getByPlaceholder('Max').blur();
       await expect(buyerPage.getByRole('alert')).toContainText('Minimum price cannot exceed maximum price');
-      await screen.capture('N-18_1_price_validation');
+      // After: the inline validation error.
+      await screen.capture('N-18_2_price_validation');
     });
 
     test('N-19: defaults to Newest and falls back from an unsupported sort', async ({ buyerPage }) => {
@@ -742,9 +830,13 @@ test.describe('Matching & Recommendation', () => {
       await screen.goto();
       await expect(buyerPage).toHaveURL(/sort=createdAt/);
       await expect(buyerPage).toHaveURL(/order=desc/);
+      // Before: the bare URL pinned to Newest.
+      await expect(buyerPage.getByRole('combobox').first()).toContainText('Newest');
+      await screen.capture('N-19_1_default_sort');
       await buyerPage.goto('/buyer/recommendations?sort=matchScore&order=desc');
       await expect(buyerPage.getByRole('combobox').first()).toContainText('Newest');
-      await screen.capture('N-19_1_default_and_fallback_sort');
+      // After: the unsupported sort falls back to Newest instead of a placeholder.
+      await screen.capture('N-19_2_fallback_sort');
     });
 
     test('N-21: opens the mobile filters sheet and applies a filter', async ({ buyerPage }) => {
@@ -757,28 +849,41 @@ test.describe('Matching & Recommendation', () => {
       const mobileSheet = buyerPage.getByRole('dialog');
       await mobileSheet.getByPlaceholder('Min').fill('2000');
       await mobileSheet.getByPlaceholder('Min').blur();
+      // Before: the filter sheet with the new value.
+      await screen.capture('N-21_1_mobile_filter_sheet');
       await buyerPage.getByRole('button', { name: /Show .* Products/ }).click();
       await expect(buyerPage).toHaveURL(/minPrice=2000/);
-      await screen.capture('N-21_1_mobile_filter_applied');
+      // After: the sheet is closed and the filter is applied.
+      await screen.capture('N-21_2_mobile_filter_applied');
       // Reopen the sheet and reset the filter from its footer.
       await buyerPage.getByRole('button', { name: 'Filters' }).click();
       await mobileSheet.getByRole('button', { name: 'Clear All' }).click();
       await expect(buyerPage).not.toHaveURL(/minPrice/);
+      // After: the filter is cleared again.
+      await screen.capture('N-21_3_mobile_filter_cleared');
     });
 
     test('N-22: removes a filter chip and clears all chips', async ({ buyerPage }) => {
       await mockPage(buyerPage);
       const screen = matching(buyerPage);
       await buyerPage.goto('/buyer/recommendations?minPrice=2000&rating=4.5');
+      // Before: both applied filters are visible as chips.
+      await expect(buyerPage.getByRole('button', { name: 'Remove filter' })).toHaveCount(2);
+      await screen.capture('N-22_1_filter_chips_applied');
       const visibleMinPriceChipGroup = buyerPage
         .locator('div.flex.flex-wrap.items-center.gap-2:visible')
         .filter({ hasText: 'Min 2,000' })
         .first();
       await visibleMinPriceChipGroup.getByRole('button', { name: 'Remove filter' }).first().click();
       await expect(buyerPage).not.toHaveURL(/minPrice/);
+      // After removing one chip: only the rating chip is left.
+      await expect(buyerPage.getByRole('button', { name: 'Remove filter' })).toHaveCount(1);
+      await screen.capture('N-22_2_filter_chip_removed');
       await buyerPage.getByRole('button', { name: /Clear All/i }).click();
       await expect(buyerPage).not.toHaveURL(/rating/);
-      await screen.capture('N-22_1_filter_chips_removed');
+      // After clearing all: no chips are left.
+      await expect(buyerPage.getByRole('button', { name: 'Remove filter' })).toHaveCount(0);
+      await screen.capture('N-22_3_filter_chips_cleared');
     });
 
     test('N-23: selects multiple skin types and removes one without a reload', async ({ buyerPage }) => {
@@ -791,6 +896,9 @@ test.describe('Matching & Recommendation', () => {
       await expect(dryFilter).toBeChecked();
       await buyerPage.getByRole('checkbox', { name: 'Oily' }).click();
       await expect(buyerPage).toHaveURL(/skinTypes=dry%2Coily|skinTypes=dry,oily/);
+      // Before: both skin types selected — two chips, one per type.
+      await expect(buyerPage.getByRole('button', { name: 'Remove filter' })).toHaveCount(2);
+      await screen.capture('N-23_1_multiple_types_selected');
       const skinTypeChipGroup = buyerPage
         .locator('div.flex.flex-wrap.items-center.gap-2:visible')
         .filter({ hasText: 'Oily' })
@@ -799,6 +907,9 @@ test.describe('Matching & Recommendation', () => {
       await expect(buyerPage).toHaveURL(/skinTypes=dry(?:&|$)/);
       await expect(dryFilter).toBeChecked();
       await expect(buyerPage.getByRole('checkbox', { name: 'Oily' })).not.toBeChecked();
+      // After removing one type: only the `Dry` chip is left, no page reload.
+      await expect(buyerPage.getByRole('button', { name: 'Remove filter' })).toHaveCount(1);
+      await screen.capture('N-23_2_one_type_removed');
 
       // Products tagged `all` are suitable for every skin type, so a single explicit
       // selection must keep them in the results (BR-MATCH-016 / PCL N-23) — while
@@ -840,7 +951,8 @@ test.describe('Matching & Recommendation', () => {
       await expect(buyerPage.getByText('Universal Skin Serum')).toBeVisible();
       await expect(buyerPage.getByText('Dry Only Lotion')).toBeVisible();
       await expect(buyerPage.getByText('Oily Control Gel')).toHaveCount(0);
-      await screen.capture('N-23_1_multiple_types_and_universal_product');
+      // The universal `all` product stays in the generic result set as well.
+      await screen.capture('N-23_3_universal_product_generic_source');
     });
 
     test('N-24: offers Match Score sort only for AI recommendations', async ({ buyerPage }) => {
@@ -881,6 +993,8 @@ test.describe('Matching & Recommendation', () => {
       const grid = buyerPage.locator('div[class*="grid-cols-1"]').first();
       await expect(buyerPage.getByText('Hydrating Serum')).toBeVisible();
       await expect(buyerPage.getByText('Overnight Recovery Oil')).toHaveCount(0);
+      // Before: page 1 of the recommendation list.
+      await screen.capture('N-14_1_mobile_page_1');
       // Numbered pagination is available on mobile and moves the result set.
       await buyerPage.getByRole('button', { name: 'Go to page 2' }).click();
       await expect(buyerPage).toHaveURL(/page=2/);
@@ -890,7 +1004,8 @@ test.describe('Matching & Recommendation', () => {
       await expect.poll(async () => grid.locator('h3').allInnerTexts()).toEqual(expectedSecondPage);
       // The mobile filters stay reachable while paginating.
       await expect(buyerPage.getByRole('button', { name: 'Filters' })).toBeVisible();
-      await screen.capture('N-14_1_mobile_pagination');
+      // After: page 2 of the recommendation list.
+      await screen.capture('N-14_2_mobile_pagination');
     });
   });
 
@@ -939,53 +1054,124 @@ test.describe('Matching & Recommendation', () => {
     });
 
     test('N-15: adds and removes a recommendation from the wishlist', async ({ buyerPage }) => {
-      let saved = false;
-      await mockPage(buyerPage);
-      await buyerPage.route('**/wishlist', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { items: saved ? [{ productId: products[0].id }] : [], totalCount: saved ? 1 : 0 } }) }));
-      await buyerPage.route('**/wishlist/*', async (route) => {
-        if (route.request().method() === 'POST') saved = true;
-        if (route.request().method() === 'DELETE') saved = false;
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: {} }) });
-      });
+      const headers = await authHeaders(buyerPage);
+      // A live product, so the wishlist API writes a real `wishlists` row.
+      const product = await liveProduct(buyerPage, 'hydrating-toner');
+      // Clean slate: the product must not be in the wishlist yet.
+      await buyerPage.request.delete(`${API_BASE_URL}/wishlist/${product.id}`, { headers });
+      // The generic source has no analysis scope, so the live product is rendered
+      // whatever its skin types are.
+      await mockPage(buyerPage, { source: 'generic', result: [product] });
       const screen = matching(buyerPage);
       await screen.goto();
-      const add = buyerPage.getByRole('button', { name: /add to wishlist/i }).first();
-      await add.click();
-      // The card flips to the saved state and the success toast confirms the add.
-      await expect(buyerPage.getByRole('button', { name: /remove from wishlist/i }).first()).toBeVisible();
-      await expect(buyerPage.getByText('Added to wishlist')).toBeVisible();
-      await buyerPage.getByRole('button', { name: /remove from wishlist/i }).first().click();
-      // Removing flips it back and reports the removal.
-      await expect(buyerPage.getByRole('button', { name: /add to wishlist/i }).first()).toBeVisible();
-      await expect(buyerPage.getByText('Removed from wishlist')).toBeVisible();
-      await screen.capture('N-15_1_wishlist_toggle');
+      try {
+        const add = buyerPage.getByRole('button', { name: /add to wishlist/i }).first();
+        await expect(add).toBeVisible();
+        // Before: no wishlist row exists for this buyer and product.
+        await captureWishlistDbEvidence(
+          buyerPage,
+          'N-15_1_db_wishlist_before',
+          BUYER_EMAIL,
+          'wishlists row before adding the recommendation',
+          product.id,
+        );
+        await add.click();
+        // The card flips to the saved state and the success toast confirms the add.
+        await expect(buyerPage.getByRole('button', { name: /remove from wishlist/i }).first()).toBeVisible();
+        await expect(buyerPage.getByText('Added to wishlist')).toBeVisible();
+        await screen.capture('N-15_2_wishlist_added');
+        // After the add: the row is persisted in `wishlists`.
+        await captureWishlistDbEvidence(
+          buyerPage,
+          'N-15_3_db_wishlist_row_added',
+          BUYER_EMAIL,
+          'wishlists row after adding the recommendation',
+          product.id,
+        );
+        await buyerPage.getByRole('button', { name: /remove from wishlist/i }).first().click();
+        // Removing flips it back and reports the removal.
+        await expect(buyerPage.getByRole('button', { name: /add to wishlist/i }).first()).toBeVisible();
+        await expect(buyerPage.getByText('Removed from wishlist')).toBeVisible();
+        await screen.capture('N-15_4_wishlist_removed');
+        // After the removal: the row is deleted again.
+        await captureWishlistDbEvidence(
+          buyerPage,
+          'N-15_5_db_wishlist_row_deleted',
+          BUYER_EMAIL,
+          'wishlists row after removing the recommendation',
+          product.id,
+        );
+      } finally {
+        // Leave the seed data untouched.
+        await buyerPage.request.delete(`${API_BASE_URL}/wishlist/${product.id}`, { headers });
+      }
     });
 
     test('N-16: adds an in-stock recommendation to the cart', async ({ buyerPage }) => {
-      let inCart = false;
-      let added = false;
-      await mockPage(buyerPage);
-      await buyerPage.route('**/cart/items', (route) => {
-        if (route.request().method() === 'POST') { added = true; inCart = true; }
-        return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ data: { id: 'cart-item-1' } }) });
-      });
-      await buyerPage.route('**/api/v1/cart', (route) => route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ data: { items: inCart ? [{ cartItemId: 'cart-item-1', productId: products[0].id, quantity: 1 }] : [], summary: { totalItems: inCart ? 1 : 0, subtotal: '0', shippingEstimate: '0', total: '0', hasOutOfStock: false, canCheckout: false } } }),
-      }));
+      const headers = await authHeaders(buyerPage);
+      // A live product, so the cart API writes a real `cart_items` row.
+      const product = await liveProduct(buyerPage, 'hydrating-toner');
+      await clearCartRow(buyerPage, product.id);
+      // The generic source has no analysis scope, so the live product is rendered
+      // whatever its skin types are.
+      await mockPage(buyerPage, { source: 'generic', result: [product] });
       const screen = matching(buyerPage);
       await screen.goto();
-      await buyerPage.getByRole('button', { name: /add to cart/i }).first().click();
-      // The item is persisted and the buyer is told about it.
-      await expect.poll(() => added).toBe(true);
-      await expect(buyerPage.getByText('Added to cart')).toBeVisible();
-      await screen.capture('N-16_1_cart_add');
-      // Adding the same product again opens the duplicate guard instead of a second call.
-      await buyerPage.reload();
-      await buyerPage.getByRole('button', { name: /add to cart/i }).first().click();
-      await expect(buyerPage.getByRole('dialog')).toContainText('Already in your cart');
-      await screen.capture('N-16_2_cart_duplicate_dialog');
+      try {
+        // Before: no cart row exists for this buyer and product.
+        await captureCartDbEvidence(
+          buyerPage,
+          'N-16_1_db_cart_item_before',
+          BUYER_EMAIL,
+          'cart_items row before adding the recommendation',
+          product.id,
+        );
+        await buyerPage.getByRole('button', { name: /add to cart/i }).first().click();
+        // The item is persisted and the buyer is told about it.
+        await expect(buyerPage.getByText('Added to cart')).toBeVisible();
+        await screen.capture('N-16_2_cart_add');
+        // After the add: the row exists in `cart_items` with quantity 1.
+        await captureCartDbEvidence(
+          buyerPage,
+          'N-16_3_db_cart_item_added',
+          BUYER_EMAIL,
+          'cart_items row after adding the recommendation',
+          product.id,
+        );
+        // Adding the same product again opens the duplicate guard instead of a second call.
+        await buyerPage.getByRole('button', { name: /add to cart/i }).first().click();
+        await expect(buyerPage.getByRole('dialog')).toContainText('Already in your cart');
+        await screen.capture('N-16_4_cart_duplicate_dialog');
+        // The duplicate attempt did not create a second row.
+        await captureCartDbEvidence(
+          buyerPage,
+          'N-16_5_db_cart_item_after_duplicate',
+          BUYER_EMAIL,
+          'cart_items row after the duplicate add attempt — still one row, quantity unchanged',
+          product.id,
+        );
+        // Quantity update on the same row.
+        const cartResponse = await buyerPage.request.get(`${API_BASE_URL}/cart`, { headers });
+        const cartBody = await cartResponse.json();
+        const cartItems = (cartBody.data?.data?.items ?? cartBody.data?.items ?? []) as Array<{ id: string; productId: string }>;
+        const cartItem = cartItems.find((item) => item.productId === product.id);
+        if (cartItem) {
+          await buyerPage.request.patch(`${API_BASE_URL}/cart/items/${cartItem.id}`, {
+            headers,
+            data: { quantity: 2 },
+          });
+        }
+        await captureCartDbEvidence(
+          buyerPage,
+          'N-16_6_db_cart_item_quantity_updated',
+          BUYER_EMAIL,
+          'cart_items row after the quantity was raised to 2',
+          product.id,
+        );
+      } finally {
+        // Leave the seed data untouched.
+        await clearCartRow(buyerPage, product.id);
+      }
     });
   });
 
@@ -1030,12 +1216,16 @@ test.describe('Matching & Recommendation', () => {
       const screen = matching(buyerPage);
       await screen.goto();
       await expect(buyerPage.getByRole('button', { name: 'Retry' })).toBeVisible();
+      // Before: the error banner with the retry action.
+      await screen.capture('A-04_1_error_banner');
       retryRequested = true;
       await buyerPage.getByRole('button', { name: 'Retry' }).click();
       await expect(buyerPage.getByText('Hydrating Serum')).toBeVisible();
-      await screen.capture('A-04_1_retry');
-      await captureApiEvidence(buyerPage, 'A-04_2_failed_recommendation_request', 'GET', failedRequestUrl, undefined, 503, failedResponseBody);
-      await captureApiEvidence(buyerPage, 'A-04_3_retried_recommendation_request', 'GET', successfulRequestUrl, undefined, 200, successfulResponseBody);
+      // After: the recommendations are back and the error banner is gone.
+      await expect(buyerPage.getByRole('button', { name: 'Retry' })).toHaveCount(0);
+      await screen.capture('A-04_2_recovered');
+      await captureApiEvidence(buyerPage, 'A-04_3_failed_recommendation_request', 'GET', failedRequestUrl, undefined, 503, failedResponseBody);
+      await captureApiEvidence(buyerPage, 'A-04_4_retried_recommendation_request', 'GET', successfulRequestUrl, undefined, 200, successfulResponseBody);
     });
 
     test('A-05: records malformed and missing similar-product ID behavior', async ({ buyerPage }) => {
@@ -1078,32 +1268,51 @@ test.describe('Matching & Recommendation', () => {
       await mockPage(buyerPage);
       const screen = matching(buyerPage);
       await screen.goto();
+      // Before: a valid price is accepted and no error is shown.
+      await buyerPage.getByPlaceholder('Min').fill('2000');
+      await buyerPage.getByPlaceholder('Min').blur();
+      await expect(buyerPage).toHaveURL(/minPrice=2000/);
+      await expect(buyerPage.getByRole('alert')).toHaveCount(0);
+      await screen.capture('A-08_1_valid_price');
+      // After: the negative value is rejected with an inline error.
       await buyerPage.getByPlaceholder('Min').fill('-1');
       await buyerPage.getByPlaceholder('Min').blur();
       await expect(buyerPage.getByRole('alert')).toContainText('Price cannot be negative');
-      await expect(buyerPage).not.toHaveURL(/minPrice/);
-      await screen.capture('A-08_1_negative_price');
+      await expect(buyerPage).not.toHaveURL(/minPrice=-1/);
+      await screen.capture('A-08_2_negative_price');
     });
   });
 
   test.describe('Boundary Scenarios', () => {
     test('B-01: displays the empty result state', async ({ buyerPage }) => {
-      await mockPage(buyerPage, { result: [], total: 0, totalPages: 0 });
+      await mockPage(buyerPage, { result: catalog });
       const screen = matching(buyerPage);
+      await buyerPage.goto('/buyer/recommendations?minPrice=1000');
+      // Before: the filter still returns products.
+      await expect(buyerPage.getByText('Hydrating Serum')).toBeVisible();
+      await screen.capture('B-01_1_filtered_results');
+      // After: a price range that matches nothing.
       await buyerPage.goto('/buyer/recommendations?minPrice=999999');
       await expect(buyerPage.getByText(/No products match your filters/)).toBeVisible();
       await expect(buyerPage.getByRole('button', { name: 'Reset Filters' })).toBeVisible();
-      await screen.capture('B-01_1_empty_results');
+      await screen.capture('B-01_2_empty_results');
     });
 
     test('B-02: shows out-of-stock products and hides cart action', async ({ buyerPage }) => {
-      const outOfStock = [{ ...products[0], isInStock: false }];
-      await mockPage(buyerPage, { result: outOfStock, total: 1, totalPages: 1 });
+      const inStock = [{ ...products[0], isInStock: true }];
+      const outOfStock = [{ ...products[0], name: 'Sold Out Serum', slug: 'sold-out-serum', isInStock: false }];
+      await mockPage(buyerPage, { result: inStock, total: 1, totalPages: 1 });
       const screen = matching(buyerPage);
       await screen.goto();
+      // Before: the in-stock card shows its cart action.
+      await expect(buyerPage.getByRole('button', { name: 'Add to cart' })).toHaveCount(1);
+      await screen.capture('B-02_1_in_stock');
+      // After: the out-of-stock product stays in the results but hides the cart action.
+      await mockPage(buyerPage, { result: outOfStock, total: 1, totalPages: 1 });
+      await buyerPage.reload();
       await expect(buyerPage.getByText(/OUT OF STOCK/i)).toBeVisible();
       await expect(buyerPage.getByRole('button', { name: 'Add to cart' })).toHaveCount(0);
-      await screen.capture('B-02_1_out_of_stock');
+      await screen.capture('B-02_2_out_of_stock');
     });
 
     test('B-03: returns an empty page beyond total pages', async ({ buyerPage }) => {
@@ -1137,19 +1346,32 @@ test.describe('Matching & Recommendation', () => {
     });
 
     test('B-06: hides the ad panel with an empty ad response', async ({ buyerPage }) => {
-      await mockPage(buyerPage, { ads: [] });
+      const ad = { id: 'e2e-ad-1', placement: 'recommendation_page_banner', title: 'Sponsored Serum', description: 'Sponsored skincare', content: null, imageUrl: null, sku: null, announcement_message: 'SPONSORED', linkUrl: '/buyer/products/hydrating-serum', tier: 'premium', approvalStatus: 'approved', startsAt: '2026-01-01T00:00:00.000Z', expiresAt: '2030-01-01T00:00:00.000Z' };
+      await mockPage(buyerPage, { ads: [ad] });
       const screen = matching(buyerPage);
       await screen.goto();
+      // Before: an eligible ad is rendered.
+      await expect(screen.adPanel).toBeVisible();
+      await screen.capture('B-06_1_with_ads');
+      // After: the ad panel is gone when no eligible ad exists.
+      await mockPage(buyerPage, { ads: [] });
+      await buyerPage.reload();
       await expect(screen.adPanel).toHaveCount(0);
-      await screen.capture('B-06_1_no_ads');
+      await screen.capture('B-06_2_no_ads');
     });
 
     test('B-07: uses image fallback and formats product prices', async ({ buyerPage }) => {
-      await mockPage(buyerPage, { result: [{ ...products[0], images: [] }], total: 1, totalPages: 1 });
+      // Two cards side by side: one with a real image, one without any image URL.
+      const withImage = { ...products[0], name: 'Serum With Photo', slug: 'serum-with-photo', images: [products[0].images[0]] };
+      const withoutImage = { ...products[1], name: 'Serum Without Photo', slug: 'serum-without-photo', images: [] };
+      await mockPage(buyerPage, { result: [withImage, withoutImage], total: 2, totalPages: 1 });
       const screen = matching(buyerPage);
       await screen.goto();
       await expect(buyerPage.getByText('2,500Ks')).toBeVisible();
       await expect(buyerPage.getByText('3,000Ks')).toBeVisible();
+      await expect(buyerPage.getByText('3,200Ks')).toBeVisible();
+      // The card without an image URL renders the 🧴 placeholder block.
+      await expect(buyerPage.getByText('🧴').first()).toBeVisible();
       await screen.capture('B-07_1_card_fallbacks');
     });
 
@@ -1158,7 +1380,7 @@ test.describe('Matching & Recommendation', () => {
       const hold = new Promise<void>((resolve) => { release = resolve; });
       await buyerPage.route('**/recommendations/personalized**', async (route) => {
         await hold;
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { data: [], meta: { page: 1, limit: 12, total: 0, totalPages: 0 }, source: 'generic', analysisAge: null, skinTypes: [] } }) });
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { data: products, meta: { page: 1, limit: 12, total: products.length, totalPages: 1 }, source: 'ai', analysisAge: 0, skinTypes: ['dry'] } }) });
       });
       const screen = matching(buyerPage);
       const navigation = screen.goto();
@@ -1167,10 +1389,14 @@ test.describe('Matching & Recommendation', () => {
       // One skeleton card per page slot (`SkeletonGrid count={meta.limit}`).
       await expect(buyerPage.locator('.animate-pulse.aspect-square')).toHaveCount(12);
       // The evidence has to be taken while the request is still pending —
-      // afterwards the grid is replaced by the (empty) result state.
+      // afterwards the grid is replaced by the loaded result.
       await screen.capture('B-08_1_first_load_skeleton');
       release();
       await navigation;
+      // After: the skeleton is replaced by the real product cards.
+      await expect(buyerPage.getByText('Hydrating Serum')).toBeVisible();
+      await expect(buyerPage.locator('.animate-pulse.aspect-square')).toHaveCount(0);
+      await screen.capture('B-08_2_loaded_results');
     });
   });
 
