@@ -100,6 +100,12 @@ export async function captureScreenshot(
   const filename = `${step}.png`;
   const filePath = path.join(screenshotDir, filename);
 
+  // Order Insights desktop evidence should match the user's laptop-width view.
+  // Keep B-03 at its explicitly tested mobile viewport.
+  if (screenFolder === 'Order_Insights' && !step.startsWith('B-03_')) {
+    await page.setViewportSize({ width: 1920, height: 1032 });
+  }
+
   try {
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(100);

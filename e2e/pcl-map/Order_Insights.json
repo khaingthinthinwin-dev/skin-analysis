@@ -1,17 +1,30 @@
 {
-  "pclFile": "docs/screen/Order_Insights/Order_Insights_PCL.md",
+  "pclFile": "docs/screen/Order_Insights/Order_Insights_Buyer_PCL.md",
   "specFiles": [
     "e2e/tests/Order_Insights/order-insights.spec.ts"
   ],
   "mappings": {
-    "should display buyer order history": "E2E-OI-01: Buyer order history displays",
-    "should view order detail": "E2E-OI-02: Order detail view works",
-    "should view order tracking": "E2E-OI-03: Order tracking displays",
-    "should display merchant order list": "E2E-OI-04: Merchant order list displays",
-    "should display sales summary": "E2E-OI-05: Sales summary displays",
-    "should view order detail with customer info": "E2E-OI-06: Merchant order detail with customer info",
-    "should display all orders with filters": "E2E-OI-07: Admin all orders with filters",
-    "should filter orders by status": "E2E-OI-08: Status filter works",
-    "should export order report": "E2E-OI-09: Order report export works"
+    "N-01: buyer sees their order history": "Buyer views their own order history",
+    "N-02: buyer opens an order detail from history": "Buyer opens an order detail from history",
+    "N-03: buyer filters, sorts, and changes page size": "Buyer applies list filters, sorting, and pagination",
+    "N-04: buyer resets filters and exports matching orders": "Buyer resets filters and exports matching orders",
+    "N-05: buyer downloads an invoice from order detail": "Buyer prints or downloads an order invoice",
+    "N-06: buyer returns from detail to the order list": "Buyer navigates back to the order list",
+    "N-07: buyer order history and detail are translated in English, Japanese, and Myanmar": "Buyer order history and detail support English, Japanese, and Myanmar",
+    "N-08: buyer language preference persists between order list and detail": "Buyer language choice remains active between order list and detail",
+    "N-09: buyer opens an order status notification and it is marked read": "Buyer receives and opens order status notifications",
+    "A-01: buyer cannot open an order outside their scope": "Buyer cannot view another buyer's order detail",
+    "A-02: unauthenticated visitor is denied buyer orders and API data": "Unauthenticated visitor cannot access buyer order pages/data",
+    "A-03: reversed order date range is rejected": "Invalid/reversed date range is rejected",
+    "A-04: buyer order list shows a retryable error on request failure": "Order list or detail request failure is handled",
+    "A-04: buyer order detail shows a retryable error on request failure": "Order list or detail request failure is handled",
+    "B-01: buyer sees an empty state when no orders match": "Empty order history displays an empty state",
+    "B-02: buyer can select the first and last supported page sizes": "First and last valid page sizes are accepted",
+    "B-03: buyer can reach order list and detail controls on a narrow viewport": "Buyer order list and detail remain usable on narrow viewport",
+    "B-04: buyer KPI tiles respond when a status filter is applied": "KPI behavior for default and filtered views is identified",
+    "I-01: buyer orders API returns scoped rows, metadata, and summary": "`GET /api/v1/orders` returns buyer-scoped list, metadata, and summary",
+    "I-02: buyer detail API returns their own order projection": "`GET /api/v1/orders/:orderId` returns own order detail",
+    "I-03: missing buyer order detail returns 404": "`GET /api/v1/orders/:orderId` returns 404 for missing or out-of-scope order",
+    "I-04: buyer cannot request an admin-selected merchant scope": "`GET /api/v1/orders` rejects buyer use of admin-only scope filters"
   }
 }
