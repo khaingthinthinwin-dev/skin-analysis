@@ -2343,6 +2343,9 @@
         "images": "ထုတ်ကုန် ပုံများ"
       },
       "action": { "deactivate": "ပိတ်ရန်", "reactivate": "ပြန်ဖွင့်ရန်" },
+      "tooltip": {
+        "pendingOrders": "မှာယူမှု ပို့ဆောင်မှု ပြီးဆုံးသည်အထိ ပိတ်၍ မရပါ။"
+      },
       "dialog": {
         "deactivateTitle": "ထုတ်ကုန် ပိတ်ရန်",
         "reactivateTitle": "ထုတ်ကုန် ပြန်ဖွင့်ရန်"

@@ -1,293 +1,293 @@
 {
   "module": "Promotion_Pages",
-  "timestamp": "2026-10-19T04:52:04.051Z",
+  "timestamp": "2026-10-20T10:31:03.143Z",
   "total": 47,
   "passed": 47,
   "failed": 0,
   "skipped": 0,
-  "durationMs": 235112,
+  "durationMs": 267592,
   "tests": [
     {
       "title": "N-01: should display promotion management page",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 7621
+      "duration": 8310
     },
     {
       "title": "N-02: should create a new promotion with valid data",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 7831
+      "duration": 9768
     },
     {
       "title": "N-03: should edit an existing unused promotion",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 7151
+      "duration": 9573
     },
     {
       "title": "N-04: should delete a promotion via confirmation dialog",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 10186
+      "duration": 8309
     },
     {
       "title": "N-05: should toggle promotion active status",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 6673
+      "duration": 9133
     },
     {
       "title": "N-06: should search promotions by code fragment",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 6351
+      "duration": 10332
     },
     {
       "title": "N-07: should filter promotions by status",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 8471
+      "duration": 8189
     },
     {
       "title": "N-08: should paginate the promotion list",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 8223
+      "duration": 7133
     },
     {
       "title": "N-09: should validate a valid coupon code at checkout",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 4572
+      "duration": 4575
     },
     {
       "title": "N-10: should toggle language on screen",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 5811
+      "duration": 6494
     },
     {
       "title": "N-11: should toggle theme on screen",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 7023
+      "duration": 7195
     },
     {
       "title": "N-12: should display responsive layout on desktop viewport",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 6345
+      "duration": 6198
     },
     {
       "title": "N-13: should display responsive layout on mobile viewport",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 4978
+      "duration": 5682
     },
     {
       "title": "A-01: should show validation errors when submitting empty create form",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 6813
+      "duration": 6812
     },
     {
       "title": "A-02: should show error when creating a promotion with duplicate code",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 9509
+      "duration": 9012
     },
     {
       "title": "A-03: should reject expiry date not after start date",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 6370
+      "duration": 5842
     },
     {
       "title": "A-04: should reject percentage discount value outside 1–99",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 5658
+      "duration": 5973
     },
     {
       "title": "A-05: should block edit/delete of a promotion with used_count > 0",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 4750
+      "duration": 7199
     },
     {
       "title": "A-06: pending merchant sees read-only list with banner, no mutation controls",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 4723
+      "duration": 4585
     },
     {
       "title": "A-07: rejected merchant sees read-only list with rejection reason",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 5039
+      "duration": 4781
     },
     {
       "title": "A-08: should redirect to login when accessing promotion pages without authentication",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 2109
+      "duration": 2038
     },
     {
       "title": "A-09: should reject invalid coupon code format at checkout",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 867
+      "duration": 888
     },
     {
       "title": "A-10: should reject expired / inactive / max-uses coupon",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 3445
+      "duration": 3901
     },
     {
       "title": "A-11: should keep one replaceable coupon per merchant at checkout",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 7004
+      "duration": 10071
     },
     {
       "title": "B-01: should accept promotion code at minimum length (1 character)",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 7379
+      "duration": 9531
     },
     {
       "title": "B-02: should accept promotion code at maximum length (50 characters)",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 6264
+      "duration": 9301
     },
     {
       "title": "B-03: should reject promotion code exceeding maximum length (51 characters)",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 5605
+      "duration": 4960
     },
     {
       "title": "B-04: should accept description at maximum length (500 characters)",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 7077
+      "duration": 9662
     },
     {
       "title": "B-05: should reject description exceeding maximum length (501 characters)",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 5255
+      "duration": 7202
     },
     {
       "title": "B-06: should accept percentage discount at boundary values (1, 99) and reject 100",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 11143
+      "duration": 16081
     },
     {
       "title": "B-07: should accept optional fields at minimum values (minOrderAmount = 0, maxUses = 1)",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 7065
+      "duration": 7515
     },
     {
       "title": "B-08: should handle empty state when merchant has no promotions",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 5085
+      "duration": 5335
     },
     {
       "title": "B-09: should reject coupon when order amount below minimum order amount",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 3965
+      "duration": 3649
     },
     {
       "title": "B-10: should cap discount at order total (finalAmount never negative)",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 2885
+      "duration": 4707
     },
     {
       "title": "I-01: GET /api/v1/promotions should return 200 with list and pagination",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 846
+      "duration": 897
     },
     {
       "title": "I-02: POST /api/v1/promotions should return 201 with created promotion",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 1021
+      "duration": 838
     },
     {
       "title": "I-03: POST /api/v1/promotions duplicate code should return 400",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 1650
+      "duration": 1265
     },
     {
       "title": "I-04: PATCH /api/v1/promotions/:id should return 200 with updated promotion",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 867
+      "duration": 1043
     },
     {
       "title": "I-05: PATCH /api/v1/promotions/:id used promotion should return 409",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 3198
+      "duration": 2772
     },
     {
       "title": "I-06: DELETE /api/v1/promotions/:id should return 204 on success",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 3463
+      "duration": 3542
     },
     {
       "title": "I-07: DELETE /api/v1/promotions/:id used promotion should return 409",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 3197
+      "duration": 3804
     },
     {
       "title": "I-08: PATCH /api/v1/promotions/:id non-existent ID should return 404",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 3587
+      "duration": 3553
     },
     {
       "title": "I-09: POST /api/v1/promotions/validate valid coupon should return 200 with discount payload",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 1173
+      "duration": 1348
     },
     {
       "title": "I-10: POST /api/v1/promotions/validate expired coupon should return 400",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 1067
+      "duration": 1404
     },
     {
       "title": "I-11: GET /api/v1/promotions should return 401 without JWT",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 573
+      "duration": 544
     },
     {
       "title": "I-12: POST /api/v1/promotions pending/rejected merchant should return 403",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 1860
+      "duration": 2776
     },
     {
       "title": "I-13: error response should follow standard API format",
       "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Promotion_Pages\\promotion-management.spec.ts",
       "status": "passed",
-      "duration": 3364
+      "duration": 3870
     }
   ]
 }

@@ -2361,6 +2361,9 @@
         "images": "Product Images"
       },
       "action": { "deactivate": "Deactivate", "reactivate": "Reactivate" },
+      "tooltip": {
+        "pendingOrders": "Cannot deactivate until the order delivery is completed."
+      },
       "dialog": {
         "deactivateTitle": "Deactivate Product",
         "reactivateTitle": "Reactivate Product"

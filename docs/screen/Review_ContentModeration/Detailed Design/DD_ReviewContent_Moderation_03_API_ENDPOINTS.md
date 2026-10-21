@@ -405,6 +405,7 @@ View all products with filters, search, sort, and pagination.
         "images": ["https://cdn.example.com/products/serum-1.jpg"],
         "price": 49.99,
         "isActive": true,
+        "hasPendingOrders": false,
         "shop": {
           "id": "clxShop001",
           "name": "Beauty Garden",
@@ -425,10 +426,10 @@ View all products with filters, search, sort, and pagination.
   }
   ```
 - **Error Responses:**
-  - `401 UNAUTHORIZED`  EInvalid or expired access token
-  - `403 FORBIDDEN`  ENon-admin role
-  - `500 INTERNAL_SERVER_ERROR`  EServer error
-- **Logic:** Validates JWT + admin role. Queries `products` table with `is_active` filter. Joins `shops` and `users`. Applies pagination.
+  - `401 UNAUTHORIZED`  Invalid or expired access token
+  - `403 FORBIDDEN`  Non-admin role
+  - `500 INTERNAL_SERVER_ERROR`  Server error
+- **Logic:** Validates JWT + admin role. Queries `products` table with `is_active` filter. Joins `shops` and `users`. Applies pagination. Computes `hasPendingOrders` per product — `true` while the product appears in any order whose status is not terminal (not yet delivered); the admin UI disables **Deactivate** for those products.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
@@ -452,6 +453,7 @@ View product detail for moderation.
       "images": ["https://cdn.example.com/products/serum-1.jpg"],
       "price": 49.99,
       "isActive": true,
+      "hasPendingOrders": false,
       "category": {
         "id": "clxCat001",
         "name": "Serums"
@@ -507,13 +509,14 @@ Deactivate or reactivate a product.
   - Invalidates product list cache in Redis
   - Logs moderation action to audit trail
 - **Error Responses:**
-  - `400 BAD_REQUEST`  EValidation failed (missing reason for deactivation)
-  - `401 UNAUTHORIZED`  EInvalid or expired access token
-  - `403 FORBIDDEN`  ENon-admin role
-  - `404 NOT_FOUND`  EProduct not found
-  - `409 CONFLICT`  EProduct already in target state
-  - `500 INTERNAL_SERVER_ERROR`  EServer error
-- **Logic:** Validates JWT + admin role. Finds product by ID. If deactivating, validates reason. Updates `is_active`. Invalidates caches. Logs audit.
+  - `400 BAD_REQUEST`  Validation failed (missing reason for deactivation)
+  - `400 BAD_REQUEST`  `"Cannot deactivate until the order delivery is completed."` — product appears in at least one order whose status is not terminal
+  - `401 UNAUTHORIZED`  Invalid or expired access token
+  - `403 FORBIDDEN`  Non-admin role
+  - `404 NOT_FOUND`  Product not found
+  - `409 CONFLICT`  Product already in target state
+  - `500 INTERNAL_SERVER_ERROR`  Server error
+- **Logic:** Validates JWT + admin role. Finds product by ID. If deactivating, validates reason and blocks while the product has any undelivered order (a product may only be deactivated by the admin after it has been successfully delivered to the buyer). Updates `is_active`. Invalidates caches. Logs audit.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---

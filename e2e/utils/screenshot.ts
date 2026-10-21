@@ -105,7 +105,66 @@ export async function captureScreenshot(
     await page.waitForTimeout(100);
   } catch {}
 
-  await page.screenshot({ path: filePath, fullPage: true });
+  const captureMarker = 'data-e2e-full-page-capture';
+  const expandMain = await page.evaluate((marker) => {
+    const main = Array.from(document.querySelectorAll<HTMLElement>('main'))
+      .reverse()
+      .find((element) => element.scrollHeight > element.clientHeight + 1);
+    if (!main || main.scrollHeight <= main.clientHeight + 1) return false;
+
+    let element: HTMLElement | null = main;
+    let index = 0;
+    while (element && element !== document.documentElement) {
+      element.setAttribute(marker, index === 0 ? 'main' : 'ancestor');
+      if (element.scrollHeight > element.clientHeight) element.scrollTop = 0;
+      element = element.parentElement;
+      index += 1;
+    }
+    return true;
+  }, captureMarker);
+
+  let expansionStyle: Awaited<ReturnType<Page['addStyleTag']>> | undefined;
+  try {
+    if (expandMain) {
+      expansionStyle = await page.addStyleTag({
+        content: `
+          [${captureMarker}] {
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+            min-height: max-content !important;
+          }
+          [${captureMarker}="main"] {
+            flex: 0 0 auto !important;
+          }
+        `,
+      });
+      await page.evaluate(async (marker) => {
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        for (const element of document.querySelectorAll<HTMLElement>(`[${marker}]`)) {
+          element.scrollTop = 0;
+        }
+        window.scrollTo(0, 0);
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        for (const element of document.querySelectorAll<HTMLElement>(`[${marker}]`)) {
+          element.scrollTop = 0;
+        }
+        window.scrollTo(0, 0);
+      }, captureMarker);
+    }
+    const hasOpenDialog = await page
+      .locator('[role="dialog"], [role="alertdialog"]')
+      .first()
+      .isVisible();
+    await page.screenshot({ path: filePath, fullPage: !hasOpenDialog });
+  } finally {
+    await expansionStyle?.evaluate((style) => style.parentNode?.removeChild(style));
+    if (expandMain) {
+      await page.locator(`[${captureMarker}]`).evaluateAll((elements) => {
+        for (const element of elements) element.removeAttribute('data-e2e-full-page-capture');
+      });
+    }
+  }
 
   const index = loadScreenshotIndex(screenshotDir);
   const existing = index[filename];

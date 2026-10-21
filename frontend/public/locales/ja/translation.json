@@ -2283,6 +2283,9 @@
         "images": "商品画像"
       },
       "action": { "deactivate": "無効化", "reactivate": "再有効化" },
+      "tooltip": {
+        "pendingOrders": "注文の配送が完了するまで無効化できません。"
+      },
       "dialog": {
         "deactivateTitle": "商品を無効化",
         "reactivateTitle": "商品を再有効化"

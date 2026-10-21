@@ -1,0 +1,11 @@
+{
+  "capturedAt": "2026-10-20T10:27:06.264Z",
+  "description": "Promotion lookup after deletion (expected zero rows)",
+  "results": [
+    {
+      "label": "Promotion lookup after deletion (expected zero rows)",
+      "rowCount": 0,
+      "rows": []
+    }
+  ]
+}

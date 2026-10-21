@@ -257,7 +257,10 @@ describe('MatchingService', () => {
       await service.getPersonalized(userId, { skinTypes: 'dry' });
 
       const where = getMockWhere(mockPrisma.product.findMany);
-      expect(where.skinTypes).toEqual({ hasSome: ['dry'] });
+      expect(where.OR).toEqual([
+        { skinTypes: { hasSome: ['dry'] } },
+        { skinTypes: { has: 'all' } },
+      ]);
     });
 
     it('should apply price range filter', async () => {
@@ -327,9 +330,10 @@ describe('MatchingService', () => {
 
         await service.getPersonalized(userId, { skinTypes: 'oily,all' });
 
-        expect(getMockWhere(mockPrisma.product.findMany).skinTypes).toEqual({
-          hasSome: ['oily'],
-        });
+        expect(getMockWhere(mockPrisma.product.findMany).OR).toEqual([
+          { skinTypes: { hasSome: ['oily'] } },
+          { skinTypes: { has: 'all' } },
+        ]);
       });
 
       it('should keep the analysed skin type when no skinTypes param is sent', async () => {
@@ -870,7 +874,10 @@ describe('MatchingService', () => {
         });
 
         const where = getMockWhere(mockPrisma.product.findMany);
-        expect(where.skinTypes).toEqual({ hasSome: ['oily', 'dry'] });
+        expect(where.OR).toEqual([
+          { skinTypes: { hasSome: ['oily', 'dry'] } },
+          { skinTypes: { has: 'all' } },
+        ]);
         expect(where.ingredients).toEqual({ hasSome: ['Vitamin C'] });
         expect(where.price).toEqual({ gte: 1000, lte: 5000 });
         expect(where.avgRating).toEqual({ gte: 4 });

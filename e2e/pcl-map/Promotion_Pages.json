@@ -3,53 +3,290 @@
   "specFiles": [
     "e2e/tests/Promotion_Pages/promotion-management.spec.ts"
   ],
+  "format": "pcl-id-keyed",
+  "evidenceDirectory": "e2e/test-results/Promotion_Pages/screenshots",
   "mappings": {
-    "N-01: should display promotion management page": "N-01",
-    "N-02: should create a new promotion with valid data": "N-02",
-    "N-03: should edit an existing unused promotion": "N-03",
-    "N-04: should delete a promotion via confirmation dialog": "N-04",
-    "N-05: should toggle promotion active status": "N-05",
-    "N-06: should search promotions by code fragment": "N-06",
-    "N-07: should filter promotions by status": "N-07",
-    "N-08: should paginate the promotion list": "N-08",
-    "N-09: should validate a valid coupon code at checkout": "N-09",
-    "N-10: should toggle language on screen": "N-10",
-    "N-11: should toggle theme on screen": "N-11",
-    "N-12: should display responsive layout on desktop viewport": "N-12",
-    "N-13: should display responsive layout on mobile viewport": "N-13",
-    "A-01: should show validation errors when submitting empty create form": "A-01",
-    "A-02: should show error when creating a promotion with duplicate code": "A-02",
-    "A-03: should reject expiry date not after start date": "A-03",
-    "A-04: should reject percentage discount value outside 1–99": "A-04",
-    "A-05: should block edit/delete of a promotion with used_count > 0": "A-05",
-    "A-06: pending merchant sees read-only list with banner, no mutation controls": "A-06",
-    "A-07: rejected merchant sees read-only list with rejection reason": "A-07",
-    "A-08: should redirect to login when accessing promotion pages without authentication": "A-08",
-    "A-09: should reject invalid coupon code format at checkout": "A-09",
-    "A-10: should reject expired / inactive / max-uses coupon": "A-10",
-    "A-11: should keep one replaceable coupon per merchant at checkout": "A-11",
-    "B-01: should accept promotion code at minimum length (1 character)": "B-01",
-    "B-02: should accept promotion code at maximum length (50 characters)": "B-02",
-    "B-03: should reject promotion code exceeding maximum length (51 characters)": "B-03",
-    "B-04: should accept description at maximum length (500 characters)": "B-04",
-    "B-05: should reject description exceeding maximum length (501 characters)": "B-05",
-    "B-06: should accept percentage discount at boundary values (1, 99) and reject 100": "B-06",
-    "B-07: should accept optional fields at minimum values (minOrderAmount = 0, maxUses = 1)": "B-07",
-    "B-08: should handle empty state when merchant has no promotions": "B-08",
-    "B-09: should reject coupon when order amount below minimum order amount": "B-09",
-    "B-10: should cap discount at order total (finalAmount never negative)": "B-10",
-    "I-01: GET /api/v1/promotions should return 200 with list and pagination": "I-01",
-    "I-02: POST /api/v1/promotions should return 201 with created promotion": "I-02",
-    "I-03: POST /api/v1/promotions duplicate code should return 400": "I-03",
-    "I-04: PATCH /api/v1/promotions/:id should return 200 with updated promotion": "I-04",
-    "I-05: PATCH /api/v1/promotions/:id used promotion should return 409": "I-05",
-    "I-06: DELETE /api/v1/promotions/:id should return 204 on success": "I-06",
-    "I-07: DELETE /api/v1/promotions/:id used promotion should return 409": "I-07",
-    "I-08: PATCH /api/v1/promotions/:id non-existent ID should return 404": "I-08",
-    "I-09: POST /api/v1/promotions/validate valid coupon should return 200 with discount payload": "I-09",
-    "I-10: POST /api/v1/promotions/validate expired coupon should return 400": "I-10",
-    "I-11: GET /api/v1/promotions should return 401 without JWT": "I-11",
-    "I-12: POST /api/v1/promotions pending/rejected merchant should return 403": "I-12",
-    "I-13: error response should follow standard API format": "I-13"
+    "N-01": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "N-01: should display promotion management page"
+      }
+    ],
+    "N-02": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "N-02: should create a new promotion with valid data"
+      }
+    ],
+    "N-03": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "N-03: should edit an existing unused promotion"
+      }
+    ],
+    "N-04": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "N-04: should delete a promotion via confirmation dialog"
+      }
+    ],
+    "N-05": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "N-05: should toggle promotion active status"
+      }
+    ],
+    "N-06": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "N-06: should search promotions by code fragment"
+      }
+    ],
+    "N-07": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "N-07: should filter promotions by status"
+      }
+    ],
+    "N-08": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "N-08: should paginate the promotion list"
+      }
+    ],
+    "N-09": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "N-09: should validate a valid coupon code at checkout"
+      }
+    ],
+    "N-10": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "N-10: should toggle language on screen"
+      }
+    ],
+    "N-11": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "N-11: should toggle theme on screen"
+      }
+    ],
+    "N-12": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "N-12: should display responsive layout on desktop viewport"
+      }
+    ],
+    "N-13": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "N-13: should display responsive layout on mobile viewport"
+      }
+    ],
+    "A-01": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "A-01: should show validation errors when submitting empty create form"
+      }
+    ],
+    "A-02": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "A-02: should show error when creating a promotion with duplicate code"
+      }
+    ],
+    "A-03": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "A-03: should reject expiry date not after start date"
+      }
+    ],
+    "A-04": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "A-04: should reject percentage discount value outside 1–99"
+      }
+    ],
+    "A-05": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "A-05: should block edit/delete of a promotion with used_count > 0"
+      }
+    ],
+    "A-06": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "A-06: pending merchant sees read-only list with banner, no mutation controls"
+      }
+    ],
+    "A-07": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "A-07: rejected merchant sees read-only list with rejection reason"
+      }
+    ],
+    "A-08": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "A-08: should redirect to login when accessing promotion pages without authentication"
+      }
+    ],
+    "A-09": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "A-09: should reject invalid coupon code format at checkout"
+      }
+    ],
+    "A-10": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "A-10: should reject expired / inactive / max-uses coupon"
+      }
+    ],
+    "A-11": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "A-11: should keep one replaceable coupon per merchant at checkout"
+      }
+    ],
+    "B-01": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "B-01: should accept promotion code at minimum length (1 character)"
+      }
+    ],
+    "B-02": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "B-02: should accept promotion code at maximum length (50 characters)"
+      }
+    ],
+    "B-03": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "B-03: should reject promotion code exceeding maximum length (51 characters)"
+      }
+    ],
+    "B-04": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "B-04: should accept description at maximum length (500 characters)"
+      }
+    ],
+    "B-05": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "B-05: should reject description exceeding maximum length (501 characters)"
+      }
+    ],
+    "B-06": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "B-06: should accept percentage discount at boundary values (1, 99) and reject 100"
+      }
+    ],
+    "B-07": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "B-07: should accept optional fields at minimum values (minOrderAmount = 0, maxUses = 1)"
+      }
+    ],
+    "B-08": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "B-08: should handle empty state when merchant has no promotions"
+      }
+    ],
+    "B-09": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "B-09: should reject coupon when order amount below minimum order amount"
+      }
+    ],
+    "B-10": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "B-10: should cap discount at order total (finalAmount never negative)"
+      }
+    ],
+    "I-01": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "I-01: GET /api/v1/promotions should return 200 with list and pagination"
+      }
+    ],
+    "I-02": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "I-02: POST /api/v1/promotions should return 201 with created promotion"
+      }
+    ],
+    "I-03": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "I-03: POST /api/v1/promotions duplicate code should return 400"
+      }
+    ],
+    "I-04": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "I-04: PATCH /api/v1/promotions/:id should return 200 with updated promotion"
+      }
+    ],
+    "I-05": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "I-05: PATCH /api/v1/promotions/:id used promotion should return 409"
+      }
+    ],
+    "I-06": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "I-06: DELETE /api/v1/promotions/:id should return 204 on success"
+      }
+    ],
+    "I-07": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "I-07: DELETE /api/v1/promotions/:id used promotion should return 409"
+      }
+    ],
+    "I-08": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "I-08: PATCH /api/v1/promotions/:id non-existent ID should return 404"
+      }
+    ],
+    "I-09": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "I-09: POST /api/v1/promotions/validate valid coupon should return 200 with discount payload"
+      }
+    ],
+    "I-10": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "I-10: POST /api/v1/promotions/validate expired coupon should return 400"
+      }
+    ],
+    "I-11": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "I-11: GET /api/v1/promotions should return 401 without JWT"
+      }
+    ],
+    "I-12": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "I-12: POST /api/v1/promotions pending/rejected merchant should return 403"
+      }
+    ],
+    "I-13": [
+      {
+        "file": "promotion-management.spec.ts",
+        "title": "I-13: error response should follow standard API format"
+      }
+    ]
   }
 }
