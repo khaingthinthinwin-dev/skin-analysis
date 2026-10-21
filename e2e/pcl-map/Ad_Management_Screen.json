@@ -1,12 +1,546 @@
 {
-  "pclFile": "docs/screen/Ad_Management_Screen/Admin_AdManagement_PCL.md",
+  "pclFile": "docs/screen/Ad_Management_Screen/Ad_Management_PCL.md",
+  "format": "pcl-id-keyed",
+  "markAllWhenSuitePasses": true,
   "specFiles": [
-    "e2e/tests/Ad_Management_Screen/ad-management.spec.ts"
+    "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+    "e2e/tests/Ad_Management_Screen/ad-fee-packages.spec.ts",
+    "e2e/tests/Ad_Management_Screen/ad-fee-history.spec.ts",
+    "e2e/tests/Ad_Management_Screen/ad-analytics.spec.ts",
+    "e2e/tests/Ad_Management_Screen/ad-export.spec.ts",
+    "e2e/tests/Ad_Management_Screen/ad-management.api.spec.ts",
+    "e2e/tests/Ad_Management_Screen/ad-fee.api.spec.ts",
+    "e2e/tests/Ad_Management_Screen/ad-analytics.api.spec.ts",
+    "e2e/tests/Ad_Management_Screen/ad-export.api.spec.ts"
   ],
   "mappings": {
-    "should display ad management page with ad list": "E2E-ADM-01: Admin ad management page loads with ad list",
-    "should approve a pending ad": "E2E-ADM-02: Ad approval works",
-    "should reject a pending ad": "E2E-ADM-03: Ad rejection works",
-    "should export ad report as CSV": "E2E-ADM-04: CSV export works"
+    "N-01": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should display ad management page with ad list and filters"
+      },
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should filter ad list by status, placement, tier, and shop"
+      }
+    ],
+    "N-02": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should review a single pending ad and approve it"
+      }
+    ],
+    "N-03": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should reject a single pending ad with a valid reason"
+      }
+    ],
+    "N-04": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should bulk approve selected pending ads"
+      }
+    ],
+    "N-05": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should bulk reject selected pending ads with common reason"
+      }
+    ],
+    "N-06": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-packages.spec.ts",
+        "title": "should navigate to package fee page and view all fee settings"
+      }
+    ],
+    "N-07": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-packages.spec.ts",
+        "title": "should create a new fee setting and log history"
+      }
+    ],
+    "N-08": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-packages.spec.ts",
+        "title": "should edit an existing fee setting and keep historical snapshot"
+      }
+    ],
+    "N-09": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-packages.spec.ts",
+        "title": "should deactivate an active fee setting with reason"
+      }
+    ],
+    "N-10": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-history.spec.ts",
+        "title": "should view fee change history with date, placement, tier, old/new rates"
+      }
+    ],
+    "N-11": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-analytics.spec.ts",
+        "title": "should view revenue analytics with totals, charts and breakdowns by placement and tier"
+      }
+    ],
+    "N-12": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-export.spec.ts",
+        "title": "should export ad performance CSV with correct columns"
+      }
+    ],
+    "N-13": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-export.spec.ts",
+        "title": "should export submission history CSV with review metadata"
+      }
+    ],
+    "N-14": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-export.spec.ts",
+        "title": "should export fee history log as CSV"
+      }
+    ],
+    "N-15": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-export.spec.ts",
+        "title": "should update labels on export screen"
+      }
+    ],
+    "N-16": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-export.spec.ts",
+        "title": "should switch theme on export screen without break"
+      }
+    ],
+    "N-17": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-export.spec.ts",
+        "title": "should be usable at 1280x720"
+      },
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-export.spec.ts",
+        "title": "should be usable at 375x667"
+      }
+    ],
+    "N-18": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-packages.spec.ts",
+        "title": "should reactivate an inactive fee setting"
+      }
+    ],
+    "N-19": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-history.spec.ts",
+        "title": "should delete an older fee history record that is eligible for cleanup"
+      }
+    ],
+    "N-20": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-history.spec.ts",
+        "title": "should filter and paginate fee history by month, placement, and tier"
+      }
+    ],
+    "N-21": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should open a newly submitted ad from an admin notification"
+      }
+    ],
+    "N-22": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should view an approved or rejected ad without moderation actions"
+      }
+    ],
+    "N-23": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-packages.spec.ts",
+        "title": "should disable fee creation when all 12 placement/tier packages exist"
+      }
+    ],
+    "N-24": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should keep paid advertisements unchanged when a fee setting is updated"
+      }
+    ],
+    "N-25": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should select and undo all eligible ads on the current table page"
+      }
+    ],
+    "N-26": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should navigate to and highlight an ad from a later page opened by notification"
+      }
+    ],
+    "N-27": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-analytics.spec.ts",
+        "title": "should apply multiple placement and tier filters to revenue analytics"
+      }
+    ],
+    "A-01": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should deny a buyer attempting ad moderation"
+      }
+    ],
+    "A-02": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should show validation error when rejection reason is blank"
+      }
+    ],
+    "A-03": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should reject a second approval after the ad is no longer pending"
+      }
+    ],
+    "A-04": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should block bulk operation when more than 50 ads are submitted"
+      }
+    ],
+    "A-05": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should allow editing ad fields with full rights"
+      }
+    ],
+    "A-06": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-packages.spec.ts",
+        "title": "should search / filter fee settings by placement/tier/status"
+      }
+    ],
+    "A-07": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-packages.spec.ts",
+        "title": "should have permission control on fee settings"
+      }
+    ],
+    "A-08": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-packages.spec.ts",
+        "title": "should not affect existing ads when editing fee settings"
+      }
+    ],
+    "A-09": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should show empty state when shop search has no match"
+      }
+    ],
+    "A-10": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-analytics.api.spec.ts",
+        "title": "should return total revenue and breakdown metrics with month filter"
+      }
+    ],
+    "A-11": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should redirect unauthenticated user from ad management routes"
+      }
+    ],
+    "A-12": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should not show a draft ad while payment is pending"
+      }
+    ],
+    "A-13": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should reject an unpaid pending ad without changing its payment status"
+      }
+    ],
+    "A-14": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-analytics.api.spec.ts",
+        "title": "should reject invalid or out-of-range date windows in analytics"
+      }
+    ],
+    "A-15": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-history.spec.ts",
+        "title": "should batch export fee history for batch export"
+      }
+    ],
+    "A-16": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-export.api.spec.ts",
+        "title": "A-16: should reject date ranges over 365 days and non-CSV formats"
+      },
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-export.spec.ts",
+        "title": "should reject date range longer than 365 days"
+      }
+    ],
+    "A-17": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-history.spec.ts",
+        "title": "should have permission control on Fee Change History"
+      }
+    ],
+    "A-18": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.api.spec.ts",
+        "title": "A-18: backend service continues after a refund failure"
+      }
+    ],
+    "A-19": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should reject invalid status, pagination, and long shop filters"
+      }
+    ],
+    "A-21": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should reject the whole request and leave the pending ad unchanged"
+      }
+    ],
+    "B-01": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-packages.spec.ts",
+        "title": "should create fee setting at minimum valid values"
+      }
+    ],
+    "B-02": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-packages.spec.ts",
+        "title": "should accept fee setting at maximum reasonable values"
+      }
+    ],
+    "B-03": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should accept exactly 1000 characters in rejection reason"
+      }
+    ],
+    "B-04": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should block rejection reason exceeding 1000 characters"
+      }
+    ],
+    "B-05": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should show validation error for empty required fields"
+      }
+    ],
+    "B-06": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should handle concurrent status change by another admin"
+      }
+    ],
+    "B-07": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should record status change in audit log"
+      }
+    ],
+    "B-08": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-analytics.spec.ts",
+        "title": "should reflect exact single-day date range in analytics without off-by-one errors"
+      }
+    ],
+    "B-09": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should accept long shop name and filter correctly"
+      }
+    ],
+    "B-10": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-packages.spec.ts",
+        "title": "should reactivate once, then block second reactivation"
+      }
+    ],
+    "B-11": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-history.spec.ts",
+        "title": "should not cause duplicates or errors with concurrent deletion"
+      }
+    ],
+    "B-12": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-history.spec.ts",
+        "title": "should allow deleting exactly 50 records, block 51-record bulk deletion"
+      }
+    ],
+    "B-13": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-export.api.spec.ts",
+        "title": "B-13: submission-history export preserves each review event"
+      }
+    ],
+    "B-14": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-export.spec.ts",
+        "title": "should complete concurrent export requests without conflicts"
+      }
+    ],
+    "B-15": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-export.spec.ts",
+        "title": "should preserve special characters in exported CSV correctly"
+      }
+    ],
+    "B-16": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee-history.spec.ts",
+        "title": "should follow UTC calendar-month boundary for fee-history deletion"
+      }
+    ],
+    "B-17": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-analytics.spec.ts",
+        "title": "should display zero metrics and No data state when no approved ads match"
+      }
+    ],
+    "B-18": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should stay responsive under repeated moderation operations"
+      }
+    ],
+    "B-19": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should render and paginate correctly with large dataset"
+      }
+    ],
+    "I-01": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.api.spec.ts",
+        "title": "should return paginated ads for admin with filters"
+      }
+    ],
+    "I-02": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.api.spec.ts",
+        "title": "should return full detail for a single advertisement"
+      }
+    ],
+    "I-03": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.api.spec.ts",
+        "title": "should approve a pending ad and set approval metadata"
+      }
+    ],
+    "I-04": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.api.spec.ts",
+        "title": "should reject a pending ad and trigger refund"
+      }
+    ],
+    "I-05": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.api.spec.ts",
+        "title": "should bulk approve only pending ads within limit"
+      }
+    ],
+    "I-06": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.api.spec.ts",
+        "title": "should bulk reject ads and include refund summary"
+      }
+    ],
+    "I-07": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee.api.spec.ts",
+        "title": "should list fee settings with placement/tier metadata"
+      }
+    ],
+    "I-08": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee.api.spec.ts",
+        "title": "should create a valid fee setting and log history"
+      }
+    ],
+    "I-09": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee.api.spec.ts",
+        "title": "should update fee setting and keep historical snapshot"
+      }
+    ],
+    "I-10": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee.api.spec.ts",
+        "title": "should deactivate fee setting without affecting existing ads"
+      }
+    ],
+    "I-11": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee.api.spec.ts",
+        "title": "should return fee history sorted by created time"
+      }
+    ],
+    "I-12": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-analytics.api.spec.ts",
+        "title": "should return total revenue and breakdown metrics"
+      }
+    ],
+    "I-13": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-export.api.spec.ts",
+        "title": "I-13: should export CSV ad performance report"
+      }
+    ],
+    "I-14": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-export.api.spec.ts",
+        "title": "I-14: should export shop submission history CSV"
+      }
+    ],
+    "I-15": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-export.api.spec.ts",
+        "title": "I-15: should export fee history log as CSV"
+      }
+    ],
+    "I-16": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee.api.spec.ts",
+        "title": "should reactivate a fee setting and log the change"
+      }
+    ],
+    "I-17": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee.api.spec.ts",
+        "title": "should reject deleting an actual current-month fee-history record"
+      }
+    ],
+    "I-18": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-fee.api.spec.ts",
+        "title": "should return fee history with filters by calendar month and pagination"
+      }
+    ],
+    "I-19": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-export.api.spec.ts",
+        "title": "I-19 + A-16: should export with report-specific filters and audit metadata"
+      }
+    ],
+    "A-20": [
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-management.spec.ts",
+        "title": "should reject dateFrom later than dateTo"
+      }
+    ]
   }
 }

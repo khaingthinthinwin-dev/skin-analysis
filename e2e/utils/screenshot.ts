@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import { test } from '@playwright/test';
 import * as path from 'path';
 import * as fs from 'fs';
+import { createHash } from 'crypto';
 
 const TEST_RESULTS_ROOT = path.resolve(__dirname, '../test-results');
 
@@ -66,9 +67,45 @@ function loadScreenshotIndex(screenshotDir: string): ScreenshotIndex {
   }
 }
 
-function saveScreenshotIndex(screenshotDir: string, index: ScreenshotIndex): void {
+async function updateScreenshotIndex(
+  screenshotDir: string,
+  filename: string,
+  description: string | undefined,
+  testKey: string | undefined,
+): Promise<void> {
+  const lockPath = path.join(screenshotDir, 'index.lock');
   const indexPath = path.join(screenshotDir, 'index.json');
-  fs.writeFileSync(indexPath, JSON.stringify(index, null, 2), 'utf-8');
+  const deadline = Date.now() + 10_000;
+  let lockFd: number;
+
+  while (true) {
+    try {
+      lockFd = fs.openSync(lockPath, 'wx');
+      break;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+      if (Date.now() >= deadline) {
+        throw new Error(`Timed out waiting for screenshot index lock: ${lockPath}`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+  }
+
+  try {
+    const index = loadScreenshotIndex(screenshotDir);
+    const existing = index[filename];
+    const prev: ScreenshotIndexEntry =
+      typeof existing === 'string' ? { description: existing } : existing || {};
+    index[filename] = {
+      ...prev,
+      ...(description ? { description } : {}),
+      ...(testKey ? { test: testKey } : {}),
+    };
+    fs.writeFileSync(indexPath, JSON.stringify(index, null, 2), 'utf-8');
+  } finally {
+    fs.closeSync(lockFd);
+    fs.unlinkSync(lockPath);
+  }
 }
 
 export async function captureScreenshot(
@@ -166,18 +203,26 @@ export async function captureScreenshot(
     }
   }
 
-  const index = loadScreenshotIndex(screenshotDir);
-  const existing = index[filename];
-  const prev: ScreenshotIndexEntry =
-    typeof existing === 'string' ? { description: existing } : existing || {};
-  index[filename] = {
-    ...prev,
-    ...(description ? { description } : {}),
-    ...(testKey ? { test: testKey } : {}),
-  };
-  saveScreenshotIndex(screenshotDir, index);
+  await updateScreenshotIndex(screenshotDir, filename, description, testKey);
 
   return filePath;
+}
+
+export async function captureFinalTestScreenshot(
+  page: Page,
+  testInfo: { title: string; file: string; titlePath?: string[] },
+): Promise<void> {
+  const titlePath = testInfo.titlePath?.join(' / ') || testInfo.title;
+  const identity = `${path.basename(testInfo.file)}::${titlePath}`;
+  const caseId = titlePath.match(/\b([NABI]-\d{2})\b/)?.[1];
+  const prefix = caseId ? `${caseId}_FINAL` : 'TEST_FINAL';
+  const suffix = createHash('sha1').update(identity).digest('hex').slice(0, 8);
+  await captureScreenshot(
+    page,
+    `${prefix}_${suffix}_${titlePath}`,
+    `Final UI state for: ${titlePath}`,
+    testInfo,
+  );
 }
 
 export async function captureElementScreenshot(

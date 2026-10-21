@@ -372,20 +372,31 @@ describe('AdminAdManagementService ad review', () => {
         approvalStatus: 'pending',
         shop: { userId: 'u1' },
       },
+      {
+        id: 'a2',
+        shopId: 's2',
+        title: 'B',
+        approvalStatus: 'pending',
+        shop: { userId: 'u2' },
+      },
     ]);
-    prisma.advertisement.updateMany.mockResolvedValue({ count: 1 });
-    prisma.adPayment.findFirst.mockRejectedValue(new Error('boom'));
+    prisma.advertisement.updateMany.mockResolvedValue({ count: 2 });
+    prisma.adPayment.findFirst
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce(null);
     prisma.notification.create.mockResolvedValue({});
     prisma.auditLog.create.mockResolvedValue({});
 
     const result = await service.bulkRejectAds(
-      { ad_ids: ['a1'], rejection_reason: 'spam' },
+      { ad_ids: ['a1', 'a2'], rejection_reason: 'spam' },
       'admin1',
     );
 
-    expect(result.rejected).toBe(1);
+    expect(result.rejected).toBe(2);
     expect(result.refundsFailed).toBe(1);
+    expect(result.refundsProcessed).toBe(1);
     expect(result.failed).toBeGreaterThanOrEqual(1);
     expect(result.results[0].refundStatus).toBe('failed');
+    expect(result.results[1].refundStatus).toBe('processed');
   });
 });

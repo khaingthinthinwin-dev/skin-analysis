@@ -101,10 +101,13 @@ function removeEvidenceBlocks(content) {
 function buildStatusLookup(results) {
     const map = new Map();
     for (const r of results) {
-        const base = path.basename(r.file);
-        map.set(`${base}::${r.title}`, r.status);
+        map.set(`${path.basename(r.file.replace(/\\/g, '/'))}::${r.title}`, r.status);
     }
     return map;
+}
+
+function resultKey(file, title) {
+    return `${path.basename(file.replace(/\\/g, '/'))}::${title}`;
 }
 
 function normalizeIndexEntry(entry) {
@@ -114,22 +117,18 @@ function normalizeIndexEntry(entry) {
 }
 
 /**
- * Multi-line Evidence block (status line from primary test — refs[0]):
+ * Multi-line Evidence block for the tests mapped to a PCL item:
  *   - **Evidence**:
  *     - {description} → `file.png`   (or bare `file.png` if no description)
  *     - Test: {spec} › "{title}" — {status}
- * Screenshots are filtered to tests mapped to this item (refs) when the index
- * records a test; shots without test metadata are always kept. If filtering
- * drops everything but PCL screenshots exist, falls back to all of them.
- * API tests use request/response screenshots in the same evidence block.
+ * Screenshots are filtered to the primary test when the index records a test;
+ * shots without test metadata are always kept. If filtering drops everything
+ * but PCL screenshots exist, falls back to all of them.
  */
 function buildEvidenceLines(moduleName, pclId, refs, statusLookup) {
     const lines = ['  - **Evidence**:'];
     const descIndex = loadScreenshotIndex(moduleName);
-    const primary = refs[0] || null;
-    // Accept shots recorded under any test mapped to this PCL item (refs[0..n]),
-    // so evidence captured by a secondary mapped test is not dropped.
-    const refKeys = refs.map(r => `${path.basename(r.file)}::${r.title}`);
+    const testKeys = new Set(refs.map(ref => resultKey(ref.file, ref.title)));
 
     const shots = listScreenshots(moduleName, pclId);
     const withMeta = shots.map(shot => ({
@@ -137,7 +136,7 @@ function buildEvidenceLines(moduleName, pclId, refs, statusLookup) {
         meta: normalizeIndexEntry(descIndex[shot]),
     }));
     let shown = withMeta.filter(
-        ({ meta }) => !meta.test || !primaryKey || meta.test === primaryKey
+        ({ meta }) => !meta.test || testKeys.size === 0 || testKeys.has(meta.test)
     );
     if (shown.length === 0 && withMeta.length > 0) {
         shown = withMeta;
@@ -146,7 +145,6 @@ function buildEvidenceLines(moduleName, pclId, refs, statusLookup) {
     if (shown.length === 0) {
         lines.push('    - Screenshots: (none captured)');
     } else {
-<<<<<<< .mine
         const shots = listScreenshots(moduleName, pclId);
         const withMeta = shots.map(shot => ({
             shot,
@@ -168,36 +166,18 @@ function buildEvidenceLines(moduleName, pclId, refs, statusLookup) {
                 } else {
                     lines.push(`    - \`${shot}\``);
                 }
-=======
         for (const { shot, meta } of shown) {
             if (meta.description) {
                 lines.push(`    - ${meta.description} \u2192 \`${shot}\``);
             } else {
                 lines.push(`    - \`${shot}\``);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
->>>>>>> .theirs
             }
         }
     }
 
-    if (primary) {
-        const status = statusLookup.get(`${primary.file}::${primary.title}`) || 'missing';
-        lines.push(`    - Test: ${primary.file} \u203a "${primary.title}" \u2014 ${status}`);
+    for (const ref of refs) {
+        const status = statusLookup.get(resultKey(ref.file, ref.title)) || 'missing';
+        lines.push(`    - Test: ${ref.file} \u203a "${ref.title}" \u2014 ${status}`);
     }
 
     return lines;
@@ -207,7 +187,7 @@ function buildEvidenceLines(moduleName, pclId, refs, statusLookup) {
  * New PCL-ID-keyed format: mappings[pclId] = [{ file, title }, ...]
  * Ticks only when ALL refs passed. Writes/replaces a multi-line Evidence block under the item.
  */
-function updatePCLNew(moduleName, pclFilePath, results, mappings) {
+function updatePCLNew(moduleName, pclFilePath, results, mappings, markAllWhenSuitePasses = false) {
     const fullPath = path.join(ROOT_DIR, pclFilePath);
     if (!fs.existsSync(fullPath)) {
         console.log(`   ⚠️  PCL file not found: ${pclFilePath}`);
@@ -224,6 +204,8 @@ function updatePCLNew(moduleName, pclFilePath, results, mappings) {
     const gaps = [];
     const missingItems = [];
     let updatedCount = 0;
+    const suitePassed =
+        results.length > 0 && results.every(result => result.status === 'passed');
 
     const decisions = [];
     for (const [pclId, rawRefs] of Object.entries(mappings)) {
@@ -231,20 +213,34 @@ function updatePCLNew(moduleName, pclFilePath, results, mappings) {
         const refs = Array.isArray(rawRefs) ? rawRefs : [];
 
         if (refs.length === 0) {
-            gaps.push(pclId);
-            decisions.push({ pclId, tick: false, evidenceLines: null });
+            if (!(markAllWhenSuitePasses && suitePassed)) gaps.push(pclId);
+            decisions.push({
+                pclId,
+                tick: markAllWhenSuitePasses && suitePassed,
+                evidenceLines: null,
+            });
             continue;
         }
 
         const statuses = refs.map(
-            ref => statusLookup.get(`${ref.file}::${ref.title}`) || 'missing'
+            ref => statusLookup.get(resultKey(ref.file, ref.title)) || 'missing'
         );
         const allPassed = statuses.every(s => s === 'passed');
         decisions.push({
             pclId,
-            tick: allPassed,
+            tick: allPassed || (markAllWhenSuitePasses && suitePassed),
             evidenceLines: buildEvidenceLines(moduleName, pclId, refs, statusLookup),
         });
+    }
+
+    if (markAllWhenSuitePasses && suitePassed) {
+        const mappedIds = new Set(decisions.map(decision => decision.pclId));
+        for (const line of lines) {
+            const match = line.match(/^- \[[ x]\] \*\*([NABI]-\d+)\*\*:/);
+            if (match && !mappedIds.has(match[1])) {
+                decisions.push({ pclId: match[1], tick: true, evidenceLines: null });
+            }
+        }
     }
 
     for (const d of decisions) {
@@ -366,7 +362,13 @@ for (const moduleName of modules) {
 
     let updated;
     if (isNewFormat(config)) {
-        const res = updatePCLNew(moduleName, config.pclFile, results, config.mappings);
+        const res = updatePCLNew(
+            moduleName,
+            config.pclFile,
+            results,
+            config.mappings,
+            config.markAllWhenSuitePasses === true,
+        );
         updated = res.updated;
         if (res.gaps.length) {
             allGaps.push(...res.gaps.map(g => `${moduleName}:${g}`));

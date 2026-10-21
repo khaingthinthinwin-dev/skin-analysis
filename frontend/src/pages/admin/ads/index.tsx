@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { BarChart3, Download, LayoutGrid } from 'lucide-react'
@@ -15,6 +15,7 @@ import { BulkRejectModal } from '@/features/admin/advertisement-management/compo
 import { FilterBar, type AdListFilters } from '@/features/admin/advertisement-management/components/FilterBar'
 import { Pagination } from '@/features/admin/advertisement-management/components/Pagination'
 import { ADMIN_AD_STATUSES, type AdminAdListQuery, type ApprovalStatus } from '@/types/admin-ad-management'
+import { advertisementService } from '@/features/admin/advertisement-management/services/advertisement.service'
 
 function toApprovalStatus(value: string | null): ApprovalStatus | undefined {
   return ADMIN_AD_STATUSES.find((status) => status === value)
@@ -27,6 +28,7 @@ export default function AdminAdListPage() {
   // seeded from the URL; the rest stay local until the admin changes them.
   const [searchParams, setSearchParams] = useSearchParams()
   const highlightAdId = searchParams.get('highlightAdId')
+  const highlightLookupId = useRef<string | null>(null)
   const [filters, setFilters] = useState<AdListFilters>(() => {
     const status = toApprovalStatus(searchParams.get('status'))
     return status ? { status } : {}
@@ -145,9 +147,66 @@ export default function AdminAdListPage() {
     )
   }
 
-  // Keep notification highlights visible for three seconds, including on initial load.
+  const highlightedAdVisible = Boolean(
+    highlightAdId && adsQuery.data?.data.some((ad) => ad.id === highlightAdId),
+  )
+
+  // Notification links can target ads on later pages, so locate the ad before
+  // starting the three-second highlight window.
   useEffect(() => {
-    if (!highlightAdId) return
+    if (!highlightAdId || !adsQuery.data || highlightedAdVisible) return
+    if (highlightLookupId.current === highlightAdId) return
+
+    highlightLookupId.current = highlightAdId
+    let cancelled = false
+
+    const locatePage = async () => {
+      const pageSize = 100
+      const firstPage = await advertisementService.listAds({ page: 1, limit: pageSize })
+      let targetOffset = firstPage.data.findIndex((ad) => ad.id === highlightAdId)
+      let scanPage = 1
+
+      while (targetOffset < 0 && scanPage < firstPage.meta.totalPages) {
+        scanPage += 1
+        const nextPage = await advertisementService.listAds({
+          page: scanPage,
+          limit: pageSize,
+        })
+        const pageIndex = nextPage.data.findIndex((ad) => ad.id === highlightAdId)
+        if (pageIndex >= 0) {
+          targetOffset = (scanPage - 1) * pageSize + pageIndex
+        }
+      }
+
+      if (cancelled) return
+      if (targetOffset < 0) {
+        toast({
+          title: t('admin.ads.list.highlightNotFound', 'Could not find the advertisement from this notification'),
+          variant: 'destructive',
+        })
+        return
+      }
+
+      setPage(Math.floor(targetOffset / limit) + 1)
+    }
+
+    void locatePage().catch((error: unknown) => {
+      if (cancelled) return
+      console.error('Failed to locate advertisement from notification', error)
+      toast({
+        title: t('admin.ads.list.highlightLoadFailed', 'Could not load the advertisement from this notification'),
+        variant: 'destructive',
+      })
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [adsQuery.data, highlightAdId, highlightedAdVisible, limit, t])
+
+  // Keep the highlight visible for three seconds after its target row is rendered.
+  useEffect(() => {
+    if (!highlightAdId || !highlightedAdVisible) return
 
     const timer = window.setTimeout(() => {
       setSearchParams((current) => {
@@ -158,7 +217,7 @@ export default function AdminAdListPage() {
     }, 3000)
 
     return () => window.clearTimeout(timer)
-  }, [highlightAdId, setSearchParams])
+  }, [highlightAdId, highlightedAdVisible, setSearchParams])
 
   // When coming from notification (highlightAdId in URL), clear status filter to show all ads
   useEffect(() => {

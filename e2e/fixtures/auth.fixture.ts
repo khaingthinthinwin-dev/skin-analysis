@@ -4,6 +4,7 @@ import { API_BASE_URL } from '../utils/constants';
 interface AuthFixtures {
   buyerPage: Page;
   merchantPage: Page;
+  adminPage: Page;
   blockCdnFonts: void;
 }
 
@@ -15,6 +16,12 @@ const SEED_MERCHANT = {
 
 const SEED_BUYER = {
   email: 'eem@gmail.com',
+  password: 'Cosmetics@123',
+};
+
+// Seed admin (for Admin Ad Management screen tests)
+const SEED_ADMIN = {
+  email: 'pet@gmail.com',
   password: 'Cosmetics@123',
 };
 
@@ -77,6 +84,16 @@ export const test = base.extend<AuthFixtures>({
     const page = await context.newPage();
 
     await loginViaUI(page, SEED_MERCHANT.email, SEED_MERCHANT.password);
+
+    await use(page);
+    await context.close();
+  },
+
+  adminPage: async ({ browser }, use) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await loginViaUI(page, SEED_ADMIN.email, SEED_ADMIN.password);
 
     await use(page);
     await context.close();

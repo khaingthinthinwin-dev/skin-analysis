@@ -41,7 +41,7 @@ function saveIndex(dir: string, index: ScreenshotIndex): void {
   fs.writeFileSync(path.join(dir, 'index.json'), JSON.stringify(index, null, 2), 'utf-8');
 }
 
-function loadDatabaseUrl(): string {
+export function loadDatabaseUrl(): string {
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
   const envPath = path.resolve(__dirname, '../../backend/.env');
   const content = fs.readFileSync(envPath, 'utf-8');
