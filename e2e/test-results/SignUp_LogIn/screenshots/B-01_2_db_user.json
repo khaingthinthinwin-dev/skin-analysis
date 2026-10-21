@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-20T04:40:49.368Z",
+  "capturedAt": "2026-10-21T03:08:37.989Z",
   "description": "DB users row — name length 2 accepted",
   "results": [
     {
@@ -7,13 +7,13 @@
       "rowCount": 1,
       "rows": [
         {
-          "id": "c5119147-9786-4fe7-8c19-e69f68a4dd8d",
-          "email": "boundary.name2.mvg73lws35@gmail.com",
+          "id": "11d1ad7f-adde-4ebb-95f9-aa74f6548fe4",
+          "email": "boundary.name2.mvhj8w4k25@gmail.com",
           "name": "Ab",
           "role_code": "buyer",
           "is_active": true,
           "email_verified": true,
-          "created_at": "2026-10-19T22:10:49.095Z"
+          "created_at": "2026-10-20T20:38:37.424Z"
         }
       ]
     }

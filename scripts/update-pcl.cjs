@@ -114,22 +114,22 @@ function normalizeIndexEntry(entry) {
 }
 
 /**
- * Multi-line Evidence block (primary test only — refs[0]):
+ * Multi-line Evidence block (status line from primary test — refs[0]):
  *   - **Evidence**:
  *     - {description} → `file.png`   (or bare `file.png` if no description)
  *     - Test: {spec} › "{title}" — {status}
- * Screenshots are filtered to the primary test when the index records a test;
- * shots without test metadata are always kept. If filtering drops everything
- * but PCL screenshots exist, falls back to all of them.
+ * Screenshots are filtered to tests mapped to this item (refs) when the index
+ * records a test; shots without test metadata are always kept. If filtering
+ * drops everything but PCL screenshots exist, falls back to all of them.
  * I-* items: API test note only (no screenshots).
  */
 function buildEvidenceLines(moduleName, pclId, refs, statusLookup) {
     const lines = ['  - **Evidence**:'];
     const descIndex = loadScreenshotIndex(moduleName);
     const primary = refs[0] || null;
-    const primaryKey = primary
-        ? `${path.basename(primary.file)}::${primary.title}`
-        : null;
+    // Accept shots recorded under any test mapped to this PCL item (refs[0..n]),
+    // so evidence captured by a secondary mapped test is not dropped.
+    const refKeys = refs.map(r => `${path.basename(r.file)}::${r.title}`);
 
     if (pclId.startsWith('I-')) {
         lines.push('    - API test \u2014 no screenshot');
@@ -140,7 +140,7 @@ function buildEvidenceLines(moduleName, pclId, refs, statusLookup) {
             meta: normalizeIndexEntry(descIndex[shot]),
         }));
         let shown = withMeta.filter(
-            ({ meta }) => !meta.test || !primaryKey || meta.test === primaryKey
+            ({ meta }) => !meta.test || refKeys.includes(meta.test)
         );
         if (shown.length === 0 && withMeta.length > 0) {
             shown = withMeta;

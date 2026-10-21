@@ -20,10 +20,10 @@
 
 - [x] **N-01**: Register as buyer successfully
   - **Evidence**:
-    - `N-01_1_form_filled.png`
-    - `N-01_2_redirected_to_login.png`
-    - `N-01_3_db_user.json`
-    - `N-01_3_db_user.png`
+    - Screenshot of the Register page with valid input values entered → `N-01_1_form_filled.png`
+    - Screenshot of the Login page after redirection to /login → `N-01_2_redirected_to_login.png`
+    - DB users row after successful buyer registration → `N-01_3_db_user.png`
+    - DB users row after successful buyer registration → `N-01_3_db_user.json`
     - Test: register.spec.ts › "should register as buyer successfully" — passed
   - **Precondition**: User is not authenticated
   - **Steps**:
@@ -41,8 +41,8 @@
     - `N-02_1_role_selected_merchant.png`
     - `N-02_2_license_uploaded.png`
     - `N-02_3_redirected_to_login.png`
-    - `N-02_4_db_merchant.json`
-    - `N-02_4_db_merchant.png`
+    - DB users + merchants after merchant registration with license → `N-02_4_db_merchant.png`
+    - DB users + merchants after merchant registration with license → `N-02_4_db_merchant.json`
     - Test: auth.spec.ts › "should register as merchant with license file upload" — passed
   - **Precondition**: User is not authenticated, has valid license.pdf ready
   - **Steps**:
@@ -59,8 +59,8 @@
 
 - [x] **N-03**: Login with valid credentials
   - **Evidence**:
-    - `N-03_1_login_form_filled.png`
-    - `N-03_2_buyer_dashboard_after_login.png`
+    - Screenshot of the Login page with valid email and password entered (before Sign In) → `N-03_1_login_form_filled.png`
+    - Screenshot of the buyer dashboard after successful login → `N-03_2_buyer_dashboard_after_login.png`
     - Test: login.spec.ts › "should login as buyer and redirect to buyer dashboard" — passed
   - **Precondition**: User has existing account
   - **Steps**:
@@ -73,8 +73,8 @@
 
 - [x] **N-04**: Logout successfully
   - **Evidence**:
-    - `N-04_1_dashboard_before_logout.png`
-    - `N-04_2_after_logout_redirect.png`
+    - Screenshot of buyer dashboard before logout → `N-04_1_dashboard_before_logout.png`
+    - Screenshot of home page after logout → `N-04_2_after_logout_redirect.png`
     - Test: auth.spec.ts › "should log out buyer and clear session" — passed
   - **Precondition**: User is authenticated
   - **Steps**:
@@ -131,8 +131,8 @@
 
 - [x] **N-08**: Theme toggle works on auth pages
   - **Evidence**:
-    - `N-08_1_theme_toggled.png`
-    - `N-08_2_theme_restored.png`
+    - Auth page after toggling the theme - dark-mode class flipped → `N-08_1_theme_toggled.png`
+    - Auth page after toggling back - original theme restored → `N-08_2_theme_restored.png`
     - Test: auth.spec.ts › "should toggle light and dark theme on auth pages" — passed
   - **Precondition**: User is on any auth page
   - **Steps**:
@@ -190,8 +190,8 @@
 
 - [x] **N-13**: Navigate back to login from forgot password
   - **Evidence**:
-    - `N-13_1_forgot_password_page.png`
     - `N-13_2_back_to_login_link.png`
+    - `N-13_1_forgot_password_page.png`
     - Test: forgot-password.spec.ts › "should have back to login link on forgot password page" — passed
   - **Precondition**: User is on forgot password page
   - **Steps**:
@@ -269,9 +269,9 @@
 
 - [x] **N-19**: Language toggle works on Login page
   - **Evidence**:
-    - `N-19_1_login_japanese.png`
-    - `N-19_2_login_myanmar.png`
-    - `N-19_3_login_english_restored.png`
+    - Login page rendered in Japanese → `N-19_1_login_japanese.png`
+    - Login page rendered in Myanmar → `N-19_2_login_myanmar.png`
+    - Login page restored to English after the language cycle → `N-19_3_login_english_restored.png`
     - Test: login.spec.ts › "should switch language on login page" — passed
   - **Precondition**: User is on `/login`
   - **Steps**:
@@ -303,9 +303,9 @@
 
 - [x] **N-21**: Language toggle works on Forgot Password page
   - **Evidence**:
-    - `N-21_1_forgot_japanese.png`
-    - `N-21_2_forgot_myanmar.png`
-    - `N-21_3_forgot_english_restored.png`
+    - Forgot Password page rendered in Japanese → `N-21_1_forgot_japanese.png`
+    - Forgot Password page rendered in Myanmar → `N-21_2_forgot_myanmar.png`
+    - Forgot Password page restored to English after the language cycle → `N-21_3_forgot_english_restored.png`
     - Test: forgot-password.spec.ts › "should switch language on forgot password page" — passed
   - **Precondition**: User is on `/forgot-password`
   - **Steps**:
@@ -320,9 +320,9 @@
 
 - [x] **N-22**: Language toggle works on Reset Password page
   - **Evidence**:
-    - `N-22_1_reset_japanese.png`
-    - `N-22_2_reset_myanmar.png`
-    - `N-22_3_reset_english_restored.png`
+    - Reset Password page rendered in Japanese → `N-22_1_reset_japanese.png`
+    - Reset Password page rendered in Myanmar → `N-22_2_reset_myanmar.png`
+    - Reset Password page restored to English after the language cycle → `N-22_3_reset_english_restored.png`
     - Test: reset-password.spec.ts › "should switch language on reset password page" — passed
   - **Precondition**: User reached `/reset-password` through the Forgot Password → Verification Code flow (`email` + `code` in router location state)
   - **Steps**:
@@ -372,8 +372,8 @@
 
 - [x] **N-25**: Login with valid credentials in Myanmar language UI
   - **Evidence**:
-    - `N-25_1_myanmar_login_form.png`
-    - `N-25_2_myanmar_login_success.png`
+    - Login page rendered in Myanmar with all labels verified → `N-25_1_myanmar_login_form.png`
+    - Buyer dashboard reached with Myanmar success toast after Myanmar-language login → `N-25_2_myanmar_login_success.png`
     - Test: login.spec.ts › "N-25: should login successfully in Myanmar language" — passed
   - **Precondition**: User has an existing account; UI language is set to Myanmar
   - **Steps**:
@@ -388,8 +388,8 @@
 
 - [x] **N-26**: Submit forgot password form in Myanmar language UI
   - **Evidence**:
-    - `N-26_1_myanmar_forgot_form_filled.png`
-    - `N-26_2_myanmar_forgot_verify_code.png`
+    - Myanmar-language Forgot Password form filled before submitting → `N-26_1_myanmar_forgot_form_filled.png`
+    - Verification Code page opened in Myanmar after submitting the Myanmar-language forgot form → `N-26_2_myanmar_forgot_verify_code.png`
     - Test: forgot-password.spec.ts › "should submit forgot password in Myanmar language" — passed
   - **Precondition**: User is on `/forgot-password`; UI language is set to Myanmar
   - **Steps**:
@@ -404,8 +404,8 @@
 
 - [x] **N-27**: Reset password with valid token in Myanmar language UI
   - **Evidence**:
-    - `N-27_1_myanmar_reset_form_filled.png`
-    - `N-27_2_myanmar_reset_success.png`
+    - Myanmar-language Reset Password form filled before submitting → `N-27_1_myanmar_reset_form_filled.png`
+    - Myanmar-language password reset success message → `N-27_2_myanmar_reset_success.png`
     - Test: reset-password.spec.ts › "N-27: should reset password in Myanmar language" — passed
   - **Precondition**: User has a valid reset token from email; UI language is set to Myanmar
   - **Steps**:
@@ -421,7 +421,7 @@
 
 - [x] **N-28**: Login page renders all expected fields and links
   - **Evidence**:
-    - `N-28_1_login_form_all_fields.png`
+    - Login page showing all form fields: email, password, sign-in, forgot-password and register links → `N-28_1_login_form_all_fields.png`
     - Test: login.spec.ts › "should display login form with all fields" — passed
   - **Precondition**: User is not authenticated
   - **Steps**:
@@ -434,7 +434,7 @@
 
 - [x] **N-29**: Success toast is shown after login
   - **Evidence**:
-    - `N-29_1_success_toast.png`
+    - Success toast notification displayed after login redirects to the dashboard → `N-29_1_success_toast.png`
     - Test: login.spec.ts › "should show toast notification on successful login" — passed
   - **Precondition**: User has an existing account
   - **Steps**:
@@ -448,7 +448,7 @@
 
 - [x] **N-30**: Login as merchant and land on the merchant dashboard
   - **Evidence**:
-    - `N-30_1_merchant_dashboard.png`
+    - Merchant Portal dashboard after merchant login → `N-30_1_merchant_dashboard.png`
     - Test: auth.spec.ts › "should log in as merchant and navigate to merchant dashboard" — passed
   - **Precondition**: User has an existing merchant account (license approved)
   - **Steps**:
@@ -461,7 +461,7 @@
 
 - [x] **N-31**: Register page renders all expected fields
   - **Evidence**:
-    - `N-31_1_register_form_all_fields.png`
+    - Register page showing all form fields: name, email, passwords, roles, terms, submit and login link → `N-31_1_register_form_all_fields.png`
     - Test: register.spec.ts › "should display register form with all fields" — passed
   - **Precondition**: User is not authenticated
   - **Steps**:
@@ -472,7 +472,7 @@
 
 - [x] **N-32**: Buyer role is selected by default and hides the license upload
   - **Evidence**:
-    - `N-32_1_buyer_role_selected_by_default.png`
+    - Buyer role selected by default with the license upload section hidden → `N-32_1_buyer_role_selected_by_default.png`
     - Test: register.spec.ts › "should have buyer selected by default" — passed
   - **Precondition**: User is on `/register`
   - **Steps**:
@@ -485,7 +485,7 @@
 
 - [x] **N-33**: Selecting Merchant shows the license upload and switches the name label to "Shop Name"
   - **Evidence**:
-    - `N-33_1_license_upload_visible.png`
+    - License upload area visible after selecting the Merchant role → `N-33_1_license_upload_visible.png`
     - Test: register.spec.ts › "should show license upload when merchant role selected" — passed
   - **Precondition**: User is on `/register`
   - **Steps**:
@@ -499,7 +499,7 @@
 
 - [x] **N-34**: Password strength checklist updates while typing on the register page
   - **Evidence**:
-    - `N-34_1_strength_weak.png`
+    - Password strength indicator showing weak for a short password → `N-34_1_strength_weak.png`
     - Test: register.spec.ts › "should show weak indicator for short password" — passed
   - **Precondition**: User is on `/register`
   - **Steps**:
@@ -512,7 +512,7 @@
 
 - [x] **N-35**: Authenticated users are redirected away from /login and /register
   - **Evidence**:
-    - `N-35_1_already_authenticated_redirect.png`
+    - Final state when an already-authenticated user visits /login (redirected to the dashboard) → `N-35_1_already_authenticated_redirect.png`
     - Test: login.spec.ts › "should redirect to dashboard if already logged in" — passed
   - **Precondition**: User is already logged in (buyer session)
   - **Steps**:
@@ -525,7 +525,7 @@
 
 - [x] **N-36**: Submit a valid 6-digit verification code and reach the Reset Password page
   - **Evidence**:
-    - `N-36_1_reached_reset_password.png`
+    - Valid 6-digit code accepted — Reset Password page reached with router state → `N-36_1_reached_reset_password.png`
     - Test: verify-code.spec.ts › "should navigate to reset password page with valid 6-digit code" — passed
   - **Precondition**: User completed `/forgot-password` with an existing email and received a 6-digit code by email
   - **Steps**:
@@ -539,7 +539,7 @@
 
 - [x] **N-37**: Verification Code page masks the recipient email address
   - **Evidence**:
-    - `N-37_1_masked_email.png`
+    - Recipient email masked as se***@gmail.com → `N-37_1_masked_email.png`
     - Test: verify-code.spec.ts › "should mask the recipient email address in the description" — passed
   - **Precondition**: User reached `/verify-code` from `/forgot-password`
   - **Steps**:
@@ -550,7 +550,7 @@
 
 - [x] **N-38**: Resend the verification code and observe the 60-second cooldown
   - **Evidence**:
-    - `N-38_1_resend_cooldown.png`
+    - Resend Code clicked — success alert shown and 60s cooldown started → `N-38_1_resend_cooldown.png`
     - Test: verify-code.spec.ts › "should resend code and start 60-second cooldown" — passed
   - **Precondition**: User is on `/verify-code` with an email in router location state
   - **Steps**:
@@ -564,7 +564,7 @@
 
 - [x] **N-39**: "Back to Email" link on the Verification Code page returns to Forgot Password
   - **Evidence**:
-    - `N-39_1_back_to_email.png`
+    - Back to Email link returns to the Forgot Password page → `N-39_1_back_to_email.png`
     - Test: verify-code.spec.ts › "should return to forgot password via Back to Email link" — passed
   - **Precondition**: User is on `/verify-code`
   - **Steps**:
@@ -608,8 +608,8 @@
 - [x] **A-02**: Register with duplicate email
   - **Evidence**:
     - `A-02_1_duplicate_email.png`
-    - `A-02_2_db_user_count.json`
-    - `A-02_2_db_user_count.png`
+    - DB users count — still 1 row after duplicate email attempt → `A-02_2_db_user_count.png`
+    - DB users count — still 1 row after duplicate email attempt → `A-02_2_db_user_count.json`
     - Test: register.spec.ts › "should show error for duplicate email" — passed
   - **Precondition**: User is on register page, email already exists
   - **Steps**:
@@ -781,7 +781,7 @@
 
 - [x] **A-17**: Submit reset password with mismatched passwords
   - **Evidence**:
-    - `A-17_1_password_mismatch_error.png`
+    - Confirm password does not match - validation error on the real reset flow → `A-17_1_password_mismatch_error.png`
     - Test: reset-password.spec.ts › "should show error for password mismatch on reset form" — passed
   - **Precondition**: User reached the Reset Password page through the Forgot Password → Verification Code flow (`email` + `code` in router location state)
   - **Steps**:
@@ -795,7 +795,7 @@
 
 - [x] **A-18**: Submit reset password with weak password
   - **Evidence**:
-    - `A-18_1_weak_password_error.png`
+    - Weak password rejected on the real reset flow — stays on Reset Password → `A-18_1_weak_password_error.png`
     - Test: reset-password.spec.ts › "should show error for weak password on reset form" — passed
   - **Precondition**: User reached the Reset Password page through the Forgot Password → Verification Code flow (`email` + `code` in router location state)
   - **Steps**:
@@ -847,7 +847,7 @@
 
 - [x] **A-22**: Login with invalid credentials — error message displays in Myanmar
   - **Evidence**:
-    - `A-22_1_myanmar_invalid_credentials_error.png`
+    - 401 error alert shown in Myanmar locale after invalid credentials → `A-22_1_myanmar_invalid_credentials_error.png`
     - Test: login.spec.ts › "A-22: should show invalid credentials error in Myanmar language" — passed
   - **Precondition**: User is on `/login`; UI language is set to Myanmar
   - **Steps**:
@@ -860,7 +860,7 @@
 
 - [x] **A-23**: Submit forgot password with invalid email format — error message displays in Myanmar
   - **Evidence**:
-    - `A-23_1_myanmar_invalid_email_error.png`
+    - Myanmar validation error for an invalid email on the Forgot Password page → `A-23_1_myanmar_invalid_email_error.png`
     - Test: forgot-password.spec.ts › "should show invalid email error in Myanmar language" — passed
   - **Precondition**: User is on `/forgot-password`; UI language is set to Myanmar
   - **Steps**:
@@ -873,7 +873,7 @@
 
 - [x] **A-24**: Submit reset password with mismatched passwords — error message displays in Myanmar
   - **Evidence**:
-    - `A-24_1_myanmar_mismatch_error.png`
+    - Myanmar password mismatch validation error on the Reset Password page → `A-24_1_myanmar_mismatch_error.png`
     - Test: reset-password.spec.ts › "A-24: should show password mismatch error in Myanmar language" — passed
   - **Precondition**: User reached `/reset-password` through the Forgot Password → Verification Code flow; UI language is set to Myanmar
   - **Steps**:
@@ -887,7 +887,7 @@
 
 - [x] **A-25**: Login with invalid credentials — error message displays in Japanese
   - **Evidence**:
-    - `A-25_1_japanese_invalid_credentials_error.png`
+    - 401 error alert shown in Japanese locale after invalid credentials → `A-25_1_japanese_invalid_credentials_error.png`
     - Test: login.spec.ts › "A-25: should show invalid credentials error in Japanese" — passed
   - **Precondition**: User is on `/login`; UI language is set to Japanese
   - **Steps**:
@@ -900,7 +900,7 @@
 
 - [x] **A-26**: Submit register form without accepting the Terms of Service
   - **Evidence**:
-    - `A-26_1_terms_not_checked_error.png`
+    - Terms-not-accepted validation error shown on submit → `A-26_1_terms_not_checked_error.png`
     - Test: register.spec.ts › "should show error when terms not checked" — passed
   - **Precondition**: User is on `/register`
   - **Steps**:
@@ -913,7 +913,7 @@
 
 - [x] **A-27**: Register with invalid email format
   - **Evidence**:
-    - `A-27_1_invalid_email_error.png`
+    - Invalid email format validation error on the Register page → `A-27_1_invalid_email_error.png`
     - Test: register.spec.ts › "should show error for invalid email format" — passed
   - **Precondition**: User is on `/register`
   - **Steps**:
@@ -926,7 +926,7 @@
 
 - [x] **A-28**: Register with password shorter than 8 characters
   - **Evidence**:
-    - `A-28_1_short_password_error.png`
+    - Minimum 8-character password validation error on the Register page → `A-28_1_short_password_error.png`
     - Test: register.spec.ts › "should show error for short password" — passed
   - **Precondition**: User is on `/register`
   - **Steps**:
@@ -937,7 +937,7 @@
 
 - [x] **A-29**: Register as merchant without Shop Name
   - **Evidence**:
-    - `A-29_1_shop_name_required.png`
+    - Merchant without Shop Name — min-length error shown under the field → `A-29_1_shop_name_required.png`
     - Test: register.spec.ts › "should show error for merchant without shop name" — passed
   - **Precondition**: User is on `/register`, Merchant role selected, license uploaded, terms accepted
   - **Steps**:
@@ -952,7 +952,7 @@
 
 - [x] **A-30**: Login with invalid email format
   - **Evidence**:
-    - `A-30_1_invalid_email_format_error.png`
+    - Validation error shown for invalid email format on the Login page → `A-30_1_invalid_email_format_error.png`
     - Test: login.spec.ts › "should show validation error for invalid email format" — passed
   - **Precondition**: User is on `/login`
   - **Steps**:
@@ -964,7 +964,7 @@
 
 - [x] **A-31**: Login with password shorter than 8 characters
   - **Evidence**:
-    - `A-31_1_short_password_error.png`
+    - Validation error shown for short password on the Login page → `A-31_1_short_password_error.png`
     - Test: login.spec.ts › "should show validation error for short password" — passed
   - **Precondition**: User is on `/login`
   - **Steps**:
@@ -976,7 +976,7 @@
 
 - [x] **A-32**: Login error does not reveal whether the account exists
   - **Evidence**:
-    - `A-32_1_generic_credential_error.png`
+    - Generic credential error shown without revealing whether the account exists → `A-32_1_generic_credential_error.png`
     - Test: auth.spec.ts › "should show generic error for wrong credentials without leaking account existence" — passed
   - **Precondition**: User is on `/login`
   - **Steps**:
@@ -989,7 +989,7 @@
 
 - [x] **A-33**: Submit verification code field left empty
   - **Evidence**:
-    - `A-33_1_empty_code_error.png`
+    - Empty code rejected client-side — no API request sent → `A-33_1_empty_code_error.png`
     - Test: verify-code.spec.ts › "should show required error when verification code is empty" — passed
   - **Precondition**: User is on `/verify-code` with an email in router location state
   - **Steps**:
@@ -1001,7 +1001,7 @@
 
 - [x] **A-34**: Submit verification code that is not exactly 6 digits
   - **Evidence**:
-    - `A-34_1_short_code_error.png`
+    - 4-digit code rejected client-side with exact-length message → `A-34_1_short_code_error.png`
     - Test: verify-code.spec.ts › "should show length error for code shorter than 6 digits" — passed
   - **Precondition**: User is on `/verify-code`
   - **Steps**:
@@ -1013,7 +1013,7 @@
 
 - [x] **A-35**: Submit an invalid or expired verification code
   - **Evidence**:
-    - `A-35_1_invalid_code_error.png`
+    - HTTP 400 — Invalid or expired verification code alert shown → `A-35_1_invalid_code_error.png`
     - Test: verify-code.spec.ts › "should show invalid code alert for unissued code" — passed
   - **Precondition**: User is on `/verify-code` with an email that requested a code (or whose code has expired after 10 minutes)
   - **Steps**:
@@ -1026,7 +1026,7 @@
 
 - [x] **A-36**: Open the Verification Code page directly (no email in router state)
   - **Evidence**:
-    - `A-36_1_redirect_to_forgot.png`
+    - No router state — page guard redirects to Forgot Password → `A-36_1_redirect_to_forgot.png`
     - Test: verify-code.spec.ts › "should redirect to forgot password when opened directly without email state" — passed
   - **Precondition**: User is not in a forgot-password session
   - **Steps**:
@@ -1043,8 +1043,8 @@
 - [x] **B-01**: Register with name at minimum length (2 chars)
   - **Evidence**:
     - `B-01_1_name_min.png`
-    - `B-01_2_db_user.json`
-    - `B-01_2_db_user.png`
+    - DB users row — name length 2 accepted → `B-01_2_db_user.png`
+    - DB users row — name length 2 accepted → `B-01_2_db_user.json`
     - Test: register.spec.ts › "should accept name at minimum length (2 chars)" — passed
   - **Precondition**: User is on register page
   - **Steps**:
@@ -1057,8 +1057,8 @@
 - [x] **B-02**: Register with name at reasonable length (50 chars)
   - **Evidence**:
     - `B-02_1_name_max.png`
-    - `B-02_2_db_user.json`
-    - `B-02_2_db_user.png`
+    - DB users row — name length 50 accepted → `B-02_2_db_user.png`
+    - DB users row — name length 50 accepted → `B-02_2_db_user.json`
     - Test: register.spec.ts › "should accept name at reasonable length (50 chars)" — passed
   - **Precondition**: User is on register page
   - **Steps**:
@@ -1072,8 +1072,8 @@
 - [x] **B-03**: Register with password at minimum length (8 chars)
   - **Evidence**:
     - `B-03_1_pw_min.png`
-    - `B-03_2_db_user.json`
-    - `B-03_2_db_user.png`
+    - DB users row — 8-char password accepted → `B-03_2_db_user.png`
+    - DB users row — 8-char password accepted → `B-03_2_db_user.json`
     - Test: register.spec.ts › "should accept password at minimum length (8 chars)" — passed
   - **Precondition**: User is on register page
   - **Steps**:
@@ -1085,9 +1085,9 @@
 
 - [x] **B-04**: Register with password at maximum length (128 chars)
   - **Evidence**:
+    - `B-04_1_pw_max.png`
     - DB users row — 128-char password accepted → `B-04_2_db_user.png`
     - DB users row — 128-char password accepted → `B-04_2_db_user.json`
-    - `B-04_1_pw_max.png`
     - Test: register.spec.ts › "should accept password at maximum length (128 chars)" — passed
   - **Precondition**: User is on register page
   - **Steps**:
