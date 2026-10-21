@@ -121,7 +121,7 @@ function normalizeIndexEntry(entry) {
  * Screenshots are filtered to the primary test when the index records a test;
  * shots without test metadata are always kept. If filtering drops everything
  * but PCL screenshots exist, falls back to all of them.
- * I-* items: API test note only (no screenshots).
+ * API tests use request/response screenshots in the same evidence block.
  */
 function buildEvidenceLines(moduleName, pclId, refs, statusLookup) {
     const lines = ['  - **Evidence**:'];
@@ -131,30 +131,26 @@ function buildEvidenceLines(moduleName, pclId, refs, statusLookup) {
         ? `${path.basename(primary.file)}::${primary.title}`
         : null;
 
-    if (pclId.startsWith('I-')) {
-        lines.push('    - API test \u2014 no screenshot');
-    } else {
-        const shots = listScreenshots(moduleName, pclId);
-        const withMeta = shots.map(shot => ({
-            shot,
-            meta: normalizeIndexEntry(descIndex[shot]),
-        }));
-        let shown = withMeta.filter(
-            ({ meta }) => !meta.test || !primaryKey || meta.test === primaryKey
-        );
-        if (shown.length === 0 && withMeta.length > 0) {
-            shown = withMeta;
-        }
+    const shots = listScreenshots(moduleName, pclId);
+    const withMeta = shots.map(shot => ({
+        shot,
+        meta: normalizeIndexEntry(descIndex[shot]),
+    }));
+    let shown = withMeta.filter(
+        ({ meta }) => !meta.test || !primaryKey || meta.test === primaryKey
+    );
+    if (shown.length === 0 && withMeta.length > 0) {
+        shown = withMeta;
+    }
 
-        if (shown.length === 0) {
-            lines.push('    - Screenshots: (none captured)');
-        } else {
-            for (const { shot, meta } of shown) {
-                if (meta.description) {
-                    lines.push(`    - ${meta.description} \u2192 \`${shot}\``);
-                } else {
-                    lines.push(`    - \`${shot}\``);
-                }
+    if (shown.length === 0) {
+        lines.push('    - Screenshots: (none captured)');
+    } else {
+        for (const { shot, meta } of shown) {
+            if (meta.description) {
+                lines.push(`    - ${meta.description} \u2192 \`${shot}\``);
+            } else {
+                lines.push(`    - \`${shot}\``);
             }
         }
     }
