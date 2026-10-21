@@ -11,7 +11,7 @@
 | **Subsystem** | Merchant Promotions |
 | **Version** | 1.0 |
 | **Created** | 2026-10-15 |
-| **Last Updated** | 2026-10-15 |
+| **Last Updated** | 2026-10-20 |
 | **Status** | Active |
 
 ---
@@ -134,7 +134,7 @@
 
 - [x] **N-09**: Validate a valid coupon code at checkout
   - **Evidence**:
-    - API test — no screenshot
+    - `N-09_1_validate_valid_coupon.png`
     - Test: promotion-management.spec.ts › "N-09: should validate a valid coupon code at checkout" — passed
   - **Precondition**: Active, in-window promotion exists; buyer has an order meeting `min_order_amount`
   - **Steps**:
@@ -173,7 +173,7 @@
   - **Steps**:
     1. Set viewport to 1280x720
     2. Open `/merchant/promotions`
-  - **Expected Result**: Sidebar navigation visible, full table with all columns, full-width form on create/edit
+  - **Expected Result**: Sidebar navigation and desktop promotions table are visible, with the table column headers verified at the 1280px viewport. This scenario does not exercise create/edit forms.
   - **Business Rules**: None (Responsive)
 
 - [x] **N-13**: Responsive layout on mobile viewport
@@ -184,7 +184,7 @@
   - **Steps**:
     1. Set viewport to 375x667
     2. Open `/merchant/promotions`
-  - **Expected Result**: Table scrolls horizontally, form stacks, no horizontal page overflow
+  - **Expected Result**: Promotion cards render instead of the desktop table, and the page has no horizontal overflow. Create/edit forms are not exercised by this scenario.
   - **Business Rules**: None (Responsive)
 
 ---
@@ -292,7 +292,7 @@
 
 - [x] **A-09**: Invalid coupon code format rejected at checkout
   - **Evidence**:
-    - API test — no screenshot
+    - `A-09_1_invalid_coupon_format.png`
     - Test: promotion-management.spec.ts › "A-09: should reject invalid coupon code format at checkout" — passed
   - **Precondition**: Buyer is at checkout with an order
   - **Steps**:
@@ -304,7 +304,7 @@
 
 - [x] **A-10**: Expired, inactive, or max-uses-reached coupon rejected
   - **Evidence**:
-    - API test — no screenshot
+    - `A-10_1_expired_inactive_maxuses_coupon.png`
     - Test: promotion-management.spec.ts › "A-10: should reject expired / inactive / max-uses coupon" — passed
   - **Precondition**: Promotions exist that are expired, `is_active = false`, or `used_count >= max_uses`
   - **Steps**:
@@ -430,7 +430,7 @@
 
 - [x] **B-09**: Coupon order amount below minimum order amount rejected
   - **Evidence**:
-    - API test — no screenshot
+    - `B-09_1_coupon_below_min_order_amount.png`
     - Test: promotion-management.spec.ts › "B-09: should reject coupon when order amount below minimum order amount" — passed
   - **Precondition**: Promotion has `min_order_amount = 5000` MMK
   - **Steps**:
@@ -441,7 +441,7 @@
 
 - [x] **B-10**: Discount capped at order total (finalAmount never negative)
   - **Evidence**:
-    - API test — no screenshot
+    - `B-10_1_discount_capped_at_order_total.png`
     - Test: promotion-management.spec.ts › "B-10: should cap discount at order total (finalAmount never negative)" — passed
   - **Precondition**: Fixed promotion discount (e.g. 10,000 MMK) exceeds order total (e.g. 3,000 MMK)
   - **Steps**:
@@ -456,7 +456,7 @@
 
 - [x] **I-01**: `GET /api/v1/promotions` — returns 200 with list and pagination
   - **Evidence**:
-    - API test — no screenshot
+    - `I-01_1_promotions_list_pagination.png`
     - Test: promotion-management.spec.ts › "I-01: GET /api/v1/promotions should return 200 with list and pagination" — passed
   - **Precondition**: Approved merchant with promotions; valid JWT
   - **Steps**:
@@ -467,7 +467,7 @@
 
 - [x] **I-02**: `POST /api/v1/promotions` — returns 201 with created promotion
   - **Evidence**:
-    - API test — no screenshot
+    - `I-02_1_promotion_created.png`
     - Test: promotion-management.spec.ts › "I-02: POST /api/v1/promotions should return 201 with created promotion" — passed
   - **Precondition**: Valid payload; approved merchant
   - **Steps**:
@@ -478,7 +478,7 @@
 
 - [x] **I-03**: `POST /api/v1/promotions` — duplicate code returns 400
   - **Evidence**:
-    - API test — no screenshot
+    - `I-03_1_duplicate_code_error.png`
     - Test: promotion-management.spec.ts › "I-03: POST /api/v1/promotions duplicate code should return 400" — passed
   - **Precondition**: Code already exists globally
   - **Steps**:
@@ -489,7 +489,7 @@
 
 - [x] **I-04**: `PATCH /api/v1/promotions/:id` — returns 200 with updated promotion
   - **Evidence**:
-    - API test — no screenshot
+    - `I-04_1_promotion_updated.png`
     - Test: promotion-management.spec.ts › "I-04: PATCH /api/v1/promotions/:id should return 200 with updated promotion" — passed
   - **Precondition**: Owned promotion with `usedCount = 0`; valid payload (`code` ignored)
   - **Steps**:
@@ -500,7 +500,7 @@
 
 - [x] **I-05**: `PATCH /api/v1/promotions/:id` — used promotion returns 409
   - **Evidence**:
-    - API test — no screenshot
+    - `I-05_1_used_promotion_edit_error.png`
     - Test: promotion-management.spec.ts › "I-05: PATCH /api/v1/promotions/:id used promotion should return 409" — passed
   - **Precondition**: Promotion with `usedCount > 0`
   - **Steps**:
@@ -511,18 +511,18 @@
 
 - [x] **I-06**: `DELETE /api/v1/promotions/:id` — returns 204 on success
   - **Evidence**:
-    - API test — no screenshot
+    - `I-06_1_promotion_deleted.png`
     - Test: promotion-management.spec.ts › "I-06: DELETE /api/v1/promotions/:id should return 204 on success" — passed
   - **Precondition**: Owned promotion with `usedCount = 0`
   - **Steps**:
     1. Call API with the promotion ID
-  - **Expected Response**: Status code 204 No Content; record permanently removed
+  - **Expected Response**: Status code 200, JSON `{ deleted: true }`; record permanently removed
   - **Business Rules**: BR-PROMO-012, BR-PROMO-013, BR-PROMO-014
   - **API**: `DELETE /api/v1/promotions/:id`
 
 - [x] **I-07**: `DELETE /api/v1/promotions/:id` — used promotion returns 409
   - **Evidence**:
-    - API test — no screenshot
+    - `I-07_1_used_promotion_delete_error.png`
     - Test: promotion-management.spec.ts › "I-07: DELETE /api/v1/promotions/:id used promotion should return 409" — passed
   - **Precondition**: Promotion with `usedCount > 0`
   - **Steps**:
@@ -533,7 +533,7 @@
 
 - [x] **I-08**: `PATCH /api/v1/promotions/:id` — non-existent ID returns 404
   - **Evidence**:
-    - API test — no screenshot
+    - `I-08_1_nonexistent_id_error.png`
     - Test: promotion-management.spec.ts › "I-08: PATCH /api/v1/promotions/:id non-existent ID should return 404" — passed
   - **Precondition**: Non-existent UUID
   - **Steps**:
@@ -544,7 +544,7 @@
 
 - [x] **I-09**: `POST /api/v1/promotions/validate` — valid coupon returns 200 with discount payload
   - **Evidence**:
-    - API test — no screenshot
+    - `I-09_1_validate_valid_coupon.png`
     - Test: promotion-management.spec.ts › "I-09: POST /api/v1/promotions/validate valid coupon should return 200 with discount payload" — passed
   - **Precondition**: Active, in-window coupon; `orderAmount >= min_order_amount`; buyer JWT
   - **Steps**:
@@ -555,7 +555,7 @@
 
 - [x] **I-10**: `POST /api/v1/promotions/validate` — expired coupon returns 400
   - **Evidence**:
-    - API test — no screenshot
+    - `I-10_1_validate_expired_coupon.png`
     - Test: promotion-management.spec.ts › "I-10: POST /api/v1/promotions/validate expired coupon should return 400" — passed
   - **Precondition**: Coupon past `expires_at`
   - **Steps**:
@@ -566,7 +566,7 @@
 
 - [x] **I-11**: `GET /api/v1/promotions` — returns 401 without JWT
   - **Evidence**:
-    - API test — no screenshot
+    - `I-11_1_unauthorized_no_jwt.png`
     - Test: promotion-management.spec.ts › "I-11: GET /api/v1/promotions should return 401 without JWT" — passed
   - **Precondition**: No `Authorization` header
   - **Steps**:
@@ -577,7 +577,7 @@
 
 - [x] **I-12**: `POST /api/v1/promotions` — pending/rejected merchant returns 403
   - **Evidence**:
-    - API test — no screenshot
+    - `I-12_1_pending_rejected_merchant_forbidden.png`
     - Test: promotion-management.spec.ts › "I-12: POST /api/v1/promotions pending/rejected merchant should return 403" — passed
   - **Precondition**: Merchant with `licenseStatus = pending` or `rejected`
   - **Steps**:
@@ -588,7 +588,7 @@
 
 - [x] **I-13**: Error response follows standard API format
   - **Evidence**:
-    - API test — no screenshot
+    - `I-13_1_standard_error_format.png`
     - Test: promotion-management.spec.ts › "I-13: error response should follow standard API format" — passed
   - **Precondition**: Any error scenario
   - **Steps**:

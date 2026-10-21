@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-20T03:18:45.114Z",
+  "capturedAt": "2026-10-20T10:26:48.677Z",
   "description": "Promotion row after successful creation",
   "results": [
     {
@@ -7,19 +7,19 @@
       "rowCount": 1,
       "rows": [
         {
-          "id": "4fb9667d-ebd3-441a-a97b-f41df2fa0cb2",
+          "id": "eee62c44-1fad-41a6-be78-7e37b804c7f2",
           "merchant_id": "35c44c85-a7f0-4000-b5bd-f377a1077bd0",
-          "code": "UI322239",
+          "code": "UI005913",
           "description": "E2E test promotion description",
           "discount_type": "percentage",
           "discount_value": "15.00",
           "min_order_amount": "0.00",
           "max_uses": 100,
           "used_count": 0,
-          "starts_at": "2026-10-19T20:53:00.000Z",
-          "expires_at": "2026-11-18T20:48:00.000Z",
+          "starts_at": "2026-10-20T04:01:00.000Z",
+          "expires_at": "2026-11-19T03:56:00.000Z",
           "is_active": true,
-          "created_at": "2026-10-19T20:48:43.646Z"
+          "created_at": "2026-10-20T03:56:47.096Z"
         }
       ]
     }
