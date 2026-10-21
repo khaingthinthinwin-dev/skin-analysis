@@ -1,9 +1,12 @@
-import type { Page } from '@playwright/test';
+import type { Page, Response as PlaywrightResponse } from '@playwright/test';
 import { test, expect } from '../../fixtures/auth.fixture';
 import { SearchPage } from '../../pages/SearchAndFilter/SearchPage';
 import { API_BASE_URL } from '../../utils/constants';
 import { authHeaders } from '../../utils/api-auth';
 import { chooseAuthLanguage } from '../../utils/auth-language';
+import { captureScreenshot } from '../../utils/screenshot';
+import * as path from 'path';
+import * as fs from 'fs';
 
 let searchPage: SearchPage;
 
@@ -890,6 +893,283 @@ test('N-07: should toggle language on the Search & Filter page', async ({
   });
 
   test.describe('Interface (I)', () => {
+    interface ApiEvidenceCall {
+      method: string;
+      url: string;
+      status?: number;
+      requestBody?: string | null;
+      responseBody?: string | null;
+    }
+
+    interface ApiEvidenceEntry {
+      call: ApiEvidenceCall;
+      response: PlaywrightResponse;
+    }
+
+    interface ApiEvidenceSession {
+      entries: ApiEvidenceEntry[];
+      listener: (response: PlaywrightResponse) => void;
+    }
+
+    function beginApiEvidence(page: Page): ApiEvidenceSession {
+      const entries: ApiEvidenceEntry[] = [];
+      const apiRe = /\/api\/v1\/(cart|wishlist)/;
+
+      const listener = (response: PlaywrightResponse) => {
+        if (!apiRe.test(response.url())) return;
+        entries.push({
+          call: {
+            method: response.request().method().toUpperCase(),
+            url: response.url(),
+            status: response.status(),
+            requestBody: response.request().postData() ?? null,
+          },
+          response,
+        });
+      };
+
+      page.on('response', listener);
+      return { entries, listener };
+    }
+
+    async function endApiEvidence(
+      page: Page,
+      session: ApiEvidenceSession,
+      stepName: string,
+    ): Promise<void> {
+      try {
+        // Read bodies after the test's own assertions so we never race its response reads
+        await Promise.race([
+          Promise.all(
+            session.entries.map(async (entry) => {
+              try {
+                entry.call.responseBody = await entry.response.text();
+              } catch {
+                entry.call.responseBody = null;
+              }
+            }),
+          ),
+          new Promise((resolve) => setTimeout(resolve, 2000)),
+        ]);
+
+        try {
+          await captureScreenshot(page, stepName);
+        } catch {
+          // normal screenshot unavailable - the evidence page below is the fallback
+        }
+
+        const calls = session.entries.map((entry) => entry.call);
+        const htmlContent = generateApiEvidenceHtml(stepName, calls);
+        const screenshotDir = path.resolve(
+          __dirname,
+          '..',
+          '..',
+          'test-results',
+          'SearchAndFilter',
+          'screenshots',
+        );
+        fs.mkdirSync(screenshotDir, { recursive: true });
+
+        const evidencePage = await page.context().newPage();
+        try {
+          await evidencePage.setContent(htmlContent, { waitUntil: 'load' });
+          await evidencePage.waitForTimeout(200);
+
+          const sanitized = stepName.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 80);
+          await evidencePage.screenshot({
+            path: path.join(screenshotDir, `element__${sanitized}.png`),
+            fullPage: true,
+          });
+        } finally {
+          await evidencePage.close().catch(() => {});
+        }
+      } finally {
+        page.off('response', session.listener);
+      }
+    }
+
+    function escapeHtml(value: string): string {
+      return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function formatJsonBody(raw: string | null | undefined): string {
+      if (!raw) return '';
+      try {
+        return JSON.stringify(JSON.parse(raw), null, 2);
+      } catch {
+        return raw;
+      }
+    }
+
+    function generateApiEvidenceHtml(
+      stepName: string,
+      calls: ApiEvidenceCall[],
+    ): string {
+      const capturedAt = new Date().toISOString();
+
+      const first = calls[0];
+      let subtitle: string;
+      if (first) {
+        let pathname = first.url;
+        try {
+          pathname = new URL(first.url).pathname;
+        } catch {}
+        subtitle =
+          first.status !== undefined
+            ? `${first.method} ${pathname} returns ${first.status}`
+            : `${first.method} ${pathname}`;
+      } else {
+        subtitle = stepName.replace(/_/g, ' ');
+      }
+
+      const methodColors: Record<string, string> = {
+        GET: '#22c55e',
+        POST: '#3b82f6',
+        PUT: '#f59e0b',
+        PATCH: '#a855f7',
+        DELETE: '#ef4444',
+      };
+
+      let rows = '';
+      if (calls.length === 0) {
+        rows = `
+          <div class="section-header">API Calls</div>
+          <div class="section-body"><span class="empty-body">(no API calls captured)</span></div>`;
+      } else {
+        for (const call of calls) {
+          const color = methodColors[call.method] ?? '#3b82f6';
+          const ok =
+            call.status !== undefined && call.status >= 200 && call.status < 300;
+          const requestBodyHtml = call.requestBody
+            ? `<div class="json-body">${escapeHtml(formatJsonBody(call.requestBody))}</div>`
+            : `<span class="empty-body">(no request body)</span>`;
+          const responseBodyHtml = call.responseBody
+            ? `<div class="json-body">${escapeHtml(formatJsonBody(call.responseBody))}</div>`
+            : `<span class="empty-body">(no response body)</span>`;
+
+          rows += `
+            <div class="call">
+              <div class="request-row">
+                <span class="method-badge" style="background:${color}">${escapeHtml(call.method)}</span>
+                <span class="url-text">${escapeHtml(call.url)}</span>
+                ${
+                  call.status !== undefined
+                    ? `<span class="status-badge ${ok ? 'ok' : 'err'}">${call.status}</span>`
+                    : ''
+                }
+              </div>
+              <div class="section-header">Request Body</div>
+              <div class="section-body">${requestBodyHtml}</div>
+              <div class="section-header">Response Body</div>
+              <div class="section-body">${responseBodyHtml}</div>
+            </div>`;
+        }
+      }
+
+      return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>API Evidence - ${escapeHtml(stepName)}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #ffffff;
+    color: #111111;
+    font-size: 13px;
+    padding: 16px 20px 20px;
+    min-width: 1100px;
+  }
+  .title { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 5px; }
+  .subtitle { font-size: 13px; color: #333; margin-bottom: 12px; }
+  .request-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 11px 0;
+    border-top: 1px solid #dcdcdc;
+    border-bottom: 1px solid #dcdcdc;
+  }
+  .method-badge {
+    display: inline-block;
+    color: #ffffff;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 4px;
+    min-width: 64px;
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+  .url-text {
+    flex: 1;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+    color: #111111;
+    word-break: break-all;
+  }
+  .status-badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 14px;
+    border-radius: 999px;
+    border: 1.5px solid;
+    min-width: 52px;
+    text-align: center;
+    background: #ffffff;
+  }
+  .status-badge.ok { color: #16a34a; border-color: #16a34a; }
+  .status-badge.err { color: #ef4444; border-color: #ef4444; }
+  .section-header {
+    background: #efefef;
+    font-weight: 700;
+    font-size: 13px;
+    color: #111111;
+    padding: 8px 14px;
+    border-bottom: 1px solid #dcdcdc;
+    margin-top: 12px;
+  }
+  .section-body {
+    padding: 12px 14px;
+    background: #ffffff;
+    border-bottom: 1px solid #dcdcdc;
+    min-height: 34px;
+  }
+  .empty-body { font-style: italic; color: #999999; font-size: 13px; }
+  .json-body {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #111111;
+  }
+  .call { margin-bottom: 8px; }
+  .footer {
+    background: #f0f0f0;
+    color: #777777;
+    font-size: 11.5px;
+    padding: 9px 14px;
+    margin-top: 16px;
+    border-top: 1px solid #dcdcdc;
+  }
+</style>
+</head>
+<body>
+  <div class="title">API Evidence</div>
+  <div class="subtitle">${escapeHtml(subtitle)}</div>
+  ${rows}
+  <div class="footer">API Evidence — captured ${capturedAt}</div>
+</body>
+</html>`;
+    }
+
     test('I-01: should return the authenticated buyer cart from GET /cart', async ({
       buyerPage,
     }) => {
@@ -900,6 +1180,7 @@ test('N-07: should toggle language on the Search & Filter page', async ({
       await ensureCartHas(buyerPage, [target.id]);
 
       const gets = collectResponses(buyerPage, API_RE.cart);
+      const apiEvidence = beginApiEvidence(buyerPage);
       await searchPage.gotoBuyerProducts();
 
       await expect.poll(() => matches(gets, API_RE.cart, 'GET').length).toBeGreaterThan(0);
@@ -916,6 +1197,7 @@ test('N-07: should toggle language on the Search & Filter page', async ({
       expect(typeof summary?.hasOutOfStock).toBe('boolean');
       expect(typeof summary?.canCheckout).toBe('boolean');
 
+      await endApiEvidence(buyerPage, apiEvidence, 'I-01_1_cart_get_200');
       await ensureCartLacks(buyerPage, [target.id]);
     });
 
@@ -930,6 +1212,7 @@ test('N-07: should toggle language on the Search & Filter page', async ({
 
       const requests = collectRequests(buyerPage, API_RE.anyCart);
       const responses = collectResponses(buyerPage, API_RE.anyCart);
+      const apiEvidence = beginApiEvidence(buyerPage);
       await searchPage.gotoBuyerProducts();
 
       await searchPage.cartAddButton(target.name).click();
@@ -951,6 +1234,7 @@ test('N-07: should toggle language on the Search & Filter page', async ({
         .poll(() => matches(responses, API_RE.cart, 'GET').length, { timeout: 10_000 })
         .toBeGreaterThanOrEqual(2);
 
+      await endApiEvidence(buyerPage, apiEvidence, 'I-02_1_cart_items_post_contract');
       await ensureCartLacks(buyerPage, [target.id]);
     });
 
@@ -962,6 +1246,7 @@ test('N-07: should toggle language on the Search & Filter page', async ({
       await ensureWishlistHas(buyerPage, [target.id]);
 
       const gets = collectResponses(buyerPage, API_RE.wishlist);
+      const apiEvidence = beginApiEvidence(buyerPage);
       await searchPage.gotoBuyerProducts();
 
       await expect.poll(() => matches(gets, API_RE.wishlist, 'GET').length).toBeGreaterThan(0);
@@ -973,6 +1258,7 @@ test('N-07: should toggle language on the Search & Filter page', async ({
       const items = root.items as Array<Record<string, unknown>>;
       expect(items.some((item) => String(item.productId) === target.id)).toBe(true);
 
+      await endApiEvidence(buyerPage, apiEvidence, 'I-03_1_wishlist_get_200');
       await ensureWishlistLacks(buyerPage, [target.id]);
     });
 
@@ -987,6 +1273,7 @@ test('N-07: should toggle language on the Search & Filter page', async ({
 
       const requests = collectRequests(buyerPage, API_RE.anyWishlist);
       const responses = collectResponses(buyerPage, API_RE.anyWishlist);
+      const apiEvidence = beginApiEvidence(buyerPage);
       await searchPage.gotoBuyerProducts();
 
       await searchPage.heartButton(target.name).click();
@@ -1002,6 +1289,7 @@ test('N-07: should toggle language on the Search & Filter page', async ({
         .poll(() => matches(responses, API_RE.wishlist, 'GET').length, { timeout: 10_000 })
         .toBeGreaterThanOrEqual(2);
 
+      await endApiEvidence(buyerPage, apiEvidence, 'I-04_1_wishlist_post_contract');
       await ensureWishlistLacks(buyerPage, [target.id]);
     });
 
@@ -1016,6 +1304,7 @@ test('N-07: should toggle language on the Search & Filter page', async ({
 
       const requests = collectRequests(buyerPage, API_RE.anyWishlist);
       const responses = collectResponses(buyerPage, API_RE.anyWishlist);
+      const apiEvidence = beginApiEvidence(buyerPage);
       await searchPage.gotoBuyerProducts();
 
       await searchPage.heartButton(target.name).click();
@@ -1032,6 +1321,8 @@ test('N-07: should toggle language on the Search & Filter page', async ({
       await expect
         .poll(() => matches(responses, API_RE.wishlist, 'GET').length, { timeout: 10_000 })
         .toBeGreaterThanOrEqual(2);
+
+      await endApiEvidence(buyerPage, apiEvidence, 'I-05_1_wishlist_delete_contract');
     });
 
     test('I-06: should not exercise wishlist/cart endpoints outside the Search screen', async ({
@@ -1045,6 +1336,7 @@ test('N-07: should toggle language on the Search & Filter page', async ({
       await ensureCartLacks(buyerPage, [target.id]);
 
       const all = collectRequests(buyerPage, /\/api\/v1\/(wishlist|cart)/);
+      const apiEvidence = beginApiEvidence(buyerPage);
       await searchPage.gotoBuyerProducts();
 
       await searchPage.heartButton(target.name).click();
@@ -1062,6 +1354,7 @@ test('N-07: should toggle language on the Search & Filter page', async ({
       expect(matches(all, API_RE.wishlistId, 'POST').length).toBeGreaterThan(0);
       expect(matches(all, API_RE.cartItems, 'POST').length).toBeGreaterThan(0);
 
+      await endApiEvidence(buyerPage, apiEvidence, 'I-06_1_endpoints_outside_search');
       await ensureCartLacks(buyerPage, [target.id]);
       await ensureWishlistLacks(buyerPage, [target.id]);
     });

@@ -243,7 +243,7 @@
 
 - [x] **I-01**: `GET /api/v1/cart` — returns the authenticated buyer's cart
   - **Evidence**:
-    - API test — no screenshot
+    - `element_I-01_1_cart_get_200.png`
     - Test: search-filter.spec.ts › "I-01: should return the authenticated buyer cart from GET /cart" — passed
   - **Precondition**: Logged-in `buyer`; at least one cart item exists
   - **Steps**:
@@ -255,7 +255,7 @@
 
 - [x] **I-02**: `POST /api/v1/cart/items` — adds a product to the cart
   - **Evidence**:
-    - API test — no screenshot
+    - `element_I-02_1_cart_items_post_contract.png`
     - Test: search-filter.spec.ts › "I-02: should send the expected POST /cart/items contract" — passed
   - **Precondition**: Logged-in `buyer`; product in stock
   - **Steps**:
@@ -267,7 +267,7 @@
 
 - [x] **I-03**: `GET /api/v1/wishlist` — returns the buyer's saved items
   - **Evidence**:
-    - API test — no screenshot
+    - `element_I-03_1_wishlist_get_200.png`
     - Test: search-filter.spec.ts › "I-03: should return saved items from GET /wishlist" — passed
   - **Precondition**: Logged-in `buyer` (or token holder); saved items exist
   - **Steps**:
@@ -279,7 +279,7 @@
 
 - [x] **I-04**: `POST /api/v1/wishlist/:productId` — adds a product to the wishlist
   - **Evidence**:
-    - API test — no screenshot
+    - `element_I-04_1_wishlist_post_contract.png`
     - Test: search-filter.spec.ts › "I-04: should send the expected POST /wishlist/:productId contract" — passed
   - **Precondition**: Logged-in `buyer`; product not already saved
   - **Steps**:
@@ -291,7 +291,7 @@
 
 - [x] **I-05**: `DELETE /api/v1/wishlist/:productId` — removes a product from the wishlist
   - **Evidence**:
-    - API test — no screenshot
+    - `element_I-05_1_wishlist_delete_contract.png`
     - Test: search-filter.spec.ts › "I-05: should send the expected DELETE /wishlist/:productId contract" — passed
   - **Precondition**: Logged-in `buyer`; product already saved
   - **Steps**:
@@ -303,7 +303,7 @@
 
 - [x] **I-06**: Wishlist/cart endpoints not exercised by the Search screen
   - **Evidence**:
-    - API test — no screenshot
+    - `element_I-06_1_endpoints_outside_search.png`
     - Test: search-filter.spec.ts › "I-06: should not exercise wishlist/cart endpoints outside the Search screen" — passed
   - **Precondition**: Review of the buyer services used from `/products`
   - **Steps**:
