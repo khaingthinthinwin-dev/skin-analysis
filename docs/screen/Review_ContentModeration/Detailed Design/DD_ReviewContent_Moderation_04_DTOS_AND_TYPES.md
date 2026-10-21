@@ -1,7 +1,7 @@
 # DD_MOD_04 — DTOs and Types (Review & Content Moderation)
 
-> **Doc ID:** SKM-DD-MOD-04 | **Version:** 1.2 | **Status:** Released  
-> **Last Updated:** 2026-08-22
+> **Doc ID:** SKM-DD-MOD-04 | **Version:** 1.3 | **Status:** Released  
+> **Last Updated:** 2026-10-21
 
 ---
 
@@ -12,6 +12,7 @@
 | 1.0 | 2026-08-17 | Senior System Engineer | Initial DTOs and types for Review & Content Moderation. |
 | 1.1 | 2026-08-18 | Senior System Engineer | Added Review Reports DTOs: UpdateReportStatusDto, ReportsQueryDto, ReportResponseDto, ReportDetailResponseDto. Added report-related enums (ReportStatus, ReportReason, ReportStatusFilter), entity type, frontend types, and error codes. |
 | 1.2 | 2026-08-22 | Senior System Engineer | Aligned with FDS v2.0 and screen items v6.0: updated ReportStatus enum (COMPLETED→RESOLVED, added REVIEWED), updated ReportReason enum (spam/inappropriate/fake/other), added ReportReviewDto, added UpdateReportStatusDto with adminNote field. |
+| 1.3 | 2026-10-21 | Senior System Engineer | Aligned with FDS v2.3 (2026-10-21): (1) Review status changed from boolean `is_approved` to 3-value string enum `status` (`pending`/`approved`/`rejected`). Updated ReviewEntity, ReviewResponseDto, ReviewDetailResponseDto, ModerateReviewResponseDto, AdminReview frontend type. (2) Added `reason` optional field to `ModerateUserDto`. (3) Corrected `reason` field in `ModerateReviewDto` to `@MaxLength(500)`. (4) Updated `ModerateUserDto` with optional `reason` field. (5) Corrected audit log `entityType` to lowercase. (6) Updated report status enums and `UpdateReportStatusDto` with `adminNote` (camelCase). (7) Added `ADMIN` to `UserStatusFilter`. (8) Updated `ReviewStatusFilter` to include `pending`. |
 
 ---
 
@@ -100,12 +101,18 @@ export class ModerateProductDto {
 Used for `PATCH /admin/users/:id/status` to activate or deactivate a user.
 
 ```typescript
-import { IsBoolean, IsNotEmpty } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class ModerateUserDto {
   @IsBoolean({ message: 'Active status must be a boolean' })
   @IsNotEmpty({ message: 'Active status is required' })
   isActive: boolean;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty({ message: 'Deactivation reason is required' }, { groups: ['deactivate'] })
+  @MaxLength(500, { message: 'Reason must not exceed 500 characters' })
+  reason?: string;
 }
 ```
 
@@ -239,6 +246,7 @@ import { IsOptional, IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum ReviewStatusFilter {
+  PENDING = 'pending',
   APPROVED = 'approved',
   REJECTED = 'rejected',
 }
@@ -515,7 +523,7 @@ export class ReviewResponseDto {
   title: string | null;
   body: string | null;
   images: string[];
-  isApproved: boolean;
+  status: string;  // 'pending' | 'approved' | 'rejected'
   isVerifiedPurchase: boolean;
   createdAt: Date;
   updatedAt?: Date;
@@ -551,7 +559,7 @@ export class ReviewDetailResponseDto {
   title: string | null;
   body: string | null;
   images: string[];
-  isApproved: boolean;
+  status: string;  // 'pending' | 'approved' | 'rejected'
   isVerifiedPurchase: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -565,7 +573,7 @@ Returned after review moderation action.
 ```typescript
 export class ModerateReviewResponseDto {
   id: string;
-  isApproved: boolean;
+  status: string;  // 'approved' | 'rejected'
   updatedAt: Date;
 }
 ```
@@ -591,9 +599,10 @@ export class MerchantShopDto {
 
 export class MerchantResponseDto {
   id: string;
-  name: string;
+  shopName: string;
   slug: string;
   logoUrl: string | null;
+  licenseStatus: string;  // 'pending' | 'approved' | 'rejected'
   user: MerchantUserDto;
   isApproved: boolean;
   createdAt: Date;
@@ -614,13 +623,14 @@ export class MerchantDetailUserDto {
 
 export class MerchantDetailResponseDto {
   id: string;
-  name: string;
+  shopName: string;
   slug: string;
   description: string | null;
   logoUrl: string | null;
   bannerUrl: string | null;
   licenseUrl: string | null;
   user: MerchantDetailUserDto;
+  licenseStatus: string;  // 'pending' | 'approved' | 'rejected'
   isApproved: boolean;
   rejectionReason: string | null;
   createdAt: Date;
@@ -635,7 +645,7 @@ Returned after merchant moderation action.
 ```typescript
 export class ModerateMerchantResponseDto {
   id: string;
-  isApproved: boolean;
+  licenseStatus: string;  // 'approved' | 'rejected'
   updatedAt: Date;
 }
 ```
@@ -915,6 +925,7 @@ export enum MerchantStatus {
 
 ```typescript
 export enum ReviewStatusFilter {
+  PENDING = 'pending',
   APPROVED = 'approved',
   REJECTED = 'rejected',
 }
@@ -1253,7 +1264,7 @@ export interface AdminReview {
   title: string | null;
   body: string | null;
   images: string[];
-  isApproved: boolean;
+  status: string;  // 'pending' | 'approved' | 'rejected'
   isVerifiedPurchase: boolean;
   createdAt: string;
 }
@@ -1264,9 +1275,10 @@ export interface AdminReview {
 ```typescript
 export interface AdminMerchant {
   id: string;
-  name: string;
+  shopName: string;
   slug: string;
   logoUrl: string | null;
+  licenseStatus: string;  // 'pending' | 'approved' | 'rejected'
   user: {
     id: string;
     name: string;

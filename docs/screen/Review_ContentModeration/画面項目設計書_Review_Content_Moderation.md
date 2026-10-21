@@ -4,9 +4,9 @@
 **Target Screen:** Review & Content Moderation (レビュー・コンテンツ管理)  
 **Subsystem:** Administration — Review Moderation & Content Management  
 **Function ID:** FN-MOD-001  
-**Version:** 6.3  
+**Version:** 6.4  
 **Created:** 2026-08-08  
-**Last Updated:** 2026-08-24  
+**Last Updated:** 2026-10-21  
 **Author:** Senior System Engineer  
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -33,15 +33,16 @@
 | 6.1 | 2026-08-24 | Senior System Engineer | Aligned with DB spec v2.4: Removed `last_login_at` field reference from User Detail (not in DB schema). Fixed txtReportDetail MaxLength to 1000. Fixed adminNote MaxLength to 1000. Added `licenseStatus` to merchant list API response. Renumbered Report sections 4.46→4.51, 4.47→4.52. Renumbered duplicate section 8.7→8.11. |
 | 6.2 | 2026-08-24 | Senior System Engineer | Changed review display approach from hybrid to admin-moderated: ALL reviews now require admin approval before being shown to buyers (`is_approved = false` by default). Updated Section 2.3 Core Functions, Section 2.4 Review Display Flow diagram, Section 4.2 pending count SQL, Section 4.5 status badge description. |
 | 6.3 | 2026-08-24 | Senior System Engineer | Combined Reviews and Reports into single screen with tab navigation (`/admin/reviews`). Removed separate Reports page. Added Screen Tabs element (EL-02). Renumbered Reports tab elements EL-23~EL-41. Renumbered Merchants elements EL-42~EL-55. Removed "Report" action from Reviews tab (admin reporting removed). |
+| 6.4 | 2026-10-21 | Senior System Engineer | Aligned with FDS v2.3 (2026-10-21): Changed review status from boolean `is_approved` to 3-value string enum `status` (`pending`/`approved`/`rejected`). Updated all DB mappings, API responses, status badges, filter tabs, and i18n keys. Added missing API endpoints: `GET /admin/dashboard-stats`, detail GET endpoints (`/admin/reviews/:id`, `/admin/merchants/:id`, `/admin/content/:id`, `/admin/users/:id`, `/admin/reports/:id`), bulk review moderation (`POST /admin/reviews/bulk/moderate`), bulk review deletion (`DELETE /api/v1/admin/reviews/bulk`), bulk product moderation (`PATCH /admin/content/bulk/status`). Corrected notification types, audit log entityType casing (lowercase), merchant rejection flow (products not auto-deactivated), report status update uses `adminNote` (camelCase). |
 
 ### 1.2 Related Documents
 
 | No. | Document ID | Document Name | File Path | Remarks |
 | :-- | :--- | :--- | :--- | :--- |
-| 1 | SKM-REQ-001 | Requirements Definition (v2.10) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
-| 2 | SKM-DBS-001 | Database Design Specification (v2.5) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`reviews`, `products`, `shops`, `users`), constraints. |
+| 1 | SKM-REQ-001 | Requirements Definition (v2.11) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
+| 2 | SKM-DBS-001 | Database Design Specification (v2.5) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`reviews`, `products`, `shops`, `users`, `review_reports`, `audit_logs`, `notifications`), constraints. |
 | 3 | SKM-DEV-001 | Development Rules (v2.1) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
-| 4 | SKM-FDS-MOD-001 | Functional Specification — Review & Content Moderation (v2.2) | `docs/screen/Review_ContentModeration/機能設計書_Review_Content_Moderation.md` | Use cases, state transitions, validation rules, error handling. |
+| 4 | SKM-FDS-MOD-001 | Functional Specification — Review & Content Moderation (v2.3) | `docs/screen/Review_ContentModeration/機能設計書_Review_Content_Moderation.md` | Use cases, state transitions, validation rules, error handling. |
 
 ---
 
@@ -60,7 +61,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | **Access Control** | Protected routes — `JwtAuthGuard` + `RolesGuard` (`admin`) |
 
 ### 2.3 Core Functions & Basic Design Principles (主要機能・基本設計方針)
-1. **Review Moderation** — Reviews follow an admin-moderated model: all reviews are hidden by default until admin approval. Admin can approve, reject, delete, or report reviews with audit logging. Buyers can also report reviews they find suspicious.
+1. **Review Moderation** — Reviews follow an admin-moderated model: all reviews are hidden by default (`status = 'pending'`) until admin approval. Admin can approve, reject, delete reviews with audit logging. Buyers can also report reviews they find suspicious.
 2. **Content Moderation** — View all products, deactivate violating content (`is_active = false`), reactivate products, and enforce platform policy (UC-MOD-004, BR-MOD-010~013).
 3. **Merchant Registration Management** — Approve or reject merchant shop registrations.
 4. **User Account Moderation** — View all users, activate or deactivate user accounts for policy violations (UC-MOD-006, BR-MOD-040~042). Admin cannot deactivate self.
@@ -76,7 +77,7 @@ Buyer submits review
          ↓
 ┌────────────────────────┐
 │ Review Created         │
-│ (is_approved = false)  │
+│ (status = 'pending')   │
 │ Hidden from buyers     │
 └────────────────────────┘
          ↓
@@ -427,16 +428,16 @@ Buyer sees suspicious review
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 2 | `statTotalReviews` | Total Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews)` | Tailwind: `bg-white rounded-lg p-4 shadow-sm`. |
-| 3 | `statPendingCount` | Pending Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE is_approved = FALSE)` | Amber badge. Awaiting admin approval. |
-| 4 | `statApprovedCount` | Approved Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE is_approved = TRUE)` | Green badge. |
-| 5 | `statRejectedCount` | Rejected Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE is_approved = FALSE AND is_verified_purchase = TRUE)` | Red badge. |
+| 3 | `statPendingCount` | Pending Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE status = 'pending')` | Amber badge. Awaiting admin approval. |
+| 4 | `statApprovedCount` | Approved Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE status = 'approved')` | Green badge. |
+| 5 | `statRejectedCount` | Rejected Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE status = 'rejected')` | Red badge. |
 | 6 | `statReportedCount` | Reported Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE id IN (SELECT review_id FROM review_reports))` | Amber badge. |
 
 ### 4.3 Section [C]: Filter Tabs — Reviews (フィルタタブ — レビュー)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 6 | `tabFilterReviews` | Filter Tabs | Tab Group | Enum | — | Default: "All" | Options: All, Pending, Approved, Rejected, Reported | — | i18n key: `admin.reviews.tabs`. Updates query params on change. |
+| 6 | `tabFilterReviews` | Filter Tabs | Tab Group | Enum | — | Default: "All" | Options: All, Pending, Approved, Rejected | — | i18n key: `admin.reviews.tabs`. Updates query params on change. |
 
 ### 4.4 Section [D]: Search + Sort Bar — Reviews (検索・ソートバー — レビュー)
 
@@ -459,9 +460,9 @@ Buyer sees suspicious review
 | 16 | `lblProductName` | Product Name | Static Label | String | — | Populated from DB | — | `products.name` | `text-sm text-muted-foreground`. |
 | 17 | `ratingStars` | Rating Display | Star Rating | Integer (1-5) | — | Populated from DB | — | `reviews.rating` | 1-5 star display with Beauty Pink (#EC4899). |
 | 18 | `lblReviewTitle` | Review Title | Static Label | String | — | Populated from DB or "—" | — | `reviews.title` | Truncated at 50 chars. |
-| 19 | `badgeReviewStatus` | Review Status Badge | Badge | Enum | — | Green (Approved), Red (Rejected), Amber (Pending) | — | `reviews.is_approved` | Standard status badge colors. All reviews start as pending until admin approval. |
+| 19 | `badgeReviewStatus` | Review Status Badge | Badge | Enum | — | Green (Approved), Red (Rejected), Amber (Pending) | — | `reviews.status` | Standard status badge colors. All reviews start as `pending` until admin approval. |
 | 20 | `lblCreatedDate` | Created Date | Static Label | DateTime | — | ISO 8601 formatted | — | `reviews.created_at` | Localized date format via i18n. |
-| 21 | `ddlReviewActions` | Actions Dropdown | Dropdown Menu | — | — | Collapsed | Options: View Detail, Approve, Reject, Report, Delete | — | Destructive actions show confirmation. |
+| 21 | `ddlReviewActions` | Actions Dropdown | Dropdown Menu | — | — | Collapsed | Options: View Detail, Approve, Reject, Delete | — | Destructive actions show confirmation. "Report" action removed (buyer-initiated only). |
 
 ### 4.6 Section [F]: Pagination — Reviews (ページネーション — レビュー)
 
@@ -501,7 +502,7 @@ Buyer sees suspicious review
 | 33 | `lblReviewDetailTitleValue` | Review Title | Static Label | String | — | Populated from DB or "—" | — | `reviews.title` | `font-semibold`. |
 | 34 | `lblReviewBody` | Review Body | Static Label (`<p>`) | Text | — | Populated from DB or "—" | — | `reviews.body` | `text-sm whitespace-pre-wrap`. |
 | 35 | `galleryReviewImages` | Review Images | Image Gallery | Array[URL] | No | Grid layout of images | — | `reviews.images` | `grid grid-cols-3 gap-2`. Max 10 images. |
-| 36 | `badgeVerifiedPurchase` | Verified Purchase Badge | Badge | — | No | Shown if `is_verified_purchase = true` | — | `reviews.is_verified_purchase` | Text: "Verified Purchase". Green badge. |
+| 36 | `badgeVerifiedPurchase` | Verified Purchase Badge | Badge | — | No | Shown if `is_verified_purchase = true` | — | `reviews.is_verified_purchase` | Text: "Verified Purchase". Green badge. Display only; does not affect moderation flow. |
 
 ### 4.11 Section [E]: Moderation Reason Input (モデレーション理由入力)
 
@@ -516,51 +517,7 @@ Buyer sees suspicious review
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 39 | `btnApproveReview` | Approve Button | Button (`submit`, `default`) | — | — | Visible. Text: "Approve" | — | — | i18n key: `admin.moderation.approve`. Full width. |
 | 40 | `btnRejectReview` | Reject Button | Button (`destructive`) | — | — | Visible. Text: "Reject" | — | — | i18n key: `admin.moderation.reject`. Shows reason textarea. |
-| 41 | `btnReportReview` | Report Button | Button (`outline`) | — | — | Visible. Text: "Report" | — | — | i18n key: `admin.moderation.report`. Opens Report Review Modal. |
-| 42 | `btnDeleteReview` | Delete Button | Button (`destructive`) | — | — | Visible. Text: "Delete" | — | — | i18n key: `admin.moderation.delete`. Requires confirmation. |
-
-### 4.13 Section [A]: Report Review Modal Header (レビューレポートモーダルヘッダー)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 43 | `lblReportReviewTitle` | Modal Title | Static Label (`<h2>`) | String | — | Text: "Report Review" | — | i18n key: `admin.moderation.report.title` | `text-lg font-semibold`. |
-| 44 | `btnCloseReportModal` | Close Modal Button | Icon Button | — | — | Visible. X icon. | — | — | Closes modal. Escape key also closes. |
-
-### 4.14 Section [B]: Review Preview in Report Modal (レビュープレビュー)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 45 | `imgReportReviewUserAvatar` | User Avatar | Avatar | URL | — | User avatar or default placeholder | — | `users.avatar_url` | `h-8 w-8 rounded-full`. |
-| 46 | `lblReportReviewUserName` | User Name | Static Label | String | — | Populated from DB | — | `users.name` | `font-medium text-sm`. |
-| 47 | `lblReportReviewProductName` | Product Name | Static Label | String | — | Populated from DB | — | `products.name` | `text-sm text-muted-foreground`. |
-| 48 | `ratingReportReview` | Review Rating | Star Rating | Integer (1-5) | — | Populated from DB | — | `reviews.rating` | Read-only display. |
-| 49 | `lblReportReviewBody` | Review Body | Static Label (`<p>`) | Text | — | Populated from DB (truncated to 200 chars) | — | `reviews.body` | `text-sm`. Truncated with "...". |
-
-### 4.15 Section [C]: Report Reason Selection (レポート理由選択)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 50 | `lblReportReason` | Report Reason Label | Static Label (`<label>`) | String | — | Visible. Text: "Reason for Report" | — | i18n key: `admin.moderation.report.reason` | Required. |
-| 51 | `radReportSpam` | Spam Radio Button | Radio Button | Enum | Yes | Unselected | Options: Spam, Inappropriate, Fake, Other | — | i18n key: `admin.reports.reason.spam`. |
-| 52 | `radReportInappropriate` | Inappropriate Radio Button | Radio Button | Enum | Yes | Unselected | — | — | i18n key: `admin.reports.reason.inappropriate`. |
-| 53 | `radReportFake` | Fake Radio Button | Radio Button | Enum | Yes | Unselected | — | — | i18n key: `admin.reports.reason.fake`. |
-| 54 | `radReportOther` | Other Radio Button | Radio Button | Enum | Yes | Unselected | — | — | i18n key: `admin.reports.reason.other`. |
-
-### 4.16 Section [D]: Report Detail Input (レポート詳細入力)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 55 | `lblReportDetail` | Report Detail Label | Static Label (`<label>`) | String | — | Visible. Text: "Additional Detail (Optional)" | — | i18n key: `admin.moderation.report.detail` | Optional. |
-| 56 | `txtReportDetail` | Report Detail Textarea | Textarea | String(1000) | No | Empty. Placeholder: "Provide additional context..." | MaxLength: 1000 | — | `min-h-[80px]`. Character count shown. |
-
-### 4.17 Section [E]: Report Review Modal Action Buttons (レビューレポートモーダルアクションボタン)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 57 | `btnCancelReport` | Cancel Button | Button (`outline`) | — | — | Visible. Text: "Cancel" | — | — | i18n key: `admin.moderation.report.cancel`. Closes modal. |
-| 58 | `btnSubmitReport` | Submit Report Button | Button (`submit`, `destructive`) | — | — | Visible. Text: "Submit Report" | — | — | i18n key: `admin.moderation.report.submit`. Requires reason selected. |
-
-### 4.18 Section [A]: Page Header — Merchants (ページヘッダー — 出品者)
+| 41 | `btnDeleteReview` | Delete Button | Button (`destructive`) | — | — | Visible. Text: "Delete" | — | — | i18n key: `admin.moderation.delete`. Requires confirmation. |
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -936,9 +893,9 @@ Buyer sees suspicious review
 ## 5. Item Behaviors & Event Specifications (各項目における挙動・イベント仕様)
 
 ### 5.1 Reviews Tab Filter Change (`tabFilterReviews` onChange)
-- **Trigger:** User clicks a filter tab (All, Approved, Rejected).
+- **Trigger:** User clicks a filter tab (All, Pending, Approved, Rejected).
 - **Processing Logic:**
-  1. Update URL query parameter `?status=approved|rejected` or remove `status` for All.
+  1. Update URL query parameter `?status=pending|approved|rejected` or remove `status` for All.
   2. Reset pagination to page 1.
   3. Fetch filtered reviews from `GET /api/v1/admin/reviews?status={status}&page=1&limit=20`.
   4. Re-render reviews table with new data.
@@ -973,7 +930,7 @@ Buyer sees suspicious review
 - **Trigger:** User clicks "Approve" button in review detail modal.
 - **Processing Logic:**
   1. **Backend Dispatch:** `POST /api/v1/admin/reviews/:id/moderate` with `{ action: 'approve' }`.
-  2. **Backend Execution:** Update `reviews.is_approved = true`. Recalculate product `avg_rating` and `review_count`. Invalidate product cache. Log audit trail.
+  2. **Backend Execution:** Update `reviews.status = 'approved'`. Recalculate product `avg_rating` and `review_count`. Invalidate product cache. Log audit trail.
   3. **Post-Execution UI:** Close modal. Show success toast "Review approved". Refresh reviews list.
 - **Exception Handling:**
   - `409 CONFLICT`: Show toast "Review is already approved".
@@ -987,7 +944,7 @@ Buyer sees suspicious review
   1. **UI Update:** Show `lblModerationReason` and `txtModerationReason` textarea.
   2. **Client-Side Pre-Check:** Validate reason is not empty (required).
   3. **Backend Dispatch:** `POST /api/v1/admin/reviews/:id/moderate` with `{ action: 'reject', reason: '...' }`.
-  4. **Backend Execution:** Update `reviews.is_approved = false`. Recalculate product stats. Invalidate cache. Log audit trail.
+  4. **Backend Execution:** Update `reviews.status = 'rejected'`. Recalculate product stats. Invalidate cache. Log audit trail.
   5. **Post-Execution UI:** Close modal. Show success toast "Review rejected". Refresh reviews list.
 - **Exception Handling:**
   - `400 BAD_REQUEST`: Show inline error "Rejection reason is required".
@@ -999,7 +956,7 @@ Buyer sees suspicious review
 - **Processing Logic:**
   1. **Confirmation Dialog:** Show "Are you sure you want to permanently delete this review? This action cannot be undone."
   2. **Backend Dispatch:** `DELETE /api/v1/admin/reviews/:id`.
-  3. **Backend Execution:** Hard delete review from database. Recalculate product `avg_rating` and `review_count` from remaining approved reviews. Invalidate product cache. Log audit trail.
+  3. **Backend Execution:** Hard delete review from database. Recalculate product `avg_rating` and `review_count` from remaining `status = 'approved'` reviews. Invalidate product cache. Log audit trail.
   4. **Post-Execution UI:** Close modal. Show success toast "Review deleted". Refresh reviews list.
 - **Exception Handling:**
   - `404 NOT_FOUND`: Show toast "Review not found".
@@ -1010,7 +967,7 @@ Buyer sees suspicious review
 - **Processing Logic:**
   1. **Confirmation Dialog:** Show "Approve {count} selected reviews?"
   2. **Backend Dispatch:** `POST /api/v1/admin/reviews/bulk/moderate` with `{ ids: [...], action: 'approve' }`.
-  3. **Backend Execution:** Batch update `is_approved` for all selected reviews. Recalculate affected product stats. Invalidate caches.
+  3. **Backend Execution:** Batch update `status = 'approved'` for all selected reviews. Recalculate affected product stats. Invalidate caches.
   4. **Post-Execution UI:** Show success toast "{count} reviews approved". Refresh list. Clear selection.
 - **Exception Handling:** Partial failure: Show toast with count of successful/failed operations.
 
@@ -1019,7 +976,7 @@ Buyer sees suspicious review
 - **Processing Logic:**
   1. **Reason Modal:** Open modal to enter rejection reason (required).
   2. **Backend Dispatch:** `POST /api/v1/admin/reviews/bulk/moderate` with `{ ids: [...], action: 'reject', reason: '...' }`.
-  3. **Backend Execution:** Batch update. Recalculate. Invalidate. Audit.
+  3. **Backend Execution:** Batch update `status = 'rejected'`. Recalculate. Invalidate. Audit.
   4. **Post-Execution UI:** Show success toast. Refresh list. Clear selection.
 - **Exception Handling:** Reason empty: Inline error "Rejection reason is required".
 
@@ -1075,7 +1032,7 @@ Buyer sees suspicious review
   1. **UI Update:** Show rejection reason textarea.
   2. **Client-Side Pre-Check:** Validate reason not empty.
   3. **Backend Dispatch:** `PATCH /api/v1/admin/merchants/:id/status` with `{ status: 'rejected', reason: '...' }`.
-  4. **Backend Execution:** Update `merchants.license_status = 'rejected'`, store `merchants.rejection_reason`, set `reviewed_at`/`reviewed_by`, synchronize `shops.is_approved = false`, deactivate merchant's products (`is_active = false`), create website notification, and log audit trail.
+  4. **Backend Execution:** Update `merchants.license_status = 'rejected'`, store `merchants.rejection_reason`, set `reviewed_at`/`reviewed_by`, synchronize `shops.is_approved = false`, invalidate `cache:products:list:*` in Redis (merchant's products are **not** individually deactivated), create website notification, and log audit trail.
   5. **Post-Execution UI:** Close modal. Show success toast "Merchant rejected". Refresh merchants list.
 - **Exception Handling:**
   - `400 BAD_REQUEST`: Inline error "Rejection reason is required".
@@ -1268,7 +1225,7 @@ Buyer sees suspicious review
 | `rejected` | Delete | — | Reports can be deleted |
 
 **Report → Review Action Relationship:**
-- When a report is marked `resolved`, the target review is automatically rejected (`is_approved = false`).
+- When a report is marked `resolved`, the target review is automatically rejected (`status = 'rejected'`).
 - The moderator can also manually approve/reject/delete the target review from the report detail modal.
 - Report actions do NOT notify the reporter (per BR-MOD-054).
 
@@ -1339,7 +1296,7 @@ Buyer sees suspicious review
 | `product.images[0]` | `review.product.images[0]` | `images` | `products` | TEXT[] |
 | `rating` | `review.rating` | `rating` | `reviews` | INTEGER |
 | `title` | `review.title` | `title` | `reviews` | VARCHAR(255) NULL |
-| `isApproved` | `review.isApproved` | `is_approved` | `reviews` | BOOLEAN |
+| `status` | `review.status` | `status` | `reviews` | VARCHAR(20) |
 | `isVerifiedPurchase` | `review.isVerifiedPurchase` | `is_verified_purchase` | `reviews` | BOOLEAN |
 | `createdAt` | `review.createdAt` | `created_at` | `reviews` | TIMESTAMPTZ |
 
@@ -1353,6 +1310,7 @@ Buyer sees suspicious review
 | `user.reviewCount` | `review.user.reviewCount` | (computed) | `reviews` | INTEGER |
 | `product.slug` | `review.product.slug` | `slug` | `products` | VARCHAR(255) |
 | `product.price` | `review.product.price` | `price` | `products` | NUMERIC(10,2) |
+| `status` | `review.status` | `status` | `reviews` | VARCHAR(20) |
 
 ### 7.3 Merchants List → Database
 
@@ -1474,7 +1432,7 @@ Buyer sees suspicious review
       "rating": 5,
       "title": "Excellent product!",
       "body": "This serum transformed my skin...",
-      "isApproved": true,
+      "status": "approved",
       "isVerifiedPurchase": true,
       "createdAt": "2026-08-07T10:30:00.000Z"
     }
@@ -1494,7 +1452,7 @@ Buyer sees suspicious review
 {
   "data": {
     "id": "clx1234567890",
-    "isApproved": false,
+    "status": "rejected",
     "updatedAt": "2026-08-08T12:00:00.000Z"
   }
 }
@@ -1671,7 +1629,7 @@ Buyer sees suspicious review
     "status": "resolved",
     "resolvedBy": "clxAdmin001",
     "resolvedAt": "2026-08-17T14:00:00.000Z",
-    "admin_note": "Review contains spam content",
+    "adminNote": "Review contains spam content",
     "updatedAt": "2026-08-17T14:00:00.000Z"
   }
 }
@@ -1702,12 +1660,6 @@ Buyer sees suspicious review
 | `admin.reviews.tabs.pending` | "Pending" |
 | `admin.reviews.tabs.approved` | "Approved" |
 | `admin.reviews.tabs.rejected` | "Rejected" |
-| `admin.reviews.tabs.reported` | "Reported" |
-| `admin.reviews.stats.total` | "Total Reviews" |
-| `admin.reviews.stats.pending` | "Pending" |
-| `admin.reviews.stats.approved` | "Approved" |
-| `admin.reviews.stats.rejected` | "Rejected" |
-| `admin.reviews.stats.reported` | "Reported" |
 | `admin.reviews.search` | "Search reviews..." |
 | `admin.reviews.sort.newest` | "Newest" |
 | `admin.reviews.sort.oldest` | "Oldest" |
@@ -1715,18 +1667,17 @@ Buyer sees suspicious review
 | `admin.reviews.sort.ratingLow` | "Rating (Low-High)" |
 | `admin.reviews.detail.title` | "Review Detail" |
 | `admin.reviews.stats.total` | "Total Reviews" |
+| `admin.reviews.stats.pending` | "Pending" |
 | `admin.reviews.stats.approved` | "Approved" |
 | `admin.reviews.stats.rejected` | "Rejected" |
 | `admin.moderation.reason` | "Reason for Rejection" |
 | `admin.moderation.reasonPlaceholder` | "Enter reason for rejection..." |
 | `admin.moderation.approve` | "Approve" |
 | `admin.moderation.reject` | "Reject" |
-| `admin.moderation.report` | "Report" |
 | `admin.moderation.delete` | "Delete" |
 | `admin.moderation.confirmDelete` | "Are you sure you want to permanently delete this review? This action cannot be undone." |
 | `admin.moderation.success.approved` | "Review approved" |
 | `admin.moderation.success.rejected` | "Review rejected" |
-| `admin.moderation.success.reported` | "Review reported" |
 | `admin.moderation.success.deleted` | "Review deleted" |
 | `admin.moderation.bulk.approve` | "Approve Selected" |
 | `admin.moderation.bulk.reject` | "Reject Selected" |
@@ -1736,11 +1687,6 @@ Buyer sees suspicious review
 | `admin.moderation.bulk.confirmDelete` | "Permanently delete {count} selected reviews? This cannot be undone." |
 | `admin.moderation.verifiedPurchase` | "Verified Purchase" |
 | `admin.moderation.viewProduct` | "View Product" |
-| `admin.moderation.report.title` | "Report Review" |
-| `admin.moderation.report.reason` | "Reason for Report" |
-| `admin.moderation.report.detail` | "Additional Detail (Optional)" |
-| `admin.moderation.report.cancel` | "Cancel" |
-| `admin.moderation.report.submit` | "Submit Report" |
 
 ### 9.2 English (en) — Merchants
 
@@ -1869,12 +1815,6 @@ Buyer sees suspicious review
 | `admin.reviews.tabs.pending` | "承認待ち" |
 | `admin.reviews.tabs.approved` | "承認済み" |
 | `admin.reviews.tabs.rejected` | "却下済み" |
-| `admin.reviews.tabs.reported` | "報告済み" |
-| `admin.reviews.stats.total` | "合計レビュー数" |
-| `admin.reviews.stats.pending` | "承認待ち" |
-| `admin.reviews.stats.approved` | "承認済み" |
-| `admin.reviews.stats.rejected` | "却下済み" |
-| `admin.reviews.stats.reported` | "報告済み" |
 | `admin.reviews.search` | "レビューを検索..." |
 | `admin.reviews.sort.newest` | "新規順" |
 | `admin.reviews.sort.oldest` | "古い順" |
@@ -1882,18 +1822,17 @@ Buyer sees suspicious review
 | `admin.reviews.sort.ratingLow` | "評価（低→高）" |
 | `admin.reviews.detail.title` | "レビュー詳細" |
 | `admin.reviews.stats.total` | "合計レビュー数" |
+| `admin.reviews.stats.pending` | "承認待ち" |
 | `admin.reviews.stats.approved` | "承認済み" |
 | `admin.reviews.stats.rejected` | "却下済み" |
 | `admin.moderation.reason` | "却下理由" |
 | `admin.moderation.reasonPlaceholder` | "却下理由を入力してください..." |
 | `admin.moderation.approve` | "承認" |
 | `admin.moderation.reject` | "却下" |
-| `admin.moderation.report` | "報告" |
 | `admin.moderation.delete` | "削除" |
 | `admin.moderation.confirmDelete` | "このレビューを完全に削除してもよろしいですか？この操作は取り消せません。" |
 | `admin.moderation.success.approved` | "レビューが承認されました" |
 | `admin.moderation.success.rejected` | "レビューが却下されました" |
-| `admin.moderation.success.reported` | "レビューが報告されました" |
 | `admin.moderation.success.deleted` | "レビューが削除されました" |
 | `admin.moderation.bulk.approve` | "選択を承認" |
 | `admin.moderation.bulk.reject` | "選択を却下" |
@@ -1903,11 +1842,6 @@ Buyer sees suspicious review
 | `admin.moderation.bulk.confirmDelete` | "選択した{count}件のレビューを完全に削除しますか？この操作は取り消せません。" |
 | `admin.moderation.verifiedPurchase` | "認証済み購入" |
 | `admin.moderation.viewProduct` | "製品を表示" |
-| `admin.moderation.report.title` | "レビューを報告" |
-| `admin.moderation.report.reason` | "報告理由" |
-| `admin.moderation.report.detail` | "追加詳細（任意）" |
-| `admin.moderation.report.cancel` | "キャンセル" |
-| `admin.moderation.report.submit` | "報告を送信" |
 
 ### 9.5 Japanese (ja) — Merchants
 | `admin.merchants.tabs.all` | "すべて" |
@@ -2109,7 +2043,7 @@ Buyer sees suspicious review
 
 - [ ] Page loads with correct title "Review Moderation"
 - [ ] Stats bar displays correct counts
-- [ ] Filter tabs filter reviews correctly (All, Approved, Rejected)
+- [ ] Filter tabs filter reviews correctly (All, Pending, Approved, Rejected)
 - [ ] Search input filters reviews by user name, product name, content
 - [ ] Sort dropdown sorts reviews correctly
 - [ ] Pagination works with page size selector (20, 50, 100)

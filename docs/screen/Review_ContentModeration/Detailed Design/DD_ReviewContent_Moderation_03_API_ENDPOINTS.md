@@ -1,7 +1,7 @@
 # DD_MOD_03  EAPI Endpoints (Review & Content Moderation)
 
-> **Doc ID:** SKM-DD-MOD-03 | **Version:** 1.2 | **Status:** Released  
-> **Last Updated:** 2026-08-22
+> **Doc ID:** SKM-DD-MOD-03 | **Version:** 1.3 | **Status:** Released  
+> **Last Updated:** 2026-10-21
 
 ---
 
@@ -12,6 +12,7 @@
 | 1.0 | 2026-08-17 | Software Architect | Initial API endpoints for Review & Content Moderation. |
 | 1.1 | 2026-08-18 | Software Architect | Added Review Reports endpoints: GET /admin/reports, PATCH /admin/reports/:id/status, DELETE /admin/reports/:id. Added report-related audit logging events. |
 | 1.2 | 2026-08-22 | Software Architect | Aligned with FDS v2.0 and screen items v6.0: added reject review endpoint, report review endpoint, updated review status filter to include pending/reported, added reviewed status to report status update, updated report reason enums. |
+| 1.3 | 2026-10-21 | Software Architect | Aligned with FDS v2.3 (2026-10-21): (1) Review status changed from boolean `is_approved` to 3-value string enum `status` (`pending`/`approved`/`rejected`). Updated all endpoints, response bodies, and query filters. (2) Product content moderation base path confirmed as `/admin/content`. (3) Added missing API endpoints: `GET /admin/dashboard-stats`, detail GET endpoints (`/admin/reviews/:id`, `/admin/merchants/:id`, `/admin/content/:id`, `/admin/users/:id`, `/admin/reports/:id`), bulk review moderation (`POST /admin/reviews/bulk/moderate`), bulk review deletion (`DELETE /admin/reviews/bulk`), bulk product moderation (`PATCH /admin/content/bulk/status`). (4) Corrected notification type strings to match code. (5) Added `reason` optional field to `ModerateUserDto`. (6) Corrected `reason` field in `ModerateReviewDto` to `@MaxLength(500)`. (7) Added `ADMIN` value to `UserStatusFilter`. (8) Corrected audit log `entityType` casing to lowercase. (9) Corrected merchant rejection flow: products not auto-deactivated. (10) Fixed `isApproved` → `status` in output specification. (11) Report status update uses `adminNote` (camelCase). |
 
 ---
 
@@ -43,7 +44,7 @@ View all reviews with filters, search, sort, and pagination.
   - `limit` (integer, optional, default: `20`, max: `100`)  EItems per page
   - `sort` (string, optional, default: `createdAt`)  ESort field: `createdAt`, `rating`
   - `order` (string, optional, default: `desc`)  ESort order: `asc`, `desc`
-  - `status` (enum, optional)  EFilter: `approved`, `rejected`, `pending`, `reported` (omit for all)
+  - `status` (enum, optional)  EFilter: `pending`, `approved`, `rejected` (omit for all)
   - `search` (string, optional)  ESearch by user name, product name, or review content
 - **Response:** `200 OK`
   ```json
@@ -65,7 +66,7 @@ View all reviews with filters, search, sort, and pagination.
         "rating": 5,
         "title": "Excellent product!",
         "body": "This serum transformed my skin...",
-        "isApproved": true,
+        "status": "approved",
         "isVerifiedPurchase": true,
         "createdAt": "2026-08-07T10:30:00.000Z"
       }
@@ -79,9 +80,8 @@ View all reviews with filters, search, sort, and pagination.
   }
   ```
 - **Field Notes:**
-  - `isApproved`: `true` for approved, `false` for rejected/pending
+  - `status`: Review status enum (`pending`, `approved`, `rejected`)
   - `isVerifiedPurchase`: Indicates whether the review was submitted by a verified purchaser
-  - Reported reviews can be filtered using `status=reported`
 - **Error Responses:**
   - `401 UNAUTHORIZED`  EInvalid or expired access token
   - `403 FORBIDDEN`  ENon-admin role
@@ -93,7 +93,7 @@ View all reviews with filters, search, sort, and pagination.
 
 ### 2.2 POST /admin/reviews/:id/moderate
 
-Approve or reject a review. Also handles rejection of pending reviews.
+Approve or reject a review.
 
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
@@ -101,20 +101,20 @@ Approve or reject a review. Also handles rejection of pending reviews.
   - `id` (UUID, required)  EReview ID
 - **Body:** `ModerateReviewDto`
   - `action` (enum: `'approve'` | `'reject'`, required)
-  - `reason` (string, optional, no max length (TEXT))  ERequired when action = `'reject'`
+  - `reason` (string, optional, max 500 characters)  ERequired when action = `'reject'`
 - **Response:** `200 OK`
   ```json
   {
     "data": {
       "id": "clx1234567890",
-      "isApproved": false,
+      "status": "rejected",
       "updatedAt": "2026-08-08T12:00:00.000Z"
     }
   }
   ```
 - **Side Effects:**
-  - Updates `reviews.is_approved`
-  - Recalculates product `avg_rating` and `review_count` from approved reviews only
+  - Updates `reviews.status` to `'approved'` or `'rejected'`
+  - Recalculates product `avg_rating` and `review_count` from `status = 'approved'` reviews only
   - Invalidates product cache (`cache:product:{id}`) in Redis
   - Invalidates product list cache (`cache:products:list:*`) in Redis
   - Logs moderation action to audit trail
@@ -125,47 +125,55 @@ Approve or reject a review. Also handles rejection of pending reviews.
   - `404 NOT_FOUND`  EReview not found
   - `409 CONFLICT`  EReview already in target state
   - `500 INTERNAL_SERVER_ERROR`  EServer error
-- **Logic:** Validates JWT + admin role. Finds review by ID. If reject, validates reason. Updates `is_approved`. Recalculates product stats. Invalidates caches. Logs audit.
+- **Logic:** Validates JWT + admin role. Finds review by ID. If reject, validates reason. Updates `status`. Recalculates product stats. Invalidates caches. Logs audit.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.3 POST /admin/reviews/:id/report
+### 2.3 GET /admin/reviews/:id
 
-Report a review (admin-initiated).
+View single review detail.
 
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Path Parameters:**
   - `id` (UUID, required)  EReview ID
-- **Body:** `ReportReviewDto`
-  - `reason` (enum: `'spam'` | `'inappropriate'` | `'fake'` | `'other'`, required)
-  - `detail` (string, optional, no max length (TEXT))
-- **Response:** `201 Created`
+- **Response:** `200 OK`
   ```json
   {
     "data": {
-      "id": "clxReport001",
-      "reviewId": "clxReview001",
-      "reporterId": "clxAdmin001",
-      "reason": "spam",
-      "detail": "This review appears to be fake promotional content",
-      "status": "pending",
-      "createdAt": "2026-08-22T10:30:00.000Z"
+      "id": "clx1234567890",
+      "user": {
+        "id": "clx0987654321",
+        "name": "John Doe",
+        "email": "john@example.com",
+        "avatarUrl": "https://cdn.example.com/avatars/john.jpg",
+        "reviewCount": 5
+      },
+      "product": {
+        "id": "clx1122334455",
+        "name": "Hydrating Serum",
+        "images": ["https://cdn.example.com/products/serum-1.jpg"],
+        "slug": "hydrating-serum",
+        "price": 49.99
+      },
+      "rating": 5,
+      "title": "Excellent product!",
+      "body": "This serum transformed my skin...",
+      "images": [],
+      "status": "approved",
+      "isVerifiedPurchase": true,
+      "createdAt": "2026-08-07T10:30:00.000Z",
+      "updatedAt": "2026-08-07T10:30:00.000Z"
     }
   }
   ```
-- **Side Effects:**
-  - Creates report record in `review_reports` table
-  - Logs report creation to audit trail
 - **Error Responses:**
-  - `400 BAD_REQUEST`  EValidation failed (missing reason)
   - `401 UNAUTHORIZED`  EInvalid or expired access token
   - `403 FORBIDDEN`  ENon-admin role
   - `404 NOT_FOUND`  EReview not found
-  - `409 CONFLICT`  EDuplicate report (admin has already reported this review)
   - `500 INTERNAL_SERVER_ERROR`  EServer error
-- **Logic:** Validates JWT + admin role. Checks review exists. Checks for duplicate report (same admin + same review). Creates report record in `review_reports` table with admin as reporter. Returns created report.
+- **Logic:** Validates JWT + admin role. Finds review by UUID. Includes `user` (id, name, email, avatarUrl, reviewCount) and `product` (id, name, images, slug, price). Throws 404 if not found.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
@@ -181,7 +189,7 @@ Permanently delete a review.
 - **Response:** `204 No Content`
 - **Side Effects:**
   - Hard deletes review from database
-  - Recalculates product `avg_rating` and `review_count` from remaining approved reviews
+  - Recalculates product `avg_rating` and `review_count` from remaining `status = 'approved'` reviews
   - Invalidates product cache in Redis
   - Invalidates product list cache in Redis
   - Logs deletion action to audit trail
@@ -255,6 +263,33 @@ Bulk delete multiple reviews.
 
 ---
 
+### 2.6 GET /admin/dashboard-stats
+
+Get aggregated dashboard counts.
+
+- **Auth Required:** Yes (Admin)
+- **Headers:** `Authorization: Bearer <accessToken>`
+- **Response:** `200 OK`
+  ```json
+  {
+    "data": {
+      "totalUsers": 1000,
+      "totalMerchants": 50,
+      "pendingMerchants": 5,
+      "pendingAds": 10,
+      "pendingReviewReports": 3
+    }
+  }
+  ```
+- **Error Responses:**
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
+- **Logic:** Returns aggregated counts: `totalUsers`, `totalMerchants` (approved only), `pendingMerchants`, `pendingAds`, `pendingReviewReports`.
+- **Rate Limit:** 100 requests per minute per admin
+
+---
+
 ### 2.7 GET /admin/merchants
 
 View all merchants with filters and pagination.
@@ -274,9 +309,10 @@ View all merchants with filters and pagination.
     "data": [
       {
         "id": "clxShop001",
-        "name": "Beauty Garden",
+        "shopName": "Beauty Garden",
         "slug": "beauty-garden",
         "logoUrl": "https://cdn.example.com/shops/beauty-garden-logo.png",
+        "licenseStatus": "pending",
         "user": {
           "id": "clxUser001",
           "name": "Jane Smith",
@@ -298,7 +334,7 @@ View all merchants with filters and pagination.
   - `401 UNAUTHORIZED`  EInvalid or expired access token
   - `403 FORBIDDEN`  ENon-admin role
   - `500 INTERNAL_SERVER_ERROR`  EServer error
-- **Logic:** Validates JWT + admin role. Queries `merchants` table with `license_status` filter. Joins `users` and `shops`. Applies pagination.
+- **Logic:** Validates JWT + admin role. Queries `merchants` table with `license_status` filter. Joins `users` and `shops` for merchant/shop data. Applies pagination.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
@@ -310,13 +346,13 @@ View merchant detail.
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Path Parameters:**
-  - `id` (UUID, required)  EMerchant/Shop ID
+  - `id` (UUID, required)  EMerchant ID
 - **Response:** `200 OK`
   ```json
   {
     "data": {
       "id": "clxShop001",
-      "name": "Beauty Garden",
+      "shopName": "Beauty Garden",
       "slug": "beauty-garden",
       "description": "Premium skincare products...",
       "logoUrl": "https://cdn.example.com/shops/logo.png",
@@ -328,6 +364,7 @@ View merchant detail.
         "email": "jane@example.com",
         "phone": "+60123456789"
       },
+      "licenseStatus": "pending",
       "isApproved": false,
       "createdAt": "2026-08-06T08:00:00.000Z"
     }
@@ -352,22 +389,22 @@ Approve or reject a merchant registration.
   - `id` (UUID, required)  EMerchant ID
 - **Body:** `ModerateMerchantDto`
   - `status` (enum: `'approved'` | `'rejected'`, required)
-  - `reason` (string, optional, no max length (TEXT))  ERequired when status = `'rejected'`
+  - `reason` (string, optional, max 500 characters)  ERequired when status = `'rejected'`
 - **Response:** `200 OK`
   ```json
   {
     "data": {
       "id": "clxShop001",
-      "isApproved": true,
+      "licenseStatus": "approved",
       "updatedAt": "2026-08-08T12:00:00.000Z"
     }
   }
   ```
 - **Side Effects:**
-  - Updates `merchants.license_status`, `rejection_reason`, `reviewed_at`, `reviewed_by`
-  - Synchronizes `shops.is_approved` (`true` for approved, `false` for rejected)
-  - If rejected: deactivates merchant's products (`is_active = false`)
-  - Creates website notification for the merchant user
+  - Updates `merchants.license_status`, `rejection_reason` (null on approval), `reviewed_at`, `reviewed_by`
+  - Synchronizes `shops.is_approved` (`true` when approved, `false` when rejected)
+  - If rejected: invalidates `cache:products:list:*` in Redis (merchant's products are **not** individually deactivated)
+  - Creates `MERCHANT_STATUS_CHANGED` notification for the merchant user
   - Logs moderation action to audit trail
 - **Error Responses:**
   - `400 BAD_REQUEST`  EValidation failed (missing status, missing reason for reject)
@@ -376,7 +413,7 @@ Approve or reject a merchant registration.
   - `404 NOT_FOUND`  EMerchant/shop not found
   - `409 CONFLICT`  EMerchant already in target status
   - `500 INTERNAL_SERVER_ERROR`  EServer error
-- **Logic:** Validates JWT + admin role. Finds merchant by ID. If reject, validates reason. Updates `license_status`. Synchronizes `shops.is_approved`. If rejected, deactivates products. Creates notification. Logs audit.
+- **Logic:** Validates JWT + admin role. Finds merchant by ID. If reject, validates reason. Updates `license_status`. Synchronizes `shops.is_approved`. If rejected, invalidates product list cache. Creates notification. Logs audit.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
@@ -679,7 +716,7 @@ View all review reports with filters, search, and pagination.
   - `limit` (integer, optional, default: `20`, max: `100`)  EItems per page
   - `sort` (string, optional, default: `createdAt`)  ESort field: `createdAt`
   - `order` (string, optional, default: `desc`)  ESort order: `asc`, `desc`
-  - `status` (enum, optional)  EFilter: `pending`, `rejected`, `completed` (omit for all)
+  - `status` (enum, optional)  EFilter: `pending`, `reviewed`, `resolved`, `rejected` (omit for all)
   - `search` (string, optional)  ESearch by reporter name, email, or review content
 - **Response:** `200 OK`
   ```json
@@ -720,18 +757,65 @@ View all review reports with filters, search, and pagination.
     }
   }
   ```
-- **Error Responses:**
-  - `401 UNAUTHORIZED`  EInvalid or expired access token
-  - `403 FORBIDDEN`  ENon-admin role
-  - `500 INTERNAL_SERVER_ERROR`  EServer error
-- **Logic:** Validates JWT + admin role. Queries `review_reports` table with optional status filter. Joins `users` (reporter) and `reviews` for display data. Applies pagination.
+- **Logic:** Validates JWT + admin role. Queries `review_reports` table with optional status filter. Joins `review` (with nested `user` and `product`), `reporter` (id, name, email, avatarUrl), `resolver` (id, name). Applies pagination.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.18 PATCH /admin/reports/:id/status
+### 2.18 GET /admin/reports/:id
 
-Update report status (reject, review, or complete).
+View single report detail.
+
+- **Auth Required:** Yes (Admin)
+- **Headers:** `Authorization: Bearer <accessToken>`
+- **Path Parameters:**
+  - `id` (UUID, required)  EReport ID
+- **Response:** `200 OK`
+  ```json
+  {
+    "data": {
+      "id": "clxReport001",
+      "reviewId": "clxReview001",
+      "reporter": {
+        "id": "clxUser002",
+        "name": "Jane Doe",
+        "email": "jane@example.com",
+        "avatarUrl": "https://cdn.example.com/avatars/jane.jpg"
+      },
+      "review": {
+        "id": "clxReview001",
+        "body": "This product is amazing! It completely transformed my skin in just two weeks...",
+        "rating": 5,
+        "product": {
+          "id": "clxProd001",
+          "name": "Hydrating Serum",
+          "slug": "hydrating-serum"
+        }
+      },
+      "reason": "spam",
+      "detail": "This review appears to be fake promotional content",
+      "status": "pending",
+      "adminNote": null,
+      "resolvedBy": null,
+      "resolvedAt": null,
+      "createdAt": "2026-08-15T10:30:00.000Z",
+      "updatedAt": "2026-08-15T10:30:00.000Z"
+    }
+  }
+  ```
+- **Error Responses:**
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `404 NOT_FOUND`  EReport not found
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
+- **Logic:** Returns full report including nested `review` (with user and product), `reporter`, and `resolver`. Throws 404 if not found.
+- **Rate Limit:** 100 requests per minute per admin
+
+---
+
+### 2.19 PATCH /admin/reports/:id/status
+
+Update report status (reviewed, resolved, or rejected).
 
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
@@ -755,9 +839,9 @@ Update report status (reject, review, or complete).
   ```
 - **Side Effects:**
   - Updates `review_reports.status`
-  - Sets `review_reports.resolved_by` and `resolved_at`
-  - If status = `'resolved'`: rejects the target review (`reviews.is_approved = false`)
-  - Recalculates product `avg_rating` and `review_count` from approved reviews only
+  - Sets `review_reports.admin_note`, `resolved_by`, `resolved_at`
+  - If status = `'resolved'`: rejects the target review (`reviews.status = 'rejected'`)
+  - Recalculates product `avg_rating` and `review_count` from `status = 'approved'` reviews only
   - Invalidates product cache in Redis
   - Invalidates product list cache in Redis
   - Logs moderation action to audit trail
@@ -766,9 +850,9 @@ Update report status (reject, review, or complete).
   - `401 UNAUTHORIZED`  EInvalid or expired access token
   - `403 FORBIDDEN`  ENon-admin role
   - `404 NOT_FOUND`  EReport not found
-  - `409 CONFLICT`  EThis report has already been resolved
+  - `409 CONFLICT`  EThis report has already been resolved. Status `reviewed` can only be set from `pending` state (409 otherwise).
   - `500 INTERNAL_SERVER_ERROR`  EServer error
-- **Logic:** Validates JWT + admin role. Finds report by ID. If report is already resolved, returns 409. If status = `'resolved'`, rejects the target review. Updates report status. Sets `resolved_by` and `resolved_at`. Logs audit.
+- **Logic:** Validates JWT + admin role. Finds report by ID. If report is already resolved, returns 409. If marking `reviewed` on a non-pending report, returns 409. If status = `'resolved'`: find target review, set `reviews.status = 'rejected'`, recalculate product stats, invalidate product cache. After transaction (for `resolved` or `rejected`): send notifications (fail-open) — reporter receives `REPORT_RESOLVED` or `REPORT_REJECTED`; merchant receives `REPORT_RESOLVED` on resolution.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
@@ -789,9 +873,9 @@ Delete a review report.
   - `401 UNAUTHORIZED`  EInvalid or expired access token
   - `403 FORBIDDEN`  ENon-admin role
   - `404 NOT_FOUND`  EReport not found
-  - `409 CONFLICT`  ECompleted reports cannot be deleted
+  - `409 CONFLICT`  EResolved reports cannot be deleted
   - `500 INTERNAL_SERVER_ERROR`  EServer error
-- **Logic:** Validates JWT + admin role. Finds report by ID. If report is completed, returns 409. Hard deletes report. Logs audit.
+- **Logic:** Validates JWT + admin role. Finds report by ID. If report is resolved, returns 409. Hard deletes report. Logs audit.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
