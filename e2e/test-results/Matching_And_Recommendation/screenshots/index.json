@@ -11,13 +11,22 @@
   "N-03_1_retake_analysis.png": {
     "test": "matching.spec.ts::N-03: shows the stale analysis prompt and retake navigation"
   },
+  "N-03_2_retake_navigation.png": {
+    "test": "matching.spec.ts::N-03: shows the stale analysis prompt and retake navigation"
+  },
   "N-08_1_history_session.png": {
+    "test": "matching.spec.ts::N-08: expands a recommendation history session"
+  },
+  "N-08_2_history_product_navigation.png": {
     "test": "matching.spec.ts::N-08: expands a recommendation history session"
   },
   "N-07_1_product_navigation.png": {
     "test": "matching.spec.ts::N-07: opens the product page from a recommendation card"
   },
   "N-09_1_similar_products.png": {
+    "test": "matching.spec.ts::N-09: views similar products from a product detail page"
+  },
+  "N-09_2_similar_product_navigation.png": {
     "test": "matching.spec.ts::N-09: views similar products from a product detail page"
   },
   "N-20_1_history_expand_collapse.png": {
@@ -74,7 +83,10 @@
   "N-23_1_multiple_types_and_universal_product.png": {
     "test": "matching.spec.ts::N-23: selects multiple skin types and removes one without a reload"
   },
-  "N-24_1_source_sort_options.png": {
+  "N-24_1_ai_sort_options.png": {
+    "test": "matching.spec.ts::N-24: offers Match Score sort only for AI recommendations"
+  },
+  "N-24_2_generic_sort_options.png": {
     "test": "matching.spec.ts::N-24: offers Match Score sort only for AI recommendations"
   },
   "N-25_1_fresh_analysis.png": {
@@ -86,13 +98,19 @@
   "N-10_1_sponsored_impression.png": {
     "test": "matching.spec.ts::N-10: displays sponsored ads and records a panel impression"
   },
-  "N-11_1_ad_destination.png": {
+  "N-11_1_sponsored_cta.png": {
+    "test": "matching.spec.ts::N-11: tracks a sponsored ad click and follows its destination"
+  },
+  "N-11_2_ad_destination.png": {
     "test": "matching.spec.ts::N-11: tracks a sponsored ad click and follows its destination"
   },
   "N-15_1_wishlist_toggle.png": {
     "test": "matching.spec.ts::N-15: adds and removes a recommendation from the wishlist"
   },
   "N-16_1_cart_add.png": {
+    "test": "matching.spec.ts::N-16: adds an in-stock recommendation to the cart"
+  },
+  "N-16_2_cart_duplicate_dialog.png": {
     "test": "matching.spec.ts::N-16: adds an in-stock recommendation to the cart"
   },
   "A-01_1_unauthenticated_redirect.png": {

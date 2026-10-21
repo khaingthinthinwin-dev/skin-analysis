@@ -9,9 +9,9 @@
 | **Document ID** | SKM-PCL-MATCH-001 |
 | **Target Screen** | Matching & Recommendation |
 | **Subsystem** | Product Discovery |
-| **Version** | 1.1 |
+| **Version** | 1.2 |
 | **Created** | 2026-10-14 |
-| **Last Updated** | 2026-10-20 |
+| **Last Updated** | 2026-10-21 |
 | **Status** | Active |
 | **Source Specs** | DD_MATCH_01–06; 機能設計書 / 画面項目設計書 (Matching_And_Recommendation) |
 
@@ -21,7 +21,7 @@
 
 - [x] **N-01**: View personalized recommendations with a completed skin analysis
   - **Evidence**:
-    - `N-01_1_personalized.png`
+    - `N-01_1_personalized.png` — AI Analysis badge, match score badges, a full 12-card grid, the filter panel and the 1 | 2 pagination of the 15-product result set
     - Test: matching.spec.ts › "N-01: displays personalized recommendations and match scores" — passed
   - **Precondition**: Authenticated buyer has a completed AI skin analysis and eligible products exist
   - **Steps**:
@@ -30,11 +30,10 @@
   - **Expected Result**: AI Analysis badge and match score badges are shown; recommendations are displayed in the desktop grid
   - **Business Rules**: BR-MATCH-001, BR-MATCH-021, BR-MATCH-022
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **N-02**: View generic recommendations without a skin analysis
   - **Evidence**:
-    - `N-02_1_generic.png`
+    - `N-02_1_generic.png` — General Picks badge, the skin-analysis prompt banner and generic cards without match scores
     - Test: matching.spec.ts › "N-02: displays generic recommendations without match scores" — passed
   - **Precondition**: Authenticated buyer has no completed skin analysis and featured products exist
   - **Steps**:
@@ -43,55 +42,56 @@
   - **Expected Result**: General Picks badge and skin analysis prompt are shown; generic cards do not show match scores
   - **Business Rules**: BR-MATCH-001
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **N-03**: Show the refresh prompt for stale analysis
   - **Evidence**:
-    - `N-03_1_retake_analysis.png`
+    - `N-03_1_retake_analysis.png` — stale banner on the recommendations page, with the match scores still visible
+    - `N-03_2_retake_navigation.png` — destination of the `Retake Analysis` CTA (skin-analysis screen)
     - Test: matching.spec.ts › "N-03: shows the stale analysis prompt and retake navigation" — passed
   - **Precondition**: Authenticated buyer has a completed analysis older than 24 hours
   - **Steps**:
     1. Navigate to `/buyer/recommendations`
     2. Inspect the source badge, product scores, and freshness prompt
     3. Click `Retake Analysis`
-  - **Expected Result**: AI Analysis badge and match scores remain visible with a subtle `Want Fresh Results?` prompt; CTA navigates to `/buyer/skin-analysis`
+  - **Expected Result**: The amber `Your analysis looks outdated` banner (with the `Retake your skin analysis to refresh these recommendations.` hint) is shown next to the still-visible AI Analysis badge and match scores; the `Retake Analysis` CTA is a link to `/buyer/skin-analysis` and opens that screen
   - **Business Rules**: BR-MATCH-001, BR-MATCH-004
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
+  - **Note**: The banner title is `matchingPage.freshResults.title`; there is no "Want Fresh Results?" string in the implementation.
 
 - [x] **N-04**: Filter recommendations by skin type, price, category, and rating
   - **Evidence**:
-    - `N-04_1_skin_type_filtered.png`
-    - `N-04_2_all_filters_applied.png`
+    - `N-04_1_skin_type_filtered.png` — after the skin-type filter: only the matching products remain
+    - `N-04_2_all_filters_applied.png` — after skin type + price + category + rating: the single remaining product
     - Test: matching.spec.ts › "N-04: filters by skin type, price, category, and rating" — passed
   - **Precondition**: Authenticated buyer is on the recommendations page; products matching the chosen filters exist. No ingredient picker is rendered — `FiltersPanel` offers category, price, skin type, and rating only; `ingredients` remains an API-level filter (`matchQuerySchema`) with no UI control.
   - **Steps**:
-    1. Set a skin type filter
-    2. Set minimum and maximum prices
-    3. Select a category and a minimum rating
-    4. Inspect results and the page query state
-  - **Expected Result**: Results meet the selected filters and pagination resets to page 1
+    1. Open the page on page 2 of the unfiltered result set
+    2. Set a skin type filter
+    3. Set minimum and maximum prices
+    4. Select a category and a minimum rating
+    5. Inspect results and the page query state
+  - **Expected Result**: Every rendered product satisfies the applied filters (skin type — products tagged `all` stay eligible — price range, category, and minimum rating), the products that do not match are removed from the grid, and the pagination is reset to page 1
   - **Business Rules**: BR-MATCH-006
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
+  - **Note**: The scenario runs against the `generic` source on purpose: on the AI source the grid is additionally scoped to the analysed skin types, so a panel selection cannot be observed narrowing the result set.
 
 - [x] **N-05**: Sort and paginate recommendation results
   - **Evidence**:
-    - `N-05_1_price_sort_page_2.png`
+    - `N-05_1_price_sort_page_2.png` — page 2 of the price-ascending order
     - Test: matching.spec.ts › "N-05: sorts by ascending price and paginates results" — passed
   - **Precondition**: Recommendation result set contains enough products for multiple pages
   - **Steps**:
     1. Select price sort and ascending order
     2. Navigate to page 2
     3. Inspect order and active page
-  - **Expected Result**: Products are ordered by price ascending and the requested page is displayed; pagination keeps prior data without a full skeleton flash (`placeholderData: prev => prev`)
+  - **Expected Result**: Products are ordered by price ascending (cheapest first, the page break falls after the 12th cheapest product), the requested page is displayed and marked as the current page, and pagination keeps prior data without a full skeleton flash (`placeholderData: prev => prev`)
   - **Business Rules**: BR-MATCH-024, BR-MATCH-025, BR-MATCH-026, BR-MATCH-027
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded. Actual code scrolls `main`/window to top only on first arrival, not on page change.
+  - **Note**: Actual code scrolls `main`/window to top only on first arrival, not on page change.
 
 - [x] **N-06**: Reset applied filters
   - **Evidence**:
-    - `N-06_1_filters_reset.png`
+    - `N-06_1_filters_reset.png` — cleared filter state and page 1 marked as the current page
     - Test: matching.spec.ts › "N-06: resets filters and returns pagination to page 1" — passed
   - **Precondition**: At least one recommendation filter is applied
   - **Steps**:
@@ -100,94 +100,92 @@
   - **Expected Result**: Filter parameters are cleared, page resets to 1, and default results return
   - **Business Rules**: None (UI behavior)
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **N-07**: Open a recommended product
   - **Evidence**:
-    - `N-07_1_product_navigation.png`
+    - `N-07_1_product_navigation.png` — destination of the card link: the product page with its heading and loaded hero image
     - Test: matching.spec.ts › "N-07: opens the product page from a recommendation card" — passed
   - **Precondition**: Recommendation cards are displayed
   - **Steps**:
     1. Click a recommendation card
-  - **Expected Result**: Browser navigates to `/buyer/products/:slug` for that product
+  - **Expected Result**: The card link points at `/buyer/products/:slug` for that product and the browser navigates there; the product page renders its heading and product image
   - **Business Rules**: None (navigation)
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **N-08**: View and expand recommendation history
   - **Evidence**:
-    - `N-08_1_history_session.png`
+    - `N-08_1_history_session.png` — expanded session with its date header and recommended product mini-card
+    - `N-08_2_history_product_navigation.png` — destination of the history mini-card (product page)
     - Test: matching.spec.ts › "N-08: expands a recommendation history session" — passed
   - **Precondition**: Authenticated buyer has past analysis sessions with recommendations
   - **Steps**:
     1. Navigate to `/buyer/recommendations`
     2. Expand a session in the history section
-  - **Expected Result**: Sessions are grouped with date headers; expanding a session shows its recommended product mini-cards
+    3. Click a recommended product mini-card
+  - **Expected Result**: Sessions are grouped under date headers (`Recommended on YYYY/MM/DD · <skin type>`) with the number of recommended products; the session expands/collapses on click and shows its recommended product mini-cards, and a mini-card navigates to `/buyer/products/:slug`
   - **Business Rules**: None (history display)
   - **API**: `GET /api/v1/recommendations/history`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **N-09**: View similar products from a product detail page
   - **Evidence**:
-    - `N-09_1_similar_products.png`
+    - `N-09_1_similar_products.png` — Similar Products section with the source product rendered
+    - `N-09_2_similar_product_navigation.png` — destination of a similar product (its product page)
     - Test: matching.spec.ts › "N-09: views similar products from a product detail page" — passed
   - **Precondition**: Product detail returns a product and its similar-products endpoint returns at least one match.
   - **Steps**:
     1. Open the product detail page
     2. Inspect the Similar Products section
     3. Open one similar product
-  - **Expected Result**: Similar products are shown and selecting one navigates to its product page.
+  - **Expected Result**: Similar products are shown (with a loaded product image) and selecting one navigates to its product page, which renders the product heading and hero image.
   - **Business Rules**: BR-MATCH-021, BR-MATCH-022
   - **API**: Product Detail calls `GET /api/v1/products/:idOrSlug/similar?limit=8`; Matching's similar-recommendation endpoint is `GET /api/v1/recommendations/similar/:productId`.
   - **Note**: E2E covers the Product Detail similar-products UI as a cross-screen journey.
 
 - [x] **N-10**: Display sponsored ads and record panel impression
   - **Evidence**:
-    - `N-10_1_sponsored_impression.png`
+    - `N-10_1_sponsored_impression.png` — sponsored panel with the `SPONSORED` disclosure
     - Test: matching.spec.ts › "N-10: displays sponsored ads and records a panel impression" — passed
   - **Precondition**: Eligible approved ads exist for the `recommendation_page_banner` placement. Actual component: shared `AdBannerSlider` (not the unused `AdSlidePanel` in this feature folder).
   - **Steps**:
     1. Navigate to `/buyer/recommendations`
     2. Scroll until at least 50% of the ad panel is visible (`IMPRESSION_VISIBILITY_THRESHOLD = 0.5`, `useSponsoredAds` + schedule filter `approved` + in-window, placement match)
     3. Inspect the disclosure (`Sponsored` badge) and impression request
-  - **Expected Result**: Eligible ads and disclosure are displayed; impression tracking (`matchingService.trackImpression`) is sent when visibility reaches at least 50%; hides entirely while pending/failed/expired/empty
+  - **Expected Result**: Eligible ads and the `SPONSORED` disclosure are displayed; impression tracking (`matchingService.trackImpression`) is sent when visibility reaches at least 50% and carries the visible ad id (`{ adIds: ['<ad id>'] }`); hides entirely while pending/failed/expired/empty
   - **Business Rules**: BR-MATCH-037, BR-MATCH-049, BR-MATCH-050, BR-MATCH-051
   - **API**: `GET /api/v1/ads/panel`; `POST /api/v1/ads/track/impression`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **N-11**: Follow a sponsored ad call to action
   - **Evidence**:
-    - `N-11_1_ad_destination.png`
+    - `N-11_1_sponsored_cta.png` — sponsored panel with the `SPONSORED` disclosure and the `Learn more` CTA
+    - `N-11_2_ad_destination.png` — destination of the CTA (product page)
     - Test: matching.spec.ts › "N-11: tracks a sponsored ad click and follows its destination" — passed
   - **Precondition**: Ad panel contains an eligible ad. `AdBannerSlider` resolves SKU product, fallback product, target/link URL, then catalog fallback; HTTP(S) destinations use `window.location.assign`, app paths use router navigation.
   - **Steps**:
     1. Click the ad call to action
     2. Inspect navigation and the click tracking request
-  - **Expected Result**: Click is tracked (`matchingService.trackClick`) and the resolved internal or external destination opens.
+  - **Expected Result**: Click is tracked (`matchingService.trackClick`, payload `{ adId: '<ad id>' }`) and the resolved internal or external destination opens and renders its page.
   - **Business Rules**: BR-MATCH-037
   - **API**: `POST /api/v1/ads/track/click`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **N-12**: Change the interface language via the app-shell toggle
   - **Evidence**:
-    - `N-12_1_language_en.png`
-    - `N-12_2_language_my.png`
-    - `N-12_3_language_ja.png`
-    - `N-12_4_language_toggle.png`
+    - `N-12_1_language_en.png` — English page title and filter panel
+    - `N-12_2_language_my.png` — Myanmar page title and filter panel
+    - `N-12_3_language_ja.png` — Japanese page title and filter panel
+    - `N-12_4_language_toggle.png` — back on English, still on `/buyer/recommendations`
     - Test: matching.spec.ts › "N-12: switches the app-shell language and returns to English" — passed
-  - **Precondition**: Recommendations page is open. This screen's own code renders hardcoded English strings (no `useTranslation` in `MatchingRecommendations.tsx`); language switching is provided only by the app-shell `LanguageToggle` in `BuyerDashboardLayout`.
+  - **Precondition**: Recommendations page is open. The screen renders its own copy through the `skin` namespace (`frontend/src/i18n/locales/{en,my,ja}/skin.json` → `matchingPage.*`), so the screen text follows the app-shell language; the toggle itself lives in `BuyerDashboardLayout`.
   - **Steps**:
     1. Change language to Japanese via the layout toggle
     2. Change language to Myanmar
     3. Change language back to English
-  - **Expected Result**: Shell/chrome labels update; this screen's hardcoded strings remain English until its i18n is implemented
-  - **Business Rules**: None (i18n; screen-level i18n not implemented in this file)
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
+  - **Expected Result**: The app-shell chrome and this screen's own strings are re-rendered in the selected language (page title `Recommended For You` / `သင့်အတွက် အကြံပြုထားသော ထုတ်ကုန်များ` / `あなたへのおすすめ`, filter panel heading `Filters` / `စစ်ထုတ်မှုများ` / `絞り込み`); the buyer stays on `/buyer/recommendations` while switching.
+  - **Business Rules**: None (i18n)
 
 - [x] **N-13**: Render recommendation layout at desktop, tablet, and mobile widths
   - **Evidence**:
-    - `N-13_1280_responsive.png`
-    - `N-13_768_responsive.png`
-    - `N-13_390_responsive.png`
+    - `N-13_1280_responsive.png` — 3-column grid with the desktop filter sidebar
+    - `N-13_768_responsive.png` — 2-column grid
+    - `N-13_390_responsive.png` — 1-column grid with the mobile `Filters` entry point
     - Test: matching.spec.ts › "N-13: renders the product grid at desktop, tablet, and mobile widths" — passed
   - **Precondition**: Recommendations are available. Product grid uses `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`; filter sheet (`Sheet`) is available below `lg`.
   - **Steps**:
@@ -196,77 +194,73 @@
     3. Set viewport below 768px
   - **Expected Result**: Desktop uses sidebar filters and a 3-column grid at `lg`; below `lg`, filters use a sheet. Product grid uses 2 columns at `sm` and 1 column below `sm`.
   - **Business Rules**: None (responsive layout)
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **N-14**: Navigate recommendation pages on mobile
   - **Evidence**:
-    - `N-14_1_mobile_pagination.png`
+    - `N-14_1_mobile_pagination.png` — page 2 of the recommendation list on a 390px viewport
     - Test: matching.spec.ts › "N-14: changes recommendation pages on mobile with numbered pagination" — passed
   - **Steps**:
     1. Set viewport to mobile width (below 768px)
     2. Navigate to `/buyer/recommendations`
     3. Select page 2 in the numbered pagination controls
-  - **Expected Result**: The URL and recommendation results change to page 2; mobile filters remain available. Load More is not implemented.
+  - **Expected Result**: The URL and recommendation results change to page 2 (the page-1 products are replaced by the next page's products and page 2 is marked as the current page), and the mobile `Filters` entry point stays available. Load More is not implemented.
   - **Business Rules**: BR-MATCH-026, BR-MATCH-027
   - **API**: `GET /api/v1/recommendations/personalized`
   - **Note**: Current implementation uses numbered pagination at all viewport sizes, as reconciled in DD_MATCH_06.
 
 - [x] **N-15**: Toggle wishlist from a recommendation card
   - **Evidence**:
-    - `N-15_1_wishlist_toggle.png`
+    - `N-15_1_wishlist_toggle.png` — card heart toggled back to the unsaved state after the removal
     - Test: matching.spec.ts › "N-15: adds and removes a recommendation from the wishlist" — passed
   - **Precondition**: Recommendation cards are displayed (`MatchingRecommendations.tsx` `handleWishlistToggle`)
   - **Steps**:
     1. Click the heart button on a card not in the wishlist
     2. Click the heart button on a card already in the wishlist
-  - **Expected Result**: Add shows `Added to wishlist` toast and fills the heart red; remove shows `Removed from wishlist` toast; duplicate (409) shows `Already in your wishlist` info toast
+  - **Expected Result**: Add shows `Added to wishlist` toast and flips the card heart to `Remove from Wishlist`; remove shows `Removed from wishlist` toast and flips it back to `Add to Wishlist`; duplicate (409) shows `Already in your wishlist` info toast
   - **Business Rules**: None (wishlist integration; owned by Wishlist team)
   - **API**: Wishlist add/remove endpoints
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **N-16**: Add to cart from a recommendation card
   - **Evidence**:
-    - `N-16_1_cart_add.png`
+    - `N-16_1_cart_add.png` — item added, `Added to cart` confirmation
+    - `N-16_2_cart_duplicate_dialog.png` — `Already in your cart` duplicate guard
     - Test: matching.spec.ts › "N-16: adds an in-stock recommendation to the cart" — passed
   - **Precondition**: Recommendation cards are displayed for in-stock products (`handleAddToCart`); out-of-stock cards hide the cart button
   - **Steps**:
     1. Click the cart button on an in-stock card
     2. Click the cart button on a card already in the cart (or when API returns 409)
-  - **Expected Result**: First add shows `Added to cart` toast; duplicate opens the `Already in Cart` dialog; out-of-stock cards show no cart button
+  - **Expected Result**: First add posts the item and shows the `Added to cart` toast; adding the same product again opens the `Already in your cart` dialog instead of a second request; out-of-stock cards show no cart button
   - **Business Rules**: None (cart integration; owned by Cart team)
   - **API**: `POST /api/v1/cart/items`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **N-17**: Switch product grid between grid and list views
   - **Evidence**:
-    - `N-17_1_grid_and_list.png`
+    - `N-17_1_grid_and_list.png` — grid view restored after the list view
     - Test: matching.spec.ts › "N-17: switches between grid and list views" — passed
   - **Precondition**: Recommendation results are displayed (`ViewToggle` in the sort bar)
   - **Steps**:
     1. Click the List view toggle
     2. Click the Grid view toggle
-  - **Expected Result**: List shows stacked cards, grid restores the responsive card grid; URL query params are unchanged (view is local state only)
+  - **Expected Result**: List shows stacked cards (one wrapping link per card instead of the grid's image link + title link), grid restores the responsive card grid; URL query params are unchanged (view is local state only)
   - **Business Rules**: None (UI behavior)
   - **API**: None (client-side)
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **N-18**: Filter by category, rating, and price validation states
   - **Evidence**:
-    - `N-18_1_price_validation.png`
+    - `N-18_1_price_validation.png` — inline `Minimum price cannot exceed maximum price` alert
     - Test: matching.spec.ts › "N-18: validates category, rating, and invalid price range" — passed
   - **Precondition**: Recommendations page is open (`FiltersPanel`: `CategorySelect`, price Min/Max, `RATING_OPTIONS` 4.5/4.0/3.5/3.0)
   - **Steps**:
     1. Select a category via `CategorySelect`
     2. Select a minimum rating (e.g. `4.5+ Stars`)
     3. Enter an invalid price (negative or non-numeric) and blur
-  - **Expected Result**: Category and rating filters narrow results and reset to page 1; negative/non-numeric price shows an inline `role="alert"` error; min greater than max also shows an inline error (the range is committed, so the API can return no results).
+  - **Expected Result**: Category and rating filters are applied (reaching the URL query) and reset the pagination to page 1; a negative or non-numeric price shows an inline `role="alert"` error; min greater than max also shows an inline error (the range is committed, so the API can return no results).
   - **Business Rules**: BR-MATCH-006
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **N-19**: Default sort is Newest and invalid sorts fall back to Newest
   - **Evidence**:
-    - `N-19_1_default_and_fallback_sort.png`
+    - `N-19_1_default_and_fallback_sort.png` — sort select showing Newest after the fallback
     - Test: matching.spec.ts › "N-19: defaults to Newest and falls back from an unsupported sort" — passed
   - **Precondition**: Recommendations page loads with no explicit sort (`resolveMatchingSort`, `DEFAULT_MATCHING_SORT`)
   - **Steps**:
@@ -275,39 +269,36 @@
   - **Expected Result**: Bare URL pins `sort=createdAt&order=desc` via replace (select shows Newest, page preserved); undisplayable sorts fall back to Newest instead of a placeholder
   - **Business Rules**: BR-MATCH-024, BR-MATCH-025
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **N-20**: Expand all history sessions with See more
   - **Evidence**:
-    - `N-20_1_history_expand_collapse.png`
+    - `N-20_1_history_expand_collapse.png` — history section after `See more` / `Show less`
     - Test: matching.spec.ts › "N-20: expands and collapses recommendation history beyond the first five sessions" — passed
   - **Precondition**: Buyer has more than 5 history sessions (page initially fetches 5, expanded fetches 50)
   - **Steps**:
     1. Navigate to `/buyer/recommendations` and inspect the history section
     2. Click `See more (N more)`
     3. Click `Show less`
-  - **Expected Result**: First 5 sessions shown inline; See more loads all (up to 50/page) in place without navigation; Show less collapses back
+  - **Expected Result**: First 5 sessions shown inline; See more loads all (up to 50/page) in place without navigation (6 sessions rendered, URL unchanged); Show less collapses back to the first 5
   - **Business Rules**: None (history display)
   - **API**: `GET /api/v1/recommendations/history`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **N-21**: Open and apply filters from the mobile filter sheet
   - **Evidence**:
-    - `N-21_1_mobile_filter_applied.png`
+    - `N-21_1_mobile_filter_applied.png` — mobile filter sheet closed after `Show N Products`, with the filter in the URL
     - Test: matching.spec.ts › "N-21: opens the mobile filters sheet and applies a filter" — passed
   - **Precondition**: Viewport below `lg` (`mobileFilterOpen` `Sheet`, `setMobileFilterOpen`; `Show {meta.total} Products` confirm button, `Clear All` reset)
   - **Steps**:
     1. Set viewport below 1024px and open the Filters sheet
     2. Change a filter and click `Show {N} Products`
     3. Reopen the sheet and click `Clear All`
-  - **Expected Result**: Sheet opens with the full `FiltersPanel`; confirm applies filters and closes; Clear All resets via `resetFilters`
+  - **Expected Result**: Sheet opens with the full `FiltersPanel`; confirm applies filters and closes; reopening the sheet and clicking `Clear All` resets the filter (the query parameter disappears) via `resetFilters`
   - **Business Rules**: BR-MATCH-006
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **N-22**: Remove individual filters via filter chips
   - **Evidence**:
-    - `N-22_1_filter_chips_removed.png`
+    - `N-22_1_filter_chips_removed.png` — chips row after the single chip and the `Clear All` removal
     - Test: matching.spec.ts › "N-22: removes a filter chip and clears all chips" — passed
   - **Precondition**: Filters are applied (`hasFilterChips`, `MatchingFilterChips` with `handleRemoveFilterChip`: per-chip X buttons in the desktop sidebar and the mobile row below `lg`, plus `Clear All`/`onClearAll`)
   - **Steps**:
@@ -317,11 +308,10 @@
   - **Expected Result**: Single chip removal clears only that filter value (skin-type chip removes one type); Clear All resets everything
   - **Business Rules**: BR-MATCH-006
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [x] **N-23**: Select multiple skin types simultaneously
   - **Evidence**:
-    - `N-23_1_multiple_types_and_universal_product.png`
+    - `N-23_1_multiple_types_and_universal_product.png` — `Dry` + `Oily` selected, then `Oily` removed, with the universal `all` product still listed
     - Test: matching.spec.ts › "N-23: selects multiple skin types and removes one without a reload" — passed
   - **Precondition**: Recommendations page is open (`FiltersPanel` renders one skin-type option per `SKIN_TYPES` entry — a `Checkbox` in the desktop sidebar, a toggle button in the mobile sheet; both call `toggleSkinType`). Each toggle calls `toggleSkinType` → `onUpdate({ skinTypes })` immediately — there is no Apply button (the mobile sheet's `Show {N} Products` button only closes the sheet); values are comma-joined into the `skinTypes` URL param (`'all'` sentinel when cleared, which the schema drops from the API request). Products matching the selected types and products tagged `all` exist.
   - **Steps**:
@@ -336,7 +326,8 @@
 
 - [x] **N-24**: Show the Match Score sort option only for the AI source
   - **Evidence**:
-    - `N-24_1_source_sort_options.png`
+    - `N-24_1_ai_sort_options.png` — open sort select of the AI source, `Match Score` included in the list
+    - `N-24_2_generic_sort_options.png` — open sort select of the generic source, `Match Score` absent
     - Test: matching.spec.ts › "N-24: offers Match Score sort only for AI recommendations" — passed
   - **Precondition**: Recommendations page is open. The sort bar passes `getMatchingSortOptions(source)` to `SortSelect`; `source` is read from the personalized response (`recData?.source ?? 'generic'`). `COMMON_SORT_OPTIONS` = Newest, Price: Low to High, Price: High to Low, Highest Rated; `MATCH_SCORE_OPTION` = Match Score (`matchScore:desc`) is spliced in only for AI.
   - **Steps**:
@@ -346,21 +337,21 @@
   - **Expected Result**: With `source: 'ai'`, the sort select shows five options in order: `Newest`, `Match Score`, `Price: Low to High`, `Price: High to Low`, `Highest Rated`. With `source: 'generic'`, the select shows only the four common options (`Newest`, `Price: Low to High`, `Price: High to Low`, `Highest Rated`) — `Match Score` is absent because generic results carry no scores
   - **Business Rules**: BR-MATCH-024, BR-MATCH-025
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded. While the response is loading, `source` defaults to `'generic'`, so `Match Score` may appear only after AI data arrives.
+  - **Note**: While the response is loading, `source` defaults to `'generic'`, so `Match Score` may appear only after AI data arrives.
 
-- [x] **N-25**: Hide the "Want Fresh Results?" banner when the AI analysis is 24 hours old or newer
+- [x] **N-25**: Hide the stale-analysis banner when the AI analysis is 24 hours old or newer
   - **Evidence**:
-    - `N-25_1_fresh_analysis.png`
+    - `N-25_1_fresh_analysis.png` — recommendations page at `analysisAge = 24` with no banner above the grid
     - Test: matching.spec.ts › "N-25: hides the freshness prompt at exactly 24 hours" — passed
   - **Precondition**: Authenticated buyer has a completed AI analysis. `ProfilePromptBanner` receives `source` and `analysisAge` (hours) from the personalized response; the component computes `age = analysisAge ?? 0` and decides freshness inline (`source === 'ai' && age <= 24` → hidden; `source === 'ai' && age > 24` → stale banner). N-03 covers the stale (> 24h) display case; this case covers the fresh (≤ 24h) hidden case.
   - **Steps**:
     1. Load recommendations with `analysisAge` well below 24 hours (e.g. 0) and inspect the area above the product grid
     2. Load recommendations with `analysisAge` at exactly 24 hours and inspect the same area
     3. Optionally load with `analysisAge` above 24 hours to contrast against N-03
-  - **Expected Result**: When `source === 'ai'` and `analysisAge <= 24`, no banner is rendered at all — neither the stale "Want Fresh Results?" prompt nor the generic "Get Personalized Recommendations" prompt. Exactly 24 hours counts as fresh (boundary uses `<= 24`, not `< 24`). Above 24 hours the amber stale banner with the `Retake Analysis` CTA appears, as verified in N-03
+  - **Expected Result**: When `source === 'ai'` and `analysisAge <= 24`, no banner is rendered at all — neither the stale `Your analysis looks outdated` prompt nor the generic `Get recommendations made for your skin` prompt. Exactly 24 hours counts as fresh (boundary uses `<= 24`, not `< 24`). Above 24 hours the amber stale banner with the `Retake Analysis` CTA appears, as verified in N-03
   - **Business Rules**: BR-MATCH-001, BR-MATCH-004
   - **API**: `GET /api/v1/recommendations/personalized`
-  - **Note**: Unchecked because no matching Playwright evidence has been recorded. `analysisAge` is computed server-side as hours (float) since `completedAt`; the server still returns `source: 'ai'` when stale — staleness is purely a UI concern in `ProfilePromptBanner.tsx`.
+  - **Note**: `analysisAge` is computed server-side as hours (float) since `completedAt`; the server still returns `source: 'ai'` when stale — staleness is purely a UI concern in `ProfilePromptBanner.tsx`.
 
 ---
 
@@ -400,7 +391,7 @@
 
 - [x] **A-04**: Handle recommendations request failure and retry
   - **Evidence**:
-    - `A-04_1_retry.png`
+    - `A-04_1_retry.png` — error banner with the `Retry` action
     - API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?sort=createdAt&order=desc&page=1&limit=12 → `A-04_2_failed_recommendation_request.png`
     - API response evidence for GET http://localhost:8080/api/v1/recommendations/personalized?sort=createdAt&order=desc&page=1&limit=12 → `A-04_3_retried_recommendation_request.png`
     - Test: matching.spec.ts › "A-04: offers retry after a failed recommendations request" — passed
@@ -442,28 +433,28 @@
 
 - [x] **A-07**: Blocks a non-buyer from the recommendations page
   - **Evidence**:
-    - `A-07_1_non_buyer_unauthorized_page.png`
+    - `A-07_1_non_buyer_unauthorized_page.png` — the rendered `Access Denied` screen reached by the merchant
     - Test: matching.spec.ts › "A-07: blocks non-buyers from the recommendations page" — passed
   - **Precondition**: An authenticated merchant opens the buyer-only recommendations route.
   - **Steps**:
     1. Navigate to `/buyer/recommendations` as a merchant
     2. Inspect the resulting route
-  - **Expected Result**: The route guard redirects to `/unauthorized`; recommendation cards and wishlist/cart actions do not render. Guest redirection is covered by A-01.
+  - **Expected Result**: The route guard redirects to `/unauthorized` and the access-denied screen renders (`Access Denied` heading plus the `Go Home` action); recommendation cards and wishlist/cart actions do not render. Guest redirection is covered by A-01.
   - **Business Rules**: Buyer-only route access
   - **API**: None (blocked by the frontend route guard)
-  - **Note**: The prior card-action expectation did not match the protected route and is replaced with current access-control behavior.
+  - **Note**: The prior card-action expectation did not match the protected route and is replaced with current access-control behavior. The `/unauthorized` route is lazy-loaded, so the evidence is taken after the screen has rendered — not while the Suspense fallback is still showing.
 
 - [x] **A-08**: Price filter rejects invalid input
   - **Evidence**:
-    - `A-08_1_negative_price.png`
+    - `A-08_1_negative_price.png` — inline `Price cannot be negative` alert, filter not applied to the URL
     - Test: matching.spec.ts › "A-08: rejects negative price input without applying it" — passed
-  - **Precondition**: Filters panel is open (`commitPrice` in `FiltersPanel.tsx`: guards are `Number.isNaN` and `< 0` only — there is no min>max validation in code)
+  - **Precondition**: Filters panel is open (`commitPrice` in `FiltersPanel.tsx` → `validatePriceRange`: the guards are `Number.isNaN`, `< 0` and `min > max`; negative/NaN block the commit, a min>max range is committed as-is)
   - **Steps**:
     1. Enter a negative price and blur
-    2. Enter a non-numeric price and blur
-  - **Expected Result**: Negative and non-numeric values block the commit with `role="alert"` errors. A min>max range shows an inline error and is committed as-is.
+  - **Expected Result**: A negative value blocks the commit with a `Price cannot be negative` `role="alert"` error and is not applied to the query. A min>max range shows an inline error and is committed as-is.
   - **Business Rules**: None (client-side validation)
   - **API**: `GET /api/v1/recommendations/personalized`
+  - **Note**: The `Enter a valid price` guard exists in `validatePriceRange` but is not reachable through the UI — the price field is `type="number"`, so the browser rejects non-numeric input.
 
 ---
 
@@ -471,17 +462,17 @@
 
 - [x] **B-01**: Handle an empty recommendation result set
   - **Evidence**:
-    - `B-01_1_empty_results.png`
+    - `B-01_1_empty_results.png` — empty state with the `Reset Filters` action
     - Test: matching.spec.ts › "B-01: displays the empty result state" — passed
   - **Precondition**: Selected filters produce zero matching products
   - **Steps**:
     1. Apply filters that return no results
-  - **Expected Result**: `No matching products` empty state and `Reset Filters` action are displayed
+  - **Expected Result**: `No products match your filters.` empty state and `Reset Filters` action are displayed
   - **Business Rules**: None (empty state)
 
 - [x] **B-02**: Keep out-of-stock products visible with an availability indicator
   - **Evidence**:
-    - `B-02_1_out_of_stock.png`
+    - `B-02_1_out_of_stock.png` — `Out of Stock` badge on the card, no cart action
     - Test: matching.spec.ts › "B-02: shows out-of-stock products and hides cart action" — passed
   - **Precondition**: Matching result set includes an out-of-stock active product from an approved shop
   - **Steps**:
@@ -516,19 +507,19 @@
 
 - [x] **B-05**: Display the no-history state
   - **Evidence**:
-    - `B-05_1_no_history.png`
+    - `B-05_1_no_history.png` — `No recommendations yet` empty history state
     - Test: matching.spec.ts › "B-05: displays the empty recommendation history state" — passed
   - **Precondition**: Authenticated buyer has no recommendation history
   - **Steps**:
     1. Open the recommendations page
     2. Inspect the history section
-  - **Expected Result**: `No recommendation history yet` is displayed
+  - **Expected Result**: `No recommendations yet` is displayed
   - **Business Rules**: None (empty state)
   - **API**: `GET /api/v1/recommendations/history`
 
 - [x] **B-06**: Hide the ad panel when no eligible ads exist
   - **Evidence**:
-    - `B-06_1_no_ads.png`
+    - `B-06_1_no_ads.png` — recommendations page without an ad panel
     - Test: matching.spec.ts › "B-06: hides the ad panel with an empty ad response" — passed
   - **Precondition**: No eligible ad exists for the panel placement
   - **Steps**:
@@ -539,7 +530,7 @@
 
 - [x] **B-07**: Card image and price display fallbacks
   - **Evidence**:
-    - `B-07_1_card_fallbacks.png`
+    - `B-07_1_card_fallbacks.png` — 🧴 image placeholder, `2,500Ks` price and struck-through `3,000Ks`
     - Test: matching.spec.ts › "B-07: uses image fallback and formats product prices" — passed
   - **Precondition**: Recommendation cards are displayed (`ProductImage` in `MatchingRecommendations.tsx`)
   - **Steps**:
@@ -551,13 +542,13 @@
 
 - [x] **B-08**: First-load skeleton grid matches the active view
   - **Evidence**:
-    - `B-08_1_first_load_skeleton.png`
+    - `B-08_1_first_load_skeleton.png` — skeleton cards while the first request is pending
     - Test: matching.spec.ts › "B-08: shows first-load skeleton cards while the request is pending" — passed
-  - **Precondition**: Recommendations query is in `isLoading` (no cached data yet). Present in code: `SkeletonGrid count={8}` on grid view; list view renders 4 pulsing rows (`animate-pulse`, `h-28`).
+  - **Precondition**: Recommendations query is in `isLoading` (no cached data yet). Present in code: `SkeletonGrid count={meta.limit}` on grid view (the endpoint advertises a page size of 12); list view renders 4 pulsing rows (`animate-pulse`, `h-28`).
   - **Steps**:
     1. Hard-load `/buyer/recommendations` in grid view
     2. Hard-load in list view
-  - **Expected Result**: Grid shows the 8-card skeleton; list shows 4 skeleton rows. Note: on page/filter changes `placeholderData` keeps old results, so no skeleton appears — skeleton is first-load only.
+  - **Expected Result**: Grid shows a skeleton card per page slot (`SkeletonGrid count={meta.limit}`, i.e. 12 for the default page size); the list view renders 4 skeleton rows. Note: on page/filter changes `placeholderData` keeps old results, so no skeleton appears — skeleton is first-load only.
   - **Business Rules**: None (UI behavior)
   - **API**: None (client-side)
 ---
@@ -671,7 +662,8 @@
 
 | Item | Status |
 |------|--------|
-| Test scenarios defined (N, A, B, I) | ☐ |
-| E2E tests implemented | ☐ |
-| PCL auto-update verified | ☐ |
+| Test scenarios defined (N, A, B, I) | ☑ 25 normal, 8 abnormal, 8 boundary, 8 interface |
+| E2E tests implemented | ☑ `e2e/tests/Matching_And_Recommendation/matching.spec.ts` — 50 Playwright tests, all passing |
+| Evidence captured | ☑ One screenshot per scenario (API request/response captures for the interface scenarios) in `e2e/test-results/Matching_And_Recommendation/screenshots/` |
+| PCL auto-update verified | ☐ `scripts/update-pcl.cjs` currently fails to parse (unresolved merge-conflict markers in the shared script); the Evidence blocks in this file were therefore maintained by hand |
 | Next review date | 2026-11-14 |
