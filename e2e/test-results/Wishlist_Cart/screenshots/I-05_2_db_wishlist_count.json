@@ -1,0 +1,15 @@
+{
+  "capturedAt": "2026-10-21T03:11:47.590Z",
+  "description": "DB wishlists count is 0 after clearing the wishlist through the API",
+  "results": [
+    {
+      "label": "wishlist count by buyer",
+      "rowCount": 1,
+      "rows": [
+        {
+          "wishlist_count": 0
+        }
+      ]
+    }
+  ]
+}

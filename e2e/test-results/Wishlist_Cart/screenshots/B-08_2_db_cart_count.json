@@ -1,0 +1,16 @@
+{
+  "capturedAt": "2026-10-21T03:11:31.021Z",
+  "description": "DB cart_items count is 0 for the empty cart state",
+  "results": [
+    {
+      "label": "cart count by buyer",
+      "rowCount": 1,
+      "rows": [
+        {
+          "cart_item_count": 0,
+          "total_quantity": 0
+        }
+      ]
+    }
+  ]
+}

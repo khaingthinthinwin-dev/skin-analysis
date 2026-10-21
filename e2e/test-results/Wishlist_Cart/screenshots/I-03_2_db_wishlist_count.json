@@ -1,0 +1,15 @@
+{
+  "capturedAt": "2026-10-21T03:11:43.635Z",
+  "description": "DB wishlist count remains 1 after the 409 duplicate response",
+  "results": [
+    {
+      "label": "wishlist count by buyer and product",
+      "rowCount": 1,
+      "rows": [
+        {
+          "wishlist_count": 1
+        }
+      ]
+    }
+  ]
+}

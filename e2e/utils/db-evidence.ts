@@ -180,7 +180,7 @@ function renderDbHtml(results: QueryResult[], description?: string): string {
   ${queryBlocks}
   <div class="panel">Data Output</div>
   ${tables}
-  <div class="footer">Source: real Postgres (DATABASE_URL) · captured ${new Date().toISOString()}</div>
+  <div class="footer">Source: real Postgres | captured ${new Date().toISOString()}</div>
 </body>
 </html>`;
 }
@@ -362,6 +362,228 @@ export async function captureUserCountDbEvidence(
         label: 'users count by email',
         text: `SELECT COUNT(*)::int AS user_count FROM users WHERE email = $1`,
         values: [email],
+      },
+    ],
+  });
+}
+
+const WISHLIST_SELECT = `SELECT w.id, w.user_id, w.product_id,
+       p.name AS product_name, p.stock_quantity, w.created_at
+FROM wishlists w
+JOIN users u ON u.id = w.user_id
+JOIN products p ON p.id = w.product_id
+WHERE u.email = $1`;
+
+const CART_SELECT = `SELECT ci.id, ci.cart_id, c.user_id, ci.product_id,
+       p.name AS product_name, ci.quantity, p.stock_quantity,
+       ci.created_at, ci.updated_at
+FROM cart_items ci
+JOIN carts c ON c.id = ci.cart_id
+JOIN users u ON u.id = c.user_id
+JOIN products p ON p.id = ci.product_id
+WHERE u.email = $1`;
+
+const PRODUCT_STOCK_QUERY = `SELECT id, name, stock_quantity, is_active
+FROM products WHERE id = $1`;
+
+/** Wishlist rows for a buyer, optionally scoped to one product. */
+export async function captureWishlistDbEvidence(
+  page: Page,
+  stepName: string,
+  email: string,
+  description?: string,
+  productId?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  const values: string[] = [email];
+  const filter = productId ? ' AND w.product_id = $2' : '';
+  if (productId) values.push(productId);
+
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: productId ? 'wishlist row by buyer and product' : 'wishlists by buyer email',
+        text: `${WISHLIST_SELECT}${filter}\nORDER BY w.created_at`,
+        values,
+      },
+    ],
+  });
+}
+
+/** Wishlist row count, optionally scoped to one product. */
+export async function captureWishlistCountDbEvidence(
+  page: Page,
+  stepName: string,
+  email: string,
+  description?: string,
+  productId?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  const values: string[] = [email];
+  const filter = productId ? ' AND w.product_id = $2' : '';
+  if (productId) values.push(productId);
+
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: productId ? 'wishlist count by buyer and product' : 'wishlist count by buyer',
+        text: `SELECT COUNT(*)::int AS wishlist_count
+FROM wishlists w
+JOIN users u ON u.id = w.user_id
+WHERE u.email = $1${filter}`,
+        values,
+      },
+    ],
+  });
+}
+
+/** Wishlist row count for a buyer and product slug. */
+export async function captureWishlistCountByProductSlugDbEvidence(
+  page: Page,
+  stepName: string,
+  email: string,
+  productSlug: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'wishlist count by buyer and product slug',
+        text: `SELECT COUNT(*)::int AS wishlist_count
+FROM wishlists w
+JOIN users u ON u.id = w.user_id
+JOIN products p ON p.id = w.product_id
+WHERE u.email = $1 AND p.slug = $2`,
+        values: [email, productSlug],
+      },
+    ],
+  });
+}
+
+/** Cart items for a buyer, optionally scoped to one product. */
+export async function captureCartDbEvidence(
+  page: Page,
+  stepName: string,
+  email: string,
+  description?: string,
+  productId?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  const values: string[] = [email];
+  const filter = productId ? ' AND ci.product_id = $2' : '';
+  if (productId) values.push(productId);
+
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: productId ? 'cart row by buyer and product' : 'cart_items by buyer email',
+        text: `${CART_SELECT}${filter}\nORDER BY ci.created_at`,
+        values,
+      },
+    ],
+  });
+}
+
+/** A single cart item by its primary key, including the buyer's user_id. */
+export async function captureCartItemDbEvidence(
+  page: Page,
+  stepName: string,
+  email: string,
+  itemId: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'cart item by id',
+        text: `${CART_SELECT} AND ci.id = $2`,
+        values: [email, itemId],
+      },
+    ],
+  });
+}
+
+/** Cart row count and quantity sum, optionally scoped to one product. */
+export async function captureCartCountDbEvidence(
+  page: Page,
+  stepName: string,
+  email: string,
+  description?: string,
+  productId?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  const values: string[] = [email];
+  const filter = productId ? ' AND ci.product_id = $2' : '';
+  if (productId) values.push(productId);
+
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: productId ? 'cart count by buyer and product' : 'cart count by buyer',
+        text: `SELECT COUNT(*)::int AS cart_item_count,
+       COALESCE(SUM(ci.quantity), 0)::int AS total_quantity
+FROM cart_items ci
+JOIN carts c ON c.id = ci.cart_id
+JOIN users u ON u.id = c.user_id
+WHERE u.email = $1${filter}`,
+        values,
+      },
+    ],
+  });
+}
+
+/** Wishlist row + cart row + product stock for one product. */
+export async function captureWishlistCartStateDbEvidence(
+  page: Page,
+  stepName: string,
+  email: string,
+  productId: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'wishlist row by buyer and product',
+        text: `${WISHLIST_SELECT} AND w.product_id = $2`,
+        values: [email, productId],
+      },
+      {
+        label: 'cart row by buyer and product',
+        text: `${CART_SELECT} AND ci.product_id = $2`,
+        values: [email, productId],
+      },
+      {
+        label: 'product stock by id',
+        text: PRODUCT_STOCK_QUERY,
+        values: [productId],
+      },
+    ],
+  });
+}
+
+/** Cart row + product stock for one product. */
+export async function captureCartProductDbEvidence(
+  page: Page,
+  stepName: string,
+  email: string,
+  productId: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'cart row by buyer and product',
+        text: `${CART_SELECT} AND ci.product_id = $2`,
+        values: [email, productId],
+      },
+      {
+        label: 'product stock by id',
+        text: PRODUCT_STOCK_QUERY,
+        values: [productId],
       },
     ],
   });

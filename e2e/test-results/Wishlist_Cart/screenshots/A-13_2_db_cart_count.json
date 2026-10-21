@@ -1,0 +1,16 @@
+{
+  "capturedAt": "2026-10-21T03:11:13.566Z",
+  "description": "DB cart_items count is still 1 after the duplicate add attempt",
+  "results": [
+    {
+      "label": "cart count by buyer and product",
+      "rowCount": 1,
+      "rows": [
+        {
+          "cart_item_count": 1,
+          "total_quantity": 1
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "capturedAt": "2026-10-21T03:12:10.774Z",
+  "description": "DB cart_items quantity is unchanged after the rejected stock-exceeding PATCH",
+  "results": [
+    {
+      "label": "cart item by id",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "484e411f-ac87-4425-85bc-933704a6b24c",
+          "cart_id": "92f25eb9-5422-43e0-ba24-12b9fe56ace1",
+          "user_id": "79e97868-37f3-4c5b-975c-f1360b2925bf",
+          "product_id": "38ccba0b-141d-4930-890a-4fd956c998f4",
+          "product_name": "Oil Control Cleansing Gel",
+          "quantity": 1,
+          "stock_quantity": 68,
+          "created_at": "2026-10-20T20:41:31.610Z",
+          "updated_at": "2026-10-20T20:42:07.825Z"
+        }
+      ]
+    }
+  ]
+}
