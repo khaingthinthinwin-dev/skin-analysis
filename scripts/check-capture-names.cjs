@@ -16,7 +16,7 @@ const QUIET = process.argv.includes("--quiet");
 
 const NAME_PATTERN = /^[NABI]-\d{2}_\d+_[A-Za-z0-9_-]+$/;
 const CAP_CALL =
-  /\b(?:captureScreenshot|captureDbEvidence|captureUserDbEvidence|captureUserCountDbEvidence|captureUserWithMerchantDbEvidence|captureElementScreenshot)\s*\(\s*[^,'()]+,\s*'([^']+)'/g;
+  /\b(?:captureScreenshot|captureApiEvidence|captureDbEvidence|captureUserDbEvidence|captureUserCountDbEvidence|captureUserWithMerchantDbEvidence|captureElementScreenshot)\s*\(\s*[^,'()]+,\s*'([^']+)'/g;
 const PAGE_CAP = /\.capture\(\s*'([^']+)'\)/g;
 
 const violations = [];

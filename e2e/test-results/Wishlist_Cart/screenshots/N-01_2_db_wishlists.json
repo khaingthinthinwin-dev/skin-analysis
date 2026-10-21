@@ -1,0 +1,36 @@
+{
+  "capturedAt": "2026-10-21T03:07:48.503Z",
+  "description": "DB wishlists rows for the buyer after loading the wishlist page",
+  "results": [
+    {
+      "label": "wishlists by buyer email",
+      "rowCount": 3,
+      "rows": [
+        {
+          "id": "7343a549-fc44-4952-a8bd-c92c375f2f6f",
+          "user_id": "79e97868-37f3-4c5b-975c-f1360b2925bf",
+          "product_id": "02412385-15fa-4493-8c85-a877f8accfae",
+          "product_name": "Eye Revital Cream",
+          "stock_quantity": 36,
+          "created_at": "2026-10-20T19:23:23.671Z"
+        },
+        {
+          "id": "b57362b0-39f0-4258-baf7-427ea9288fb0",
+          "user_id": "79e97868-37f3-4c5b-975c-f1360b2925bf",
+          "product_id": "c0227505-5540-42d2-96b9-76a765b94297",
+          "product_name": "Honey Lip Balm",
+          "stock_quantity": 0,
+          "created_at": "2026-10-20T19:23:23.709Z"
+        },
+        {
+          "id": "34e40029-2ebe-4f0e-9eb5-5ae64b19c2f8",
+          "user_id": "79e97868-37f3-4c5b-975c-f1360b2925bf",
+          "product_id": "1a6c573e-bd76-4959-90aa-eab4e7378fa5",
+          "product_name": "Gentle Foam Cleanser",
+          "stock_quantity": 99,
+          "created_at": "2026-10-20T19:23:24.903Z"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "capturedAt": "2026-10-21T03:08:04.427Z",
+  "description": "DB wishlist row is gone after removing the item from the UI",
+  "results": [
+    {
+      "label": "wishlist row by buyer and product",
+      "rowCount": 0,
+      "rows": []
+    }
+  ]
+}

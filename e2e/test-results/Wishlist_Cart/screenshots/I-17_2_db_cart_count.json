@@ -1,0 +1,16 @@
+{
+  "capturedAt": "2026-10-21T03:12:18.297Z",
+  "description": "DB cart_items count is 0 after clearing the cart through the API",
+  "results": [
+    {
+      "label": "cart count by buyer",
+      "rowCount": 1,
+      "rows": [
+        {
+          "cart_item_count": 0,
+          "total_quantity": 0
+        }
+      ]
+    }
+  ]
+}

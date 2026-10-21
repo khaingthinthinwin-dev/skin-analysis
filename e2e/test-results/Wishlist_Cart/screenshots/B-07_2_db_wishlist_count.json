@@ -1,0 +1,15 @@
+{
+  "capturedAt": "2026-10-21T03:11:25.203Z",
+  "description": "DB wishlists count is 0 for the empty wishlist state",
+  "results": [
+    {
+      "label": "wishlist count by buyer",
+      "rowCount": 1,
+      "rows": [
+        {
+          "wishlist_count": 0
+        }
+      ]
+    }
+  ]
+}
