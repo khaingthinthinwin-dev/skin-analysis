@@ -1,809 +1,809 @@
 {
-  "I-07_1_api_call.png": {
+  "I-07_Api_Call.png": {
     "description": "GET /admin/ad-fees returned HTTP 200: Fee settings include placement, tier, daily rate, duration, and max-ad metadata.",
     "test": "ad-fee.api.spec.ts::should list fee settings with placement/tier metadata"
   },
-  "I-13_1_api_call.png": {
+  "I-13_Api_Call.png": {
     "description": "POST /admin/ads/export/ad-performance returned HTTP 200: CSV response returned with 2384 characters.",
     "test": "ad-export.api.spec.ts::I-13: should export CSV ad performance report"
   },
-  "I-12_1_api_call.png": {
+  "I-12_Api_Call.png": {
     "description": "GET /admin/ads/analytics/revenue?dateFrom=2026-01-01&dateTo=2026-12-31 returned HTTP 200: Revenue summary, placement/tier breakdowns, and trend were returned.",
     "test": "ad-analytics.api.spec.ts::should return total revenue and breakdown metrics"
   },
-  "I-08_1_api_call.png": {
+  "I-08_Api_Call.png": {
     "description": "POST /admin/ad-fees returned HTTP 201: New active fee setting created with a history entry.",
     "test": "ad-fee.api.spec.ts::should create a valid fee setting and log history"
   },
-  "TEST_FINAL_99aaf412_Ad_Management_Screen_ad-export_spec_ts___Admin_Export_Report.png": {
+  "TEST_Display_Export_Reports_Page.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-export.spec.ts / Admin Export Reports — PCL Normal Scenarios / Page Loading / should display export reports page",
     "test": "ad-export.spec.ts::should display export reports page"
   },
-  "I-14_1_api_call.png": {
+  "I-14_Api_Call.png": {
     "description": "POST /admin/ads/export/submission-history returned HTTP 200: CSV response returned with 3642 characters.",
     "test": "ad-export.api.spec.ts::I-14: should export shop submission history CSV"
   },
-  "A-10_1_api_call.png": {
+  "A-10_Api_Call.png": {
     "description": "GET /admin/ads/analytics/revenue?dateFrom=2026-01-01&dateTo=2026-01-31 returned HTTP 200: Revenue summary data was returned for the requested month.",
     "test": "ad-analytics.api.spec.ts::A-10: Month filter recalculation (analytics API with month filter)"
   },
-  "TEST_FINAL_60ed5b4b_Ad_Management_Screen_ad-fee-packages_spec_ts___Admin_Package.png": {
+  "TEST_Display_Package_Fee.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-packages.spec.ts / Admin Package & Fee Management — PCL Normal Scenarios / Page Loading / should display package & fee management page",
     "test": "ad-fee-packages.spec.ts::should display package & fee management page"
   },
-  "TEST_FINAL_3a2ed07c_Ad_Management_Screen_ad-fee-history_spec_ts___Admin_Fee_Chan.png": {
+  "TEST_Display_Fee_Change_History.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-history.spec.ts / Admin Fee Change History — PCL Normal Scenarios / Page Loading / should display fee change history page",
     "test": "ad-fee-history.spec.ts::should display fee change history page"
   },
-  "I-09_1_api_call.png": {
+  "I-09_Api_Call.png": {
     "description": "PUT /admin/ad-fees/:id returned HTTP 200: Updated fee values and historical snapshot verified.",
     "test": "ad-fee.api.spec.ts::should update fee setting and keep historical snapshot"
   },
-  "TEST_FINAL_1f47872e_Ad_Management_Screen_ad-analytics_spec_ts___Admin_Revenue_An.png": {
+  "TEST_Display_Revenue_Analytics_Page.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-analytics.spec.ts / Admin Revenue Analytics — PCL Normal Scenarios / Page Loading / should display revenue analytics page",
     "test": "ad-analytics.spec.ts::should display revenue analytics page"
   },
-  "I-15_1_api_call.png": {
+  "I-15_Api_Call.png": {
     "description": "POST /admin/ads/export/fee-history returned HTTP 200: CSV response returned with 56832 characters.",
     "test": "ad-export.api.spec.ts::I-15: should export fee history log as CSV"
   },
-  "A-14_1_api_call.png": {
+  "A-14_Api_Call.png": {
     "description": "GET /admin/ads/analytics/revenue?dateFrom=2026-01-01&dateTo=2026-12-31 returned HTTP 200: The analytics endpoint returned HTTP 200 for the requested date window.",
     "test": "ad-analytics.api.spec.ts::A-14: Drill-down into a specific ad via analytics"
   },
-  "I-10_1_api_call.png": {
+  "I-10_Api_Call.png": {
     "description": "PATCH /admin/ad-fees/:id/deactivate returned HTTP 200: Fee setting deactivated; existing advertisement records remain unchanged.",
     "test": "ad-fee.api.spec.ts::should deactivate fee setting without affecting existing ads"
   },
-  "I-19_1_api_call.png": {
+  "I-19_Api_Call.png": {
     "description": "POST /admin/ads/export/* (report-specific filters) returned HTTP 200: All three CSV exports accepted their report-specific filters, and matching EXPORT_GENERATED audit metadata was persisted.",
     "test": "ad-export.api.spec.ts::I-19 + A-16: should export with report-specific filters and audit metadata"
   },
-  "I-11_1_api_call.png": {
+  "I-11_Api_Call.png": {
     "description": "GET /admin/ad-fees/history returned HTTP 200: Fee history response is sorted by creation time.",
     "test": "ad-fee.api.spec.ts::should return fee history sorted by created time"
   },
-  "N-12_1_ad_performance_export.png": {
+  "N-12_Ad_Performance_Csv_Export.png": {
     "description": "Ad Performance CSV export completes successfully.",
     "test": "ad-export.spec.ts::should export ad performance CSV with correct columns"
   },
-  "N-12_FINAL_a92bd29b_Ad_Management_Screen_ad-export_spec_ts___Admin_Export_Report.png": {
+  "N-12_Export_Ad_Performance_Csv.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-export.spec.ts / Admin Export Reports — PCL Normal Scenarios / N-12: Export ad performance report as CSV / should export ad performance CSV with correct columns",
     "test": "ad-export.spec.ts::should export ad performance CSV with correct columns"
   },
-  "N-06_1_fee_page.png": {
+  "N-06_Admin_Navigates_To_Package.png": {
     "description": "Admin navigates to Package & Fee Management and sees fee list",
     "test": "ad-fee-packages.spec.ts::should load fee settings table with placement, tier, daily rate columns"
   },
-  "A-16_1_api_call.png": {
+  "A-16_Api_Call.png": {
     "description": "POST /admin/ads/export/ad-performance (invalid range and format) returned HTTP 400: The API rejects both a range longer than 365 days and a non-CSV format.",
     "test": "ad-export.api.spec.ts::A-16: should reject date ranges over 365 days and non-CSV formats"
   },
-  "N-10_1_fee_history.png": {
+  "N-10_Admin_Navigates_To_Fee.png": {
     "description": "Admin navigates to Fee Change History and sees fee change records",
     "test": "ad-fee-history.spec.ts::should show history table with date, placement, tier, old/new rates"
   },
-  "I-16_1_api_call.png": {
+  "I-16_Api_Call.png": {
     "description": "PATCH /admin/ad-fees/:id/reactivate returned HTTP 200: Fee setting reactivated and history change recorded.",
     "test": "ad-fee.api.spec.ts::should reactivate a fee setting and log the change"
   },
-  "N-06_FINAL_edacd57c_Ad_Management_Screen_ad-fee-packages_spec_ts___Admin_Package.png": {
+  "N-06_Load_Fee_Settings_Table.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-packages.spec.ts / Admin Package & Fee Management — PCL Normal Scenarios / N-06: Navigate to package fee page and view all fee settings / should load fee settings table with placement, tier, daily rate columns",
     "test": "ad-fee-packages.spec.ts::should load fee settings table with placement, tier, daily rate columns"
   },
-  "N-10_FINAL_6141a9a1_Ad_Management_Screen_ad-fee-history_spec_ts___Admin_Fee_Chan.png": {
+  "N-10_Show_History_Table.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-history.spec.ts / Admin Fee Change History — PCL Normal Scenarios / N-10: View fee change history / should show history table with date, placement, tier, old/new rates",
     "test": "ad-fee-history.spec.ts::should show history table with date, placement, tier, old/new rates"
   },
-  "N-11_1_revenue_analytics.png": {
+  "N-11_Admin_Views_Revenue_Analytics.png": {
     "description": "Admin views Revenue Analytics with totals, charts and breakdowns",
     "test": "ad-analytics.spec.ts::should show summary metrics and charts with breakdowns"
   },
-  "N-11_FINAL_920b17e6_Ad_Management_Screen_ad-analytics_spec_ts___Admin_Revenue_An.png": {
+  "N-11_Show_Summary_Metrics.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-analytics.spec.ts / Admin Revenue Analytics — PCL Normal Scenarios / N-11: View revenue analytics by placement and tier / should show summary metrics and charts with breakdowns",
     "test": "ad-analytics.spec.ts::should show summary metrics and charts with breakdowns"
   },
-  "A-18_1_backend_unit_test.png": {
+  "A-18_The_Passing_Backend_Service.png": {
     "description": "The passing backend service unit test verifies two ads are rejected, one refund fails, and the next is processed.",
     "test": "ad-management.api.spec.ts::A-18: backend service continues after a refund failure"
   },
-  "B-13_1_api_call.png": {
+  "B-13_Api_Call.png": {
     "description": "POST /admin/ads/export/submission-history returned HTTP 200: CSV contains separate rejected and approved rows for the same advertisement review history.",
     "test": "ad-export.api.spec.ts::B-13: submission-history export preserves each review event"
   },
-  "I-17_1_api_call.png": {
+  "I-17_Api_Call.png": {
     "description": "DELETE /admin/ad-fees/history (actual current-month record) returned HTTP 400: An actual current-month record was protected with HTTP 400, while a previous-month record was deleted successfully.",
     "test": "ad-fee.api.spec.ts::should reject deleting an actual current-month fee-history record"
   },
-  "I-01_1_api_call.png": {
+  "I-01_Api_Call.png": {
     "description": "GET /admin/ads?status=pending&page=1&limit=20 returned HTTP 200: Validated paginated data and metadata response.",
     "test": "ad-management.api.spec.ts::should return paginated ads for admin with filters"
   },
-  "I-18_1_api_call.png": {
+  "I-18_Api_Call.png": {
     "description": "GET /admin/ad-fees/history?month=2026-09&placement=search_page_banner&tier=basic&page=1&limit=20 returned HTTP 200: Calendar-month, placement, tier, and pagination filters were accepted.",
     "test": "ad-fee.api.spec.ts::should return fee history with filters by calendar month and pagination"
   },
-  "I-02_1_api_call.png": {
+  "I-02_Api_Call.png": {
     "description": "GET /admin/ads/:id returned HTTP 200: Validated advertisement detail response.",
     "test": "ad-management.api.spec.ts::should return full detail for a single advertisement"
   },
-  "N-13_1_submission_history_export.png": {
+  "N-13_Submission_History_Csv_Export.png": {
     "description": "Submission History CSV export completes successfully.",
     "test": "ad-export.spec.ts::should export submission history CSV with review metadata"
   },
-  "N-13_FINAL_484683cb_Ad_Management_Screen_ad-export_spec_ts___Admin_Export_Report.png": {
+  "N-13_Export_Submission_History_Csv.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-export.spec.ts / Admin Export Reports — PCL Normal Scenarios / N-13: Export ads submission history as CSV / should export submission history CSV with review metadata",
     "test": "ad-export.spec.ts::should export submission history CSV with review metadata"
   },
-  "N-19_1_delete_history.png": {
+  "N-19_Admin_Deletes_A_Fee.png": {
     "description": "Admin deletes a fee history record after confirmation",
     "test": "ad-fee-history.spec.ts::should delete a single eligible history record with confirmation"
   },
-  "N-19_FINAL_e17eca60_Ad_Management_Screen_ad-fee-history_spec_ts___Admin_Fee_Chan.png": {
+  "N-19_Delete_A_Single_Eligible.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-history.spec.ts / Admin Fee Change History — PCL Normal Scenarios / N-19: Delete a single history record / should delete a single eligible history record with confirmation",
     "test": "ad-fee-history.spec.ts::should delete a single eligible history record with confirmation"
   },
-  "N-27_1_export_analytics.png": {
+  "N-27_Admin_Exports_Analytics_Data.png": {
     "description": "Admin exports analytics data and download starts",
     "test": "ad-analytics.spec.ts::should export analytics data and trigger download"
   },
-  "N-27_FINAL_53bf7db4_Ad_Management_Screen_ad-analytics_spec_ts___Admin_Revenue_An.png": {
+  "N-27_Export_Analytics_Data.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-analytics.spec.ts / Admin Revenue Analytics — PCL Normal Scenarios / N-27: Export analytics data / should export analytics data and trigger download",
     "test": "ad-analytics.spec.ts::should export analytics data and trigger download"
   },
-  "I-03_1_api_call.png": {
+  "I-03_Api_Call.png": {
     "description": "POST /admin/ads/:id/approve returned HTTP 201: Advertisement approved with admin and timestamp metadata.",
     "test": "ad-management.api.spec.ts::should approve a pending ad and set approval metadata"
   },
-  "N-07_2_create_success.png": {
+  "N-07_Admin_Saves_New_Fee.png": {
     "description": "Admin saves new fee and it appears in the fee settings list",
     "test": "ad-fee-packages.spec.ts::should create a new fee setting and log history"
   },
-  "N-01_1_ad_list.png": {
+  "N-01_Admin_Navigates_To_Advertisement.png": {
     "description": "Admin navigates to Advertisement Management page and sees the ad list",
     "test": "ad-management.spec.ts::should reset all filters and restore default list"
   },
-  "N-07_FINAL_55a871ce_Ad_Management_Screen_ad-fee-packages_spec_ts___Admin_Package.png": {
+  "N-07_Create_A_New_Fee.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-packages.spec.ts / Admin Package & Fee Management — PCL Normal Scenarios / N-07: Create a valid fee setting / should create a new fee setting and log history",
     "test": "ad-fee-packages.spec.ts::should create a new fee setting and log history"
   },
-  "TEST_FINAL_17b24a5c_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "TEST_Display_Ad_Management_Page.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / Page Loading / should display ad management page with ad list",
     "test": "ad-management.spec.ts::should display ad management page with ad list"
   },
-  "I-04_1_api_call.png": {
+  "I-04_Api_Call.png": {
     "description": "POST /admin/ads/:id/reject returned HTTP 201: Advertisement rejected; reason and refunded payment verified.",
     "test": "ad-management.api.spec.ts::should reject a pending ad and trigger refund"
   },
-  "N-14_1_export_download.png": {
+  "N-14_Admin_Downloads_Exported_File.png": {
     "description": "Admin downloads exported file successfully",
     "test": "ad-export.spec.ts::should export fee history CSV with old/new values and reasons"
   },
-  "N-14_FINAL_30f5e604_Ad_Management_Screen_ad-export_spec_ts___Admin_Export_Report.png": {
+  "N-14_Export_Fee_History_Csv.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-export.spec.ts / Admin Export Reports — PCL Normal Scenarios / N-14: Export fee history log as CSV / should export fee history CSV with old/new values and reasons",
     "test": "ad-export.spec.ts::should export fee history CSV with old/new values and reasons"
   },
-  "I-05_1_api_call.png": {
+  "I-05_Api_Call.png": {
     "description": "POST /admin/ads/bulk/approve returned HTTP 201: Two pending advertisements approved; batch results verified.",
     "test": "ad-management.api.spec.ts::should bulk approve only pending ads within limit"
   },
-  "N-20_1_bulk_delete_history.png": {
+  "N-20_Admin_Selects_Multiple_Fee.png": {
     "description": "Admin selects multiple fee history records and bulk deletes them",
     "test": "ad-fee-history.spec.ts::should bulk delete multiple previous-month history records"
   },
-  "N-20_FINAL_1f1349d4_Ad_Management_Screen_ad-fee-history_spec_ts___Admin_Fee_Chan.png": {
+  "N-20_Bulk_Delete_Multiple_Previous_Month.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-history.spec.ts / Admin Fee Change History — PCL Normal Scenarios / N-20: Bulk delete multiple history records / should bulk delete multiple previous-month history records",
     "test": "ad-fee-history.spec.ts::should bulk delete multiple previous-month history records"
   },
-  "A-10_1_month_filter.png": {
+  "A-10_Admin_Changes_Month_Filter.png": {
     "description": "Admin changes month filter and revenue data recalculates",
     "test": "ad-analytics.spec.ts::should recalculate revenue when month filter changed"
   },
-  "A-10_FINAL_9dae30c4_Ad_Management_Screen_ad-analytics_spec_ts___Admin_Revenue_An.png": {
+  "A-10_Recalculate_Revenue_When_Month.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-analytics.spec.ts / Admin Revenue Analytics — PCL Normal Scenarios / A-10: Month filter recalculation / should recalculate revenue when month filter changed",
     "test": "ad-analytics.spec.ts::should recalculate revenue when month filter changed"
   },
-  "I-06_1_api_call.png": {
+  "I-06_Api_Call.png": {
     "description": "POST /admin/ads/bulk/reject returned HTTP 201: Two advertisements rejected; refund summary verified.",
     "test": "ad-management.api.spec.ts::should bulk reject ads and include refund summary"
   },
-  "TEST_FINAL_ab44f1c1_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "TEST_Navigate_To_Package.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / Page Loading / should navigate to Package & Fee Management",
     "test": "ad-management.spec.ts::should navigate to Package & Fee Management"
   },
-  "N-07_FINAL_1d5eaf53_Ad_Management_Screen_ad-fee-packages_spec_ts___Admin_Package.png": {
+  "N-07_Block_Duplicate_Active_Fee.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-packages.spec.ts / Admin Package & Fee Management — PCL Normal Scenarios / N-07: Create a valid fee setting / should block duplicate active fee setting for same placement/tier",
     "test": "ad-fee-packages.spec.ts::should block duplicate active fee setting for same placement/tier"
   },
-  "A-15_1_batch_export.png": {
+  "A-15_Admin_Generates_Fee_History.png": {
     "description": "Admin generates fee history report for batch export",
     "test": "ad-fee-history.spec.ts::should generate fee history report for batch export"
   },
-  "A-14_1_drill_down.png": {
+  "A-14_Admin_Drills_Down_Into.png": {
     "description": "Admin drills down into a specific ad from the analytics view",
     "test": "ad-analytics.spec.ts::should drill down into ad detail from analytics"
   },
-  "A-15_FINAL_9f6d2ad2_Ad_Management_Screen_ad-fee-history_spec_ts___Admin_Fee_Chan.png": {
+  "A-15_Generate_Fee_History_Report.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-history.spec.ts / Admin Fee Change History — PCL Normal Scenarios / A-15: Batch export fee history / should generate fee history report for batch export",
     "test": "ad-fee-history.spec.ts::should generate fee history report for batch export"
   },
-  "A-14_FINAL_1389c3eb_Ad_Management_Screen_ad-analytics_spec_ts___Admin_Revenue_An.png": {
+  "A-14_Drill_Down_Into_Ad.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-analytics.spec.ts / Admin Revenue Analytics — PCL Normal Scenarios / A-14: Drill-down into a specific ad / should drill down into ad detail from analytics",
     "test": "ad-analytics.spec.ts::should drill down into ad detail from analytics"
   },
-  "A-16_2_ui_validation.png": {
+  "A-16_A_Date_Range_Exceeding.png": {
     "description": "A date range exceeding 365 days is rejected with HTTP 400 and a visible report-generation error.",
     "test": "ad-export.spec.ts::should reject date range longer than 365 days"
   },
-  "A-16_FINAL_35489ccd_Ad_Management_Screen_ad-export_spec_ts___Admin_Export_Report.png": {
+  "A-16_Reject_Date_Range_Longer.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-export.spec.ts / Admin Export Reports — PCL Abnormal Scenarios / A-16: Export endpoints reject date ranges over 365 days and non-CSV formats / should reject date range longer than 365 days",
     "test": "ad-export.spec.ts::should reject date range longer than 365 days"
   },
-  "N-09_1_edit_validation.png": {
+  "N-09_Admin_Edits_Fee.png": {
     "description": "Admin edits fee and validation prevents overlap or earlier start date",
     "test": "ad-fee-packages.spec.ts::should update fee setting and log historical snapshot"
   },
-  "N-08_FINAL_6bdf4af5_Ad_Management_Screen_ad-fee-packages_spec_ts___Admin_Package.png": {
+  "N-08_Update_Fee_Setting.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-packages.spec.ts / Admin Package & Fee Management — PCL Normal Scenarios / N-08: Edit an existing fee setting / should update fee setting and log historical snapshot",
     "test": "ad-fee-packages.spec.ts::should update fee setting and log historical snapshot"
   },
-  "A-10_FINAL_f5372dd3_Ad_Management_Screen_ad-analytics_spec_ts___Admin_Revenue_An.png": {
+  "A-10_Handle_Invalid_Month_Filter.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-analytics.spec.ts / Admin Revenue Analytics — PCL Abnormal Scenarios / A-10: Month filter recalculation (invalid) / should handle invalid month filter selection",
     "test": "ad-analytics.spec.ts::should handle invalid month filter selection"
   },
-  "A-17_1_history_permission.png": {
+  "A-17_Permission_Control_Limits_Fee.png": {
     "description": "Permission control limits Fee Change History access to authorized admins",
     "test": "ad-fee-history.spec.ts::should limit Fee Change History access to authorized admins"
   },
-  "TEST_FINAL_8dc59794_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "TEST_Navigate_To_Fee_Change.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / Page Loading / should navigate to Fee Change History",
     "test": "ad-management.spec.ts::should navigate to Fee Change History"
   },
-  "A-17_FINAL_2810b456_Ad_Management_Screen_ad-fee-history_spec_ts___Admin_Fee_Chan.png": {
+  "A-17_Limit_Fee_Change_History.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-history.spec.ts / Admin Fee Change History — PCL Normal Scenarios / A-17: Permission control on Fee Change History / should limit Fee Change History access to authorized admins",
     "test": "ad-fee-history.spec.ts::should limit Fee Change History access to authorized admins"
   },
-  "A-16_FINAL_569f30e1_Ad_Management_Screen_ad-export_spec_ts___Admin_Export_Report.png": {
+  "A-16_Reject_Export_With_Format.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-export.spec.ts / Admin Export Reports — PCL Abnormal Scenarios / A-16: Export endpoints reject date ranges over 365 days and non-CSV formats / should reject export with format other than CSV",
     "test": "ad-export.spec.ts::should reject export with format other than CSV"
   },
-  "N-18_1_deactivate_fee.png": {
+  "N-18_Admin_Deactivates_Fee.png": {
     "description": "Admin deactivates fee with reason and status becomes INACTIVE",
     "test": "ad-fee-packages.spec.ts::should deactivate fee setting with reason"
   },
-  "N-09_FINAL_16c556c3_Ad_Management_Screen_ad-fee-packages_spec_ts___Admin_Package.png": {
+  "N-09_Deactivate_Fee_Setting.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-packages.spec.ts / Admin Package & Fee Management — PCL Normal Scenarios / N-09: Deactivate an active fee setting / should deactivate fee setting with reason",
     "test": "ad-fee-packages.spec.ts::should deactivate fee setting with reason"
   },
-  "B-08_1_drill_consistency.png": {
+  "B-08_Same_Filters_In_List.png": {
     "description": "Same filters in list and drill-down return consistent revenue values",
     "test": "ad-analytics.spec.ts::should show same values in list and drill-down with same filters"
   },
-  "A-14_FINAL_15be3e42_Ad_Management_Screen_ad-analytics_spec_ts___Admin_Revenue_An.png": {
+  "A-14_Return_Consistent_Revenue_Values.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-analytics.spec.ts / Admin Revenue Analytics — PCL Abnormal Scenarios / A-14: Drill-down data consistency / should return consistent revenue values with same filters",
     "test": "ad-analytics.spec.ts::should return consistent revenue values with same filters"
   },
-  "B-11_1_concurrent_delete.png": {
+  "B-11_Concurrent_Deletion_Of_Fee.png": {
     "description": "Concurrent deletion of fee history records does not cause duplicates or errors",
     "test": "ad-management.spec.ts::should reject current-month deletion, allow previous-month"
   },
-  "B-11_FINAL_dd3ca74e_Ad_Management_Screen_ad-fee-history_spec_ts___Admin_Fee_Chan.png": {
+  "B-11_Not_Cause_Duplicates.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-history.spec.ts / Admin Fee Change History — PCL Boundary Scenarios / B-11: Concurrent record deletion / should not cause duplicates or errors with concurrent deletion",
     "test": "ad-fee-history.spec.ts::should not cause duplicates or errors with concurrent deletion"
   },
-  "B-14_1_concurrent_export.png": {
+  "B-14_Concurrent_Export_Requests_Complete.png": {
     "description": "Concurrent export requests complete independently without conflicts",
     "test": "ad-export.spec.ts::should complete concurrent export requests without conflicts"
   },
-  "B-14_FINAL_0b9df655_Ad_Management_Screen_ad-export_spec_ts___Admin_Export_Report.png": {
+  "B-14_Complete_Concurrent_Export_Requests.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-export.spec.ts / Admin Export Reports — PCL Abnormal Scenarios / B-14: Concurrent export requests / should complete concurrent export requests without conflicts",
     "test": "ad-export.spec.ts::should complete concurrent export requests without conflicts"
   },
-  "TEST_FINAL_291cf6f4_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "TEST_Navigate_To_Revenue_Analytics.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / Page Loading / should navigate to Revenue Analytics",
     "test": "ad-management.spec.ts::should navigate to Revenue Analytics"
   },
-  "N-23_1_reactivate_fee.png": {
+  "N-23_Admin_Reactivates_Fee.png": {
     "description": "Admin reactivates fee with reason and status becomes ACTIVE",
     "test": "ad-management.spec.ts::should reactivate once, then block second reactivation"
   },
-  "N-18_FINAL_b09fe571_Ad_Management_Screen_ad-fee-packages_spec_ts___Admin_Package.png": {
+  "N-18_Reactivate_A_Previously_Deactivated.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-packages.spec.ts / Admin Package & Fee Management — PCL Normal Scenarios / N-18: Reactivate an inactive fee setting / should reactivate a previously deactivated fee setting",
     "test": "ad-fee-packages.spec.ts::should reactivate a previously deactivated fee setting"
   },
-  "B-12_1_concurrent_generation.png": {
+  "B-12_Concurrent_Fee_Changes_Generate.png": {
     "description": "Concurrent fee changes generate sequential history records",
     "test": "ad-management.spec.ts::should allow deleting exactly 50 records"
   },
-  "B-08_FINAL_06c10d32_Ad_Management_Screen_ad-analytics_spec_ts___Admin_Revenue_An.png": {
+  "B-08_Show_Same_Values.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-analytics.spec.ts / Admin Revenue Analytics — PCL Boundary Scenarios / B-08: Drill-down data consistency / should show same values in list and drill-down with same filters",
     "test": "ad-analytics.spec.ts::should show same values in list and drill-down with same filters"
   },
-  "B-12_FINAL_c512fc5d_Ad_Management_Screen_ad-fee-history_spec_ts___Admin_Fee_Chan.png": {
+  "B-12_Generate_Sequential_History_Records.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-history.spec.ts / Admin Fee Change History — PCL Boundary Scenarios / B-12: Concurrent fee change generation / should generate sequential history records concurrently",
     "test": "ad-fee-history.spec.ts::should generate sequential history records concurrently"
   },
-  "B-15_1_special_char_export.png": {
+  "B-15_Export_File_Preserves_Special.png": {
     "description": "Export file preserves special characters correctly",
     "test": "ad-export.spec.ts::should preserve special characters in exported CSV"
   },
-  "B-15_FINAL_35378ec0_Ad_Management_Screen_ad-export_spec_ts___Admin_Export_Report.png": {
+  "B-15_Preserve_Special_Characters.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-export.spec.ts / Admin Export Reports — PCL Abnormal Scenarios / B-15: Special character handling in export fields / should preserve special characters in exported CSV",
     "test": "ad-export.spec.ts::should preserve special characters in exported CSV"
   },
-  "N-24_1_inactive_not_selectable.png": {
+  "N-24_Deactivated_Fee_Setting.png": {
     "description": "Deactivated fee setting is no longer selectable when creating an ad",
     "test": "ad-management.spec.ts::should show Create Fee Setting button disabled when all 12 packages exist"
   },
-  "TEST_FINAL_92f333d5_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "TEST_Navigate_To_Export_Reports.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / Page Loading / should navigate to Export Reports",
     "test": "ad-management.spec.ts::should navigate to Export Reports"
   },
-  "N-23_FINAL_e244be02_Ad_Management_Screen_ad-fee-packages_spec_ts___Admin_Package.png": {
+  "N-23_Disable_Create_Fee_Setting.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-packages.spec.ts / Admin Package & Fee Management — PCL Normal Scenarios / N-23: Create disabled at 12 packages / should disable Create Fee Setting when all 12 combos exist",
     "test": "ad-fee-packages.spec.ts::should disable Create Fee Setting when all 12 combos exist"
   },
-  "B-17_1_concurrent_requests.png": {
+  "B-17_Concurrent_Analytics_Requests_Return.png": {
     "description": "Concurrent analytics requests return stable consistent results",
     "test": "ad-management.spec.ts::should display zero metrics and \"No data\" when no ads match"
   },
-  "B-17_FINAL_48f7606c_Ad_Management_Screen_ad-analytics_spec_ts___Admin_Revenue_An.png": {
+  "B-17_Return_Stable_Consistent_Results.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-analytics.spec.ts / Admin Revenue Analytics — PCL Boundary Scenarios / B-17: Concurrent analytics requests / should return stable consistent results under concurrent requests",
     "test": "ad-analytics.spec.ts::should return stable consistent results under concurrent requests"
   },
-  "B-16_1_cross_page.png": {
+  "B-16_Admin_Navigates_Across_Fee.png": {
     "description": "Admin navigates across fee history pages and data stays consistent",
     "test": "ad-management.spec.ts::should reject current-month deletion, allow previous-month"
   },
-  "B-16_FINAL_220c74e3_Ad_Management_Screen_ad-fee-history_spec_ts___Admin_Fee_Chan.png": {
+  "B-16_Navigate_Pages_And_Maintain.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-history.spec.ts / Admin Fee Change History — PCL Boundary Scenarios / B-16: Cross-page pagination of fee history / should navigate pages and maintain data consistency",
     "test": "ad-fee-history.spec.ts::should navigate pages and maintain data consistency"
   },
-  "N-15_1_language_toggle.png": {
+  "N-15_Export_Screen_Remains_Visible.png": {
     "description": "Export screen remains visible after switching the interface language to Myanmar.",
     "test": "ad-export.spec.ts::should update labels on export screen"
   },
-  "N-15_FINAL_f3bfae49_Ad_Management_Screen_ad-export_spec_ts___Admin_Export_Report.png": {
+  "N-15_Update_Labels_On_Export.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-export.spec.ts / Admin Export Reports — PCL Interface Scenarios / N-15: Language toggle works / should update labels on export screen",
     "test": "ad-export.spec.ts::should update labels on export screen"
   },
-  "N-24_FINAL_9493056c_Ad_Management_Screen_ad-fee-packages_spec_ts___Admin_Package.png": {
+  "N-24_Not_Affect_Existing_Paid_2.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-packages.spec.ts / Admin Package & Fee Management — PCL Normal Scenarios / N-24: Keep paid advertisements unchanged when fee setting updated / should not affect existing paid ads when fee updated",
     "test": "ad-fee-packages.spec.ts::should not affect existing paid ads when fee updated"
   },
-  "B-09_FINAL_ba01c54f_Ad_Management_Screen_ad-analytics_spec_ts___Admin_Revenue_An.png": {
+  "B-09_Reflect_Exact_Single_Day_Range.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-analytics.spec.ts / Admin Revenue Analytics — PCL Boundary Scenarios / B-09: Exact date range boundary / should reflect exact single-day range without off-by-one",
     "test": "ad-analytics.spec.ts::should reflect exact single-day range without off-by-one"
   },
-  "B-11_FINAL_f0ba1d77_Ad_Management_Screen_ad-fee-history_spec_ts___Admin_Fee_Chan.png": {
+  "B-11_Reject_Current_Month_Deletion_Allow_2.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-history.spec.ts / Admin Fee Change History — PCL Boundary Scenarios / B-11: History deletion boundary by month / should reject current-month deletion, allow previous-month",
     "test": "ad-fee-history.spec.ts::should reject current-month deletion, allow previous-month"
   },
-  "N-02_1_search_filter.png": {
+  "N-02_Admin_Enters_Shop_Name.png": {
     "description": "Admin enters shop name in search input and list is filtered",
     "test": "ad-management.spec.ts::should filter ad list by status, placement, tier, and shop"
   },
-  "N-03_1_status_filter.png": {
+  "N-03_Admin_Selects_Status_Option.png": {
     "description": "Admin selects status option and list is filtered accordingly",
     "test": "ad-management.spec.ts::should filter ad list by status, placement, tier, and shop"
   },
-  "N-01_FINAL_7d402aab_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-01_Filter_Ad_List.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / N-01: View pending advertisement queue with filters / should filter ad list by status, placement, tier, and shop",
     "test": "ad-management.spec.ts::should filter ad list by status, placement, tier, and shop"
   },
-  "N-16_1_theme_toggle.png": {
+  "N-16_Export_Screen_Remains_Visible.png": {
     "description": "Export screen remains visible after switching themes.",
     "test": "ad-export.spec.ts::should switch theme on export screen without break"
   },
-  "N-16_FINAL_16a57fb8_Ad_Management_Screen_ad-export_spec_ts___Admin_Export_Report.png": {
+  "N-16_Switch_Theme_On_Export.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-export.spec.ts / Admin Export Reports — PCL Interface Scenarios / N-16: Theme toggle works / should switch theme on export screen without break",
     "test": "ad-export.spec.ts::should switch theme on export screen without break"
   },
-  "A-06_1_fee_filter.png": {
+  "A-06_Admin_Filters_Fee_Settings.png": {
     "description": "Admin filters fee settings by placement/tier/status",
     "test": "ad-fee-packages.spec.ts::should filter fee settings by placement/tier/status"
   },
-  "A-06_FINAL_086c49f6_Ad_Management_Screen_ad-fee-packages_spec_ts___Admin_Package.png": {
+  "A-06_Filter_Fee_Settings.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-packages.spec.ts / Admin Package & Fee Management — PCL Abnormal Scenarios / A-06: Search / filter fee settings / should filter fee settings by placement/tier/status",
     "test": "ad-fee-packages.spec.ts::should filter fee settings by placement/tier/status"
   },
-  "B-17_FINAL_e4045ab4_Ad_Management_Screen_ad-analytics_spec_ts___Admin_Revenue_An.png": {
+  "B-17_Display_Zero_Metrics.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-analytics.spec.ts / Admin Revenue Analytics — PCL Boundary Scenarios / B-17: Revenue analytics with no matching approved ads / should display zero metrics and \"No data\" state",
     "test": "ad-analytics.spec.ts::should display zero metrics and \"No data\" state"
   },
-  "N-15_FINAL_10014dc5_Ad_Management_Screen_ad-fee-history_spec_ts___Admin_Fee_Chan.png": {
+  "N-15_Update_Labels_When_Toggling.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-history.spec.ts / Admin Fee Change History — PCL Interface Scenarios / N-15: Language toggle works / should update labels when toggling language on fee history screen",
     "test": "ad-fee-history.spec.ts::should update labels when toggling language on fee history screen"
   },
-  "N-17_1_desktop_layout.png": {
+  "N-17_Export_Controls_Remain_Visible.png": {
     "description": "Export controls remain visible at 1280x720.",
     "test": "ad-export.spec.ts::should be usable at 1280x720"
   },
-  "N-17_FINAL_6e11b160_Ad_Management_Screen_ad-export_spec_ts___Admin_Export_Report.png": {
+  "N-17_Be_Usable_At_1280x720_2.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-export.spec.ts / Admin Export Reports — PCL Interface Scenarios / N-17: Responsive layout / should be usable at 1280x720",
     "test": "ad-export.spec.ts::should be usable at 1280x720"
   },
-  "N-01_FINAL_1731eb9f_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-01_Reset_All_Filters.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / N-01: View pending advertisement queue with filters / should reset all filters and restore default list",
     "test": "ad-management.spec.ts::should reset all filters and restore default list"
   },
-  "A-07_1_fee_permission.png": {
+  "A-07_Permission_Control_Restricts_Fee.png": {
     "description": "Permission control restricts fee setting management to authorized admins",
     "test": "ad-fee-packages.spec.ts::should restrict fee setting management to authorized admins"
   },
-  "A-07_FINAL_210e5457_Ad_Management_Screen_ad-fee-packages_spec_ts___Admin_Package.png": {
+  "A-07_Restrict_Fee_Setting_Management.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-packages.spec.ts / Admin Package & Fee Management — PCL Abnormal Scenarios / A-07: Permission control on fee settings / should restrict fee setting management to authorized admins",
     "test": "ad-fee-packages.spec.ts::should restrict fee setting management to authorized admins"
   },
-  "N-16_FINAL_199f7e94_Ad_Management_Screen_ad-fee-history_spec_ts___Admin_Fee_Chan.png": {
+  "N-16_Switch_Theme_On_Fee.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-history.spec.ts / Admin Fee Change History — PCL Interface Scenarios / N-16: Theme toggle works / should switch theme on fee history screen without break",
     "test": "ad-fee-history.spec.ts::should switch theme on fee history screen without break"
   },
-  "N-15_FINAL_2ea4e9aa_Ad_Management_Screen_ad-analytics_spec_ts___Admin_Revenue_An.png": {
+  "N-15_Update_Labels_On_Analytics.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-analytics.spec.ts / Admin Revenue Analytics — PCL Interface Scenarios / N-15: Language toggle works / should update labels on analytics screen",
     "test": "ad-analytics.spec.ts::should update labels on analytics screen"
   },
-  "N-17_2_mobile_layout.png": {
+  "N-17_Export_Report_Options_Fit.png": {
     "description": "Export report options fit the 375px mobile layout without horizontal overflow.",
     "test": "ad-export.spec.ts::should be usable at 375x667"
   },
-  "N-17_3_mobile_export_controls.png": {
+  "N-17_Date_Filters.png": {
     "description": "Date filters and the Generate Report action are visible and usable at 375px width.",
     "test": "ad-export.spec.ts::should be usable at 375x667"
   },
-  "N-17_FINAL_c410e81e_Ad_Management_Screen_ad-export_spec_ts___Admin_Export_Report.png": {
+  "N-17_Be_Usable_At_375x667_3.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-export.spec.ts / Admin Export Reports — PCL Interface Scenarios / N-17: Responsive layout / should be usable at 375x667",
     "test": "ad-export.spec.ts::should be usable at 375x667"
   },
-  "N-21_1_review_modal.png": {
+  "N-21_Admin_Opens_Review_Modal.png": {
     "description": "Admin opens review modal and edits status, placement, tier, dates, comment",
     "test": "ad-management.spec.ts::should navigate from notification highlight and highlight ad"
   },
-  "N-02_FINAL_2f14f550_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-02_Open_Review_Modal.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / N-02: Review a single pending ad and approve it / should open review modal and approve a pending ad",
     "test": "ad-management.spec.ts::should open review modal and approve a pending ad"
   },
-  "A-08_1_no_impact_existing_ads.png": {
+  "A-08_Editing_Fee_Settings_Does.png": {
     "description": "Editing fee settings does not change existing ad records",
     "test": "ad-fee-packages.spec.ts::should not change existing ad records when fee setting edited"
   },
-  "A-08_FINAL_f2f35ac9_Ad_Management_Screen_ad-fee-packages_spec_ts___Admin_Package.png": {
+  "A-08_Not_Change_Existing_Ad.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-packages.spec.ts / Admin Package & Fee Management — PCL Abnormal Scenarios / A-08: Editing fee does not affect existing ads / should not change existing ad records when fee setting edited",
     "test": "ad-fee-packages.spec.ts::should not change existing ad records when fee setting edited"
   },
-  "N-17_FINAL_f97764bf_Ad_Management_Screen_ad-fee-history_spec_ts___Admin_Fee_Chan.png": {
+  "N-17_Be_Usable_At_1280x720_3.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-history.spec.ts / Admin Fee Change History — PCL Interface Scenarios / N-17: Responsive layout / should be usable at 1280x720",
     "test": "ad-fee-history.spec.ts::should be usable at 1280x720"
   },
-  "N-16_FINAL_e11d265b_Ad_Management_Screen_ad-analytics_spec_ts___Admin_Revenue_An.png": {
+  "N-16_Switch_Theme_Without_Breaking.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-analytics.spec.ts / Admin Revenue Analytics — PCL Interface Scenarios / N-16: Theme toggle works / should switch theme without breaking analytics layout",
     "test": "ad-analytics.spec.ts::should switch theme without breaking analytics layout"
   },
-  "N-24_1_reject_success.png": {
+  "N-24_Admin_Rejects_Ad.png": {
     "description": "Admin rejects ad with reason and status becomes rejected in list",
     "test": "ad-management.spec.ts::should reject a pending ad with a valid reason"
   },
-  "N-03_FINAL_155d8c49_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-03_Reject_A_Pending_Ad.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / N-03: Reject a single pending ad with a valid reason / should reject a pending ad with a valid reason",
     "test": "ad-management.spec.ts::should reject a pending ad with a valid reason"
   },
-  "N-17_FINAL_975dad24_Ad_Management_Screen_ad-fee-history_spec_ts___Admin_Fee_Chan.png": {
+  "N-17_Be_Usable_At_375x667_2.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-history.spec.ts / Admin Fee Change History — PCL Interface Scenarios / N-17: Responsive layout / should be usable at 375x667",
     "test": "ad-fee-history.spec.ts::should be usable at 375x667"
   },
-  "B-01_1_concurrent_edit.png": {
+  "B-01_Two_Admins_Edit_Fee.png": {
     "description": "Two admins edit fee settings concurrently without conflict",
     "test": "ad-fee-packages.spec.ts::should handle concurrent edits without conflict"
   },
-  "N-17_FINAL_611eec8b_Ad_Management_Screen_ad-analytics_spec_ts___Admin_Revenue_An.png": {
+  "N-17_Be_Usable_At_1280x720.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-analytics.spec.ts / Admin Revenue Analytics — PCL Interface Scenarios / N-17: Responsive layout / should be usable at 1280x720",
     "test": "ad-analytics.spec.ts::should be usable at 1280x720"
   },
-  "B-01_FINAL_d88df006_Ad_Management_Screen_ad-fee-packages_spec_ts___Admin_Package.png": {
+  "B-01_Handle_Concurrent_Edits_Without.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-packages.spec.ts / Admin Package & Fee Management — PCL Abnormal Scenarios / B-01: Concurrent editing of fee settings / should handle concurrent edits without conflict",
     "test": "ad-fee-packages.spec.ts::should handle concurrent edits without conflict"
   },
-  "N-17_FINAL_49f77f02_Ad_Management_Screen_ad-analytics_spec_ts___Admin_Revenue_An.png": {
+  "N-17_Be_Usable_At_375x667.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-analytics.spec.ts / Admin Revenue Analytics — PCL Interface Scenarios / N-17: Responsive layout / should be usable at 375x667",
     "test": "ad-analytics.spec.ts::should be usable at 375x667"
   },
-  "B-02_1_concurrent_toggle.png": {
+  "B-02_Concurrent_Activate_Deactivate_Operations_Res.png": {
     "description": "Concurrent activate/deactivate operations resolve to one final state",
     "test": "ad-management.spec.ts::should reactivate once, then block second reactivation"
   },
-  "B-02_FINAL_5596fa92_Ad_Management_Screen_ad-fee-packages_spec_ts___Admin_Package.png": {
+  "B-02_Resolve_To_One_Final.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-packages.spec.ts / Admin Package & Fee Management — PCL Abnormal Scenarios / B-02: Concurrent activation/deactivation / should resolve to one final state",
     "test": "ad-fee-packages.spec.ts::should resolve to one final state"
   },
-  "N-04_1_bulk_approve.png": {
+  "N-04_Two_Selected_Pending_Ads.png": {
     "description": "Two selected pending ads were approved and the table reflects their new state.",
     "test": "ad-management.spec.ts::should bulk approve selected pending ads"
   },
-  "N-04_FINAL_4ea5af70_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-04_Bulk_Approve_Selected_Pending.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / N-04: Bulk approve multiple pending ads / should bulk approve selected pending ads",
     "test": "ad-management.spec.ts::should bulk approve selected pending ads"
   },
-  "B-10_1_deactivate_in_use.png": {
+  "B-10_Deactivating_A_Fee.png": {
     "description": "Deactivating a fee in use by ads does not break existing ad data",
     "test": "ad-fee-packages.spec.ts::should not break existing ad data when deactivating in-use fee"
   },
-  "B-10_FINAL_533d6b73_Ad_Management_Screen_ad-fee-packages_spec_ts___Admin_Package.png": {
+  "B-10_Not_Break_Existing_Ad.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-fee-packages.spec.ts / Admin Package & Fee Management — PCL Abnormal Scenarios / B-10: Deactivate fee in use / should not break existing ad data when deactivating in-use fee",
     "test": "ad-fee-packages.spec.ts::should not break existing ad data when deactivating in-use fee"
   },
-  "N-05_1_bulk_reject.png": {
+  "N-05_Two_Selected_Pending_Ads.png": {
     "description": "Two selected pending ads were rejected with the same reason.",
     "test": "ad-management.spec.ts::should bulk reject selected pending ads with common reason"
   },
-  "N-05_FINAL_1bb83e64_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-05_Bulk_Reject_Selected_Pending.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / N-05: Bulk reject multiple pending ads with one reason / should bulk reject selected pending ads with common reason",
     "test": "ad-management.spec.ts::should bulk reject selected pending ads with common reason"
   },
-  "N-21_FINAL_35d9dffe_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-21_Navigate_From_Notification_Highlight.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / N-21: Open a newly submitted ad from an admin notification / should navigate from notification highlight and highlight ad",
     "test": "ad-management.spec.ts::should navigate from notification highlight and highlight ad"
   },
-  "N-26_1_notification_later_page_highlight.png": {
+  "N-26_A_Notification_Deep_Link.png": {
     "description": "A notification deep link opens page 2 and highlights the target advertisement row.",
     "test": "ad-management.spec.ts::should navigate to and highlight an ad from a later page opened by notification"
   },
-  "N-26_FINAL_08d6fc15_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-26_Navigate_To_And_Highlight.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / N-26: Navigate to and highlight an ad from a later page opened by notification / should navigate to and highlight an ad from a later page opened by notification",
     "test": "ad-management.spec.ts::should navigate to and highlight an ad from a later page opened by notification"
   },
-  "N-25_1_bulk_action_bar.png": {
+  "N-25_Admin_Selects_Multiple_Pending.png": {
     "description": "Admin selects multiple pending ads and bulk action bar appears",
     "test": "ad-management.spec.ts::should select pending ads via header checkbox and clear selection"
   },
-  "N-25_FINAL_30de9192_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-25_Select_Pending_Ads_Via.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / N-25: Select and undo all eligible ads on the current table page / should select pending ads via header checkbox and clear selection",
     "test": "ad-management.spec.ts::should select pending ads via header checkbox and clear selection"
   },
-  "A-01_1_api_call.png": {
+  "A-01_Api_Call.png": {
     "description": "POST /admin/ads/bulk/approve (buyer token) returned HTTP 403: A non-admin buyer is forbidden from moderating advertisements.",
     "test": "ad-management.spec.ts::should deny a buyer attempting ad moderation"
   },
-  "A-01_FINAL_63ee83eb_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "A-01_Deny_A_Buyer_Attempting.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / A-01: Attempt to approve or reject without admin role / should deny a buyer attempting ad moderation",
     "test": "ad-management.spec.ts::should deny a buyer attempting ad moderation"
   },
-  "A-09_1_empty_state.png": {
+  "A-09_No_Advertisements_Found.png": {
     "description": "No advertisements found — empty list state is displayed",
     "test": "ad-management.spec.ts::should show empty state when shop search has no match"
   },
-  "A-09_FINAL_a9032fe2_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "A-09_Show_Empty_State_When.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / A-09: Search ads with no matching result / should show empty state when shop search has no match",
     "test": "ad-management.spec.ts::should show empty state when shop search has no match"
   },
-  "A-11_1_login_redirect.png": {
+  "A-11_Unauthenticated_Navigation_Redirects.png": {
     "description": "Unauthenticated navigation redirects to the login screen before showing ad-management content.",
     "test": "ad-management.spec.ts::should redirect unauthenticated user from ad management routes"
   },
-  "A-11_FINAL_7109ee8f_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "A-11_Redirect_Unauthenticated_User.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / A-11: Access ad management routes without authentication / should redirect unauthenticated user from ad management routes",
     "test": "ad-management.spec.ts::should redirect unauthenticated user from ad management routes"
   },
-  "B-03_1_double_submit.png": {
+  "B-03_Double_Clicking_Submit_Does_Not.png": {
     "description": "Double-clicking submit does not create duplicate moderation actions",
     "test": "ad-management.spec.ts::should not create duplicate moderation actions on double-click"
   },
-  "B-03_FINAL_5687830f_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-03_Not_Create_Duplicate_Moderation.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / B-03: Double-click submit prevention / should not create duplicate moderation actions on double-click",
     "test": "ad-management.spec.ts::should not create duplicate moderation actions on double-click"
   },
-  "B-04_1_special_characters.png": {
+  "B-04_Admin_Enters_Special_Characters.png": {
     "description": "Admin enters special characters in fields; boundary is enforced",
     "test": "ad-management.spec.ts::should enforce character boundaries in moderation fields"
   },
-  "B-04_FINAL_a62d719f_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-04_Enforce_Character_Boundaries.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / B-04: Special characters in fields / should enforce character boundaries in moderation fields",
     "test": "ad-management.spec.ts::should enforce character boundaries in moderation fields"
   },
-  "B-05_1_empty_required_field.png": {
+  "B-05_Submitting_With_Empty_Required.png": {
     "description": "Submitting with empty required fields shows validation error",
     "test": "ad-management.spec.ts::should show validation error when submitting with empty required fields"
   },
-  "B-05_FINAL_44c6dd99_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-05_Show_Validation_Error_When.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / B-05/B-06: Empty required fields and concurrent status change / should show validation error when submitting with empty required fields",
     "test": "ad-management.spec.ts::should show validation error when submitting with empty required fields"
   },
-  "B-06_1_concurrent_status_change.png": {
+  "B-06_Concurrent_Status_Change.png": {
     "description": "Concurrent status change by another admin triggers conflict handling",
     "test": "ad-management.spec.ts::should handle concurrent status change by another admin"
   },
-  "B-05_FINAL_7b20c39f_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-05_Handle_Concurrent_Status_Change.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / B-05/B-06: Empty required fields and concurrent status change / should handle concurrent status change by another admin",
     "test": "ad-management.spec.ts::should handle concurrent status change by another admin"
   },
-  "B-07_1_audit_log.png": {
+  "B-07_Status_Change_Is_Recorded.png": {
     "description": "Status change is recorded in audit log with old and new values",
     "test": "ad-management.spec.ts::should record status change in audit log"
   },
-  "B-07_FINAL_b798afc6_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-07_Record_Status_Change.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / B-07: Audit log recording / should record status change in audit log",
     "test": "ad-management.spec.ts::should record status change in audit log"
   },
-  "B-18_1_high_frequency.png": {
+  "B-18_Repeated_Moderation_Operations_Stay.png": {
     "description": "Repeated moderation operations stay responsive under high frequency",
     "test": "ad-management.spec.ts::should stay responsive under repeated moderation operations"
   },
-  "B-18_FINAL_9e06fd1e_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-18_Stay_Responsive_Under_Repeated.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / B-18: High-frequency operations / should stay responsive under repeated moderation operations",
     "test": "ad-management.spec.ts::should stay responsive under repeated moderation operations"
   },
-  "B-19_1_large_dataset.png": {
+  "B-19_Ad_List_Renders.png": {
     "description": "Ad list renders and paginates correctly with a large dataset",
     "test": "ad-management.spec.ts::should render and paginate correctly with large dataset"
   },
-  "B-19_FINAL_a28fe5f9_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-19_Render_And_Paginate_Correctly.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / B-19: Large dataset rendering / should render and paginate correctly with large dataset",
     "test": "ad-management.spec.ts::should render and paginate correctly with large dataset"
   },
-  "N-18_FINAL_e413d3b2_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-18_Reactivate_An_Inactive_Fee.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / N-18: Reactivate an inactive fee setting / should reactivate an inactive fee setting",
     "test": "ad-management.spec.ts::should reactivate an inactive fee setting"
   },
-  "N-23_FINAL_2df8e6b1_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-23_Show_Create_Fee_Setting.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / N-23: Create disabled at 12 packages / should show Create Fee Setting button disabled when all 12 packages exist",
     "test": "ad-management.spec.ts::should show Create Fee Setting button disabled when all 12 packages exist"
   },
-  "N-22_1_edit_success.png": {
+  "N-22_Admin_Saves_Changes.png": {
     "description": "Admin saves changes and new status is shown in ad list",
     "test": "ad-management.spec.ts::should not affect existing paid ads when fee setting updated"
   },
-  "N-24_FINAL_8fa8941d_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-24_Not_Affect_Existing_Paid.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Normal Scenarios / N-24: Keep paid advertisements unchanged when fee setting updated / should not affect existing paid ads when fee setting updated",
     "test": "ad-management.spec.ts::should not affect existing paid ads when fee setting updated"
   },
-  "A-02_1_empty_rejection_reason.png": {
+  "A-02_Reject_Confirmation_Remains_Disabled.png": {
     "description": "Reject confirmation remains disabled and the required-reason validation is visible.",
     "test": "ad-management.spec.ts::should show validation error when rejection reason is blank"
   },
-  "A-02_FINAL_4275a8c6_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "A-02_Show_Validation_Error_When.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Abnormal Scenarios / A-02: Reject a pending ad without a reason / should show validation error when rejection reason is blank",
     "test": "ad-management.spec.ts::should show validation error when rejection reason is blank"
   },
-  "A-03_1_api_call.png": {
+  "A-03_Api_Call.png": {
     "description": "POST /admin/ads/:id/approve (already-approved ad) returned HTTP 400: A second moderation attempt is rejected after the ad leaves pending status.",
     "test": "ad-management.spec.ts::should reject a second approval after the ad is no longer pending"
   },
-  "A-03_FINAL_3a7ae684_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "A-03_Reject_A_Second_Approval.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Abnormal Scenarios / A-03: Attempt to approve or reject an ad that is no longer pending / should reject a second approval after the ad is no longer pending",
     "test": "ad-management.spec.ts::should reject a second approval after the ad is no longer pending"
   },
-  "A-04_1_api_call.png": {
+  "A-04_Api_Call.png": {
     "description": "POST /admin/ads/bulk/approve (51 ids) returned HTTP 400: The bulk endpoint rejects a selection exceeding 50 advertisements.",
     "test": "ad-management.spec.ts::should block bulk operation when more than 50 ads are submitted"
   },
-  "A-04_FINAL_15d50aa2_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "A-04_Block_Bulk_Operation_When.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Abnormal Scenarios / A-04: Bulk approve more than 50 ads / should block bulk operation when more than 50 ads are submitted",
     "test": "ad-management.spec.ts::should block bulk operation when more than 50 ads are submitted"
   },
-  "A-05_1_edit_rights.png": {
+  "A-05_Admin_Edits_Ad_Fields.png": {
     "description": "Admin edits ad fields with full rights and saves changes",
     "test": "ad-management.spec.ts::should allow editing ad fields with proper rights"
   },
-  "A-05_FINAL_2673cea9_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "A-05_Allow_Editing_Ad_Fields.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Abnormal Scenarios / A-05: Edit rights on ad moderation / should allow editing ad fields with proper rights",
     "test": "ad-management.spec.ts::should allow editing ad fields with proper rights"
   },
-  "A-12_1_pending_payment_draft_excluded.png": {
+  "A-12_The_Review_Queue_Excludes.png": {
     "description": "The review queue excludes a known draft advertisement with pending payment.",
     "test": "ad-management.spec.ts::should not show a draft ad while payment is pending"
   },
-  "A-12_FINAL_210f9ab1_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "A-12_Not_Show_A_Draft.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Abnormal Scenarios / A-12: Review list excludes draft ads pending payment / should not show a draft ad while payment is pending",
     "test": "ad-management.spec.ts::should not show a draft ad while payment is pending"
   },
-  "A-13_1_api_call.png": {
+  "A-13_Api_Call.png": {
     "description": "POST /admin/ads/:id/reject (no completed payment) returned HTTP 201: The ad was rejected and no refund was created; its pending payment status remains unchanged.",
     "test": "ad-management.spec.ts::should reject an unpaid pending ad without changing its payment status"
   },
-  "A-13_FINAL_53330e53_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "A-13_Reject_An_Unpaid_Pending.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Abnormal Scenarios / A-13: Reject an ad that has no completed payment / should reject an unpaid pending ad without changing its payment status",
     "test": "ad-management.spec.ts::should reject an unpaid pending ad without changing its payment status"
   },
-  "A-19_FINAL_b7078312_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "A-19_Reject_Invalid_Status_Filter.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Abnormal Scenarios / A-19: Ad list rejects invalid filters and pagination / should reject invalid status filter",
     "test": "ad-management.spec.ts::should reject invalid status filter"
   },
-  "A-19_1_api_call.png": {
+  "A-19_Api_Call.png": {
     "description": "GET /admin/ads (invalid status, page/limit, and shop length) returned HTTP 400: The API rejects an invalid status, zero page/limit, and a shop filter longer than 255 characters.",
     "test": "ad-management.spec.ts::should reject invalid status, pagination, and long shop filters"
   },
-  "A-19_FINAL_7234dcae_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "A-19_Reject_Invalid_Status_Pagination.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Abnormal Scenarios / A-19: Ad list rejects invalid filters and pagination / should reject invalid status, pagination, and long shop filters",
     "test": "ad-management.spec.ts::should reject invalid status, pagination, and long shop filters"
   },
-  "A-20_1_api_call.png": {
+  "A-20_Api_Call.png": {
     "description": "GET /admin/ads?dateFrom=2026-10-20&dateTo=2026-10-01 returned HTTP 400: A reversed date range is rejected.",
     "test": "ad-management.spec.ts::should reject dateFrom later than dateTo"
   },
-  "A-20_FINAL_6d5ec927_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "A-20_Reject_Datefrom_Later_Than.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Abnormal Scenarios / A-20: Ad list rejects a reversed date range / should reject dateFrom later than dateTo",
     "test": "ad-management.spec.ts::should reject dateFrom later than dateTo"
   },
-  "A-21_1_api_call.png": {
+  "A-21_Api_Call.png": {
     "description": "POST /admin/ads/bulk/approve (pending id plus missing id) returned HTTP 400: The mixed request is rejected atomically; the valid pending ad remains pending.",
     "test": "ad-management.spec.ts::should reject the whole request and leave the pending ad unchanged"
   },
-  "A-21_FINAL_6ffd4c24_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "A-21_Reject_The_Whole_Request.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Abnormal Scenarios / A-21: Bulk moderation rejects mixed valid and missing ids / should reject the whole request and leave the pending ad unchanged",
     "test": "ad-management.spec.ts::should reject the whole request and leave the pending ad unchanged"
   },
-  "B-01_FINAL_db485479_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-01_Create_Fee_Setting.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Boundary Scenarios / B-01: Fee setting at minimum values / should create fee setting with minimum valid values",
     "test": "ad-management.spec.ts::should create fee setting with minimum valid values"
   },
-  "B-02_FINAL_dd39923d_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-02_Accept_Upper_Limit_Fee_Setting.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Boundary Scenarios / B-02: Fee setting at maximum reasonable values / should accept upper-limit fee setting values",
     "test": "ad-management.spec.ts::should accept upper-limit fee setting values"
   },
-  "B-03_FINAL_cc88500a_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-03_Accept_Exactly_1000_Characters.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Boundary Scenarios / B-03: Rejection reason at maximum length (1000 chars) / should accept exactly 1000 characters in rejection reason",
     "test": "ad-management.spec.ts::should accept exactly 1000 characters in rejection reason"
   },
-  "B-04_FINAL_b4de0afb_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-04_Block_Rejection_Reason_Exceeding.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Boundary Scenarios / B-04: Rejection reason beyond maximum length / should block rejection reason exceeding 1000 characters",
     "test": "ad-management.spec.ts::should block rejection reason exceeding 1000 characters"
   },
-  "B-08_FINAL_77039199_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-08_Reflect_Exact_Single_Day_Date.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Boundary Scenarios / B-08: Analytics exact date range boundary / should reflect exact single-day date range in analytics",
     "test": "ad-management.spec.ts::should reflect exact single-day date range in analytics"
   },
-  "B-09_1_long_shop_search.png": {
+  "B-09_A_200_Character_Shop_Name.png": {
     "description": "A 200-character shop name is accepted and returns the empty state without breaking the page.",
     "test": "ad-management.spec.ts::should accept long shop name and filter correctly"
   },
-  "B-09_FINAL_130f75ad_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-09_Accept_Long_Shop_Name.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Boundary Scenarios / B-09: Search shop name with very long input / should accept long shop name and filter correctly",
     "test": "ad-management.spec.ts::should accept long shop name and filter correctly"
   },
-  "B-10_FINAL_e64d5b48_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-10_Reactivate_Once_Then_Block.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Boundary Scenarios / B-10: Fee setting reactivation boundary / should reactivate once, then block second reactivation",
     "test": "ad-management.spec.ts::should reactivate once, then block second reactivation"
   },
-  "B-11_FINAL_a6711126_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-11_Reject_Current_Month_Deletion_Allow.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Boundary Scenarios / B-11: History deletion boundary by month / should reject current-month deletion, allow previous-month",
     "test": "ad-management.spec.ts::should reject current-month deletion, allow previous-month"
   },
-  "B-12_FINAL_12f78c35_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-12_Allow_Deleting_Exactly_50.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Boundary Scenarios / B-12: Fee-history bulk deletion limit at 50 and 51 records / should allow deleting exactly 50 records",
     "test": "ad-management.spec.ts::should allow deleting exactly 50 records"
   },
-  "B-12_FINAL_1174e59a_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-12_Block_51_Record_Bulk_Deletion.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Boundary Scenarios / B-12: Fee-history bulk deletion limit at 50 and 51 records / should block 51-record bulk deletion",
     "test": "ad-management.spec.ts::should block 51-record bulk deletion"
   },
-  "B-17_FINAL_e9180c21_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "B-17_Display_Zero_Metrics_2.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Boundary Scenarios / B-17: Revenue analytics with no matching approved ads / should display zero metrics and \"No data\" when no ads match",
     "test": "ad-management.spec.ts::should display zero metrics and \"No data\" when no ads match"
   },
-  "N-15_FINAL_b3ace41a_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-15_Update_All_Labels_When_2.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Interface Scenarios / N-15: Language toggle works on admin ad management screens / should update all labels when toggling to Japanese",
     "test": "ad-management.spec.ts::should update all labels when toggling to Japanese"
   },
-  "N-15_FINAL_5998f538_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-15_Update_All_Labels_When.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Interface Scenarios / N-15: Language toggle works on admin ad management screens / should update all labels when toggling to Myanmar",
     "test": "ad-management.spec.ts::should update all labels when toggling to Myanmar"
   },
-  "N-15_FINAL_b8f8cd7c_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-15_Return_To_English_Default.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Interface Scenarios / N-15: Language toggle works on admin ad management screens / should return to English default",
     "test": "ad-management.spec.ts::should return to English default"
   },
-  "N-16_FINAL_b9c2330a_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-16_Switch_To_Dark_Mode.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Interface Scenarios / N-16: Theme toggle works on admin ad management screens / should switch to dark mode without breaking layout",
     "test": "ad-management.spec.ts::should switch to dark mode without breaking layout"
   },
-  "N-16_FINAL_485c472f_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-16_Switch_Back_To_Light.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Interface Scenarios / N-16: Theme toggle works on admin ad management screens / should switch back to light mode",
     "test": "ad-management.spec.ts::should switch back to light mode"
   },
-  "N-17_FINAL_02dcf026_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-17_Remain_Usable_At_1280x720.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Interface Scenarios / N-17: Responsive layout on desktop and mobile viewports / should remain usable at 1280x720 viewport",
     "test": "ad-management.spec.ts::should remain usable at 1280x720 viewport"
   },
-  "N-17_FINAL_2c266d81_Ad_Management_Screen_ad-management_spec_ts___Admin_Ad_Manage.png": {
+  "N-17_Remain_Usable_At_375x667.png": {
     "description": "Final UI state for: Ad_Management_Screen\\ad-management.spec.ts / Admin Ad Management — PCL Interface Scenarios / N-17: Responsive layout on desktop and mobile viewports / should remain usable at 375x667 viewport",
     "test": "ad-management.spec.ts::should remain usable at 375x667 viewport"
   }
