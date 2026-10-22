@@ -14,73 +14,45 @@
 | **Last Updated** | 2026-10-22 |
 | **Status** | Active |
 
-> **Source of truth:** `docs/screen/Commission_Revenue/Detailed Design/` (DD_COMM_01–E6),
-> `機能設計書_Commission_&_Revenue.md` (v8.0), `画面項目設計書_Commission_&_Revenue.md` (v5.0).
-> Route: `/admin/commission-revenue` (admin-only, `ProtectedRoute roles={['admin']}`).
-
-> **E2E coverage status:** This PCL has 94 checklist IDs, all mapped to passing tests in the 81-test Commission & Revenue Playwright suite (`commission-revenue.spec.ts` + `commission-revenue.db-evidence.spec.ts`). A checklist item is checked only when its mapped test passes.
-
-> **E2E fixtures:** UI boundary, error, empty-state, and payout transition tests use deterministic Playwright API route fixtures. I-13, I-14, I-21, I-22, and I-23 use browser API requests intercepted by test fixtures, so they validate request/response handling without mutating or depending on database payout rows; they are not backend integration coverage. I-02, I-11, and I-15–I-18 call the running API directly.
-
-> **Database evidence:** `commission-revenue.db-evidence.spec.ts` runs the write scenarios against the **live** stack (browser → backend → PostgreSQL) and captures the database **before and after** every action — see section 5.
-
 ---
 
 ## 1. Normal Scenarios (N) — Happy Path
 
 - [x] **N-01**: Commission tab loads by default with rate card and report table
   - **Evidence**:
-    - `N-01_1_commission_tab.png`
-    - Final UI state for N-01: loads the Commission tab by default with rate and reports → `N-01_final_state.png`
-    - `N-01_1_login_form.png`
-    - `N-01_2_nav_admin_dashboard.png`
-    - `N-01_3_nav_commission_tab.png`
-    - Database state before the Commission tab is used — Commission & Revenue read-only baseline → `N-01_4_db_before_commission_state.png`
-    - Database state before the Commission tab is used — Commission & Revenue read-only baseline → `N-01_4_db_before_commission_state.json`
-    - `N-01_5_ui_revenue_tab.png`
-    - `N-01_6_ui_commission_tab_after_interaction.png`
-    - `N-01_7_nav_sidebar_entry.png`
-    - Database state after using both tabs — no table was modified (identical fingerprints) → `N-01_8_db_after_commission_state.png`
-    - Database state after using both tabs — no table was modified (identical fingerprints) → `N-01_8_db_after_commission_state.json`
+    - `N-01_1_ui_commission_tab_loaded.png`
     - Test: commission-revenue.spec.ts › "N-01: loads the Commission tab by default with rate and reports" — passed
-    - Test: commission-revenue.spec.ts › "N-01: navigates from the admin dashboard to the Commission tab and proves the screen is read-only in the database" — passed
-  - **Precondition**: Admin is authenticated
+    - Test: commission-revenue.spec.ts › "N-01: navigates from the admin dashboard to the Commission tab" — passed
+  - **Precondition**: Admin can sign in through the login form.
   - **Steps**:
-    1. Login as admin
-    2. Navigate to `/admin/commission-revenue`
-    3. Verify "Commission" tab is active by default
-    4. Verify commission rate card displays the current rate
-    5. Verify the report table renders rows and returns to full opacity after fetching (the table is dimmed to 50% opacity while fetching; the rate card shows `—%` until settings resolve)
-  - **Expected Result**: Commission tab active; rate rendered as percentage string; report table shows Merchant / Commission Rate / Orders / Revenue / Commission
-  - **Business Rules**: BR-COMM-002, BR-COMM-003, BR-COMM-005, BR-COMM-008
-  - **API**: `GET /api/v1/admin/commission`, `GET /api/v1/admin/commission/reports`
+    1. Sign in through the login form → the admin lands on `/admin`.
+    2. From the admin dashboard card click "View Revenue" → `/admin/commission-revenue`.
+    3. Verify the "Commission" tab is active by default, the rate card shows the rate that is persisted in `commission_settings`, and the report table renders the Merchant / Commission Rate / Orders / Revenue / Commission columns.
+  - **Expected Result**: The screen renders at `/admin/commission-revenue`; the "Commission" tab is active by default; the rate card shows the saved platform rate as a percentage string; the report table renders its rows. The screen is **read-only** — no database row is written.
 
 - [x] **N-02**: Edit commission rate successfully
   - **Evidence**:
-    - `N-02_1_rate_updated.png`
-    - Final UI state for N-02: updates the commission rate successfully → `N-02_final_state.png`
-    - `N-02_1_ui_rate_card_before.png`
-    - Database before the commission rate is edited (settings + rate history + audit trail) → `N-02_2_db_before_rate_update.png`
-    - Database before the commission rate is edited (settings + rate history + audit trail) → `N-02_2_db_before_rate_update.json`
-    - `N-02_3_ui_edit_rate_dialog.png`
-    - `N-02_4_ui_rate_input_filled.png`
-    - `N-02_5_ui_rate_updated.png`
-    - Database after the commission rate is saved — settings row, new rate-history row and audit entry → `N-02_6_db_after_rate_update.png`
-    - Database after the commission rate is saved — settings row, new rate-history row and audit entry → `N-02_6_db_after_rate_update.json`
-    - Database after the original commission rate is restored — the environment is back to its baseline → `N-02_7_db_after_rate_restored.png`
-    - Database after the original commission rate is restored — the environment is back to its baseline → `N-02_7_db_after_rate_restored.json`
-    - `N-02_8_ui_rate_restored.png`
+    - `N-02_1_ui_before_rate_card.png`
+    - `N-02_2_ui_doing_rate_input_filled.png`
+    - `N-02_3_ui_after_rate_changed.png`
+    - DB CHANGES — commission_settings updated in place, one new rate-history row, one new audit row → `N-02_4_db_after_rate_update.png`
+    - DB CHANGES — commission_settings updated in place, one new rate-history row, one new audit row → `N-02_4_db_after_rate_update.json`
     - Test: commission-revenue.spec.ts › "N-02: updates the commission rate successfully" — passed
-    - Test: commission-revenue.spec.ts › "N-02: updates the commission rate and proves the commission rows changed in the database" — passed
-  - **Precondition**: Admin is on Commission tab
+    - Test: commission-revenue.spec.ts › "N-02: updates the commission rate successfully (live stack evidence)" — passed
+  - **Precondition**: Admin is on the Commission tab and the saved platform rate differs from the target rate (`12`), so the change is observable.
   - **Steps**:
-    1. Click "Edit Rate"
-    2. Verify dialog opens pre-filled with current rate
-    3. Clear input, enter `12`
-    4. Click "Save"
-  - **Expected Result**: Dialog closes; success toast "Commission rate updated"; rate card updates to `12%` (card renders `Number(rate)`); audit event `COMMISSION_RATE_UPDATED` logged
-  - **Business Rules**: BR-COMM-001, BR-COMM-002, BR-COMM-003, BR-COMM-007
-  - **API**: `PATCH /api/v1/admin/commission`
+    1. Note the rate card (e.g. `15%`).
+    2. Click "Edit Rate" — the dialog opens **pre-filled with the saved rate**.
+    3. Replace the input content with `12` (no separate clear step — `fill` replaces the value).
+    4. Click "Save" and validate the API contract: `PATCH /api/v1/admin/commission` → `200`, request body `{"rate":"12"}` (decimal **string**), response body `{"data":{"rate":"12"}}`.
+    5. Verify the dialog closed, the toast "Commission rate updated" is shown and the rate card renders `12%`.
+  - **Expected Result**:
+    - **UI**: the dialog closes on save; the toast "Commission rate updated" is shown; the rate card changes from the saved rate to `12%` (whole number, no decimals — the card renders `Number(rate)`).
+    - **API**: `PATCH /api/v1/admin/commission` → `200` with `{"data":{"rate":"12"}}`; the request body carries the rate as a decimal string so no precision is lost.
+    - **Database**: the singleton `commission_settings` row is updated **in place** (same `id`) to `commission_rate = 12.00`, with `updated_by` = the acting admin and `updated_at` moved forward; exactly **one** new row is appended to `commission_rate_history` (`commission_rate = 12.00`, `effective_from` = now, `created_by` = the acting admin). The new rate applies to **new orders only** (existing orders keep their historical rate — see N-31).
+    - **Audit log**: one `COMMISSION_RATE_UPDATED` entry for the `CommissionSetting` entity with `old_value.rate` = the saved rate and `new_value.rate` = `"12"`.
+    - **Environment**: the scenario restores the saved rate afterwards (asserted, not captured — the restore appends a second history and audit row because both tables are append-only).
+    - **Value formats**: database `12.00` (DECIMAL(5,2)) · API/audit `"12"` · UI `12%` — assertions compare numerically.
 
 - [x] **N-03**: Filter commission reports by date range
   - **Evidence**:
@@ -151,51 +123,40 @@
 
 - [x] **N-08**: Process a pending payout successfully
   - **Evidence**:
-    - `N-08_1_payout_processed.png`
-    - Final UI state for N-08: processes a pending payout after confirmation → `N-08_final_state.png`
-    - `N-08_1_ui_payouts_before.png`
-    - Database before the payout is processed — the fixture row is still pending → `N-08_2_db_before_payout_process.png`
-    - Database before the payout is processed — the fixture row is still pending → `N-08_2_db_before_payout_process.json`
-    - `N-08_3_ui_process_dialog.png`
-    - `N-08_4_ui_payout_processed.png`
-    - Database after the payout is processed — status, processed_at, idempotency key and audit entry → `N-08_5_db_after_payout_process.png`
-    - Database after the payout is processed — status, processed_at, idempotency key and audit entry → `N-08_5_db_after_payout_process.json`
-    - Database after the seeded payout fixture is removed — the environment is back to its baseline → `N-08_6_db_after_payout_fixture_cleanup.png`
-    - Database after the seeded payout fixture is removed — the environment is back to its baseline → `N-08_6_db_after_payout_fixture_cleanup.json`
+    - `N-08_1_ui_doing_process_dialog.png`
+    - DB CHANGES — the payout row is completed and the PAYOUT_PROCESSED audit row was written → `N-08_2_db_after_payout_process.png`
+    - DB CHANGES — the payout row is completed and the PAYOUT_PROCESSED audit row was written → `N-08_2_db_after_payout_process.json`
     - Test: commission-revenue.spec.ts › "N-08: processes a pending payout after confirmation" — passed
-    - Test: commission-revenue.spec.ts › "N-08: processes a pending payout and proves the payout row changed in the database" — passed
-  - **Precondition**: Admin is on Revenue tab with a `pending` payout row
+    - Test: commission-revenue.spec.ts › "N-08: processes a pending payout after confirmation (live stack evidence)" — passed
+  - **Precondition**: A `pending` payout row exists for a merchant. The backend never creates payout rows at runtime, so the test seeds the fixture `e2e00000-…-a1` for the current period and deletes it again afterwards.
   - **Steps**:
-    1. Click the process icon (aria-label "Process payout") on a pending payout row
-    2. Verify confirmation dialog shows merchant, commission, and net payout
-    3. Click "Confirm"
-  - **Expected Result**: Success toast; payout status changes to `completed`; list and KPIs refresh; audit event `PAYOUT_PROCESSED` logged
-  - **Business Rules**: BR-REV-004, BR-REV-005, BR-REV-016, BR-ADFE-004
-  - **API**: `POST /api/v1/admin/revenue/payouts/:id/process`
+    1. Open the "Revenue" tab and locate the `pending` payout row.
+    2. Click the process icon (aria-label "Process") on that row.
+    3. Verify the confirmation dialog "Process payout for <merchant>?" shows Total Amount, −Commission Fee, Net Payout and the note that ad fees are excluded.
+    4. Click "Confirm".
+  - **Expected Result**:
+    - **API**: `POST /api/v1/admin/revenue/payouts/:id/process` → **201** with `{ "data": { "payoutId", "status": "completed", "processedAt", "idempotencyKey" } }`.
+    - **UI**: success toast "Payout processed"; the row's status badge changes from "Pending" to "Completed" and shows the completed date.
+    - **Database**: the `payouts` row moves `status: pending → completed` with `processed_at`, `processed_by` (the acting admin) and `idempotency_key = payout-<id>`; `net_payout` stays `total_amount − commission_amount` (ad fees are never deducted); a `PAYOUT_COMPLETED` notification is created for the merchant user.
+    - **Audit log**: one `PAYOUT_PROCESSED` entry for that payout with `old_value.status = "pending"` → `new_value.status = "completed"`.
 
 - [x] **N-09**: Set a revenue target
   - **Evidence**:
-    - `N-09_1_target_saved.png`
-    - Final UI state for N-09 and N-11: saves a revenue target and changes its period → `N-09_final_state.png`
-    - `N-09_1_ui_target_before.png`
-    - Database before the revenue target is saved (all periods + audit trail) → `N-09_2_db_before_target_save.png`
-    - Database before the revenue target is saved (all periods + audit trail) → `N-09_2_db_before_target_save.json`
-    - `N-09_3_ui_target_saved.png`
-    - Database after the revenue target is saved — the monthly row is updated and audited → `N-09_4_db_after_target_save.png`
-    - Database after the revenue target is saved — the monthly row is updated and audited → `N-09_4_db_after_target_save.json`
-    - Database after the original revenue target is restored — the environment is back to its baseline → `N-09_5_db_after_target_restored.png`
-    - Database after the original revenue target is restored — the environment is back to its baseline → `N-09_5_db_after_target_restored.json`
+    - `N-09_1_ui_doing_target_filled.png`
+    - DB CHANGES — the monthly row is updated in place and a TARGET_UPDATED audit row was written → `N-09_2_db_after_target_save.png`
+    - DB CHANGES — the monthly row is updated in place and a TARGET_UPDATED audit row was written → `N-09_2_db_after_target_save.json`
     - Test: commission-revenue.spec.ts › "N-09 and N-11: saves a revenue target and changes its period" — passed
-    - Test: commission-revenue.spec.ts › "N-09 and N-11: saves a revenue target and proves the target row changed in the database" — passed
-  - **Precondition**: Admin is on Revenue tab
+    - Test: commission-revenue.spec.ts › "N-09 and N-11: saves a revenue target and changes its period (live stack evidence)" — passed
+  - **Precondition**: Admin is on the Revenue tab; a monthly target may or may not exist.
   - **Steps**:
-    1. Click "Edit Target" (or "Set Target" when no target exists)
-    2. Enter `100000`
-    3. Select `monthly` period
-    4. Click "Save Target"
-  - **Expected Result**: Dialog closes; success toast "Revenue target updated"; gauge bar and target amount update; audit event `TARGET_UPDATED` logged
-  - **Business Rules**: BR-REV-006, BR-REV-007, BR-REV-009, BR-COMM-007
-  - **API**: `PUT /api/v1/admin/revenue/targets`
+    1. Click "Edit Target" (or "Set Target" when no target exists).
+    2. Enter `100000` and select the `monthly` period.
+    3. Click "Save Target".
+  - **Expected Result**:
+    - **API**: `PUT /api/v1/admin/revenue/targets` → `200` with `{ "data": { "targetAmount": "100000", "targetPeriod": "monthly", "actualRevenue", "progressPercent" } }`.
+    - **UI**: success toast "Revenue target updated"; the target card shows the new amount and the progress bar / gauge is rendered.
+    - **Database**: the `revenue_targets` row for `monthly` is **updated in place** (same `id`, `is_active = true`) — `target_amount` becomes `100000.00` and `updated_at` moves forward; the `quarterly` row is not touched.
+    - **Audit log**: one `TARGET_UPDATED` entry with `new_value.targetAmount = "100000"` and `new_value.period = "monthly"`.
 
 - [x] **N-10**: View AI revenue forecast on trend chart
   - **Evidence**:
@@ -213,20 +174,17 @@
 
 - [x] **N-11**: Toggle revenue target period and view progress gauge
   - **Evidence**:
-    - `N-11_1_target_period_toggle.png`
-    - Final UI state for N-09 and N-11: saves a revenue target and changes its period → `N-11_final_state.png`
-    - `N-11_1_ui_target_quarterly.png`
-    - Database after switching the target period — only the monthly row was written, quarterly is untouched → `N-11_2_db_after_target_period_toggle.png`
-    - Database after switching the target period — only the monthly row was written, quarterly is untouched → `N-11_2_db_after_target_period_toggle.json`
+    - `N-11_1_ui_quarterly_gauge.png`
     - Test: commission-revenue.spec.ts › "N-09 and N-11: saves a revenue target and changes its period" — passed
-    - Test: commission-revenue.spec.ts › "N-09 and N-11: saves a revenue target and proves the target row changed in the database" — passed
-  - **Precondition**: Admin is on Revenue tab
+    - Test: commission-revenue.spec.ts › "N-09 and N-11: saves a revenue target and changes its period (live stack evidence)" — passed
+  - **Precondition**: A monthly target exists.
   - **Steps**:
-    1. Toggle target period between `monthly` and `quarterly`
-    2. Verify gauge bar and progress percentage update
-  - **Expected Result**: Target card refetches; gauge shows clamped 0–100% with progress % label
-  - **Business Rules**: BR-REV-006, BR-REV-008, BR-REV-010
-  - **API**: `GET /api/v1/admin/revenue/target?period=quarterly`
+    1. Toggle the target period from `monthly` to `quarterly`.
+    2. Verify the gauge bar and the progress percentage are re-rendered for the selected period.
+  - **Expected Result**:
+    - **UI**: the target card re-renders for the selected period; the progress bar is present and the progress label shows the clamped 0–100 % value.
+    - **API**: only a read (`GET /api/v1/admin/revenue/target?period=quarterly`) is issued — no write.
+    - **Database**: **no row is written** — the `quarterly` row is identical before and after the switch and no `TARGET_UPDATED` audit row is created.
 
 - [x] **N-12**: View ad fee revenue, trend, and ad payment status
   - **Evidence**:
@@ -245,60 +203,50 @@
 
 - [x] **N-13**: Export commission report as CSV
   - **Evidence**:
-    - `N-13_1_export_commission.png`
-    - Final UI state for N-13: exports the commission report as CSV → `N-13_final_state.png`
-    - Database before the three exports — baseline for the read-only export check → `N-13_1_db_before_exports.png`
-    - Database before the three exports — baseline for the read-only export check → `N-13_1_db_before_exports.json`
-    - `N-13_2_ui_export_commission.png`
+    - `N-13_1_ui_doing_export_commission.png`
     - Test: commission-revenue.spec.ts › "N-13: exports the commission report as CSV" — passed
     - Test: commission-revenue.spec.ts › "N-13 to N-15: exports the three reports and proves only the audit log changed in the database" — passed
-  - **Precondition**: Admin is on Commission tab
+  - **Precondition**: Admin is on the Commission tab and a date range with data exists.
   - **Steps**:
-    1. Click "Export" (Commission Report card)
-    2. Select format `CSV`
-    3. Select a valid date range
-    4. Click "Generate"
-  - **Expected Result**: CSV file downloads with correct headers and merchant-level data; audit event `EXPORT_GENERATED` logged
-  - **Business Rules**: BR-EXP-001, BR-EXP-002, BR-EXP-003, BR-EXP-004
-  - **API**: `POST /api/v1/admin/commission/export`
+    1. Click "Export" (Commission Report card).
+    2. Select format `CSV` and a valid date range.
+    3. Click "Generate".
+  - **Expected Result**:
+    - **API**: `POST /api/v1/admin/commission/export` → 201 with a `text/csv` stream.
+    - **UI**: the CSV file downloads; the modal shows the progress state while the request is in flight.
+    - **Database**: **no business table is modified** — the fingerprints of `commission_settings`, `revenue_targets`, `payouts` and `payout_items` are identical before and after; only `audit_logs` grows by one `EXPORT_GENERATED` row (`reportType: "commission"`).
 
 - [x] **N-14**: Export revenue report as Excel (XLSX)
   - **Evidence**:
-    - `N-14_1_export_revenue.png`
-    - Final UI state for N-14: exports the revenue report as XLSX → `N-14_final_state.png`
-    - `N-14_1_ui_export_revenue.png`
+    - `N-14_1_ui_doing_export_revenue.png`
     - Test: commission-revenue.spec.ts › "N-14: exports the revenue report as XLSX" — passed
     - Test: commission-revenue.spec.ts › "N-13 to N-15: exports the three reports and proves only the audit log changed in the database" — passed
-  - **Precondition**: Admin is on Revenue tab
+  - **Precondition**: Admin is on the Revenue tab and a date range with data exists.
   - **Steps**:
-    1. Click "Export Revenue"
-    2. Select format `Excel`
-    3. Select a valid date range
-    4. Click "Generate"
-  - **Expected Result**: XLSX file downloads with revenue KPI, trend, and payment status data; audit event `EXPORT_GENERATED` logged
-  - **Business Rules**: BR-EXP-001, BR-EXP-002, BR-EXP-003, BR-EXP-004
-  - **API**: `POST /api/v1/admin/revenue/export`
+    1. Click "Export Revenue".
+    2. Select format `Excel` and a valid date range.
+    3. Click "Generate".
+  - **Expected Result**:
+    - **API**: `POST /api/v1/admin/revenue/export` → 201 with an XLSX stream.
+    - **UI**: the XLSX file downloads; the modal shows the progress state while the request is in flight.
+    - **Database**: **no business table is modified**; only `audit_logs` grows by one `EXPORT_GENERATED` row (`reportType: "revenue"`).
 
 - [x] **N-15**: Export payout history as CSV
   - **Evidence**:
-    - `N-15_1_export_payout.png`
-    - Final UI state for N-15: exports payout history as CSV → `N-15_final_state.png`
-    - `N-15_1_ui_export_payout.png`
-    - Database after the three exports — an EXPORT_GENERATED audit row per export, no business row changed → `N-15_2_db_after_exports.png`
-    - Database after the three exports — an EXPORT_GENERATED audit row per export, no business row changed → `N-15_2_db_after_exports.json`
-    - Table fingerprints after the three exports — every business table is unchanged → `N-15_3_db_fingerprint_after_exports.png`
-    - Table fingerprints after the three exports — every business table is unchanged → `N-15_3_db_fingerprint_after_exports.json`
+    - `N-15_1_ui_doing_export_payout.png`
+    - DB CHANGES — one EXPORT_GENERATED audit row per export; no business table was modified → `N-15_2_db_after_exports.png`
+    - DB CHANGES — one EXPORT_GENERATED audit row per export; no business table was modified → `N-15_2_db_after_exports.json`
     - Test: commission-revenue.spec.ts › "N-15: exports payout history as CSV" — passed
     - Test: commission-revenue.spec.ts › "N-13 to N-15: exports the three reports and proves only the audit log changed in the database" — passed
-  - **Precondition**: Admin is on Revenue tab
+  - **Precondition**: Admin is on the Revenue tab and a date range with payout data exists.
   - **Steps**:
-    1. Click "Export Payout" (Merchant Payouts header)
-    2. Select format `CSV`
-    3. Select a valid date range (prefilled from the period filter when one is applied)
-    4. Click "Generate"
-  - **Expected Result**: CSV downloads with payout records; net = total − commission (ad fees excluded); audit event `EXPORT_GENERATED` logged
-  - **Business Rules**: BR-EXP-001, BR-EXP-002, BR-EXP-003, BR-REV-016, BR-ADFE-004
-  - **API**: `POST /api/v1/admin/revenue/payouts/export`
+    1. Click "Export Payout" (Merchant Payouts header).
+    2. Select format `CSV` and a valid date range (prefilled from the period filter when one is applied).
+    3. Click "Generate".
+  - **Expected Result**:
+    - **API**: `POST /api/v1/admin/revenue/payouts/export` → 201 with a CSV stream; the Net column is `total − commission` (ad fees excluded).
+    - **UI**: the CSV file downloads; the modal shows the progress state while the request is in flight.
+    - **Database**: **no business table is modified**; the three exports of this scenario add exactly three `EXPORT_GENERATED` rows to `audit_logs` (`commission`, `revenue`, `payout`) and nothing else changes.
 
 - [x] **N-16**: Language toggle works on screen
   - **Evidence**:
@@ -457,25 +405,23 @@
 
 - [x] **N-28**: Select and bulk-delete eligible payout rows
   - **Evidence**:
-    - Final UI state for N-28: selects and deletes an eligible payout row → `N-28_final_state.png`
-    - `N-28_1_ui_payouts_before_delete.png`
-    - Database before the eligible payout is deleted — the row is still present → `N-28_2_db_before_payout_delete.png`
-    - Database before the eligible payout is deleted — the row is still present → `N-28_2_db_before_payout_delete.json`
-    - `N-28_3_ui_delete_confirm_dialog.png`
-    - `N-28_4_ui_payout_deleted.png`
-    - Database after the eligible payout is deleted — the row is gone, the PAYOUT_DELETED audit entry remains → `N-28_5_db_after_payout_delete.png`
-    - Database after the eligible payout is deleted — the row is gone, the PAYOUT_DELETED audit entry remains → `N-28_5_db_after_payout_delete.json`
+    - `N-28_1_ui_doing_delete_dialog.png`
+    - DB CHANGES — the payout row is gone from payouts and a PAYOUT_DELETED audit row remains → `N-28_2_db_after_payout_deleted.png`
+    - DB CHANGES — the payout row is gone from payouts and a PAYOUT_DELETED audit row remains → `N-28_2_db_after_payout_deleted.json`
     - Test: commission-revenue.spec.ts › "N-28: selects and deletes an eligible payout row" — passed
-    - Test: commission-revenue.spec.ts › "N-28: deletes an eligible payout row and proves the row was removed from the database" — passed
-  - **Precondition**: Completed payouts older than three months exist
+    - Test: commission-revenue.spec.ts › "N-28: selects and deletes an eligible payout row (live stack evidence)" — passed
+  - **Precondition**: A completed payout that is at least three months old exists. The test seeds the fixture `e2e00000-…-b2` (created 5 months ago) and removes it again afterwards.
   - **Steps**:
-    1. Tick row checkboxes (or the header select-all checkbox)
-    2. Click the trash (Delete selected payouts) button
-    3. Verify the confirm dialog shows the selected row count
-    4. Click "Confirm delete"
-  - **Expected Result**: Success toast "Payouts deleted"; deleted rows disappear; selection cleared; payout list refetched; audit event `PAYOUT_DELETED` logged per payout
-  - **Business Rules**: BR-COMM-007
-  - **API**: `DELETE /api/v1/admin/revenue/payouts`
+    1. Tick the row checkbox of that payout (or the header select-all checkbox).
+    2. Click the trash (Delete selected payouts) button.
+    3. Verify the confirmation dialog "Are you sure you want to delete these rows?" is shown.
+    4. Click "Confirm delete".
+  - **Expected Result**:
+    - **API**: `DELETE /api/v1/admin/revenue/payouts` → 200 with `{ "data": { "payoutIds": [...], "deleted": true } }`.
+    - **UI**: success toast "Payouts deleted"; the row disappears from the table and the selection is cleared (the trash button is disabled again).
+    - **Database**: the `payouts` row **and its `payout_items` rows are removed** from the database.
+    - **Audit log**: one `PAYOUT_DELETED` entry per deleted payout with `old_value.status`, `old_value.totalAmount`, `old_value.periodStart` and the deleted order ids.
+    - ⚠️ The confirmation copy is generic ("This action cannot be undone.") — it does **not** state the selected row count (see B-16).
 
 - [x] **N-29**: Payout confirmation dialog shows amount breakdown and processing state
   - **Evidence**:
@@ -507,30 +453,21 @@
 
 - [x] **N-31**: Historical rate locking for existing report rows after a rate change
   - **Evidence**:
-    - `N-31_1_rows_before_rate_change.png`
-    - `N-31_2_rows_locked_after_change.png`
-    - Final UI state for N-31: historical rate locking for existing report rows after a rate change → `N-31_final_state.png`
-    - `N-31_1_ui_rows_before_rate_change.png`
-    - Database before the rate change — the rate history that locks existing orders → `N-31_2_db_before_rate_lock.png`
-    - Database before the rate change — the rate history that locks existing orders → `N-31_2_db_before_rate_lock.json`
-    - `N-31_3_ui_rate_changed.png`
-    - Database after the rate change — one new rate-history row; existing orders keep their historical rate → `N-31_4_db_after_rate_lock.png`
-    - Database after the rate change — one new rate-history row; existing orders keep their historical rate → `N-31_4_db_after_rate_lock.json`
-    - Database after the original rate is restored — the environment is back to its baseline → `N-31_5_db_after_rate_restored.png`
-    - Database after the original rate is restored — the environment is back to its baseline → `N-31_5_db_after_rate_restored.json`
+    - `N-31_1_ui_before_report_rows.png`
+    - DB CHANGES — exactly one new rate-history row; the existing orders keep their historical rate → `N-31_2_db_after_rate_lock.png`
+    - DB CHANGES — exactly one new rate-history row; the existing orders keep their historical rate → `N-31_2_db_after_rate_lock.json`
     - Test: commission-revenue.spec.ts › "N-31: historical rate locking for existing report rows after a rate change" — passed
-    - Test: commission-revenue.spec.ts › "N-31: locks the historical commission rate and proves the rate history grew in the database" — passed
-  - **Precondition**: Commission report rows exist at the current rate (e.g. `10.00`); admin changes the rate via Edit Rate (e.g. to `15.00`)
+    - Test: commission-revenue.spec.ts › "N-31: historical rate locking for existing report rows after a rate change (live stack evidence)" — passed
+  - **Precondition**: Commission report rows exist at the current rate.
   - **Steps**:
-    1. Note the commission rate / commission values on an existing report row
-    2. Change the commission rate via Edit Rate and save
-    3. Reload the commission report (same date range covering orders placed before the rate change)
-    4. Create (or observe) a new order completed after the rate change and reload the report again
-  - **Expected Result**: Existing (old) report rows keep the original rate and commission amounts; only new orders generated after the rate change use the new rate; backend resolves the rate via `commissionRateHistory` by order date (`getEffectiveRate(at)` / `buildRateLookup`), which is the core of BR-COMM-003
-  - **Business Rules**: BR-COMM-002, BR-COMM-003
-  - **API**: `PATCH /api/v1/admin/commission`, `GET /api/v1/admin/commission/reports`
-
----
+    1. Note the commission rate / commission values of the existing report rows.
+    2. Change the platform rate through the "Edit Rate" dialog and save.
+    3. Reload the commission report for the same date range.
+  - **Expected Result**:
+    - **UI**: the rate card shows the new rate; the existing report rows are unchanged (same merchant, order, date, rate, revenue and commission).
+    - **API**: `PATCH /api/v1/admin/commission` → 200; `GET /api/v1/admin/commission/reports` returns identical rows before and after the change.
+    - **Database**: exactly **one new row** is appended to `commission_rate_history` (`commission_rate` = the new rate, `effective_from` = now, `created_by` = the acting admin); the existing history rows are untouched, so orders placed earlier keep their historical rate.
+    - **Audit log**: one `COMMISSION_RATE_UPDATED` entry for the rate change.
 
 ## 2. Abnormal Scenarios (A) — Error & Negative Paths
 
@@ -1150,7 +1087,7 @@
   - **Precondition**: Admin token; payout `pending`
   - **Steps**:
     1. Call process endpoint for a pending payout
-  - **Expected Response**: Status 200, `{ data: { payoutId, status: "completed", processedAt, idempotencyKey } }`; audit event `PAYOUT_PROCESSED` logged
+  - **Expected Response**: Status 200, `{ data: { payoutId, status: "completed", processedAt, idempotencyKey } }`; audit event `PAYOUT_PROCESSED` logged. ⚠️ The **live** endpoint answers **201** (the NestJS default for `@Post`) — this test intercepts the route with a mock that replies 200, see section 5
   - **Business Rules**: BR-REV-004, BR-REV-005, BR-COMM-007
   - **API**: `POST /api/v1/admin/revenue/payouts/:id/process`
 
@@ -1267,42 +1204,6 @@
   - **Business Rules**: BR-COMM-007
   - **API**: `DELETE /api/v1/admin/revenue/payouts`
 
----
-
-## 5. Database Evidence (DB) — Live Before / After Verification
-
-`commission-revenue.db-evidence.spec.ts` runs the write scenarios against the **live** stack
-(real browser → real backend → real PostgreSQL) and captures the database **before** and
-**after** every action. Each capture produces two artifacts in
-`e2e/test-results/Commission_Revenue/screenshots/`:
-
-| Artifact | Content |
-|----------|---------|
-| `*_db_*.png` | pgAdmin-style "Database Query Result" screenshot (SQL + Data Output grid) |
-| `*_db_*.json` | The same rows in machine-readable form (the assertions read this file) |
-
-Every snapshot also runs a **fingerprint** query (row count + MD5 of the row payload per
-table). Identical fingerprints before/after prove a table was **not** modified; a changed
-fingerprint proves exactly **which** table the action wrote to.
-
-| Scenario | Action | Database proof (before → after) |
-|----------|--------|--------------------------------|
-| N-01 | Sign in → admin dashboard → Commission tab, use both tabs | `commission_settings`, `commission_rate_history`, `revenue_targets`, `payouts`, `payout_items`, `audit_logs` — **all fingerprints identical** (the screen is read-only) |
-| N-02 | Edit the commission rate | `commission_settings.commission_rate` changed; **+1** `commission_rate_history` row; a new `COMMISSION_RATE_UPDATED` audit row; the original rate is restored afterwards |
-| N-08 | Process a pending payout | `payouts.status` `pending → completed`; `processed_at`, `processed_by` and `idempotency_key` written; a `PAYOUT_PROCESSED` audit row; the seeded fixture row is removed afterwards |
-| N-09 / N-11 | Save / switch the revenue target | `revenue_targets.target_amount` updated **in place** (same `id`); `updated_at` moved; a `TARGET_UPDATED` audit row; the quarterly row stays untouched; the original amount is restored afterwards |
-| N-13 → N-15 | Export commission CSV, revenue XLSX, payout CSV | business tables **unchanged** (identical fingerprints); only `audit_logs` changed — one `EXPORT_GENERATED` row per export |
-| N-28 | Delete an eligible payout | the `payouts` row is **removed**; the `PAYOUT_DELETED` audit row is kept as the audit trail |
-| N-31 | Change the rate (historical rate locking) | `commission_rate_history` **+1** row; the existing report rows keep their original rate and commission amounts |
-
-> **Payout fixtures.** The backend never creates payout rows at runtime (they are seeded), so
-> N-08 and N-28 seed an explicit fixture row and remove it again afterwards — every write
-> scenario leaves the environment in the state it found it in.
-
-> ⚠️ **Contract deviation found by the live run:** `POST /api/v1/admin/revenue/payouts/:id/process`
-> answers **201** (the NestJS default for `@Post`), not the 200 documented in I-13. The I-13 test
-> intercepts the route with a mock that always replies 200, so the live status code was never
-> covered by the mocked contract test.
 
 ---
 

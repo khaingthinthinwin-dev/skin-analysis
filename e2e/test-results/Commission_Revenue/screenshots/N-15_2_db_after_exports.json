@@ -1,13 +1,13 @@
 {
-  "capturedAt": "2026-10-22T03:49:20.576Z",
-  "description": "Database after the three exports — an EXPORT_GENERATED audit row per export, no business row changed",
+  "capturedAt": "2026-10-22T07:14:37.040Z",
+  "description": "DB CHANGES — one EXPORT_GENERATED audit row per export; no business table was modified",
   "results": [
     {
-      "label": "audit_logs — EXPORT_GENERATED",
-      "rowCount": 8,
+      "label": "audit_logs — EXPORT_GENERATED (this run only)",
+      "rowCount": 3,
       "rows": [
         {
-          "id": "051666c2-38dd-4458-bc4d-7f4d4a45153d",
+          "id": "6afbae03-5fb5-4b13-a56a-fc9ade4158ff",
           "user_id": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
           "action": "EXPORT_GENERATED",
           "entity_type": "Export",
@@ -21,10 +21,10 @@
             "reportType": "payout"
           },
           "ip_address": "::1",
-          "created_at": "2026-10-21T21:19:20.110Z"
+          "created_at": "2026-10-22T00:44:36.483Z"
         },
         {
-          "id": "1139e5e9-d5e1-4ca3-8490-68fe44f72f2c",
+          "id": "c3e1e6f1-2966-44fa-872b-709d205eafac",
           "user_id": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
           "action": "EXPORT_GENERATED",
           "entity_type": "Export",
@@ -38,10 +38,10 @@
             "reportType": "revenue"
           },
           "ip_address": "::1",
-          "created_at": "2026-10-21T21:19:19.545Z"
+          "created_at": "2026-10-22T00:44:35.728Z"
         },
         {
-          "id": "17a731d0-c980-425a-988d-e10a8ebb0b02",
+          "id": "a056943e-fd59-41dd-b684-711a96973465",
           "user_id": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
           "action": "EXPORT_GENERATED",
           "entity_type": "Export",
@@ -55,92 +55,7 @@
             "reportType": "commission"
           },
           "ip_address": "::1",
-          "created_at": "2026-10-21T21:19:18.878Z"
-        },
-        {
-          "id": "b1866048-b433-452d-8851-9cfcce24d29e",
-          "user_id": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
-          "action": "EXPORT_GENERATED",
-          "entity_type": "Export",
-          "entity_id": null,
-          "old_value": null,
-          "new_value": {
-            "dateTo": "2026-08-15",
-            "format": "csv",
-            "dateFrom": "2026-08-01",
-            "rowCount": 0,
-            "reportType": "payout"
-          },
-          "ip_address": "::1",
-          "created_at": "2026-10-21T21:18:42.266Z"
-        },
-        {
-          "id": "5e7b84d1-55aa-43df-bc00-fd9fc513081e",
-          "user_id": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
-          "action": "EXPORT_GENERATED",
-          "entity_type": "Export",
-          "entity_id": null,
-          "old_value": null,
-          "new_value": {
-            "dateTo": "2026-08-15",
-            "format": "xlsx",
-            "dateFrom": "2026-08-01",
-            "rowCount": 13,
-            "reportType": "revenue"
-          },
-          "ip_address": "::1",
-          "created_at": "2026-10-21T21:18:41.717Z"
-        },
-        {
-          "id": "c77fa84a-8f27-4760-8b3a-bc1c6d1b6a13",
-          "user_id": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
-          "action": "EXPORT_GENERATED",
-          "entity_type": "Export",
-          "entity_id": null,
-          "old_value": null,
-          "new_value": {
-            "dateTo": "2026-08-15",
-            "format": "csv",
-            "dateFrom": "2026-08-01",
-            "rowCount": 0,
-            "reportType": "commission"
-          },
-          "ip_address": "::1",
-          "created_at": "2026-10-21T21:18:41.189Z"
-        },
-        {
-          "id": "26d21601-de2c-4a89-b9ac-dc7b1bcc76e0",
-          "user_id": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
-          "action": "EXPORT_GENERATED",
-          "entity_type": "Export",
-          "entity_id": null,
-          "old_value": null,
-          "new_value": {
-            "dateTo": "2026-08-25",
-            "format": "csv",
-            "dateFrom": "2025-08-26",
-            "rowCount": 0,
-            "reportType": "commission"
-          },
-          "ip_address": "::1",
-          "created_at": "2026-10-21T21:16:57.336Z"
-        },
-        {
-          "id": "59c2222e-d856-4acb-8b52-cf75f8cca9cf",
-          "user_id": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
-          "action": "EXPORT_GENERATED",
-          "entity_type": "Export",
-          "entity_id": null,
-          "old_value": null,
-          "new_value": {
-            "dateTo": "2026-08-31",
-            "format": "csv",
-            "dateFrom": "2026-08-01",
-            "rowCount": 0,
-            "reportType": "payout"
-          },
-          "ip_address": "::1",
-          "created_at": "2026-10-21T21:16:31.727Z"
+          "created_at": "2026-10-22T00:44:35.047Z"
         }
       ]
     },
@@ -152,7 +67,7 @@
           "id": "2223cfdd-b55e-485d-a16c-da0b663af67e",
           "commission_rate": "15.00",
           "updated_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
-          "updated_at": "2026-10-21T21:19:03.063Z",
+          "updated_at": "2026-10-22T00:44:24.057Z",
           "created_at": "2026-09-11T00:32:41.133Z"
         }
       ]
@@ -167,7 +82,7 @@
           "period": "monthly",
           "is_active": true,
           "created_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
-          "updated_at": "2026-10-21T21:19:15.366Z",
+          "updated_at": "2026-10-22T00:44:32.571Z",
           "created_at": "2026-09-11T02:40:24.219Z"
         },
         {
