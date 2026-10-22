@@ -1,0 +1,20 @@
+{
+  "capturedAt": "2026-10-22T07:08:03.372Z",
+  "description": "ORDER_PLACED notification row written in the same transaction as the order",
+  "results": [
+    {
+      "label": "ORDER_PLACED notification row",
+      "rowCount": 1,
+      "rows": [
+        {
+          "type": "ORDER_PLACED",
+          "title": "New order received",
+          "message": "A buyer placed order ORD-0000163.",
+          "entity_type": "order",
+          "entity_id": "ab26abe4-3b46-4593-b371-c00e9af63ab1",
+          "is_read": false
+        }
+      ]
+    }
+  ]
+}
