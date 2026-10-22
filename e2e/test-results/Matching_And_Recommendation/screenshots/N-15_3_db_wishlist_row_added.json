@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-21T09:32:03.168Z",
+  "capturedAt": "2026-10-22T04:33:38.342Z",
   "description": "wishlists row after adding the recommendation",
   "results": [
     {
@@ -7,12 +7,12 @@
       "rowCount": 1,
       "rows": [
         {
-          "id": "6d070755-1002-49af-a76b-f316624bf147",
+          "id": "d369d0c3-a2b6-45e6-98fa-9f750c5e40c3",
           "user_id": "6c8800c3-4a53-46dd-888f-b305c14fa9b9",
           "product_id": "0eabe625-0f04-4f79-9933-a5f20caf3c88",
           "product_name": "Hydrating Toner",
           "stock_quantity": 80,
-          "created_at": "2026-10-21T03:02:02.495Z"
+          "created_at": "2026-10-21T22:03:37.483Z"
         }
       ]
     }
