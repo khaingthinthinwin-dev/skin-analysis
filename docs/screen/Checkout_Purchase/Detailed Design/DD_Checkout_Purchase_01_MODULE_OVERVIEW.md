@@ -1,15 +1,15 @@
 ﻿# DD_CHECK-01 — Module Overview
 
-> **Doc ID:** SKM-DD-CHECK-01 | **Version:** 1.0 | **Status:** Draft
-> **Last Updated:** 2026-09-07
+> **Doc ID:** SKM-DD-CHECK-01 | **Version:** 1.1 | **Status:** Draft
+> **Last Updated:** 2026-10-22
 
 ---
 
 ## 1. Module Overview
 
-The **Checkout & Purchase Module** (チェックアウト・購入モジュール) is the buyer-facing purchase subsystem of the Cosmetics Finder platform. It covers the **Checkout Page** (`/checkout`) and the **Order Confirmation Page** (`/checkout/confirmation/:orderId`) — converting cart contents into confirmed orders with status `placed`, validating stock availability, applying coupon discounts, calculating totals (subtotal − discount), persisting order records for merchant fulfillment, and rendering the post-purchase confirmation (機能設計書 §1.1, §1.2, Requirement Spec §3.3, 画面項目設計書 v1.0).
+The **Checkout & Purchase Module** (チェックアウト・購入モジュール) is the buyer-facing purchase subsystem of the Cosmetics Finder platform. It covers the **Checkout Page** (`/buyer/checkout`) and the **Order Confirmation Page** (`/buyer/checkout/confirmation/:orderId`) — converting cart contents into confirmed orders with status `placed`, validating stock availability, applying coupon discounts, calculating totals (subtotal − discount), persisting order records for merchant fulfillment, and rendering the post-purchase confirmation (機能設計書 §1.1, §1.2, Requirement Spec §3.3, 画面項目設計書 v1.2).
 
-This module is **read-write**: it creates `orders`, `order_items`, `order_status_history`, and `inventory_transactions` records, decrements `products.stock_quantity`, increments `promotions.used_count`, and clears `cart_items` — all within a single atomic database transaction (BR-CHECK-014). The module also renders the sponsored ad slide-down panel on the checkout page (UC-CHECK-008, BR-AD-001~012).
+This module is **read-write**: it creates `orders`, `order_items`, `order_status_history`, and merchant `notifications` records, decrements `products.stock_quantity`, increments `promotions.used_count`, and clears `cart_items` — all within a single atomic database transaction (BR-CHECK-014). Checkout does **not** create `inventory_transactions` rows (see PCL N-08). The module also renders the sponsored ad banner/carousel on the checkout page using the shared search ads endpoint (UC-CHECK-008, BR-AD-001~012).
 
 **Order History, Order Detail, and Order Tracking** (UC-CHECK-005, UC-CHECK-006, UC-CHECK-007 per 機能設計書 §2.1/§2.3) are explicitly **out of Detailed Design scope for this module** — they are implemented by the **Order Insights module** (画面項目設計書 v1.0 revision history: "Order History, Order Detail, and Order Tracking pages are developed by the order status screen team"). This module creates the orders that Order Insights later reads; the order-status state machine itself belongs to Order Insights' DD_01 §3.
 
@@ -26,7 +26,7 @@ This module is **read-write**: it creates `orders`, `order_items`, `order_status
 | UC-CHECK-005 | View Order History | **Out of Detailed Design scope for this module — implemented by the Order Insights module.** The FDS §2.1/§2.3 includes this use case for workflow continuity (BR-HIST-001~003), but the screen itself (`/orders`), its API (`GET /api/v1/orders`), and its field-level design belong to Order Insights' DD_02 and DD_03. This module creates the orders that Order Insights lists here. |
 | UC-CHECK-006 | View Order Detail | **Out of Detailed Design scope for this module — implemented by the Order Insights module.** The FDS §2.1/§2.3 includes this use case for workflow continuity, but the screen (`/orders/:orderId`), its API (`GET /api/v1/orders/:id`), and its field-level design belong to Order Insights' DD_02 and DD_03. This module creates the orders whose detail Order Insights renders. |
 | UC-CHECK-007 | Track Order | **Out of Detailed Design scope for this module — implemented by the Order Insights module.** The FDS §2.1/§2.3 includes this use case for workflow continuity, but the screen (`/orders/:orderId/tracking`), its API (`GET /api/v1/orders/:id/tracking`), the order-status state machine, and its field-level design belong to Order Insights' DD_01 §3, DD_02, and DD_03. This module creates the orders whose tracking timeline Order Insights renders. |
-| UC-CHECK-008 | View Sponsored Ad Slot | On checkout page mount, the system fetches approved, active, in-schedule ads for the Checkout Top placement (BR-AD-001~004), applies tier priority (Premium > Standard > Basic) with round-robin rotation within each tier (BR-AD-005~006), limits to a maximum of 5 ads (BR-AD-007), and caches results in Redis with key `cache:ads:checkout-top` (TTL 5 min) (BR-AD-008). The ad panel slides into view with graceful degradation on error or empty response (BR-AD-009), reduced-motion support (BR-AD-010), pause-on-interaction (BR-AD-011), and click tracking (BR-AD-012). |
+| UC-CHECK-008 | View Sponsored Ad Slot | On checkout page mount, the system fetches ads for `checkout_page_banner` via `GET /api/v1/search/ads?placement=checkout_page_banner`. Results are ordered by `startsAt DESC`, capped at 5, and every ad is returned with `tier: standard`. There is **no premium-first tier ranking, no round-robin rotation, and no Redis/result cache** on this route. The shared `AdBannerSlider` auto-advances every 5s, pauses on hover/focus, supports reduced-motion, and is hidden on empty/error; checkout does **not** pass an `onAdClick` callback so click analytics are not sent from checkout. |
 
 ---
 
@@ -126,7 +126,7 @@ Security & permissions requirements for this module (機能設計書 §10.1, §1
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|:-------------:|
 | `GET` | `/api/v1/checkout` | Load checkout page data — cart items, subtotal, stock status, user addresses | Yes (Buyer) |
-| `GET` | `/api/v1/ads?placement=checkout_top` | Load sponsored ad slot for checkout (parallel, non-blocking, cached) | No (public cache; page-level auth applies) |
+| `GET` | `/api/v1/ads?placement=checkout_page_banner` | Load sponsored ad slot for checkout (search ads; public) | No |
 | `POST` | `/api/v1/checkout/validate-coupon` | Validate and apply coupon code; return discount amount and new total | Yes (Buyer) |
 | `POST` | `/api/v1/orders` | Place order — create order, order items, status history, inventory transactions; decrement stock; clear cart; return order confirmation | Yes (Buyer) |
 
@@ -143,7 +143,7 @@ This module is **read-write** — it writes to these tables during order placeme
 | `orders` | Store customer order header (`buyer_id`, `merchant_id`, `status`, `subtotal`, `discount_amount`, `total_amount`, `payment_method`, `shipping_address` JSONB, `coupon_code`, `notes`) | **INSERT** (order placement), SELECT (confirmation page) |
 | `order_items` | Store line items per order with unit/total price locked at creation (immutable snapshot per BR-CHECK-015) | **INSERT** (order placement), SELECT (confirmation page) |
 | `order_status_history` | Append-only, chronological status-change audit trail per order | **INSERT** (initial `placed` status on order placement) |
-| `inventory_transactions` | Append-only stock-decrement records on order creation | **INSERT** (stock decrement records) |
+| `inventory_transactions` | No rows written by checkout order placement (not used) | — |
 | `products` | Product catalog with `stock_quantity`, `unit_price` | SELECT (stock validation, price lookup), **UPDATE** (atomic stock decrement, BR-CHECK-011) |
 | `promotions` | Coupon/promotion codes with `discount_type`, `discount_value`, `min_order_amount`, `max_uses`, `used_count`, `expires_at` | SELECT (coupon validation), **UPDATE** (atomic `used_count` increment on successful order, BR-COUPON-009) |
 | `cart_items` | Buyer's shopping cart line items | SELECT (load cart for checkout), **DELETE** (clear cart after successful order, BR-CHECK-012) |
