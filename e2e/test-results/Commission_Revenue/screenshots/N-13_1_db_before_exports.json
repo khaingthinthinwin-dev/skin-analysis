@@ -1,0 +1,201 @@
+{
+  "capturedAt": "2026-10-22T03:49:16.641Z",
+  "description": "Database before the three exports — baseline for the read-only export check",
+  "results": [
+    {
+      "label": "commission_settings",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "2223cfdd-b55e-485d-a16c-da0b663af67e",
+          "commission_rate": "15.00",
+          "updated_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "updated_at": "2026-10-21T21:19:03.063Z",
+          "created_at": "2026-09-11T00:32:41.133Z"
+        }
+      ]
+    },
+    {
+      "label": "commission_rate_history",
+      "rowCount": 5,
+      "rows": [
+        {
+          "id": "2f418ca0-f403-499a-a1f0-9f8a07c61e47",
+          "commission_rate": "15.00",
+          "effective_from": "2026-10-21T21:19:03.063Z",
+          "created_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "created_at": "2026-10-21T21:19:03.068Z"
+        },
+        {
+          "id": "2a9242d6-2539-43c7-baeb-a22e6f4a4a16",
+          "commission_rate": "12.00",
+          "effective_from": "2026-10-21T21:19:02.080Z",
+          "created_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "created_at": "2026-10-21T21:19:02.087Z"
+        },
+        {
+          "id": "81c0c640-d17a-45ee-b6fb-bf7f8d80bf0b",
+          "commission_rate": "15.00",
+          "effective_from": "2026-10-21T21:18:35.373Z",
+          "created_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "created_at": "2026-10-21T21:18:35.376Z"
+        },
+        {
+          "id": "0567595a-91d9-4f3f-afae-35aa90b5372a",
+          "commission_rate": "12.50",
+          "effective_from": "2026-10-21T21:18:35.360Z",
+          "created_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "created_at": "2026-10-21T21:18:35.366Z"
+        },
+        {
+          "id": "6ac6bfa1-6d4b-4000-aefd-e1a51f402502",
+          "commission_rate": "15.00",
+          "effective_from": "2026-10-21T21:15:39.979Z",
+          "created_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "created_at": "2026-10-21T21:15:39.985Z"
+        }
+      ]
+    },
+    {
+      "label": "revenue_targets",
+      "rowCount": 2,
+      "rows": [
+        {
+          "id": "ce58734a-e43a-4256-beee-4bbcc9557fe8",
+          "target_amount": "150000.00",
+          "period": "monthly",
+          "is_active": true,
+          "created_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "updated_at": "2026-10-21T21:19:15.366Z",
+          "created_at": "2026-09-11T02:40:24.219Z"
+        },
+        {
+          "id": "875def18-81a9-48bf-9afd-f6252ef40ac8",
+          "target_amount": "200000.00",
+          "period": "quarterly",
+          "is_active": true,
+          "created_by": "6a618b45-74e3-4c8d-bc7b-890659c34c6a",
+          "updated_at": "2026-10-01T00:31:14.631Z",
+          "created_at": "2026-09-11T02:40:33.373Z"
+        }
+      ]
+    },
+    {
+      "label": "payouts",
+      "rowCount": 3,
+      "rows": [
+        {
+          "id": "770d6934-f04e-4e95-b797-40698d2b3303",
+          "shop_name": "Beauty Hub Myanmar",
+          "period_start": "2026-08-31T17:30:00.000Z",
+          "order_count": 1,
+          "total_amount": "50000.00",
+          "commission_amount": "6000.00",
+          "net_payout": "44000.00",
+          "status": "completed",
+          "processed_by": "6a618b45-74e3-4c8d-bc7b-890659c34c6a",
+          "processed_at": "2026-09-15T02:10:36.489Z",
+          "idempotency_key": "payout-770d6934-f04e-4e95-b797-40698d2b3303",
+          "created_at": "2026-09-11T00:32:41.594Z",
+          "updated_at": "2026-09-15T02:10:36.491Z"
+        },
+        {
+          "id": "1510e676-fc2a-45d3-a969-bcddaf7f8a70",
+          "shop_name": "Natural Skin Care",
+          "period_start": "2026-08-31T17:30:00.000Z",
+          "order_count": 1,
+          "total_amount": "43000.00",
+          "commission_amount": "5160.00",
+          "net_payout": "37840.00",
+          "status": "completed",
+          "processed_by": "6a618b45-74e3-4c8d-bc7b-890659c34c6a",
+          "processed_at": "2026-09-14T03:09:53.395Z",
+          "idempotency_key": "payout-2026-09-14-7d4f9caf-80b2-4d19-8c5c-5163eb229d15",
+          "created_at": "2026-09-11T00:32:41.592Z",
+          "updated_at": "2026-09-14T03:09:53.395Z"
+        },
+        {
+          "id": "4bd719a6-7828-4a6a-b791-f6533932611e",
+          "shop_name": "Glow Beauty Shop",
+          "period_start": "2026-08-31T17:30:00.000Z",
+          "order_count": 1,
+          "total_amount": "40000.00",
+          "commission_amount": "4800.00",
+          "net_payout": "35200.00",
+          "status": "completed",
+          "processed_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "processed_at": "2026-09-11T00:32:41.586Z",
+          "idempotency_key": "seed-payout-ORD-0000069",
+          "created_at": "2026-09-11T00:32:41.588Z",
+          "updated_at": "2026-09-11T00:32:41.588Z"
+        }
+      ]
+    },
+    {
+      "label": "payout_items",
+      "rowCount": 3,
+      "rows": [
+        {
+          "id": "52857c9a-d21b-4674-8b99-df3ba95b6dd0",
+          "payout_id": "4bd719a6-7828-4a6a-b791-f6533932611e",
+          "order_id": "bbdb8a2e-20c8-430d-97be-ca700f8e4f68",
+          "order_amount": "40000.00",
+          "commission_amount": "4800.00",
+          "created_at": "2026-10-02T02:36:06.062Z"
+        },
+        {
+          "id": "a87dec31-99ff-4940-a25a-b8c8e5ed7076",
+          "payout_id": "1510e676-fc2a-45d3-a969-bcddaf7f8a70",
+          "order_id": "c759e5e5-cf86-49e3-a061-f85033152b9b",
+          "order_amount": "43000.00",
+          "commission_amount": "5160.00",
+          "created_at": "2026-10-02T02:36:06.062Z"
+        },
+        {
+          "id": "575c6a7f-771b-4707-b662-7daf3eebcdd9",
+          "payout_id": "770d6934-f04e-4e95-b797-40698d2b3303",
+          "order_id": "4e8c3a59-4508-466e-b9dd-4c20c27f5ef6",
+          "order_amount": "50000.00",
+          "commission_amount": "6000.00",
+          "created_at": "2026-10-02T02:36:06.062Z"
+        }
+      ]
+    },
+    {
+      "label": "table fingerprints (row count + MD5)",
+      "rowCount": 6,
+      "rows": [
+        {
+          "table_name": "commission_settings",
+          "row_count": 1,
+          "fingerprint": "bf6a7924c6b41a2e575806b3a059a6dd"
+        },
+        {
+          "table_name": "commission_rate_history",
+          "row_count": 175,
+          "fingerprint": "34b0829afeb736419ea70972ca9084ee"
+        },
+        {
+          "table_name": "revenue_targets",
+          "row_count": 2,
+          "fingerprint": "3a9c5c7316ab94e6103a5303d83b9a43"
+        },
+        {
+          "table_name": "payouts",
+          "row_count": 3,
+          "fingerprint": "934b56a3a46701acb494579d2c571649"
+        },
+        {
+          "table_name": "payout_items",
+          "row_count": 3,
+          "fingerprint": "dadc962ca08bcb9cebd602df629d8c10"
+        },
+        {
+          "table_name": "audit_logs",
+          "row_count": 519,
+          "fingerprint": "ea912b2620f08cd73cb79fbe10e1fca0"
+        }
+      ]
+    }
+  ]
+}

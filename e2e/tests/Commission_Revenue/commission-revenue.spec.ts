@@ -5,6 +5,16 @@ import { adminHeaders, loginApi } from '../../utils/api-auth';
 import { API_BASE_URL } from '../../utils/constants';
 import pclMap from '../../pcl-map/Commission_Revenue.json';
 import { captureScreenshot } from '../../utils/screenshot';
+import {
+  captureDbEvidenceCommissionAndRevenue,
+  captureDbEvidenceCommissionRate,
+  captureDbEvidenceExportAudit,
+  captureDbEvidenceFingerprint,
+  captureDbEvidencePayout,
+  captureDbEvidenceRevenueTarget,
+  runDb,
+} from '../../utils/db-evidence';
+import * as fs from 'fs';
 
 let commissionPage: CommissionRevenuePage;
 let adminAuth: Record<string, string>;
@@ -19,6 +29,22 @@ type ApiCallEvidence = {
 };
 let apiCalls: ApiCallEvidence[] = [];
 let apiCaptureTasks: Promise<void>[] = [];
+/** Rate saved before N-02 changes it — restored once the evidence is captured. */
+
+/**
+ * The database-evidence scenarios capture their own before/after artifacts, so the
+ * shared afterEach must not overwrite the "final state" shots of the UI scenarios.
+ */
+const DB_EVIDENCE_TESTS = new Set([
+  "N-01: navigates from the admin dashboard to the Commission tab and proves the screen is read-only in the database",
+  "N-02: updates the commission rate and proves the commission rows changed in the database",
+  "N-08: processes a pending payout and proves the payout row changed in the database",
+  "N-09 and N-11: saves a revenue target and proves the target row changed in the database",
+  "N-13 to N-15: exports the three reports and proves only the audit log changed in the database",
+  "N-28: deletes an eligible payout row and proves the row was removed from the database",
+  "N-31: locks the historical commission rate and proves the rate history grew in the database",
+]);
+let rateToRestore: string | undefined;
 
 const test = baseTest.extend({
   request: async ({ request }, use) => {
@@ -75,7 +101,10 @@ test.beforeEach(async ({ page, request }) => {
   commissionPage = new CommissionRevenuePage(page);
 });
 
-test.afterEach(async ({}, testInfo) => {
+test.afterEach(async ({ request }, testInfo) => {
+  // The database-evidence scenarios capture their own before/after artifacts, so the
+  // shared afterEach must not touch them.
+  if (DB_EVIDENCE_TESTS.has(testInfo.title)) return;
   if (!evidencePage) return;
   await Promise.all(apiCaptureTasks);
 
@@ -143,6 +172,7 @@ test.afterEach(async ({}, testInfo) => {
         `API request and response evidence for ${testInfo.title}`,
       );
     }
+    await restoreCommissionRate(request);
     return;
   }
 
@@ -153,7 +183,24 @@ test.afterEach(async ({}, testInfo) => {
       `Final UI state for ${testInfo.title}`,
     );
   }
+
+  // N-02 changes the platform rate to capture the evidence. Restore the saved rate
+  // afterwards so the database is left exactly as it was found and the next run
+  // always starts from the same baseline.
+  await restoreCommissionRate(request);
 });
+
+/** Puts the platform commission rate back to the value saved before N-02 ran. */
+async function restoreCommissionRate(request: APIRequestContext): Promise<void> {
+  if (!rateToRestore) return;
+  const rate = rateToRestore;
+  rateToRestore = undefined;
+  const response = await request.patch(`${API_BASE_URL}/admin/commission`, {
+    headers: adminAuth,
+    data: { rate },
+  });
+  expect([200, 201]).toContain(response.status());
+}
 
 async function recordPageApiCall(response: Response): Promise<void> {
   const request = response.request();
@@ -500,14 +547,19 @@ test.describe('Commission & Revenue - Normal Scenarios', () => {
       await commissionPage.capture('N-01_1_commission_tab');
     });
 
-    test('N-02: updates the commission rate successfully', async ({ page }) => {
+    test('N-02: updates the commission rate successfully', async ({ page, request }) => {
+      // Remember the saved rate so the suite can restore it after the evidence is
+      // captured (the database must be left exactly as it was found).
+      const current = await request.get(API_BASE_URL + '/admin/commission', { headers: adminAuth });
+      rateToRestore = (await current.json()).data.rate as string;
+
       await commissionPage.goto();
       await page.getByRole('button', { name: 'Edit Rate' }).click();
 
       const dialog = page.getByRole('dialog');
       const rateInput = dialog.getByLabel('Commission rate');
       await expect(rateInput).toHaveValue(/\d/); // dialog opens pre-filled with the saved rate
-      await rateInput.fill('15.00');
+      await rateInput.fill('12');
       const update = page.waitForResponse((response) =>
         response.url().includes('/admin/commission') &&
         response.request().method() === 'PATCH'
@@ -517,7 +569,7 @@ test.describe('Commission & Revenue - Normal Scenarios', () => {
 
       await expect(dialog).toBeHidden();
       await expect(page.getByText('Commission rate updated')).toBeVisible();
-      await expect(page.locator('div.text-3xl.font-extrabold')).toHaveText('15%');
+      await expect(page.locator('div.text-3xl.font-extrabold')).toHaveText('12%');
       await commissionPage.capture('N-02_1_rate_updated');
     });
 
@@ -2186,4 +2238,727 @@ test.describe('Commission & Revenue - API Contracts', () => {
     expect(buyerResponse.status()).toBe(403);
     expect(merchantResponse.status()).toBe(403);
   });
+});
+
+const ADMIN = { email: 'pet@gmail.com', password: 'Cosmetics@123' };
+
+/** Rate used by the N-02 / N-31 write scenarios (whole number, distinct from the saved rate). */
+const PROBE_RATE = '12';
+/** Target amount used by the N-09 / N-11 write scenario. */
+const PROBE_TARGET = '123456.78';
+
+type DbCapture = { pngPath: string; jsonPath: string };
+type DbRow = Record<string, unknown>;
+
+/** Reads the rows of one labelled query out of a captured DB evidence JSON file. */
+function rowsOf(capture: DbCapture, label: string): DbRow[] {
+  const payload = JSON.parse(fs.readFileSync(capture.jsonPath, 'utf-8'));
+  const found = (payload.results as Array<{ label: string; rows: DbRow[] }>).find(
+    (result) => result.label === label,
+  );
+  if (!found) {
+    throw new Error(`DB evidence label "${label}" not found in ${capture.jsonPath}`);
+  }
+  return found.rows;
+}
+
+/** Turns the fingerprint query into a table → { row_count, fingerprint } map. */
+function fingerprintMap(capture: DbCapture, label = 'table fingerprints (row count + MD5)') {
+  const map = new Map<string, { row_count: number; fingerprint: string }>();
+  for (const row of rowsOf(capture, label)) {
+    map.set(String(row.table_name), {
+      row_count: Number(row.row_count),
+      fingerprint: String(row.fingerprint),
+    });
+  }
+  return map;
+}
+
+async function fetchDbRate(): Promise<string> {
+  return runDb(async (client) => {
+    const result = await client.query(
+      'SELECT commission_rate FROM commission_settings ORDER BY updated_at DESC LIMIT 1',
+    );
+    return String(result.rows[0]?.commission_rate ?? '');
+  });
+}
+
+async function fetchDbTarget(period: string): Promise<DbRow | undefined> {
+  return runDb(async (client) => {
+    const result = await client.query(
+      'SELECT id, target_amount, period, is_active, updated_at FROM revenue_targets WHERE period = $1',
+      [period],
+    );
+    return result.rows[0] as DbRow | undefined;
+  });
+}
+
+/** Seeds a payout fixture (the backend never creates payouts at runtime — they are seeded). */
+async function seedPayoutFixture(fixture: {
+  id: string;
+  idempotencyKey: string;
+  status: 'pending' | 'completed';
+  periodStart: string;
+  periodEnd: string;
+  createdAt: string;
+  totalAmount: string;
+  commissionAmount: string;
+  netAmount: string;
+}): Promise<void> {
+  await runDb(async (client) => {
+    await client.query(
+      `INSERT INTO payouts (id, merchant_id, period_start, period_end, order_count,
+         total_amount, commission_amount, net_payout, status, idempotency_key, created_at, updated_at)
+       VALUES ($1,
+         (SELECT id FROM merchants ORDER BY created_at ASC LIMIT 1),
+         $2, $3, 1, $4, $5, $6, $7, $8, $9, $9)`,
+      [
+        fixture.id,
+        fixture.periodStart,
+        fixture.periodEnd,
+        fixture.totalAmount,
+        fixture.commissionAmount,
+        fixture.netAmount,
+        fixture.status,
+        fixture.idempotencyKey,
+        fixture.createdAt,
+      ],
+    );
+  });
+}
+
+async function deletePayoutFixture(id: string): Promise<void> {
+  await runDb(async (client) => {
+    await client.query('DELETE FROM payouts WHERE id = $1', [id]);
+  });
+}
+
+const PENDING_PAYOUT_ID = 'e2e00000-0000-4000-8000-0000000000a1';
+const OLD_PAYOUT_ID = 'e2e00000-0000-4000-8000-0000000000b2';
+
+test.describe('Commission & Revenue — live navigation + database evidence', () => {
+  let commissionPage: CommissionRevenuePage;
+
+  test.beforeEach(async ({ page }) => {
+    commissionPage = new CommissionRevenuePage(page);
+  });
+
+  test.describe('navigation walk-through', () => {
+    // The admin signs in through the real login form — a dedicated context is used
+    // because the shared `page` already carries an injected admin token.
+    test('N-01: navigates from the admin dashboard to the Commission tab and proves the screen is read-only in the database', async ({ browser }) => {
+      const context = await browser.newContext();
+      const navPage = await context.newPage();
+      await navPage.route(/fonts\.(googleapis|gstatic)\.com/, (route) => route.abort());
+      const nav = new CommissionRevenuePage(navPage);
+
+      // ---- Step 1: the login form ------------------------------------------------
+      await navPage.goto('/login');
+      await navPage.waitForLoadState('networkidle');
+      await expect(navPage.getByPlaceholder('user@example.com')).toBeVisible();
+      await captureScreenshot(navPage, 'N-01_1_login_form');
+
+      // ---- Step 2: sign in and land on the admin dashboard ------------------------
+      await navPage.getByPlaceholder('user@example.com').fill(ADMIN.email);
+      await navPage.getByPlaceholder('Enter your password').fill(ADMIN.password);
+      await navPage.locator('button[type="submit"]').click();
+      await navPage.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30_000 });
+      await expect(navPage).toHaveURL(/\/admin(\?.*)?$/);
+      await expect(navPage.getByRole('link', { name: /view revenue/i })).toBeVisible();
+      await captureScreenshot(navPage, 'N-01_2_nav_admin_dashboard');
+
+      // ---- Step 3: open the screen from the admin dashboard card -------------------
+      await navPage.getByRole('link', { name: /view revenue/i }).click();
+      await navPage.waitForURL('**/admin/commission-revenue');
+      await expect(navPage.getByRole('heading', { name: 'Commission & Revenue' })).toBeVisible();
+      await expect(nav.commissionTab).toHaveAttribute('data-state', 'active');
+      await expect(navPage.getByRole('button', { name: 'Edit Rate' })).toBeVisible();
+      await expect(navPage.locator('div.text-3xl.font-extrabold')).toContainText('%');
+      await expect(navPage.getByRole('table')).toBeVisible();
+      await captureScreenshot(navPage, 'N-01_3_nav_commission_tab');
+
+      // ---- Step 4: database snapshot BEFORE any interaction ------------------------
+      const dbBefore = await captureDbEvidenceCommissionAndRevenue(
+        navPage,
+        'N-01_4_db_before_commission_state',
+        'Database state before the Commission tab is used — Commission & Revenue read-only baseline',
+      );
+      const fingerprintBefore = fingerprintMap(dbBefore);
+
+      // ---- Step 5: use both tabs (filter, paginate, switch) without writing --------
+      await nav.revenueTab.click();
+      await expect(navPage.getByText('Revenue Target', { exact: true })).toBeVisible();
+      await expect(navPage.getByText('Merchant Payouts', { exact: true })).toBeVisible();
+      await expect(navPage.locator('[class*="xl:grid-cols-3"] .text-2xl')).toHaveCount(6);
+      await captureScreenshot(navPage, 'N-01_5_ui_revenue_tab');
+
+      await nav.commissionTab.click();
+      await expect(navPage.getByRole('table')).toBeVisible();
+      const rows = navPage.getByRole('table').getByRole('row');
+      const rowCountBefore = await rows.count();
+      await navPage.getByRole('button', { name: 'Reset' }).click();
+      await expect(rows).toHaveCount(rowCountBefore);
+      await captureScreenshot(navPage, 'N-01_6_ui_commission_tab_after_interaction');
+
+      // ---- Step 6: in-app navigation via the sidebar entry ------------------------
+      await navPage.getByRole('link', { name: 'Commission & Revenue' }).first().click();
+      await navPage.waitForURL('**/admin/commission-revenue');
+      await expect(nav.commissionTab).toHaveAttribute('data-state', 'active');
+      await captureScreenshot(navPage, 'N-01_7_nav_sidebar_entry');
+
+      // ---- Step 7: database snapshot AFTER — nothing may have changed --------------
+      const dbAfter = await captureDbEvidenceCommissionAndRevenue(
+        navPage,
+        'N-01_8_db_after_commission_state',
+        'Database state after using both tabs — no table was modified (identical fingerprints)',
+      );
+      const fingerprintAfter = fingerprintMap(dbAfter);
+
+      expect([...fingerprintAfter.keys()].sort()).toEqual([...fingerprintBefore.keys()].sort());
+      for (const [table, before] of fingerprintBefore) {
+        const after = fingerprintAfter.get(table)!;
+        expect(
+          { table, ...after },
+          `Table ${table} must stay untouched on a read-only screen`,
+        ).toEqual({ table, ...before });
+      }
+
+      await context.close();
+    });
+  });
+
+  test.describe('database write evidence', () => {
+    // These scenarios sign in through the API and inject the token, so the page
+    // starts already authenticated and every request reaches the live backend.
+    test.beforeEach(async ({ page, request }) => {
+      const auth = await adminHeaders(request);
+      const token = auth.Authorization.replace(/^Bearer\s+/, '');
+      await page.addInitScript((accessToken) => {
+        localStorage.setItem('accessToken', accessToken);
+      }, token);
+    });
+
+    test('N-02: updates the commission rate and proves the commission rows changed in the database', async ({ page, request }) => {
+      const originalRate = await fetchDbRate();
+      expect(originalRate).not.toBe('');
+
+      // ---- Step 1: the rate card before the edit -----------------------------------
+      await commissionPage.goto();
+      await expect(commissionPage.commissionTab).toHaveAttribute('data-state', 'active');
+      await expect(page.locator('div.text-3xl.font-extrabold')).toContainText('%');
+      await captureScreenshot(page, 'N-02_1_ui_rate_card_before');
+
+      // ---- Step 2: database snapshot BEFORE ----------------------------------------
+      const dbBefore = await captureDbEvidenceCommissionRate(
+        page,
+        'N-02_2_db_before_rate_update',
+        'Database before the commission rate is edited (settings + rate history + audit trail)',
+      );
+      const historyBefore = rowsOf(dbBefore, 'commission_rate_history (newest first)');
+      const historyCountBefore = await runDb(async (client) => {
+        const result = await client.query('SELECT COUNT(*)::int AS n FROM commission_rate_history');
+        return Number(result.rows[0].n);
+      });
+
+      // ---- Step 3: open the dialog — it must be pre-filled with the saved rate -----
+      await page.getByRole('button', { name: 'Edit Rate' }).click();
+      const dialog = page.getByRole('dialog');
+      const rateInput = dialog.getByLabel('Commission rate');
+      await expect(rateInput).toHaveValue(String(Number(originalRate)));
+      await captureScreenshot(page, 'N-02_3_ui_edit_rate_dialog');
+
+      // ---- Step 4: type the new rate into the input (before saving) ----------------
+      await rateInput.fill(PROBE_RATE);
+      await expect(rateInput).toHaveValue(PROBE_RATE);
+      await captureScreenshot(page, 'N-02_4_ui_rate_input_filled');
+
+      // ---- Step 5: save the new rate ------------------------------------------------
+      const update = page.waitForResponse(
+        (response) =>
+          response.url().includes('/admin/commission') &&
+          response.request().method() === 'PATCH',
+      );
+      await dialog.getByRole('button', { name: 'Save' }).click();
+      expect((await update).status()).toBe(200);
+      await expect(dialog).toBeHidden();
+      await expect(page.getByText('Commission rate updated')).toBeVisible();
+      await expect(page.locator('div.text-3xl.font-extrabold')).toHaveText(`${Number(PROBE_RATE)}%`);
+      await captureScreenshot(page, 'N-02_5_ui_rate_updated');
+
+      // ---- Step 6: database snapshot AFTER — the rows MUST have changed ------------
+      const dbAfter = await captureDbEvidenceCommissionRate(
+        page,
+        'N-02_6_db_after_rate_update',
+        'Database after the commission rate is saved — settings row, new rate-history row and audit entry',
+      );
+      const settingsRows = rowsOf(dbAfter, 'commission_settings (current rate)');
+      expect(settingsRows).toHaveLength(1);
+      expect(Number(settingsRows[0].commission_rate)).toBe(Number(PROBE_RATE));
+
+      const historyAfter = rowsOf(dbAfter, 'commission_rate_history (newest first)');
+      expect(Number(historyAfter[0].commission_rate)).toBe(Number(PROBE_RATE));
+      expect(historyAfter[0].id).not.toBe(historyBefore[0]?.id); // a NEW history row was appended
+      const historyCountAfter = await runDb(async (client) => {
+        const result = await client.query('SELECT COUNT(*)::int AS n FROM commission_rate_history');
+        return Number(result.rows[0].n);
+      });
+      expect(historyCountAfter).toBe(historyCountBefore + 1);
+
+      const rateAudit = rowsOf(dbAfter, 'audit_logs — COMMISSION_RATE_UPDATED');
+      expect(rateAudit.length).toBeGreaterThan(0);
+      expect(Number((rateAudit[0].new_value as DbRow).rate)).toBe(Number(PROBE_RATE));
+      expect(rateAudit[0].action).toBe('COMMISSION_RATE_UPDATED');
+
+      // ---- Step 7: restore the original rate so the environment stays as found ----
+      const auth = await adminHeaders(request);
+      const restored = await request.patch(`${API_BASE_URL}/admin/commission`, {
+        headers: auth,
+        data: { rate: originalRate },
+      });
+      expect(restored.status()).toBe(200);
+      const dbRestored = await captureDbEvidenceCommissionRate(
+        page,
+        'N-02_7_db_after_rate_restored',
+        'Database after the original commission rate is restored — the environment is back to its baseline',
+      );
+      expect(
+        Number(rowsOf(dbRestored, 'commission_settings (current rate)')[0].commission_rate),
+      ).toBe(Number(originalRate));
+
+      // Reload so the card shows the restored rate again.
+      await page.reload();
+      await expect(page.locator('div.text-3xl.font-extrabold')).toHaveText(`${Number(originalRate)}%`);
+      await captureScreenshot(page, 'N-02_8_ui_rate_restored');
+    });
+
+    test('N-08: processes a pending payout and proves the payout row changed in the database', async ({ page }) => {
+      // The backend never creates payouts at runtime — seed a pending fixture first.
+      await seedPayoutFixture({
+        id: PENDING_PAYOUT_ID,
+        idempotencyKey: 'e2e-db-evidence-pending-payout',
+        status: 'pending',
+        periodStart: '2026-10-20 00:00:00',
+        periodEnd: '2026-10-20 23:59:59.999',
+        createdAt: '2026-10-20 09:00:00',
+        totalAmount: '50000.00',
+        commissionAmount: '6250.00',
+        netAmount: '43750.00',
+      });
+
+      try {
+        // ---- Step 1: the payout row in the UI before processing --------------------
+        await commissionPage.goto();
+        await commissionPage.revenueTab.click();
+        const fixtureRow = page.getByRole('row').filter({ hasText: 'Oct 2026' }).first();
+        await expect(fixtureRow).toBeVisible();
+        await expect(fixtureRow).toContainText('Pending');
+        await captureScreenshot(page, 'N-08_1_ui_payouts_before');
+
+        // ---- Step 2: database snapshot BEFORE ---------------------------------------
+        const dbBefore = await captureDbEvidencePayout(
+          page,
+          'N-08_2_db_before_payout_process',
+          'Database before the payout is processed — the fixture row is still pending',
+        );
+        const payoutBefore = rowsOf(dbBefore, 'payouts (newest period first)').find(
+          (row) => row.id === PENDING_PAYOUT_ID,
+        );
+        expect(payoutBefore).toBeDefined();
+        expect(payoutBefore!.status).toBe('pending');
+        expect(payoutBefore!.processed_at).toBeNull();
+
+        // ---- Step 3: the confirmation dialog ----------------------------------------
+        const processButton = fixtureRow.getByRole('button', { name: 'Process', exact: true });
+        await expect(processButton).toBeEnabled();
+        await processButton.click();
+        const confirmDialog = page.getByRole('dialog');
+        await expect(confirmDialog.getByRole('heading', { name: /process payout for/i })).toBeVisible();
+        await expect(confirmDialog.getByText('Total Amount', { exact: true })).toBeVisible();
+        await expect(confirmDialog.getByText(/commission fee/i)).toBeVisible();
+        await expect(confirmDialog.getByText('Net Payout', { exact: true })).toBeVisible();
+        await captureScreenshot(page, 'N-08_3_ui_process_dialog');
+
+        // ---- Step 4: confirm --------------------------------------------------------
+        const processed = page.waitForResponse(
+          (response) =>
+            response.url().includes('/process') && response.request().method() === 'POST',
+        );
+        await confirmDialog.getByRole('button', { name: 'Confirm' }).click();
+        // The live controller is a plain @Post, so NestJS answers 201 (the PCL text
+        // documents 200 — only the mocked I-13 test ever saw 200).
+        expect((await processed).status()).toBe(201);
+        await expect(page.getByText('Payout processed')).toBeVisible();
+        await captureScreenshot(page, 'N-08_4_ui_payout_processed');
+
+        // ---- Step 5: database snapshot AFTER — the row MUST have changed ------------
+        const dbAfter = await captureDbEvidencePayout(
+          page,
+          'N-08_5_db_after_payout_process',
+          'Database after the payout is processed — status, processed_at, idempotency key and audit entry',
+        );
+        const payoutAfter = rowsOf(dbAfter, 'payouts (newest period first)').find(
+          (row) => row.id === PENDING_PAYOUT_ID,
+        );
+        expect(payoutAfter).toBeDefined();
+        expect(payoutAfter!.status).toBe('completed');
+        expect(payoutAfter!.processed_at).not.toBeNull();
+        expect(payoutAfter!.processed_by).not.toBeNull();
+        expect(payoutAfter!.idempotency_key).toBe(`payout-${PENDING_PAYOUT_ID}`);
+
+        const payoutAudit = rowsOf(dbAfter, 'audit_logs — payout events');
+        const processedAudit = payoutAudit.find((row) => row.action === 'PAYOUT_PROCESSED');
+        expect(processedAudit).toBeDefined();
+        expect(processedAudit!.entity_id).toBe(PENDING_PAYOUT_ID);
+      } finally {
+        // ---- Step 6: remove the fixture so the database is left as found ------------
+        await deletePayoutFixture(PENDING_PAYOUT_ID);
+        await captureDbEvidencePayout(
+          page,
+          'N-08_6_db_after_payout_fixture_cleanup',
+          'Database after the seeded payout fixture is removed — the environment is back to its baseline',
+        );
+      }
+    });
+
+    test('N-09 and N-11: saves a revenue target and proves the target row changed in the database', async ({ page, request }) => {
+      const originalTarget = await fetchDbTarget('monthly');
+      expect(originalTarget).toBeDefined();
+
+      // ---- Step 1: the target card before the save ---------------------------------
+      await commissionPage.goto();
+      await commissionPage.revenueTab.click();
+      await expect(page.getByText('Revenue Target', { exact: true })).toBeVisible();
+      await expect(page.getByText('Target Amount', { exact: true })).toBeVisible();
+      await captureScreenshot(page, 'N-09_1_ui_target_before');
+
+      // ---- Step 2: database snapshot BEFORE ----------------------------------------
+      const dbBefore = await captureDbEvidenceRevenueTarget(
+        page,
+        'N-09_2_db_before_target_save',
+        'Database before the revenue target is saved (all periods + audit trail)',
+      );
+      const quarterlyBefore = rowsOf(dbBefore, 'revenue_targets (all periods)').find(
+        (row) => row.period === 'quarterly',
+      );
+
+      // ---- Step 3: save a new monthly target --------------------------------------
+      await page.getByRole('button', { name: /Set Target|Edit Target/i }).click();
+      const dialog = page.getByRole('dialog');
+      await dialog.locator('#target-amount').fill(PROBE_TARGET);
+      await dialog.getByRole('button', { name: 'Monthly' }).click();
+      const save = page.waitForResponse(
+        (response) =>
+          response.url().includes('/admin/revenue/targets') &&
+          response.request().method() === 'PUT',
+      );
+      await dialog.getByRole('button', { name: 'Save Target' }).click();
+      expect((await save).status()).toBe(200);
+      await expect(page.getByText('Revenue target updated')).toBeVisible();
+      await expect(page.getByText('Target Amount', { exact: true })).toBeVisible();
+      await captureScreenshot(page, 'N-09_3_ui_target_saved');
+
+      // ---- Step 4: database snapshot AFTER — the row MUST have changed --------------
+      const dbAfter = await captureDbEvidenceRevenueTarget(
+        page,
+        'N-09_4_db_after_target_save',
+        'Database after the revenue target is saved — the monthly row is updated and audited',
+      );
+      const monthlyAfter = rowsOf(dbAfter, 'revenue_targets (all periods)').find(
+        (row) => row.period === 'monthly',
+      );
+      expect(monthlyAfter).toBeDefined();
+      expect(Number(monthlyAfter!.target_amount)).toBe(Number(PROBE_TARGET));
+      expect(monthlyAfter!.id).toBe(originalTarget!.id); // updated in place, not re-inserted
+      expect(String(monthlyAfter!.updated_at)).not.toBe(String(originalTarget!.updated_at));
+
+      const targetAudit = rowsOf(dbAfter, 'audit_logs — TARGET_UPDATED');
+      expect(targetAudit.length).toBeGreaterThan(0);
+      expect(Number((targetAudit[0].new_value as DbRow).targetAmount)).toBe(Number(PROBE_TARGET));
+      expect((targetAudit[0].new_value as DbRow).period).toBe('monthly');
+
+      // ---- Step 5 (N-11): toggle the period — the other row must NOT change --------
+      const quarterlyRequest = page.waitForResponse(
+        (response) =>
+          response.url().includes('/admin/revenue/target') &&
+          response.url().includes('period=quarterly'),
+      );
+      await page.getByRole('button', { name: 'Quarterly', exact: true }).click();
+      await quarterlyRequest;
+      await captureScreenshot(page, 'N-11_1_ui_target_quarterly');
+
+      const dbQuarterly = await captureDbEvidenceRevenueTarget(
+        page,
+        'N-11_2_db_after_target_period_toggle',
+        'Database after switching the target period — only the monthly row was written, quarterly is untouched',
+      );
+      const quarterlyAfter = rowsOf(dbQuarterly, 'revenue_targets (all periods)').find(
+        (row) => row.period === 'quarterly',
+      );
+      expect(quarterlyAfter).toEqual(quarterlyBefore);
+
+      // ---- Step 6: restore the original target so the environment stays as found ----
+      const auth = await adminHeaders(request);
+      const restored = await request.put(`${API_BASE_URL}/admin/revenue/targets`, {
+        headers: auth,
+        data: { targetAmount: String(originalTarget!.target_amount), targetPeriod: 'monthly' },
+      });
+      expect(restored.status()).toBe(200);
+      const dbRestored = await captureDbEvidenceRevenueTarget(
+        page,
+        'N-09_5_db_after_target_restored',
+        'Database after the original revenue target is restored — the environment is back to its baseline',
+      );
+      expect(
+        Number(
+          rowsOf(dbRestored, 'revenue_targets (all periods)').find(
+            (row) => row.period === 'monthly',
+          )!.target_amount,
+        ),
+      ).toBe(Number(originalTarget!.target_amount));
+    });
+
+    test('N-13 to N-15: exports the three reports and proves only the audit log changed in the database', async ({ page }) => {
+      // ---- Step 1: database snapshot BEFORE the exports -----------------------------
+      const dbBefore = await captureDbEvidenceCommissionAndRevenue(
+        page,
+        'N-13_1_db_before_exports',
+        'Database before the three exports — baseline for the read-only export check',
+      );
+      const fingerprintBefore = fingerprintMap(dbBefore);
+
+      // ---- Step 2: commission report export (CSV) -----------------------------------
+      await commissionPage.goto();
+      await page.getByRole('button', { name: 'Export', exact: true }).click();
+      const exportDialog = page.getByRole('dialog');
+      const dates = exportDialog.locator('input[type="date"]');
+      await dates.nth(0).fill('2026-08-01');
+      await dates.nth(1).fill('2026-08-15');
+      await exportDialog.getByRole('button', { name: 'CSV', exact: true }).click();
+      const commissionDownload = page.waitForEvent('download');
+      await exportDialog.getByRole('button', { name: 'Generate' }).click();
+      expect((await commissionDownload).suggestedFilename().toLowerCase()).toContain('commission');
+      await captureScreenshot(page, 'N-13_2_ui_export_commission');
+
+      // ---- Step 3: revenue report export (XLSX) -------------------------------------
+      await commissionPage.revenueTab.click();
+      await page.getByRole('button', { name: 'Export Revenue' }).click();
+      const revenueDialog = page.getByRole('dialog');
+      const revenueDates = revenueDialog.locator('input[type="date"]');
+      await revenueDates.nth(0).fill('2026-08-01');
+      await revenueDates.nth(1).fill('2026-08-15');
+      await revenueDialog.getByRole('button', { name: 'Excel', exact: true }).click();
+      const revenueDownload = page.waitForEvent('download');
+      await revenueDialog.getByRole('button', { name: 'Generate' }).click();
+      expect((await revenueDownload).suggestedFilename().toLowerCase()).toContain('revenue');
+      await captureScreenshot(page, 'N-14_1_ui_export_revenue');
+
+      // ---- Step 4: payout report export (CSV) --------------------------------------
+      await page.getByRole('button', { name: 'Export Payout' }).click();
+      const payoutDialog = page.getByRole('dialog');
+      const payoutDates = payoutDialog.locator('input[type="date"]');
+      await payoutDates.nth(0).fill('2026-08-01');
+      await payoutDates.nth(1).fill('2026-08-31');
+      await payoutDialog.getByRole('button', { name: 'CSV', exact: true }).click();
+      const payoutDownload = page.waitForEvent('download');
+      await payoutDialog.getByRole('button', { name: 'Generate' }).click();
+      expect((await payoutDownload).suggestedFilename().toLowerCase()).toContain('payout');
+      await captureScreenshot(page, 'N-15_1_ui_export_payout');
+
+      // ---- Step 5: database snapshot AFTER — only audit_logs may differ -------------
+      const dbAfter = await captureDbEvidenceExportAudit(
+        page,
+        'N-15_2_db_after_exports',
+        'Database after the three exports — an EXPORT_GENERATED audit row per export, no business row changed',
+      );
+      const exportAudit = rowsOf(dbAfter, 'audit_logs — EXPORT_GENERATED');
+      expect(exportAudit.length).toBeGreaterThanOrEqual(3);
+      const reportTypes = exportAudit.map(
+        (row) => (row.new_value as DbRow).reportType as string,
+      );
+      expect(reportTypes).toContain('commission');
+      expect(reportTypes).toContain('revenue');
+      expect(reportTypes).toContain('payout');
+
+      const fingerprintAfter = fingerprintMap(
+        await captureDbEvidenceFingerprint(
+          page,
+          'N-15_3_db_fingerprint_after_exports',
+          'Table fingerprints after the three exports — every business table is unchanged',
+        ),
+      );
+      for (const table of ['commission_settings', 'revenue_targets', 'payouts', 'payout_items']) {
+        expect(
+          fingerprintAfter.get(table),
+          `Table ${table} must not change when a report is exported`,
+        ).toEqual(fingerprintBefore.get(table));
+      }
+      expect(
+        fingerprintAfter.get('audit_logs'),
+        'The audit log MUST record the three exports',
+      ).not.toEqual(fingerprintBefore.get('audit_logs'));
+    });
+
+    test('N-28: deletes an eligible payout row and proves the row was removed from the database', async ({ page }) => {
+      // Deletion requires a completed payout that is at least three months old.
+      await seedPayoutFixture({
+        id: OLD_PAYOUT_ID,
+        idempotencyKey: 'e2e-db-evidence-old-completed-payout',
+        status: 'completed',
+        periodStart: '2026-04-01 00:00:00',
+        periodEnd: '2026-04-30 23:59:59.999',
+        createdAt: '2026-04-30 10:00:00',
+        totalAmount: '32000.00',
+        commissionAmount: '4000.00',
+        netAmount: '28000.00',
+      });
+
+      // ---- Step 1: the payout list before the delete -------------------------------
+      await commissionPage.goto();
+      await commissionPage.revenueTab.click();
+      const fixtureRow = page.getByRole('row').filter({ hasText: 'Apr 2026' }).first();
+      await expect(fixtureRow).toBeVisible();
+      await expect(fixtureRow).toContainText('Completed');
+      await captureScreenshot(page, 'N-28_1_ui_payouts_before_delete');
+
+      // ---- Step 2: database snapshot BEFORE ----------------------------------------
+      const dbBefore = await captureDbEvidencePayout(
+        page,
+        'N-28_2_db_before_payout_delete',
+        'Database before the eligible payout is deleted — the row is still present',
+      );
+      const payoutBefore = rowsOf(dbBefore, 'payouts (newest period first)').find(
+        (row) => row.id === OLD_PAYOUT_ID,
+      );
+      expect(payoutBefore).toBeDefined();
+      expect(payoutBefore!.status).toBe('completed');
+
+      // ---- Step 3: select the row and open the confirmation dialog ----------------
+      await fixtureRow.getByRole('checkbox').check();
+      const trash = page.getByRole('button', { name: 'Delete selected payouts' });
+      await expect(trash).toBeEnabled();
+      await trash.click();
+      const confirmDialog = page.getByRole('dialog');
+      await expect(confirmDialog.getByRole('heading', { name: /delete these rows/i })).toBeVisible();
+      await captureScreenshot(page, 'N-28_3_ui_delete_confirm_dialog');
+
+      // ---- Step 4: confirm the delete ----------------------------------------------
+      const deleted = page.waitForResponse(
+        (response) =>
+          response.url().includes('/admin/revenue/payouts') &&
+          response.request().method() === 'DELETE',
+      );
+      const refetched = page.waitForResponse(
+        (response) =>
+          response.url().includes('/admin/revenue/payouts') &&
+          !response.url().includes('/merchants') &&
+          response.request().method() === 'GET',
+      );
+      await confirmDialog.getByRole('button', { name: 'Confirm delete' }).click();
+      expect((await deleted).status()).toBe(200);
+      await (await refetched).json();
+      await expect(page.getByText(/payouts? deleted/i)).toBeVisible();
+      await captureScreenshot(page, 'N-28_4_ui_payout_deleted');
+
+      // ---- Step 5: database snapshot AFTER — the row MUST be gone ------------------
+      const dbAfter = await captureDbEvidencePayout(
+        page,
+        'N-28_5_db_after_payout_delete',
+        'Database after the eligible payout is deleted — the row is gone, the PAYOUT_DELETED audit entry remains',
+      );
+      const payoutAfter = rowsOf(dbAfter, 'payouts (newest period first)').find(
+        (row) => row.id === OLD_PAYOUT_ID,
+      );
+      expect(payoutAfter).toBeUndefined();
+
+      const deleteAudit = rowsOf(dbAfter, 'audit_logs — payout events').find(
+        (row) => row.action === 'PAYOUT_DELETED',
+      );
+      expect(deleteAudit).toBeDefined();
+      expect(deleteAudit!.entity_id).toBe(OLD_PAYOUT_ID);
+    });
+
+    test('N-31: locks the historical commission rate and proves the rate history grew in the database', async ({ page, request }) => {
+      const originalRate = await fetchDbRate();
+      const auth = await adminHeaders(request);
+
+      // ---- Step 1: the report rows before the rate change --------------------------
+      const reportsBefore = await request.get(
+        `${API_BASE_URL}/admin/commission/reports?page=1&limit=20`,
+        { headers: auth },
+      );
+      const rowsBefore = ((await reportsBefore.json()).data?.reports ?? []) as DbRow[];
+      expect(rowsBefore.length).toBeGreaterThan(0);
+
+      await commissionPage.goto();
+      await captureScreenshot(page, 'N-31_1_ui_rows_before_rate_change');
+
+      const dbBefore = await captureDbEvidenceCommissionRate(
+        page,
+        'N-31_2_db_before_rate_lock',
+        'Database before the rate change — the rate history that locks existing orders',
+      );
+      const historyCountBefore = await runDb(async (client) => {
+        const result = await client.query('SELECT COUNT(*)::int AS n FROM commission_rate_history');
+        return Number(result.rows[0].n);
+      });
+
+      // ---- Step 2: change the rate through the UI ---------------------------------
+      // A whole number that differs from the saved rate, so the card shows a clean
+      // "11%" and the change is visible in the before/after evidence.
+      const newRate = String(parseFloat(originalRate) === 11 ? 12 : 11);
+      await page.getByRole('button', { name: 'Edit Rate' }).click();
+      const dialog = page.getByRole('dialog');
+      await dialog.getByLabel('Commission rate').fill(newRate);
+      const update = page.waitForResponse(
+        (response) =>
+          response.url().includes('/admin/commission') &&
+          response.request().method() === 'PATCH',
+      );
+      await dialog.getByRole('button', { name: 'Save' }).click();
+      expect((await update).status()).toBe(200);
+      await expect(page.locator('div.text-3xl.font-extrabold')).toHaveText(`${Number(newRate)}%`);
+      await captureScreenshot(page, 'N-31_3_ui_rate_changed');
+
+      // ---- Step 3: the report rows AFTER — the old rows keep their rate ------------
+      const reportsAfter = await request.get(
+        `${API_BASE_URL}/admin/commission/reports?page=1&limit=20`,
+        { headers: auth },
+      );
+      const rowsAfter = ((await reportsAfter.json()).data?.reports ?? []) as DbRow[];
+      const key = (row: DbRow) =>
+        [row.merchantId, row.orderId, row.date, row.commissionRate, row.revenue, row.commission].join(
+          '|',
+        );
+      expect(rowsAfter.map(key)).toEqual(rowsBefore.map(key));
+
+      // ---- Step 4: database snapshot AFTER — the history grew by exactly one row ---
+      const dbAfter = await captureDbEvidenceCommissionRate(
+        page,
+        'N-31_4_db_after_rate_lock',
+        'Database after the rate change — one new rate-history row; existing orders keep their historical rate',
+      );
+      const historyAfter = rowsOf(dbAfter, 'commission_rate_history (newest first)');
+      expect(Number(historyAfter[0].commission_rate)).toBe(Number(newRate));
+      const historyCountAfter = await runDb(async (client) => {
+        const result = await client.query('SELECT COUNT(*)::int AS n FROM commission_rate_history');
+        return Number(result.rows[0].n);
+      });
+      expect(historyCountAfter).toBe(historyCountBefore + 1);
+
+      // ---- Step 5: restore the original rate ---------------------------------------
+      const restored = await request.patch(`${API_BASE_URL}/admin/commission`, {
+        headers: auth,
+        data: { rate: originalRate },
+      });
+      expect(restored.status()).toBe(200);
+      const dbRestored = await captureDbEvidenceCommissionRate(
+        page,
+        'N-31_5_db_after_rate_restored',
+        'Database after the original rate is restored — the environment is back to its baseline',
+      );
+      expect(
+        Number(rowsOf(dbRestored, 'commission_settings (current rate)')[0].commission_rate),
+      ).toBe(Number(originalRate));
+    });
+    });
 });
