@@ -588,3 +588,202 @@ export async function captureCartProductDbEvidence(
     ],
   });
 }
+
+/* ------------------------------------------------------------------------- *
+ * Commission & Revenue (Admin → Commission / Revenue)
+ * ------------------------------------------------------------------------- */
+
+export const COMMISSION_SETTINGS_SQL = `SELECT id, commission_rate, updated_by, updated_at, created_at
+FROM commission_settings
+ORDER BY updated_at DESC`;
+
+export const COMMISSION_RATE_HISTORY_SQL = `SELECT id, commission_rate, effective_from, created_by, created_at
+FROM commission_rate_history
+ORDER BY effective_from DESC
+LIMIT 5`;
+
+export const REVENUE_TARGETS_SQL = `SELECT id, target_amount, period, is_active, created_by, updated_at, created_at
+FROM revenue_targets
+ORDER BY period`;
+
+export const PAYOUTS_SQL = `SELECT p.id, m.shop_name, p.period_start, p.order_count, p.total_amount,
+       p.commission_amount, p.net_payout, p.status, p.processed_by, p.processed_at,
+       p.idempotency_key, p.created_at, p.updated_at
+FROM payouts p
+LEFT JOIN merchants m ON m.id = p.merchant_id
+ORDER BY p.period_start DESC, p.created_at DESC`;
+
+export const PAYOUT_ITEMS_SQL = `SELECT pi.id, pi.payout_id, pi.order_id, pi.order_amount,
+       pi.commission_amount, pi.created_at
+FROM payout_items pi
+ORDER BY pi.created_at DESC`;
+
+export const RATE_AUDIT_SQL = `SELECT id, user_id, action, entity_type, entity_id,
+       old_value, new_value, ip_address, created_at
+FROM audit_logs
+WHERE action = 'COMMISSION_RATE_UPDATED'
+ORDER BY created_at DESC
+LIMIT 5`;
+
+export const TARGET_AUDIT_SQL = `SELECT id, user_id, action, entity_type, entity_id,
+       old_value, new_value, ip_address, created_at
+FROM audit_logs
+WHERE action = 'TARGET_UPDATED'
+ORDER BY created_at DESC
+LIMIT 5`;
+
+export const PAYOUT_AUDIT_SQL = `SELECT id, user_id, action, entity_type, entity_id,
+       old_value, new_value, ip_address, created_at
+FROM audit_logs
+WHERE action IN ('PAYOUT_PROCESSED', 'PAYOUT_REVIEWED', 'PAYOUT_DELETED')
+ORDER BY created_at DESC
+LIMIT 5`;
+
+export const EXPORT_AUDIT_SQL = `SELECT id, user_id, action, entity_type, entity_id,
+       old_value, new_value, ip_address, created_at
+FROM audit_logs
+WHERE action = 'EXPORT_GENERATED'
+ORDER BY created_at DESC
+LIMIT 8`;
+
+/**
+ * Per-table fingerprint (row count + MD5 of the row payload).
+ * Two snapshots with the same fingerprint prove the table was NOT modified.
+ */
+export const DB_FINGERPRINT_SQL = `SELECT 'commission_settings' AS table_name,
+       COUNT(*)::int AS row_count,
+       MD5(COALESCE(STRING_AGG(id::text || '|' || commission_rate::text || '|' || updated_at::text, ',' ORDER BY id), '')) AS fingerprint
+FROM commission_settings
+UNION ALL
+SELECT 'commission_rate_history', COUNT(*)::int,
+       MD5(COALESCE(STRING_AGG(id::text || '|' || commission_rate::text || '|' || effective_from::text, ',' ORDER BY id), ''))
+FROM commission_rate_history
+UNION ALL
+SELECT 'revenue_targets', COUNT(*)::int,
+       MD5(COALESCE(STRING_AGG(id::text || '|' || target_amount::text || '|' || period || '|' || is_active::text || '|' || updated_at::text, ',' ORDER BY id), ''))
+FROM revenue_targets
+UNION ALL
+SELECT 'payouts', COUNT(*)::int,
+       MD5(COALESCE(STRING_AGG(id::text || '|' || status || '|' || total_amount::text || '|' || commission_amount::text || '|' || COALESCE(processed_at::text, '') || '|' || COALESCE(idempotency_key, ''), ',' ORDER BY id), ''))
+FROM payouts
+UNION ALL
+SELECT 'payout_items', COUNT(*)::int,
+       MD5(COALESCE(STRING_AGG(id::text || '|' || payout_id::text || '|' || order_amount::text, ',' ORDER BY id), ''))
+FROM payout_items
+UNION ALL
+SELECT 'audit_logs', COUNT(*)::int,
+       MD5(COALESCE(STRING_AGG(id::text || '|' || action, ',' ORDER BY id), ''))
+FROM audit_logs`;
+
+/** Commission settings + rate history + the matching audit trail. */
+export async function captureDbEvidenceCommissionRate(
+  page: Page,
+  stepName: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      { label: 'commission_settings (current rate)', text: COMMISSION_SETTINGS_SQL },
+      { label: 'commission_rate_history (newest first)', text: COMMISSION_RATE_HISTORY_SQL },
+      { label: 'audit_logs — COMMISSION_RATE_UPDATED', text: RATE_AUDIT_SQL },
+    ],
+  });
+}
+
+/** Revenue targets (all periods) + the matching audit trail. */
+export async function captureDbEvidenceRevenueTarget(
+  page: Page,
+  stepName: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      { label: 'revenue_targets (all periods)', text: REVENUE_TARGETS_SQL },
+      { label: 'audit_logs — TARGET_UPDATED', text: TARGET_AUDIT_SQL },
+    ],
+  });
+}
+
+/** Payout rows + their line items + the payout audit trail. */
+export async function captureDbEvidencePayout(
+  page: Page,
+  stepName: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      { label: 'payouts (newest period first)', text: PAYOUTS_SQL },
+      { label: 'payout_items', text: PAYOUT_ITEMS_SQL },
+      { label: 'audit_logs — payout events', text: PAYOUT_AUDIT_SQL },
+    ],
+  });
+}
+
+/** Export audit trail — exports must not touch any business table. */
+export async function captureDbEvidenceExportAudit(
+  page: Page,
+  stepName: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      { label: 'audit_logs — EXPORT_GENERATED', text: EXPORT_AUDIT_SQL },
+      { label: 'commission_settings (unchanged?)', text: COMMISSION_SETTINGS_SQL },
+      { label: 'revenue_targets (unchanged?)', text: REVENUE_TARGETS_SQL },
+    ],
+  });
+}
+
+/** Per-table fingerprint — the "did the database change?" proof. */
+export async function captureDbEvidenceFingerprint(
+  page: Page,
+  stepName: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'table fingerprints (row count + MD5)',
+        text: DB_FINGERPRINT_SQL,
+      },
+    ],
+  });
+}
+
+/** Everything the Commission & Revenue screen owns, in one snapshot. */
+export async function captureDbEvidenceCommissionAndRevenue(
+  page: Page,
+  stepName: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      { label: 'commission_settings', text: COMMISSION_SETTINGS_SQL },
+      { label: 'commission_rate_history', text: COMMISSION_RATE_HISTORY_SQL },
+      { label: 'revenue_targets', text: REVENUE_TARGETS_SQL },
+      { label: 'payouts', text: PAYOUTS_SQL },
+      { label: 'payout_items', text: PAYOUT_ITEMS_SQL },
+      { label: 'table fingerprints (row count + MD5)', text: DB_FINGERPRINT_SQL },
+    ],
+  });
+}
+
+/**
+ * Runs arbitrary SQL against the live database.
+ * Used to seed / clean up test fixtures for the database-evidence scenarios.
+ */
+export async function runDb<T>(fn: (client: Client) => Promise<T>): Promise<T> {
+  const client = new Client({ connectionString: loadDatabaseUrl() });
+  await client.connect();
+  try {
+    return await fn(client);
+  } finally {
+    await client.end();
+  }
+}

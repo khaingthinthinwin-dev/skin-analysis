@@ -1,0 +1,141 @@
+{
+  "capturedAt": "2026-10-22T03:49:29.133Z",
+  "description": "Database before the rate change — the rate history that locks existing orders",
+  "results": [
+    {
+      "label": "commission_settings (current rate)",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "2223cfdd-b55e-485d-a16c-da0b663af67e",
+          "commission_rate": "15.00",
+          "updated_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "updated_at": "2026-10-21T21:19:03.063Z",
+          "created_at": "2026-09-11T00:32:41.133Z"
+        }
+      ]
+    },
+    {
+      "label": "commission_rate_history (newest first)",
+      "rowCount": 5,
+      "rows": [
+        {
+          "id": "2f418ca0-f403-499a-a1f0-9f8a07c61e47",
+          "commission_rate": "15.00",
+          "effective_from": "2026-10-21T21:19:03.063Z",
+          "created_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "created_at": "2026-10-21T21:19:03.068Z"
+        },
+        {
+          "id": "2a9242d6-2539-43c7-baeb-a22e6f4a4a16",
+          "commission_rate": "12.00",
+          "effective_from": "2026-10-21T21:19:02.080Z",
+          "created_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "created_at": "2026-10-21T21:19:02.087Z"
+        },
+        {
+          "id": "81c0c640-d17a-45ee-b6fb-bf7f8d80bf0b",
+          "commission_rate": "15.00",
+          "effective_from": "2026-10-21T21:18:35.373Z",
+          "created_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "created_at": "2026-10-21T21:18:35.376Z"
+        },
+        {
+          "id": "0567595a-91d9-4f3f-afae-35aa90b5372a",
+          "commission_rate": "12.50",
+          "effective_from": "2026-10-21T21:18:35.360Z",
+          "created_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "created_at": "2026-10-21T21:18:35.366Z"
+        },
+        {
+          "id": "6ac6bfa1-6d4b-4000-aefd-e1a51f402502",
+          "commission_rate": "15.00",
+          "effective_from": "2026-10-21T21:15:39.979Z",
+          "created_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "created_at": "2026-10-21T21:15:39.985Z"
+        }
+      ]
+    },
+    {
+      "label": "audit_logs — COMMISSION_RATE_UPDATED",
+      "rowCount": 5,
+      "rows": [
+        {
+          "id": "15a5f706-b64f-42c2-8c39-33dbae57533f",
+          "user_id": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "action": "COMMISSION_RATE_UPDATED",
+          "entity_type": "CommissionSetting",
+          "entity_id": "2223cfdd-b55e-485d-a16c-da0b663af67e",
+          "old_value": {
+            "rate": "12"
+          },
+          "new_value": {
+            "rate": "15"
+          },
+          "ip_address": "::1",
+          "created_at": "2026-10-21T21:19:03.069Z"
+        },
+        {
+          "id": "73aeee57-0688-4a85-af57-e5f359cc6064",
+          "user_id": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "action": "COMMISSION_RATE_UPDATED",
+          "entity_type": "CommissionSetting",
+          "entity_id": "2223cfdd-b55e-485d-a16c-da0b663af67e",
+          "old_value": {
+            "rate": "15"
+          },
+          "new_value": {
+            "rate": "12"
+          },
+          "ip_address": "::1",
+          "created_at": "2026-10-21T21:19:02.091Z"
+        },
+        {
+          "id": "6d13ab9f-110d-4a7b-a8fd-de3fa2745ef6",
+          "user_id": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "action": "COMMISSION_RATE_UPDATED",
+          "entity_type": "CommissionSetting",
+          "entity_id": "2223cfdd-b55e-485d-a16c-da0b663af67e",
+          "old_value": {
+            "rate": "12.5"
+          },
+          "new_value": {
+            "rate": "15"
+          },
+          "ip_address": "::1",
+          "created_at": "2026-10-21T21:18:35.377Z"
+        },
+        {
+          "id": "e98adb79-93ce-425d-9810-6597526766da",
+          "user_id": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "action": "COMMISSION_RATE_UPDATED",
+          "entity_type": "CommissionSetting",
+          "entity_id": "2223cfdd-b55e-485d-a16c-da0b663af67e",
+          "old_value": {
+            "rate": "15"
+          },
+          "new_value": {
+            "rate": "12.5"
+          },
+          "ip_address": "::1",
+          "created_at": "2026-10-21T21:18:35.369Z"
+        },
+        {
+          "id": "77d3423f-139b-46b5-ae90-e0cc6d337d3c",
+          "user_id": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "action": "COMMISSION_RATE_UPDATED",
+          "entity_type": "CommissionSetting",
+          "entity_id": "2223cfdd-b55e-485d-a16c-da0b663af67e",
+          "old_value": {
+            "rate": "12"
+          },
+          "new_value": {
+            "rate": "15"
+          },
+          "ip_address": "::1",
+          "created_at": "2026-10-21T21:15:39.988Z"
+        }
+      ]
+    }
+  ]
+}

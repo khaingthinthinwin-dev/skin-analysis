@@ -1,6 +1,6 @@
 {
   "commission_revenue_page_loaded.png": {
-    "test": "commission-revenue.spec.ts::I-23: delete endpoint returns success, conflict, not-found, and validation responses"
+    "test": "commission-revenue.spec.ts::N-31: locks the historical commission rate and proves the rate history grew in the database"
   },
   "N-01_1_commission_tab.png": {
     "test": "commission-revenue.spec.ts::N-01: loads the Commission tab by default with rate and reports"
@@ -452,5 +452,240 @@
   "I-19_api_call.png": {
     "description": "API request and response evidence for I-19: denies commission access to buyer and merchant accounts",
     "test": "commission-revenue.spec.ts::I-19: denies commission access to buyer and merchant accounts"
+  },
+  "N-01_1_login_form.png": {
+    "test": "commission-revenue.spec.ts::N-01: navigates from the admin dashboard to the Commission tab and proves the screen is read-only in the database"
+  },
+  "N-01_2_nav_admin_dashboard.png": {
+    "test": "commission-revenue.spec.ts::N-01: navigates from the admin dashboard to the Commission tab and proves the screen is read-only in the database"
+  },
+  "N-01_3_nav_commission_tab.png": {
+    "test": "commission-revenue.spec.ts::N-01: navigates from the admin dashboard to the Commission tab and proves the screen is read-only in the database"
+  },
+  "N-01_4_db_before_commission_state.png": {
+    "description": "Database state before the Commission tab is used — Commission & Revenue read-only baseline",
+    "test": "commission-revenue.spec.ts::N-01: navigates from the admin dashboard to the Commission tab and proves the screen is read-only in the database"
+  },
+  "N-01_4_db_before_commission_state.json": {
+    "description": "Database state before the Commission tab is used — Commission & Revenue read-only baseline",
+    "test": "commission-revenue.spec.ts::N-01: navigates from the admin dashboard to the Commission tab and proves the screen is read-only in the database"
+  },
+  "N-01_5_ui_revenue_tab.png": {
+    "test": "commission-revenue.spec.ts::N-01: navigates from the admin dashboard to the Commission tab and proves the screen is read-only in the database"
+  },
+  "N-01_6_ui_commission_tab_after_interaction.png": {
+    "test": "commission-revenue.spec.ts::N-01: navigates from the admin dashboard to the Commission tab and proves the screen is read-only in the database"
+  },
+  "N-01_7_nav_sidebar_entry.png": {
+    "test": "commission-revenue.spec.ts::N-01: navigates from the admin dashboard to the Commission tab and proves the screen is read-only in the database"
+  },
+  "N-01_8_db_after_commission_state.png": {
+    "description": "Database state after using both tabs — no table was modified (identical fingerprints)",
+    "test": "commission-revenue.spec.ts::N-01: navigates from the admin dashboard to the Commission tab and proves the screen is read-only in the database"
+  },
+  "N-01_8_db_after_commission_state.json": {
+    "description": "Database state after using both tabs — no table was modified (identical fingerprints)",
+    "test": "commission-revenue.spec.ts::N-01: navigates from the admin dashboard to the Commission tab and proves the screen is read-only in the database"
+  },
+  "N-02_1_ui_rate_card_before.png": {
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate and proves the commission rows changed in the database"
+  },
+  "N-02_2_db_before_rate_update.png": {
+    "description": "Database before the commission rate is edited (settings + rate history + audit trail)",
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate and proves the commission rows changed in the database"
+  },
+  "N-02_2_db_before_rate_update.json": {
+    "description": "Database before the commission rate is edited (settings + rate history + audit trail)",
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate and proves the commission rows changed in the database"
+  },
+  "N-02_3_ui_edit_rate_dialog.png": {
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate and proves the commission rows changed in the database"
+  },
+  "N-02_4_ui_rate_input_filled.png": {
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate and proves the commission rows changed in the database"
+  },
+  "N-02_5_ui_rate_updated.png": {
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate and proves the commission rows changed in the database"
+  },
+  "N-02_6_db_after_rate_update.png": {
+    "description": "Database after the commission rate is saved — settings row, new rate-history row and audit entry",
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate and proves the commission rows changed in the database"
+  },
+  "N-02_6_db_after_rate_update.json": {
+    "description": "Database after the commission rate is saved — settings row, new rate-history row and audit entry",
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate and proves the commission rows changed in the database"
+  },
+  "N-02_7_db_after_rate_restored.png": {
+    "description": "Database after the original commission rate is restored — the environment is back to its baseline",
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate and proves the commission rows changed in the database"
+  },
+  "N-02_7_db_after_rate_restored.json": {
+    "description": "Database after the original commission rate is restored — the environment is back to its baseline",
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate and proves the commission rows changed in the database"
+  },
+  "N-02_8_ui_rate_restored.png": {
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate and proves the commission rows changed in the database"
+  },
+  "N-08_1_ui_payouts_before.png": {
+    "test": "commission-revenue.spec.ts::N-08: processes a pending payout and proves the payout row changed in the database"
+  },
+  "N-08_2_db_before_payout_process.png": {
+    "description": "Database before the payout is processed — the fixture row is still pending",
+    "test": "commission-revenue.spec.ts::N-08: processes a pending payout and proves the payout row changed in the database"
+  },
+  "N-08_2_db_before_payout_process.json": {
+    "description": "Database before the payout is processed — the fixture row is still pending",
+    "test": "commission-revenue.spec.ts::N-08: processes a pending payout and proves the payout row changed in the database"
+  },
+  "N-08_3_ui_process_dialog.png": {
+    "test": "commission-revenue.spec.ts::N-08: processes a pending payout and proves the payout row changed in the database"
+  },
+  "N-08_4_ui_payout_processed.png": {
+    "test": "commission-revenue.spec.ts::N-08: processes a pending payout and proves the payout row changed in the database"
+  },
+  "N-08_5_db_after_payout_process.png": {
+    "description": "Database after the payout is processed — status, processed_at, idempotency key and audit entry",
+    "test": "commission-revenue.spec.ts::N-08: processes a pending payout and proves the payout row changed in the database"
+  },
+  "N-08_5_db_after_payout_process.json": {
+    "description": "Database after the payout is processed — status, processed_at, idempotency key and audit entry",
+    "test": "commission-revenue.spec.ts::N-08: processes a pending payout and proves the payout row changed in the database"
+  },
+  "N-08_6_db_after_payout_fixture_cleanup.png": {
+    "description": "Database after the seeded payout fixture is removed — the environment is back to its baseline",
+    "test": "commission-revenue.spec.ts::N-08: processes a pending payout and proves the payout row changed in the database"
+  },
+  "N-08_6_db_after_payout_fixture_cleanup.json": {
+    "description": "Database after the seeded payout fixture is removed — the environment is back to its baseline",
+    "test": "commission-revenue.spec.ts::N-08: processes a pending payout and proves the payout row changed in the database"
+  },
+  "N-09_1_ui_target_before.png": {
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and proves the target row changed in the database"
+  },
+  "N-09_2_db_before_target_save.png": {
+    "description": "Database before the revenue target is saved (all periods + audit trail)",
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and proves the target row changed in the database"
+  },
+  "N-09_2_db_before_target_save.json": {
+    "description": "Database before the revenue target is saved (all periods + audit trail)",
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and proves the target row changed in the database"
+  },
+  "N-09_3_ui_target_saved.png": {
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and proves the target row changed in the database"
+  },
+  "N-09_4_db_after_target_save.png": {
+    "description": "Database after the revenue target is saved — the monthly row is updated and audited",
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and proves the target row changed in the database"
+  },
+  "N-09_4_db_after_target_save.json": {
+    "description": "Database after the revenue target is saved — the monthly row is updated and audited",
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and proves the target row changed in the database"
+  },
+  "N-11_1_ui_target_quarterly.png": {
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and proves the target row changed in the database"
+  },
+  "N-11_2_db_after_target_period_toggle.png": {
+    "description": "Database after switching the target period — only the monthly row was written, quarterly is untouched",
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and proves the target row changed in the database"
+  },
+  "N-11_2_db_after_target_period_toggle.json": {
+    "description": "Database after switching the target period — only the monthly row was written, quarterly is untouched",
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and proves the target row changed in the database"
+  },
+  "N-09_5_db_after_target_restored.png": {
+    "description": "Database after the original revenue target is restored — the environment is back to its baseline",
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and proves the target row changed in the database"
+  },
+  "N-09_5_db_after_target_restored.json": {
+    "description": "Database after the original revenue target is restored — the environment is back to its baseline",
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and proves the target row changed in the database"
+  },
+  "N-13_1_db_before_exports.png": {
+    "description": "Database before the three exports — baseline for the read-only export check",
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-13_1_db_before_exports.json": {
+    "description": "Database before the three exports — baseline for the read-only export check",
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-13_2_ui_export_commission.png": {
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-14_1_ui_export_revenue.png": {
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-15_1_ui_export_payout.png": {
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-15_2_db_after_exports.png": {
+    "description": "Database after the three exports — an EXPORT_GENERATED audit row per export, no business row changed",
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-15_2_db_after_exports.json": {
+    "description": "Database after the three exports — an EXPORT_GENERATED audit row per export, no business row changed",
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-15_3_db_fingerprint_after_exports.png": {
+    "description": "Table fingerprints after the three exports — every business table is unchanged",
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-15_3_db_fingerprint_after_exports.json": {
+    "description": "Table fingerprints after the three exports — every business table is unchanged",
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-28_1_ui_payouts_before_delete.png": {
+    "test": "commission-revenue.spec.ts::N-28: deletes an eligible payout row and proves the row was removed from the database"
+  },
+  "N-28_2_db_before_payout_delete.png": {
+    "description": "Database before the eligible payout is deleted — the row is still present",
+    "test": "commission-revenue.spec.ts::N-28: deletes an eligible payout row and proves the row was removed from the database"
+  },
+  "N-28_2_db_before_payout_delete.json": {
+    "description": "Database before the eligible payout is deleted — the row is still present",
+    "test": "commission-revenue.spec.ts::N-28: deletes an eligible payout row and proves the row was removed from the database"
+  },
+  "N-28_3_ui_delete_confirm_dialog.png": {
+    "test": "commission-revenue.spec.ts::N-28: deletes an eligible payout row and proves the row was removed from the database"
+  },
+  "N-28_4_ui_payout_deleted.png": {
+    "test": "commission-revenue.spec.ts::N-28: deletes an eligible payout row and proves the row was removed from the database"
+  },
+  "N-28_5_db_after_payout_delete.png": {
+    "description": "Database after the eligible payout is deleted — the row is gone, the PAYOUT_DELETED audit entry remains",
+    "test": "commission-revenue.spec.ts::N-28: deletes an eligible payout row and proves the row was removed from the database"
+  },
+  "N-28_5_db_after_payout_delete.json": {
+    "description": "Database after the eligible payout is deleted — the row is gone, the PAYOUT_DELETED audit entry remains",
+    "test": "commission-revenue.spec.ts::N-28: deletes an eligible payout row and proves the row was removed from the database"
+  },
+  "N-31_1_ui_rows_before_rate_change.png": {
+    "test": "commission-revenue.spec.ts::N-31: locks the historical commission rate and proves the rate history grew in the database"
+  },
+  "N-31_2_db_before_rate_lock.png": {
+    "description": "Database before the rate change — the rate history that locks existing orders",
+    "test": "commission-revenue.spec.ts::N-31: locks the historical commission rate and proves the rate history grew in the database"
+  },
+  "N-31_2_db_before_rate_lock.json": {
+    "description": "Database before the rate change — the rate history that locks existing orders",
+    "test": "commission-revenue.spec.ts::N-31: locks the historical commission rate and proves the rate history grew in the database"
+  },
+  "N-31_3_ui_rate_changed.png": {
+    "test": "commission-revenue.spec.ts::N-31: locks the historical commission rate and proves the rate history grew in the database"
+  },
+  "N-31_4_db_after_rate_lock.png": {
+    "description": "Database after the rate change — one new rate-history row; existing orders keep their historical rate",
+    "test": "commission-revenue.spec.ts::N-31: locks the historical commission rate and proves the rate history grew in the database"
+  },
+  "N-31_4_db_after_rate_lock.json": {
+    "description": "Database after the rate change — one new rate-history row; existing orders keep their historical rate",
+    "test": "commission-revenue.spec.ts::N-31: locks the historical commission rate and proves the rate history grew in the database"
+  },
+  "N-31_5_db_after_rate_restored.png": {
+    "description": "Database after the original rate is restored — the environment is back to its baseline",
+    "test": "commission-revenue.spec.ts::N-31: locks the historical commission rate and proves the rate history grew in the database"
+  },
+  "N-31_5_db_after_rate_restored.json": {
+    "description": "Database after the original rate is restored — the environment is back to its baseline",
+    "test": "commission-revenue.spec.ts::N-31: locks the historical commission rate and proves the rate history grew in the database"
   }
 }
