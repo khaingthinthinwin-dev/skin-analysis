@@ -3,6 +3,7 @@ import type { Page, Route } from '@playwright/test';
 import { MatchingPage } from '../../pages/Matching_And_Recommendation/MatchingPage';
 import { API_BASE_URL } from '../../utils/constants';
 import { captureScreenshot } from '../../utils/screenshot';
+import * as path from 'path';
 import { authHeaders } from '../../utils/api-auth';
 import {
   captureCartDbEvidence,
@@ -11,6 +12,32 @@ import {
 
 /** Seed buyer — the account the recommendation cards act on behalf of. */
 const BUYER_EMAIL = 'eem@gmail.com';
+
+/**
+ * The eligible ad for the `recommendation_page_banner` placement.
+ * It carries the real title and photo of the product it links to
+ * (Hydrating Serum), so the panel renders an actual creative instead of the
+ * broken-image placeholder — and the ad card and the ad destination show the
+ * same product.
+ */
+const sponsoredAd = {
+  id: 'e2e-ad-1',
+  placement: 'recommendation_page_banner',
+  title: 'Hydrating Serum',
+  description: 'Sponsored skincare',
+  content: null,
+  imageUrl: '/uploads/products/30600511-9b38-4201-974c-04d574f5f982.png',
+  sku: null,
+  announcement_message: 'SPONSORED',
+  linkUrl: '/buyer/products/hydrating-serum',
+  tier: 'premium',
+  approvalStatus: 'approved',
+  startsAt: '2026-01-01T00:00:00.000Z',
+  expiresAt: '2030-01-01T00:00:00.000Z',
+};
+
+/** Where the evidence screenshots of this screen are stored. */
+const SCREENSHOT_DIR = path.resolve(__dirname, '../../test-results/Matching_And_Recommendation/screenshots');
 
 type Source = 'ai' | 'generic';
 
@@ -1011,16 +1038,24 @@ test.describe('Matching & Recommendation', () => {
 
   test.describe('Wishlist, Cart, and Sponsored Ads', () => {
     test('N-10: displays sponsored ads and records a panel impression', async ({ buyerPage }) => {
-      const ad = { id: 'e2e-ad-1', placement: 'recommendation_page_banner', title: 'Sponsored Serum', description: 'Sponsored skincare', content: null, imageUrl: null, sku: null, announcement_message: 'SPONSORED', linkUrl: '/buyer/products/hydrating-serum', tier: 'premium', approvalStatus: 'approved', startsAt: '2026-01-01T00:00:00.000Z', expiresAt: '2030-01-01T00:00:00.000Z' };
+      // The ad carries the real photo and the title of the product it links to
+      // (Hydrating Serum), so the panel renders an actual creative instead of the
+      // broken-image placeholder — and the card and the destination show the same
+      // product.
+      const ad = sponsoredAd;
       await mockPage(buyerPage, { ads: [ad] });
       await buyerPage.route('**/ads/track/impression', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { recorded: 1 } }) }));
       const screen = matching(buyerPage);
       const impressionRequest = buyerPage.waitForRequest((request) => request.url().includes('/ads/track/impression'));
       await screen.goto();
       await expect(screen.adPanel).toBeVisible();
-      await expect(screen.adPanel.getByRole('heading', { name: 'Sponsored Serum' })).toBeVisible();
+      await expect(screen.adPanel.getByRole('heading', { name: 'Hydrating Serum' })).toBeVisible();
       // The ad is disclosed as sponsored, not shown as an organic recommendation.
       await expect(screen.adPanel.getByText('SPONSORED', { exact: true })).toBeVisible();
+      // The creative is a real photo, not the broken-image placeholder.
+      const creative = screen.adPanel.locator('img').first();
+      await expect(creative).toBeVisible();
+      await expect.poll(() => creative.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
       await screen.adPanel.scrollIntoViewIfNeeded();
       const trackedImpression = await impressionRequest;
       // The impression carries the visible ad id, so the analytics record is traceable.
@@ -1029,7 +1064,11 @@ test.describe('Matching & Recommendation', () => {
     });
 
     test('N-11: tracks a sponsored ad click and follows its destination', async ({ buyerPage }) => {
-      const ad = { id: 'e2e-ad-1', placement: 'recommendation_page_banner', title: 'Sponsored Serum', description: 'Sponsored skincare', content: null, imageUrl: null, sku: null, announcement_message: 'SPONSORED', linkUrl: '/buyer/products/hydrating-serum', tier: 'premium', approvalStatus: 'approved', startsAt: '2026-01-01T00:00:00.000Z', expiresAt: '2030-01-01T00:00:00.000Z' };
+      // The ad carries the real photo and the title of the product it links to
+      // (Hydrating Serum), so the panel renders an actual creative instead of the
+      // broken-image placeholder — and the card and the destination show the same
+      // product.
+      const ad = sponsoredAd;
       // The detail-page stubs are registered BEFORE mockPage so the mocked ad
       // panel (registered later) keeps winning the /search/ads route.
       await mockDetailPage(buyerPage, 'hydrating-serum', productDetail());
@@ -1042,7 +1081,15 @@ test.describe('Matching & Recommendation', () => {
       await expect(screen.adPanel).toBeVisible();
       await expect(screen.adPanel.getByText('SPONSORED', { exact: true })).toBeVisible();
       await expect(buyerPage.getByRole('button', { name: /Learn more/i })).toBeVisible();
-      await screen.capture('N-11_1_sponsored_cta');
+      // The creative is a real photo, not the broken-image placeholder.
+      const creative = screen.adPanel.locator('img').first();
+      await expect(creative).toBeVisible();
+      await expect.poll(() => creative.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+      // A close-up of the ad panel: the `Learn more` CTA that is clicked next.
+      // (N-10 keeps the full page, so the two ad evidence files differ.)
+      await buyerPage
+        .locator('[role="link"][aria-label="Sponsored advertisements"]')
+        .screenshot({ path: path.join(SCREENSHOT_DIR, 'N-11_1_sponsored_cta.png') });
       await buyerPage.getByRole('button', { name: /Learn more/i }).click();
       const trackedClick = await clickRequest;
       // The click is tracked with the ad id before the destination is opened.
@@ -1382,6 +1429,11 @@ test.describe('Matching & Recommendation', () => {
         await hold;
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { data: products, meta: { page: 1, limit: 12, total: products.length, totalPages: 1 }, source: 'ai', analysisAge: 0, skinTypes: ['dry'] } }) });
       });
+      // The ad panel is stubbed too, so the evidence shows the same real
+      // creative as the other ad scenarios instead of the backend ad.
+      await buyerPage.route('**/search/ads*', (route) =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { data: [sponsoredAd] } }) }),
+      );
       const screen = matching(buyerPage);
       const navigation = screen.goto();
       const skeletons = buyerPage.locator('.animate-pulse');
@@ -1394,7 +1446,7 @@ test.describe('Matching & Recommendation', () => {
       release();
       await navigation;
       // After: the skeleton is replaced by the real product cards.
-      await expect(buyerPage.getByText('Hydrating Serum')).toBeVisible();
+      await expect(buyerPage.getByRole('link', { name: 'Hydrating Serum', exact: true })).toBeVisible();
       await expect(buyerPage.locator('.animate-pulse.aspect-square')).toHaveCount(0);
       await screen.capture('B-08_2_loaded_results');
     });

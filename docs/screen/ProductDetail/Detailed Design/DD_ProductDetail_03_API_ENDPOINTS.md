@@ -1,104 +1,117 @@
 # DD_PROD_03 — API Endpoints
 
-> **Doc ID:** SKM-DD-PROD-03 | **Version:** 1.0 | **Status:** Draft  
-> **Last Updated:** 2026-08-21
+> **Doc ID:** SKM-DD-PROD-03 | **Version:** 2.1 | **Status:** Reconciled with source
+> **Last Updated:** 2026-10-21
+> **Reconciles:** TMO source — `catalog/products/buyer-products.controller.ts`, `public-reviews.controller.ts`, `catalog/wishlist/wishlist.controller.ts`, `catalog/cart/cart.controller.ts`, `merchant/advertisements/advertisements.controller.ts`
 
 ---
 
 ## 1. Controller Setup
 
-- **Feature Root:** `src/modules/products` (reviews, recommendations, wishlist, cart, and promotions also participate)
 - **Base Route:** `/api/v1`
-- **Guards:** Varies per endpoint (Public, `JwtAuthGuard`, `RolesGuard('buyer')`)
+- **Guards:** Varies per endpoint (`@Public()`, `JwtAuthGuard`, `RolesGuard('buyer')`)
 
-| Controller | File | Base Route | Owned Endpoints in This Contract |
-|------------|------|------------|----------------------------------|
-| `ProductsController` | `products.controller.ts` | `/api/v1/products` | `GET /:slug`, `GET /:slug/promotions`, `GET /:slug/advertisements` |
-| `ReviewsController` | `reviews.controller.ts` | `/api/v1` | `GET /products/:productId/reviews`, `POST /products/:productId/reviews`, `POST /reviews/:reviewId/report` |
-| `RecommendationsController` | `recommendations.controller.ts` | `/api/v1/recommendations` | `GET /similar/:productId` |
-| `WishlistController` ⚠️ | `wishlist.controller.ts` | `/api/v1/wishlist` | `POST /:productId` *(reference only — Wishlist team)* |
-| `CartController` ⚠️ | `cart.controller.ts` | `/api/v1/cart` | `POST /items` *(reference only — Cart team)* |
+| Controller | File | Base Route | Owned Endpoints |
+|------------|------|------------|-----------------|
+| `BuyerProductsController` | `catalog/products/buyer-products.controller.ts` | `/api/v1/products` | `GET /:idOrSlug`, `GET /:idOrSlug/reviews`, `GET /:idOrSlug/similar`, `GET /:idOrSlug/advertisements`, `GET /:idOrSlug/can-review`, `POST /:idOrSlug/reviews` |
+| `PublicReviewsController` | `catalog/products/public-reviews.controller.ts` | `/api/v1/reviews` | `POST /:reviewId/report` |
+| `WishlistController` ⚠️ | `catalog/wishlist/wishlist.controller.ts` | `/api/v1/wishlist` | `POST /:productId` *(reference only — Wishlist team)* |
+| `CartController` ⚠️ | `catalog/cart/cart.controller.ts` | `/api/v1/cart` | `POST /items` *(reference only — Cart team)* |
 
 > **Team ownership note:** Wishlist and Cart endpoints and DTOs are maintained by their respective teams. They are documented here (marked ⚠️ / reference only) because the Product Detail page is a primary caller.
+
+> **Removed / non-existent routes:** There is no `RecommendationsController`, no `GET /recommendations/similar/:productId`, no `GET /products/:slug/promotions` (promotions embedded in detail), and no `/products/:slug/advertisements` (placement is `productDetail_page_banner` via `feeSetting`).
 
 ---
 
 ## 2. API Endpoints Contract
 
-### 2.1 GET /products/:slug
+### 2.1 GET /products/:idOrSlug
 
-Return one active product with category, merchant, and shop detail.
+Return one active product with embedded `promotions[]` and `ratingBreakdown[]`. `:idOrSlug` resolves as UUID|slug|SKU via `resolveProduct`.
 
 - **Auth Required:** No (`@Public()`)
-- **Path Params:** `slug` (required, URL-slug format, max 255 chars) — resolved via `idx_products_slug`.
+- **Path Params:** `idOrSlug` (required, UUID|slug|SKU)
 - **Query:** None
-- **Response:** `200 OK`
+- **Response:** `200 OK` (bare object, not wrapped in `data`)
   ```json
   {
-    "data": {
-      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      "name": "Hydrating Facial Serum",
-      "slug": "hydrating-facial-serum",
-      "description": "Lightweight daily serum with hyaluronic acid...",
-      "shortDescription": "24-hour hydration for dry skin",
-      "price": "25.00",
-      "compareAtPrice": "32.00",
-      "sku": "SKU-0001",
-      "stockQuantity": 45,
-      "lowStockThreshold": 10,
-      "images": [
-        "https://cdn.example.com/products/uuid/1-full.webp",
-        "https://cdn.example.com/products/uuid/2-full.webp"
-      ],
-      "tags": ["serum", "hydrating"],
-      "skinTypes": ["dry", "sensitive"],
-      "ingredients": ["Hyaluronic Acid", "Vitamin E", "Glycerin"],
-      "isActive": true,
-      "isFeatured": true,
-      "avgRating": "4.50",
-      "reviewCount": 32,
-      "createdAt": "2026-07-01T08:00:00.000Z",
-      "category": {
-        "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-        "name": "Serums",
-        "slug": "serums",
-        "parent": { "name": "Skincare", "slug": "skincare" }
-      },
-      "merchant": {
-        "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
-        "shopName": "Glow Lab",
-        "licenseStatus": "approved",
-        "shop": {
-          "name": "Glow Lab Official Store",
-          "slug": "glow-lab-official-store",
-          "logoUrl": "https://cdn.example.com/shops/glow-logo.webp",
-          "isApproved": true
-        }
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Hydrating Facial Serum",
+    "slug": "hydrating-facial-serum",
+    "description": "<p>Lightweight daily serum with hyaluronic acid...</p>",
+    "shortDescription": "24-hour hydration for dry skin",
+    "price": 25,
+    "compareAtPrice": 32,
+    "sku": "SKU-0001",
+    "stockQuantity": 45,
+    "lowStockThreshold": 10,
+    "images": [
+      "/uploads/products/uuid/1-full.webp",
+      "/uploads/products/uuid/2-full.webp"
+    ],
+    "tags": ["serum", "hydrating"],
+    "skinTypes": ["dry", "sensitive"],
+    "ingredients": ["Hyaluronic Acid", "Vitamin E", "Glycerin"],
+    "isActive": true,
+    "isFeatured": true,
+    "avgRating": 4.5,
+    "reviewCount": 32,
+    "createdAt": "2026-07-01T08:00:00.000Z",
+    "category": {
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "Serums",
+      "slug": "serums"
+    },
+    "merchant": {
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "shopName": "Glow Lab",
+      "licenseStatus": "approved"
+    },
+    "promotions": [
+      {
+        "id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
+        "code": "GLOW10",
+        "description": "10% off",
+        "discountTypeCode": "percentage",
+        "discountValue": 10,
+        "minOrderAmount": 20,
+        "startsAt": "2026-08-01T00:00:00.000Z",
+        "expiresAt": "2026-09-30T23:59:59.000Z",
+        "maxUses": 100,
+        "usedCount": 35
       }
-    }
+    ],
+    "ratingBreakdown": [
+      { "star": 5, "count": 20 },
+      { "star": 4, "count": 8 },
+      { "star": 3, "count": 3 },
+      { "star": 2, "count": 1 },
+      { "star": 1, "count": 0 }
+    ]
   }
   ```
 - **Error Responses:**
-  - `400 BAD_REQUEST` — Invalid `slug` format
-  - `404 NOT_FOUND` — Product not found or `is_active = false`
+  - `404 NOT_FOUND` — Product not found, `is_active = false`, or merchant `license_status != 'approved'`
   - `500 INTERNAL_SERVER_ERROR` — Server error
-- **Logic:** `service.findOneBySlug(slug)` → lookup by slug, filter `is_active = true`, include category (with parent) and merchant (with shop). Redis-cached at `cache:product:<id>` (TTL 300s).
-- **Cache:** Read-through Redis. Invalidated on review/product update.
+- **Logic:** `resolveProduct` (UUID → `{id, isActive:true}` else `{isActive:true, OR:[{slug},{sku}]}`) → include `category {id,name,slug}`, `merchant {id,shopName,licenseStatus}` → parallel load `promotions[]` (`merchant_id`, active, in-window, **no balance filter**) and `ratingBreakdown` (`groupBy rating` over `status='approved'`) → return merged object.
+- **Cache:** **No Redis read-through cache on buyer read paths.** Freshness via TanStack Query (`staleTime: 0`, `refetchOnMount: 'always'`).
 - **Rate Limit:** Configurable (public read; e.g. 60 requests/min per IP).
 
-### 2.2 GET /products/:productId/reviews
+### 2.2 GET /products/:idOrSlug/reviews
 
-Return paginated, approved reviews for a product.
+Return paginated, approved reviews for a product (flat shape).
 
 - **Auth Required:** No (`@Public()`)
-- **Path Params:** `productId` (UUID)
+- **Path Params:** `idOrSlug` (UUID|slug|SKU)
 - **Query:**
   - `page` (optional, min 1, default 1)
-  - `limit` (optional, min 1, max 50, default 10)
-- **Response:** `200 OK`
+  - `limit` (optional, min 1, max 50, backend default 20, UI sends 10)
+  - `sortBy` (optional, `newest|oldest|highest|lowest`, default `newest`)
+- **Response:** `200 OK` (bare object)
   ```json
   {
-    "data": [
+    "items": [
       {
         "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
         "rating": 5,
@@ -109,200 +122,177 @@ Return paginated, approved reviews for a product.
         "createdAt": "2026-08-01T10:00:00.000Z",
         "user": {
           "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
-          "name": "Jane Doe",
-          "avatarUrl": null
+          "name": "Jane Doe"
         }
       }
     ],
-    "meta": {
-      "page": 1,
-      "limit": 10,
-      "total": 32,
-      "totalPages": 4
-    }
+    "total": 32,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 4
   }
   ```
 - **Error Responses:**
-  - `400 BAD_REQUEST` — Invalid `productId` (not UUID), invalid `page`/`limit`
+  - `400 BAD_REQUEST` — Invalid `idOrSlug`, invalid `page`/`limit`/`sortBy`
   - `404 NOT_FOUND` — Product not found
-- **Logic:** `service.findByProduct(productId, page, limit)` → verify product exists, query `reviews` where `product_id` and `is_approved = true` (`idx_reviews_product_id`), include user (name, avatarUrl), order by `created_at DESC`, paginate.
-- **Cache:** Not cached; served directly.
+- **Logic:** `resolveProduct` → query `reviews` where `product_id = ... AND status = 'approved'` (index `idx_reviews_product_id`) → include `user { id, name }` (**no `avatarUrl`**) → order by `sortBy` → paginate → flatten meta → return `{ items, total, page, limit, totalPages }`.
+- **Cache:** Not cached; served directly (TanStack Query `staleTime: 60_000` on frontend).
 - **Rate Limit:** Configurable (public read).
 
-### 2.3 POST /products/:productId/reviews
+### 2.3 POST /products/:idOrSlug/reviews
 
-Create a review for a product (verified purchase only).
+Create a review for a product (verified purchase only). Review enters moderation queue.
 
 - **Auth Required:** Yes — `JwtAuthGuard` + `RolesGuard('buyer')`
 - **Headers:** `Authorization: Bearer <accessToken>`
-- **Path Params:** `productId` (UUID)
+- **Path Params:** `idOrSlug` (UUID|slug|SKU)
 - **Body:** `CreateReviewDto`
   - `rating` (integer, required, 1–5)
   - `title` (string, optional, max 255)
-  - `body` (string, optional, max 5000)
-  - `images` (string[], optional, max 5)
-- **Response:** `201 Created`
+  - `body` (string, required, max 5000)
+  - `images` (string[], optional, max 5 — DTO only; no upload UI)
+- **Response:** `201 Created` (bare object)
   ```json
   {
-    "data": {
-      "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
-      "rating": 5,
-      "title": "Amazing for dry skin",
-      "body": "My skin feels hydrated all day.",
-      "images": [],
-      "isVerifiedPurchase": true,
-      "isApproved": true,
-      "createdAt": "2026-08-05T12:00:00.000Z"
-    }
+    "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
+    "rating": 5,
+    "title": "Amazing for dry skin",
+    "body": "My skin feels hydrated all day.",
+    "images": [],
+    "status": "pending",
+    "isVerifiedPurchase": true,
+    "createdAt": "2026-08-05T12:00:00.000Z"
   }
   ```
 - **Error Responses:**
-  - `400 BAD_REQUEST` — Validation failed (rating out of range, title/body too long, >5 images)
+  - `400 BAD_REQUEST` — Not a delivered purchase (no `statusCode='delivered'` order containing the product)
   - `401 UNAUTHORIZED` — Missing or invalid JWT
   - `403 FORBIDDEN` — Role is not `buyer`
   - `404 NOT_FOUND` — Product not found
-  - `409 CONFLICT` — Duplicate review (unique `(user_id, product_id)` → `uq_reviews_user_product`)
-  - `422 UNPROCESSABLE_ENTITY` — Not a verified purchase (no `delivered` order containing the product)
+  - `409 CONFLICT` — Duplicate review (unique `(user_id, product_id)` — `uq_reviews_user_product`)
   - `429 TOO_MANY_REQUESTS` — Rate limit exceeded
-- **Logic:** `service.create(productId, dto, currentUser)` → validate buyer role, verify product, verify delivered order containing the product, check unique review constraint, create review with `is_verified_purchase = true`, recalculate `avg_rating` / `review_count` in a transaction, invalidate Redis product cache (`DEL cache:product:<id>`, `DEL cache:products:list:*`), log `REVIEW_CREATED`.
-- **Cache:** Invalidate product + product-list caches.
+- **Logic:** `resolveProduct` → `findDeliveredOrderItem(productId, userId)` (not found → **400**) → check unique `userId_productId` (exists → 409) → create review with `status='pending'`, `is_verified_purchase=true` → aggregate `avg_rating`/`review_count` over `status='approved'` only → update product → `notifyAdminsOfReviewCreated` (non-fatal `REVIEW_CREATED` notification) → return review DTO.
+- **Cache:** No Redis invalidation on buyer paths (admin product CRUD only).
 - **Rate Limit:** Configurable (mutation; per user) — e.g. 5 requests/min.
 
-### 2.4 GET /recommendations/similar/:productId
+### 2.4 GET /products/:idOrSlug/can-review
 
-Return up to eight similar, active products.
-
-- **Auth Required:** No (`@Public()`)
-- **Path Params:** `productId` (UUID)
-- **Query:** None
-- **Response:** `200 OK`
-  ```json
-  {
-    "data": [
-      {
-        "id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
-        "name": "Vitamin C Brightening Serum",
-        "slug": "vitamin-c-brightening-serum",
-        "price": "28.00",
-        "compareAtPrice": null,
-        "images": ["https://cdn.example.com/products/uuid/1-thumb.webp"],
-        "avgRating": "4.30",
-        "reviewCount": 18,
-        "stockQuantity": 20
-      }
-    ]
-  }
-  ```
-- **Error Responses:**
-  - `400 BAD_REQUEST` — Invalid `productId` (not UUID)
-  - `404 NOT_FOUND` — Product not found
-- **Logic:** `service.findSimilar(productId)` → load target product (categoryId, skinTypes, tags), query active products matching category or overlapping skinTypes/tags, exclude the target, limit to 8, return `ProductCardDto[]`.
-- **Cache:** Not cached; computed on demand.
-- **Rate Limit:** Configurable (public read).
-
-### 2.5 POST /reviews/:reviewId/report
-
-File a moderation report against a review (one report per buyer per review).
+Check if the authenticated buyer is eligible to review.
 
 - **Auth Required:** Yes — `JwtAuthGuard` + `RolesGuard('buyer')`
 - **Headers:** `Authorization: Bearer <accessToken>`
-- **Path Params:** `reviewId` (UUID)
-- **Body:** `ReportReviewDto`
-  - `reason` (enum: `spam` | `inappropriate` | `fake` | `other`, required)
-  - `description` (string, optional, max 1000)
-- **Response:** `201 Created`
-  ```json
-  {
-    "data": {
-      "id": "b8c9d0e1-f2a3-4b5c-6d7e-8f9a0b1c2d3e",
-      "reviewId": "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a",
-      "userId": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b",
-      "reason": "spam",
-      "description": "This review contains promotional content",
-      "status": "pending",
-      "createdAt": "2026-08-05T12:00:00.000Z"
-    }
-  }
-  ```
-- **Error Responses:**
-  - `400 BAD_REQUEST` — Validation failed (reason missing/out of range, description > 1000)
-  - `401 UNAUTHORIZED` — Missing or invalid JWT
-  - `403 FORBIDDEN` — Role is not `buyer`
-  - `404 NOT_FOUND` — Review not found
-  - `409 CONFLICT` — Already reported (unique `(user_id, review_id)` → `uq_review_reports_user_review`)
-  - `429 TOO_MANY_REQUESTS` — Rate limit exceeded
-- **Logic:** `reviewReportService.create(reviewId, dto, currentUser)` → verify buyer role, verify review exists, check one-report-per-buyer-per-review constraint, insert `review_reports` row (`status = 'pending'`), log `REVIEW_REPORTED`.
-- **Cache:** None.
-- **Rate Limit:** Configurable (mutation; per user) — e.g. 10 requests/min.
-
-### 2.6 GET /products/:slug/promotions
-
-Return active, in-window promotions for the product's merchant that still have remaining balance.
-
-- **Auth Required:** No (`@Public()`)
-- **Path Params:** `slug` (required, URL-slug format, max 255 chars)
+- **Path Params:** `idOrSlug` (UUID|slug|SKU)
 - **Query:** None
 - **Response:** `200 OK`
   ```json
-  {
-    "data": [
-      {
-        "id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
-        "code": "GLOW10",
-        "description": "10% off from Glow Lab",
-        "discountType": "percentage",
-        "discountValue": "10.00",
-        "minOrderAmount": "20.00",
-        "usedCount": 35,
-        "maxUses": 100,
-        "balance": 65,
-        "startsAt": "2026-08-01T00:00:00.000Z",
-        "expiresAt": "2026-09-30T23:59:59.000Z"
-      }
-    ]
-  }
+  { "canReview": true, "reason": null }
+  ```
+  or
+  ```json
+  { "canReview": false, "reason": "not_delivered" }
+  ```
+  or
+  ```json
+  { "canReview": false, "reason": "already_reviewed" }
   ```
 - **Error Responses:**
-  - `400 BAD_REQUEST` — Invalid `slug` format
-  - `404 NOT_FOUND` — Product not found / inactive
-- **Logic:** `promotionsService.findActiveByMerchant(product.merchantId)` → query `promotions` where `merchant_id`, `is_active = true`, `starts_at <= now()`, `now() < expires_at` (indexes `idx_promotions_merchant_id`, `idx_promotions_is_active`, `idx_promotions_expires_at`), filter `balance > 0` (`max_uses IS NULL OR max_uses - used_count > 0`), order by `starts_at DESC`, compute `balance = max_uses - used_count` (NULL = unlimited) (Rules BR-PROD-018, BR-PROD-019).
-- **Cache:** None (cheap query).
-- **Rate Limit:** Configurable (public read).
+  - `401 UNAUTHORIZED` — Missing or invalid JWT
+  - `403 FORBIDDEN` — Role is not `buyer`
+  - `404 NOT_FOUND` — Product not found
+- **Logic:** `resolveProduct` → `findDeliveredOrderItem` (not found → `not_delivered`) → check existing review (`userId_productId` → `already_reviewed`) → else `canReview: true`.
 
-### 2.7 GET /products/:slug/advertisements
+### 2.5 GET /products/:idOrSlug/similar
 
-Return eligible sidebar advertisements for the `product_sidebar` placement (approved, paid, active, in-window).
+Return similar, active products of approved merchants.
 
 - **Auth Required:** No (`@Public()`)
-- **Path Params:** `slug` (required, URL-slug format, max 255 chars)
+- **Path Params:** `idOrSlug` (UUID|slug|SKU)
+- **Query:** `limit` (optional, backend default 4, UI sends 8)
+- **Response:** `200 OK` (bare array)
+  ```json
+  [
+    {
+      "id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
+      "name": "Vitamin C Brightening Serum",
+      "slug": "vitamin-c-brightening-serum",
+      "price": 28,
+      "compareAtPrice": null,
+      "images": ["/uploads/products/uuid/1-thumb.webp"],
+      "skinTypes": ["dry", "oily"],
+      "avgRating": 4.3,
+      "reviewCount": 18,
+      "category": { "id": "b2c3d4e5-...", "name": "Serums", "slug": "serums" }
+    }
+  ]
+  ```
+- **Error Responses:**
+  - `404 NOT_FOUND` — Product not found
+- **Logic:** `resolveProduct` → query products where `id != target AND isActive = true AND merchant.licenseStatus = 'approved' AND categoryId = target.categoryId AND skinTypes hasSome target.skinTypes` → order by `avgRating desc` → take `limit` → return bare product-card array.
+
+### 2.6 GET /products/:idOrSlug/advertisements
+
+Return eligible `productDetail_page_banner` ads (internal nav, max 5).
+
+- **Auth Required:** No (`@Public()`)
+- **Path Params:** `idOrSlug` (UUID|slug|SKU)
 - **Query:** None
-- **Response:** `200 OK` — empty array when no eligible ads
+- **Response:** `200 OK` — empty array when no eligible ads (bare array)
+  ```json
+  [
+    {
+      "id": "c9d0e1f2-a3b4-5c6d-8e9f-0a1b2c3d4e5f",
+      "title": "Autumn Glow Sale",
+      "description": "20% off all serums this week",
+      "announcementMessage": "20% off all serums this week",
+      "imageUrl": "/uploads/ads/autumn-glow.webp",
+      "sku": "SKU-0001",
+      "placement": "productDetail_page_banner",
+      "startsAt": "2026-08-15T00:00:00.000Z",
+      "expiresAt": "2026-08-30T23:59:59.000Z",
+      "planTier": "premium",
+      "productId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "productSlug": "hydrating-facial-serum",
+      "shop": {
+        "name": "Glow Lab Official Store",
+        "slug": "glow-lab-official-store",
+        "logoUrl": "/uploads/shops/glow-logo.webp"
+      }
+    }
+  ]
+  ```
+- **Error Responses:**
+  - `404 NOT_FOUND` — Product not found
+- **Logic:** `resolveProduct` + license gate → query `advertisements` where `is_active = true AND approval_status = 'approved' AND payment_status = 'completed' AND starts_at <= now <= expires_at AND feeSetting.placement = 'productDetail_page_banner'` (active fee setting) → include `feeSetting {placement, tier}`, `shop {id,name,slug,logoUrl,userId}` → filter to ads having feeSetting → order by `TIER_PRIORITY` (premium 3 > standard 2 > basic 1) → `.slice(0, 5)` → resolve target product per ad (`sku` else image filename) → `{productId, productSlug}` → return bare DTOs (flat + nested `shop`). **No `link_url` field.**
+- **Cache:** None (computed on demand).
+- **Rate Limit:** Configurable (public read).
+
+### 2.7 POST /reviews/:reviewId/report
+
+File a moderation report against a review. JWT only (any authenticated role; buyer role not required — merchant hidden in UI).
+
+- **Auth Required:** Yes — `JwtAuthGuard` (no `RolesGuard`)
+- **Headers:** `Authorization: Bearer <accessToken>`
+- **Path Params:** `reviewId` (UUID)
+- **Body:** `ReportReviewDto`
+  - `reason` (enum: `spam|inappropriate|fake|other`, required)
+  - `detail` (string, optional, max 1000 — request field is `detail`, stored as `description`)
+- **Response:** `201 Created` (bare object, `@HttpCode(201)`)
   ```json
   {
-    "data": [
-      {
-        "id": "c9d0e1f2-a3b4-5c6d-8e9f-0a1b2c3d4e5f",
-        "title": "Autumn Glow Sale",
-        "announcementMessage": "20% off all serums this week",
-        "imageUrl": "https://cdn.example.com/ads/autumn-glow.webp",
-        "linkUrl": "https://example.com/campaign/autumn-glow",
-        "startsAt": "2026-08-15T00:00:00.000Z",
-        "expiresAt": "2026-08-30T23:59:59.000Z",
-        "shop": {
-          "name": "Glow Lab Official Store",
-          "slug": "glow-lab-official-store",
-          "logoUrl": "https://cdn.example.com/shops/glow-logo.webp"
-        }
-      }
-    ]
+    "id": "b8c9d0e1-f2a3-4b5c-6d7e-8f9a0b1c2d3e",
+    "reviewId": "d4e5f6a7-b8c9-0123-defa-234567890123",
+    "reportedBy": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b",
+    "reason": "spam",
+    "description": "This review contains promotional content",
+    "status": "pending"
   }
   ```
 - **Error Responses:**
-  - `400 BAD_REQUEST` — Invalid `slug` format
-  - `404 NOT_FOUND` — Product not found / inactive
-- **Logic:** `advertisementsService.findActiveByPlacement(product.merchantSlug, 'product_sidebar')` → resolve the active product by slug, query `advertisements` where `is_active = true`, `approval_status = 'approved'`, `payment_status = 'completed'`, `starts_at <= now()`, `now() < expires_at` (indexes `idx_advertisements_is_active`, `idx_advertisements_approval_status`, `idx_advertisements_payment_status`, `idx_advertisements_expires_at`; constraint `chk_advertisements_dates`), filter to the `product_sidebar` placement via `ad_fee_settings.placement` linkage (⚠️ open item — `placement`/`tier` columns not on `advertisements`, SKM-DEV-001 §13), order by tier priority Premium > Standard > Basic with round-robin within tier, limit to `AD_SIDEBAR_MAX_PER_ROTATION` (5), include shop (name, slug, logoUrl) via `advertisements.shop_id` (Rules BR-PROD-020~023).
-- **Cache:** None (computed on demand; not Redis-cached).
-- **Rate Limit:** Configurable (public read).
+  - `401 UNAUTHORIZED` — Missing or invalid JWT
+  - `404 NOT_FOUND` — Review not found
+  - `409 CONFLICT` — Already reported by this buyer (`(reviewId, reportedBy)` unique)
+  - `429 TOO_MANY_REQUESTS` — Rate limit exceeded
+- **Logic:** Verify review exists → check `(reviewId, reportedBy)` unique → insert with `status='pending'`, `description = dto.detail` → notify admins (`REVIEW_REPORTED`, non-fatal) → return report DTO.
 
 ### 2.8 POST /wishlist/:productId ⚠️ *(Reference only — Wishlist team)*
 
@@ -315,12 +305,10 @@ Add a product to the buyer's wishlist.
 - **Response:** `201 Created` with `WishlistDto`
   ```json
   {
-    "data": {
-      "id": "c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f",
-      "userId": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b",
-      "productId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
-      "createdAt": "2026-08-18T12:00:00.000Z"
-    }
+    "id": "c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f",
+    "userId": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b",
+    "productId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+    "createdAt": "2026-08-18T12:00:00.000Z"
   }
   ```
 - **Error Responses:**
@@ -328,9 +316,9 @@ Add a product to the buyer's wishlist.
   - `401 UNAUTHORIZED` — Missing or invalid JWT
   - `403 FORBIDDEN` — Role is not `buyer`
   - `404 NOT_FOUND` — Product not found / inactive
-  - `409 CONFLICT` — Already in wishlist (unique `(user_id, product_id)` → `uq_wishlist_user_product`; table name `wishlist`, singular)
-- **Logic:** `wishlistService.addToWishlist(productId, currentUser)` → verify product, check unique wishlist constraint, insert `wishlist` row, log `WISHLIST_ADDED`.
-- **Note:** Removal/deletion is handled by the dedicated Wishlist screen/module and is out of scope for Product Detail.
+  - `409 CONFLICT` — Already in wishlist (unique `(user_id, product_id)` — `uq_wishlist_user_product`; table name `wishlist`, singular)
+- **Logic:** Verify product, check unique wishlist constraint, insert `wishlist` row, log `WISHLIST_ADDED`.
+- **Note:** Removal is handled by the dedicated Wishlist screen/module and is out of scope for Product Detail.
 
 ### 2.9 POST /cart/items ⚠️ *(Reference only — Cart team)*
 
@@ -348,54 +336,23 @@ Add or merge a cart line item with atomic stock validation.
   - `403 FORBIDDEN` — Role is not `buyer`
   - `404 NOT_FOUND` — Product not found
   - `422 UNPROCESSABLE_ENTITY` — Product out of stock (`stock_quantity = 0`)
-- **Logic:** `cartService.addItem(dto, currentUser)` → re-validate stock atomically, fetch/create the buyer's `carts` record (`uq_carts_user_id` — one per buyer), insert or update `cart_items` (`uq_cart_items_cart_product` → increment quantity), log `CART_ITEM_ADDED`.
+- **Logic:** Re-validate stock atomically (`SELECT ... FOR UPDATE`), fetch/create the buyer's `carts` record (`uq_carts_user_id` — one per buyer), insert or update `cart_items` (`uq_cart_items_cart_product` — increment quantity), log `CART_ITEM_ADDED`.
 - **Note:** Managed by the Cart team. `carts` / `cart_items` tables per DATABASE_SPEC v2.4.
 
 ---
 
-## 3. Protected Endpoint Guards
-
-All mutation endpoints block unauthorized access. Guards execute in order:
-
-```typescript
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('products')
-export class ProductsController { ... }
-```
-
-| Guard | Purpose | Behavior |
-|-------|---------|----------|
-| `JwtAuthGuard` | Validates JWT signature | Checks `Authorization: Bearer <token>` header. Verifies signature, expiry, and Redis blacklist. |
-| `RolesGuard` | Enforces role-based access | Checks `@Roles('buyer')` decorator against the user's `role` claim in the JWT payload. |
-
-| Endpoint | Guard | Role |
-|----------|-------|------|
-| `GET /products/:slug` | `@Public()` | None |
-| `GET /products/:productId/reviews` | `@Public()` | None |
-| `GET /products/:slug/promotions` | `@Public()` | None |
-| `GET /products/:slug/advertisements` | `@Public()` | None |
-| `GET /recommendations/similar/:productId` | `@Public()` | None |
-| `POST /products/:productId/reviews` | `JwtAuthGuard + RolesGuard` | `buyer` |
-| `POST /reviews/:reviewId/report` | `JwtAuthGuard + RolesGuard` | `buyer` |
-| `POST /wishlist/:productId` ⚠️ | `JwtAuthGuard + RolesGuard` | `buyer` |
-| `POST /cart/items` ⚠️ | `JwtAuthGuard + RolesGuard` | `buyer` |
-
-**Rule:** The backend always enforces RBAC. Frontend guards are UX-only conveniences.
-
----
-
-## 4. Rate Limiting Configuration
+## 3. Rate Limiting Configuration
 
 Rate limits are enforced at the API layer (NestJS Throttler / gateway). Values below are configurable defaults; the platform rate-limit policy is the authority.
 
 | Endpoint | Type | Suggested Limit | Window | Key |
 |----------|------|-----------------|--------|-----|
-| `GET /products/:slug` | Read | 60 requests | 1 minute | IP |
-| `GET /products/:productId/reviews` | Read | 60 requests | 1 minute | IP |
-| `GET /products/:slug/promotions` | Read | 60 requests | 1 minute | IP |
-| `GET /products/:slug/advertisements` | Read | 60 requests | 1 minute | IP |
-| `GET /recommendations/similar/:productId` | Read | 60 requests | 1 minute | IP |
-| `POST /products/:productId/reviews` | Mutation | 5 requests | 1 minute | User ID |
+| `GET /products/:idOrSlug` | Read | 60 requests | 1 minute | IP |
+| `GET /products/:idOrSlug/reviews` | Read | 60 requests | 1 minute | IP |
+| `GET /products/:idOrSlug/similar` | Read | 60 requests | 1 minute | IP |
+| `GET /products/:idOrSlug/advertisements` | Read | 60 requests | 1 minute | IP |
+| `GET /products/:idOrSlug/can-review` | Read | 60 requests | 1 minute | User ID |
+| `POST /products/:idOrSlug/reviews` | Mutation | 5 requests | 1 minute | User ID |
 | `POST /reviews/:reviewId/report` | Mutation | 10 requests | 1 minute | User ID |
 | `POST /wishlist/:productId` ⚠️ | Mutation | 10 requests | 1 minute | User ID |
 | `POST /cart/items` ⚠️ | Mutation | 10 requests | 1 minute | User ID |
@@ -406,23 +363,17 @@ When exceeded, return `429 TOO_MANY_REQUESTS`; the frontend shows a retry countd
 
 ---
 
-## 5. Cache Invalidation & WebSocket Events
+## 4. Cache Invalidation & WebSocket Events
 
-### 5.1 Redis Cache Invalidation
+### 4.1 Redis Cache Invalidation (Admin paths only)
 
 | Cache Key | TTL | Invalidated By |
 |-----------|-----|----------------|
-| `cache:product:<id>` | 300s | Product update; review creation (rating aggregates) |
-| `cache:products:list:*` | 300s | Review creation; product/stock update |
+| `cache:product:<slug>` | 300s | Admin product update / status change / hard delete |
 
-On review creation or product update:
+Buyer read paths do **not** use Redis read-through caching. TanStack Query handles freshness client-side.
 
-```typescript
-await redis.del(`cache:product:${productId}`);
-await redis.delPattern('cache:products:list:*');
-```
-
-### 5.2 WebSocket Events (Post-Auth, Product Context)
+### 4.2 WebSocket Events (Post-Auth, Product Context)
 
 The Product Detail page does not require WebSocket connections for its core functions. Real-time events surface globally for authenticated buyers after an order:
 
@@ -433,20 +384,16 @@ The Product Detail page does not require WebSocket connections for its core func
 
 ---
 
-## 6. Cross-References
+## 5. Cross-References
 
 | Related Document | Purpose |
-|-----------------|---------|
+|------------------|---------|
 | [DD_PROD_01](./DD_ProductDetail_01_MODULE_OVERVIEW.md) | Module overview and architecture |
 | [DD_PROD_02](./DD_ProductDetail_02_FRONTEND_Page.md) | Frontend page design |
 | [DD_PROD_04](./DD_ProductDetail_04_DTOS_AND_TYPES.md) | Full DTO and type definitions |
 | [DD_PROD_05](./DD_ProductDetail_05_BUSINESS_LOGIC.md) | Business logic for endpoint implementations |
 | [DD_PROD_06](./DD_ProductDetail_06_TEST.md) | Backend unit and controller test specification |
-| [機能設計書_ProductDetail](../機能設計書_ProductDetail.md) | Full functional specification (v7.1) |
-| [画面項目設計書_ProductDetail](../画面項目設計書_ProductDetail.md) | Screen-item definitions, validation, and API response mappings (v1.10) |
+| [機能設計書_ProductDetail](../機能設計書_ProductDetail.md) | Full functional specification |
+| [画面項目設計書_ProductDetail](../画面項目設計書_ProductDetail.md) | Screen-item definitions, validation, and API response mappings |
 | [データベース設計書_DATABASE_SPEC](../../../core-work/データベース設計書_DATABASE_SPEC.md) | Table constraints and UUID data model (v2.4) |
 | [開発ルール_DEVELOPMENT_RULES](../../../core-work/開発ルール_DEVELOPMENT_RULES.md) | Security, accessibility, API, and quality rules (v2.1) |
-
-
-
-

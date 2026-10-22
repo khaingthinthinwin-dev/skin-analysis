@@ -147,21 +147,21 @@
 
 - [x] **N-10**: Display sponsored ads and record panel impression
   - **Evidence**:
-    - `N-10_1_sponsored_impression.png` — sponsored panel with the `SPONSORED` disclosure
+    - `N-10_1_sponsored_impression.png` — full page with the ad panel in view: the `SPONSORED` disclosure and the ad creative (the title and photo of the product the ad links to) rendered
     - Test: matching.spec.ts › "N-10: displays sponsored ads and records a panel impression" — passed
   - **Precondition**: Eligible approved ads exist for the `recommendation_page_banner` placement. Actual component: shared `AdBannerSlider` (not the unused `AdSlidePanel` in this feature folder).
   - **Steps**:
     1. Navigate to `/buyer/recommendations`
     2. Scroll until at least 50% of the ad panel is visible (`IMPRESSION_VISIBILITY_THRESHOLD = 0.5`, `useSponsoredAds` + schedule filter `approved` + in-window, placement match)
     3. Inspect the disclosure (`Sponsored` badge) and impression request
-  - **Expected Result**: Eligible ads and the `SPONSORED` disclosure are displayed; impression tracking (`matchingService.trackImpression`) is sent when visibility reaches at least 50% and carries the visible ad id (`{ adIds: ['<ad id>'] }`); hides entirely while pending/failed/expired/empty
+  - **Expected Result**: Eligible ads, the `SPONSORED` disclosure and the ad creative (an image that actually loads) are displayed; impression tracking (`matchingService.trackImpression`) is sent when visibility reaches at least 50% and carries the visible ad id (`{ adIds: ['<ad id>'] }`); hides entirely while pending/failed/expired/empty
   - **Business Rules**: BR-MATCH-037, BR-MATCH-049, BR-MATCH-050, BR-MATCH-051
   - **API**: `GET /api/v1/ads/panel`; `POST /api/v1/ads/track/impression`
 
 - [x] **N-11**: Follow a sponsored ad call to action
   - **Evidence**:
-    - `N-11_1_sponsored_cta.png` — sponsored panel with the `SPONSORED` disclosure and the `Learn more` CTA
-    - `N-11_2_ad_destination.png` — destination of the CTA (product page)
+    - `N-11_1_sponsored_cta.png` — close-up of the ad panel: the `SPONSORED` disclosure, the shop tag, the ad creative (the title and photo of the product the ad links to) and the `Learn more` CTA
+    - `N-11_2_ad_destination.png` — destination of the CTA (product page of the advertised product)
     - Test: matching.spec.ts › "N-11: tracks a sponsored ad click and follows its destination" — passed
   - **Precondition**: Ad panel contains an eligible ad. `AdBannerSlider` resolves SKU product, fallback product, target/link URL, then catalog fallback; HTTP(S) destinations use `window.location.assign`, app paths use router navigation.
   - **Steps**:
@@ -575,7 +575,7 @@
     - `B-08_1_first_load_skeleton.png` — before: skeleton cards while the first request is pending
     - `B-08_2_loaded_results.png` — after: the skeleton is replaced by the real product cards
     - Test: matching.spec.ts › "B-08: shows first-load skeleton cards while the request is pending" — passed
-  - **Precondition**: Recommendations query is in `isLoading` (no cached data yet). Present in code: `SkeletonGrid count={meta.limit}` on grid view (the endpoint advertises a page size of 12); list view renders 4 pulsing rows (`animate-pulse`, `h-28`).
+  - **Precondition**: Recommendations query is in `isLoading` (no cached data yet). Present in code: `SkeletonGrid count={meta.limit}` on grid view (the endpoint advertises a page size of 12); list view renders 4 pulsing rows (`animate-pulse`, `h-28`). The ad panel is stubbed in this scenario so the evidence shows the same creative as the other ad scenarios.
   - **Steps**:
     1. Hard-load `/buyer/recommendations` in grid view
     2. Hard-load in list view
