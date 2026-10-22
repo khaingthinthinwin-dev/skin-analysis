@@ -622,6 +622,7 @@ export const RATE_AUDIT_SQL = `SELECT id, user_id, action, entity_type, entity_i
        old_value, new_value, ip_address, created_at
 FROM audit_logs
 WHERE action = 'COMMISSION_RATE_UPDATED'
+  AND created_at >= $1
 ORDER BY created_at DESC
 LIMIT 5`;
 
@@ -629,6 +630,7 @@ export const TARGET_AUDIT_SQL = `SELECT id, user_id, action, entity_type, entity
        old_value, new_value, ip_address, created_at
 FROM audit_logs
 WHERE action = 'TARGET_UPDATED'
+  AND created_at >= $1
 ORDER BY created_at DESC
 LIMIT 5`;
 
@@ -636,6 +638,7 @@ export const PAYOUT_AUDIT_SQL = `SELECT id, user_id, action, entity_type, entity
        old_value, new_value, ip_address, created_at
 FROM audit_logs
 WHERE action IN ('PAYOUT_PROCESSED', 'PAYOUT_REVIEWED', 'PAYOUT_DELETED')
+  AND created_at >= $1
 ORDER BY created_at DESC
 LIMIT 5`;
 
@@ -643,6 +646,7 @@ export const EXPORT_AUDIT_SQL = `SELECT id, user_id, action, entity_type, entity
        old_value, new_value, ip_address, created_at
 FROM audit_logs
 WHERE action = 'EXPORT_GENERATED'
+  AND created_at >= $1
 ORDER BY created_at DESC
 LIMIT 8`;
 
@@ -679,14 +683,19 @@ FROM audit_logs`;
 export async function captureDbEvidenceCommissionRate(
   page: Page,
   stepName: string,
-  description?: string
+  description?: string,
+  since?: string
 ): Promise<{ pngPath: string; jsonPath: string }> {
   return captureDbEvidence(page, stepName, {
     description,
     queries: [
       { label: 'commission_settings (current rate)', text: COMMISSION_SETTINGS_SQL },
       { label: 'commission_rate_history (newest first)', text: COMMISSION_RATE_HISTORY_SQL },
-      { label: 'audit_logs — COMMISSION_RATE_UPDATED', text: RATE_AUDIT_SQL },
+      {
+        label: 'audit_logs — COMMISSION_RATE_UPDATED (this run only)',
+        text: RATE_AUDIT_SQL,
+        values: [since ?? '1970-01-01 00:00:00'],
+      },
     ],
   });
 }
@@ -695,13 +704,18 @@ export async function captureDbEvidenceCommissionRate(
 export async function captureDbEvidenceRevenueTarget(
   page: Page,
   stepName: string,
-  description?: string
+  description?: string,
+  since?: string
 ): Promise<{ pngPath: string; jsonPath: string }> {
   return captureDbEvidence(page, stepName, {
     description,
     queries: [
       { label: 'revenue_targets (all periods)', text: REVENUE_TARGETS_SQL },
-      { label: 'audit_logs — TARGET_UPDATED', text: TARGET_AUDIT_SQL },
+      {
+        label: 'audit_logs — TARGET_UPDATED (this run only)',
+        text: TARGET_AUDIT_SQL,
+        values: [since ?? '1970-01-01 00:00:00'],
+      },
     ],
   });
 }
@@ -710,14 +724,19 @@ export async function captureDbEvidenceRevenueTarget(
 export async function captureDbEvidencePayout(
   page: Page,
   stepName: string,
-  description?: string
+  description?: string,
+  since?: string
 ): Promise<{ pngPath: string; jsonPath: string }> {
   return captureDbEvidence(page, stepName, {
     description,
     queries: [
       { label: 'payouts (newest period first)', text: PAYOUTS_SQL },
       { label: 'payout_items', text: PAYOUT_ITEMS_SQL },
-      { label: 'audit_logs — payout events', text: PAYOUT_AUDIT_SQL },
+      {
+        label: 'audit_logs — payout events (this run only)',
+        text: PAYOUT_AUDIT_SQL,
+        values: [since ?? '1970-01-01 00:00:00'],
+      },
     ],
   });
 }
@@ -726,12 +745,17 @@ export async function captureDbEvidencePayout(
 export async function captureDbEvidenceExportAudit(
   page: Page,
   stepName: string,
-  description?: string
+  description?: string,
+  since?: string
 ): Promise<{ pngPath: string; jsonPath: string }> {
   return captureDbEvidence(page, stepName, {
     description,
     queries: [
-      { label: 'audit_logs — EXPORT_GENERATED', text: EXPORT_AUDIT_SQL },
+      {
+        label: 'audit_logs — EXPORT_GENERATED (this run only)',
+        text: EXPORT_AUDIT_SQL,
+        values: [since ?? '1970-01-01 00:00:00'],
+      },
       { label: 'commission_settings (unchanged?)', text: COMMISSION_SETTINGS_SQL },
       { label: 'revenue_targets (unchanged?)', text: REVENUE_TARGETS_SQL },
     ],
