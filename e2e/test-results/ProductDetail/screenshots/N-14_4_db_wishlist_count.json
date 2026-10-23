@@ -1,0 +1,15 @@
+{
+  "capturedAt": "2026-10-23T08:28:21.046Z",
+  "description": "wishlist row count for the buyer and product after adding",
+  "results": [
+    {
+      "label": "wishlist count by buyer and product",
+      "rowCount": 1,
+      "rows": [
+        {
+          "wishlist_count": 1
+        }
+      ]
+    }
+  ]
+}

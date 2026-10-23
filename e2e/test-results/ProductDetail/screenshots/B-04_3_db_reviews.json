@@ -1,0 +1,19 @@
+{
+  "capturedAt": "2026-10-23T08:31:43.787Z",
+  "description": "reviews row for the buyer and product after submitting, showing the 255-character title",
+  "results": [
+    {
+      "label": "reviews row by buyer and product",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "ecee2f55-e053-4af2-84c2-0e721f091710",
+          "rating": 5,
+          "status": "pending",
+          "title": "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+          "title_length": 255
+        }
+      ]
+    }
+  ]
+}

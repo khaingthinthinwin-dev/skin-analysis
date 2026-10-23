@@ -1,0 +1,19 @@
+{
+  "capturedAt": "2026-10-23T08:28:40.458Z",
+  "description": "review_reports row for the reporter and review after submitting",
+  "results": [
+    {
+      "label": "review_reports row by reporter and review",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "cac0b14e-2281-48ea-a57d-a28c4b8163c0",
+          "review_id": "188635a9-67b6-4f34-8882-499931848d8a",
+          "reason": "spam",
+          "description": "Duplicated promotional content",
+          "status": "pending"
+        }
+      ]
+    }
+  ]
+}
