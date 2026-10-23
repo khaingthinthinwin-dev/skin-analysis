@@ -20,6 +20,8 @@ export const SCREEN_FOLDERS = [
   'Ad_Management_Screen',
   'Review_ContentModeration',
   'Commission_Revenue',
+  'Order_Insights_Admin',
+  'Order_Insights_Merchant',
   'Order_Insights',
   'Audit_Log',
 ];
@@ -138,8 +140,8 @@ export async function captureScreenshot(
   const filePath = path.join(screenshotDir, filename);
 
   // Order Insights desktop evidence should match the user's laptop-width view.
-  // Keep B-03 at its explicitly tested mobile viewport.
-  if (screenFolder === 'Order_Insights' && !step.startsWith('B-03_')) {
+  // Preserve the explicit mobile layout capture for responsive PCL coverage.
+  if (screenFolder.startsWith('Order_Insights') && !step.startsWith('B-04_')) {
     await page.setViewportSize({ width: 1920, height: 1032 });
   }
 
