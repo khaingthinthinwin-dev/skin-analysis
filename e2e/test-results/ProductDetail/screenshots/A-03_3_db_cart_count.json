@@ -1,0 +1,16 @@
+{
+  "capturedAt": "2026-10-23T08:29:57.901Z",
+  "description": "cart row count for the guest email after the attempted add, proving no cart row was created",
+  "results": [
+    {
+      "label": "cart count by buyer",
+      "rowCount": 1,
+      "rows": [
+        {
+          "cart_item_count": 0,
+          "total_quantity": 0
+        }
+      ]
+    }
+  ]
+}

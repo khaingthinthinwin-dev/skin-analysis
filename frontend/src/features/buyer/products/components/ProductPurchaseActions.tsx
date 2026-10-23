@@ -40,7 +40,10 @@ export function ProductPurchaseActions({ product, className }: ProductPurchaseAc
   const accountDeactivated = isAccountDeactivated(user);
   const isInWishlist = wishlistItems.some((item) => item.productId === product.id);
   const cartDisabled = !inStock || isAdding;
-  const wishlistDisabled = !isAuthenticated || !isBuyer || isWishlisting;
+  // The wishlist button stays clickable for guests and non-buyers so that
+  // handleAddToWishlist can send them to the login / unauthorized page, exactly
+  // like the Add to Cart button does. Only an in-flight request disables it.
+  const wishlistDisabled = isWishlisting;
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
