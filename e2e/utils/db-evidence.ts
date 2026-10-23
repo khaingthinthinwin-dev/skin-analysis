@@ -811,3 +811,94 @@ export async function runDb<T>(fn: (client: Client) => Promise<T>): Promise<T> {
     await client.end();
   }
 }
+
+/* ------------------------------------------------------------------------- *
+ * Ad Management (Admin → Advertisement Management & Fees)
+ * ------------------------------------------------------------------------- */
+
+export async function captureAdDbEvidence(
+  page: Page,
+  stepName: string,
+  adId: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'advertisements row by id',
+        text: `SELECT a.id, a.shop_id, s.name AS shop_name, a.title, a.approval_status, a.payment_status,
+                      a.approved_by, a.approved_at, a.rejection_reason, a.created_at
+               FROM advertisements a
+               LEFT JOIN shops s ON s.id = a.shop_id
+               WHERE a.id = $1`,
+        values: [adId],
+      },
+    ],
+  });
+}
+
+export async function captureBulkAdsDbEvidence(
+  page: Page,
+  stepName: string,
+  adIds: string[],
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'advertisements rows by ids',
+        text: `SELECT a.id, a.shop_id, s.name AS shop_name, a.title, a.approval_status, a.payment_status,
+                      a.approved_by, a.approved_at, a.rejection_reason, a.created_at
+               FROM advertisements a
+               LEFT JOIN shops s ON s.id = a.shop_id
+               WHERE a.id = ANY($1::uuid[])
+               ORDER BY a.created_at DESC`,
+        values: [adIds],
+      },
+    ],
+  });
+}
+
+export async function captureAdListDbEvidence(
+  page: Page,
+  stepName: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'pending advertisements queue',
+        text: `SELECT a.id, a.title, a.approval_status, a.payment_status, s.name AS shop_name, a.created_at
+               FROM advertisements a
+               LEFT JOIN shops s ON s.id = a.shop_id
+               WHERE a.approval_status = 'pending'
+               ORDER BY a.created_at DESC
+               LIMIT 10`,
+      },
+    ],
+  });
+}
+
+export async function captureFeeSettingDbEvidence(
+  page: Page,
+  stepName: string,
+  feeId: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'ad_fee_settings row by id',
+        text: `SELECT id, placement, tier, daily_rate, duration_days, max_ads, is_active, created_at
+               FROM ad_fee_settings
+               WHERE id = $1`,
+        values: [feeId],
+      },
+    ],
+  });
+}
+
