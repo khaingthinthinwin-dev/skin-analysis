@@ -192,24 +192,12 @@ describe('MerchantSummaryService', () => {
       });
     });
 
-    it('ignores a merchant-supplied merchantId and scopes to the JWT merchant', async () => {
-      await service.getSalesSummary(merchantUser, {
-        merchantId: otherMerchantId,
-      });
-
-      expect(prisma.merchant.findUnique).toHaveBeenCalledWith({
-        where: { userId: merchantUser.id },
-      });
-      expect(prisma.order.count).toHaveBeenCalledWith(
-        objectContaining({
-          where: objectContaining({ merchantId: 'merchant-1' }),
-        }),
-      );
-      expect(prisma.order.count).not.toHaveBeenCalledWith(
-        objectContaining({
-          where: objectContaining({ merchantId: otherMerchantId }),
-        }),
-      );
+    it('rejects a merchant-supplied merchantId', async () => {
+      await expect(
+        service.getSalesSummary(merchantUser, { merchantId: otherMerchantId }),
+      ).rejects.toThrow(ForbiddenException);
+      expect(prisma.merchant.findUnique).not.toHaveBeenCalled();
+      expect(prisma.order.count).not.toHaveBeenCalled();
     });
 
     it('lets admin target a shop by merchantId and skips the license gate', async () => {
