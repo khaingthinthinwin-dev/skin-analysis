@@ -243,6 +243,11 @@ export class MerchantSummaryService {
     requestedMerchantId?: string,
   ): Promise<MerchantScope> {
     if (user.roleCode === 'merchant') {
+      if (requestedMerchantId) {
+        throw new ForbiddenException(
+          'Merchants cannot select a merchant scope',
+        );
+      }
       const merchant = await this.prisma.merchant.findUnique({
         where: { userId: user.id },
       });

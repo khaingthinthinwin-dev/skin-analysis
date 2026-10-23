@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,30 @@ export default function ProductDetail() {
   const isMerchantView = user?.role === 'merchant';
 
   const { data: product, isLoading, isError } = useProductDetail(idOrSlug);
+
+  // The page owns the product tab state so that the rating summary and the
+  // `#reviews` deep link can both switch to the reviews tab. The `#reviews`
+  // anchor only exists while that panel is mounted, so scrolling alone is not
+  // enough.
+  const [activeTab, setActiveTab] = useState<string>(() =>
+    location.hash === '#reviews' ? 'reviews' : 'description',
+  );
+
+  // Adjust the state during render (React's recommended pattern for derived
+  // state) so a #reviews hash change — even on an already-open page — selects
+  // the reviews tab in the same paint.
+  const [lastHash, setLastHash] = useState(location.hash);
+  if (location.hash !== lastHash) {
+    setLastHash(location.hash);
+    if (location.hash === '#reviews') setActiveTab('reviews');
+  }
+
+  // A merchant only sees the reviews tab.
+  const [lastMerchantView, setLastMerchantView] = useState(isMerchantView);
+  if (isMerchantView !== lastMerchantView) {
+    setLastMerchantView(isMerchantView);
+    if (isMerchantView) setActiveTab('reviews');
+  }
 
   if (!id) {
     return (
@@ -82,13 +107,19 @@ export default function ProductDetail() {
 
       <div className="mt-6 grid grid-cols-1 gap-8 md:grid-cols-2">
         <ProductGallery images={product.images} name={product.name} />
-        <ProductInfo product={product} isMerchantView={isMerchantView} />
+        <ProductInfo
+          product={product}
+          isMerchantView={isMerchantView}
+          onShowReviews={() => setActiveTab('reviews')}
+        />
       </div>
 
       <ProductTabs
         product={product}
         showReviewForm={!isMerchantView}
         showProductDetails={!isMerchantView}
+        value={activeTab}
+        onValueChange={setActiveTab}
       />
       {!isMerchantView && <SimilarProducts idOrSlug={product.id} />}
 

@@ -1,0 +1,155 @@
+{
+  "module": "Order_Insights_Merchant",
+  "timestamp": "2026-10-23T06:33:20.545Z",
+  "total": 24,
+  "passed": 24,
+  "failed": 0,
+  "skipped": 0,
+  "durationMs": 526794,
+  "tests": [
+    {
+      "title": "N-01: approved merchant sees shop-scoped summaries and order list",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 18429
+    },
+    {
+      "title": "N-02: merchant revenue summary period selection requests the chosen period",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 16033
+    },
+    {
+      "title": "N-05: completed orders shortcut applies delivered filter and resets page",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 25870
+    },
+    {
+      "title": "I-01/I-02/I-03: merchant summary APIs return their documented contracts",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 30621
+    },
+    {
+      "title": "A-02: unauthenticated visitor is redirected from merchant insights and summary API",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 9021
+    },
+    {
+      "title": "N-03: merchant applies a valid custom revenue range",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 29058
+    },
+    {
+      "title": "N-04: merchant filters, searches, sorts, and paginates the order list",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 29244
+    },
+    {
+      "title": "N-06: merchant exports all matching orders as CSV",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 15002
+    },
+    {
+      "title": "A-01: unapproved merchant is denied summary access",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 16297
+    },
+    {
+      "title": "A-03: merchant cannot request another merchant or shop scope",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 20679
+    },
+    {
+      "title": "A-04: invalid custom range is blocked in the dialog and API",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 15966
+    },
+    {
+      "title": "A-05: failed summary and order list queries offer retry feedback",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 28258
+    },
+    {
+      "title": "A-05: a forbidden page query displays the page-level access alert",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 23091
+    },
+    {
+      "title": "B-01: no matching orders shows empty state and disables export",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 20075
+    },
+    {
+      "title": "B-02: empty revenue period shows zero values and no invented commission rate",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 18994
+    },
+    {
+      "title": "B-03: merchant can use page-size boundaries 10 and 50",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 19003
+    },
+    {
+      "title": "B-04: merchant insights controls remain reachable on mobile",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 14762
+    },
+    {
+      "title": "B-05: cancelling a custom range preserves the applied summary period",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 16594
+    },
+    {
+      "title": "N-07: merchant can change the language and theme on the page",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 22705
+    },
+    {
+      "title": "N-08: English, Japanese, and Myanmar render on merchant list and detail",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 42809
+    },
+    {
+      "title": "N-09: selected language persists through detail navigation and reload",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 31149
+    },
+    {
+      "title": "N-10: merchant opens an unread new-order notification",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 23037
+    },
+    {
+      "title": "I-04: merchant summary APIs reject unauthenticated and unapproved users",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 18569
+    },
+    {
+      "title": "I-05: revenue summary rejects invalid custom bounds",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Merchant\\order-insights-merchant.spec.ts",
+      "status": "passed",
+      "duration": 21528
+    }
+  ]
+}

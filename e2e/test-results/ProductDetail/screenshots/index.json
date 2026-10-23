@@ -1,0 +1,563 @@
+﻿{
+    "N-01_1_product_detail_loading.png":  {
+                                              "test":  "product-detail.spec.ts::N-01: displays product detail page with all sections"
+                                          },
+    "N-01_2_product_detail_loaded.png":  {
+                                             "description":  "Buyer product detail page after the product request resolves",
+                                             "test":  "product-detail.spec.ts::N-01: displays product detail page with all sections"
+                                         },
+    "N-02_1_resolved_by_uuid.png":  {
+                                        "test":  "product-detail.spec.ts::N-02: resolves product detail by uuid and sku"
+                                    },
+    "N-02_2_resolved_by_sku.png":  {
+                                       "test":  "product-detail.spec.ts::N-02: resolves product detail by uuid and sku"
+                                   },
+    "N-03_1_price_with_save_badge.png":  {
+                                             "test":  "product-detail.spec.ts::N-03: shows price in MMK with save amount badge"
+                                         },
+    "N-04_1_rating_summary_before_click.png":  {
+                                                   "test":  "product-detail.spec.ts::N-04: scrolls to reviews when rating summary is clicked"
+                                               },
+    "N-04_2_rating_summary_after_scroll.png":  {
+                                                   "test":  "product-detail.spec.ts::N-04: scrolls to reviews when rating summary is clicked"
+                                               },
+    "N-05_1_gallery_before_click.png":  {
+                                            "test":  "product-detail.spec.ts::N-05: displays product image gallery"
+                                        },
+    "N-05_2_gallery_after_thumbnail_click.png":  {
+                                                     "test":  "product-detail.spec.ts::N-05: displays product image gallery"
+                                                 },
+    "N-06_1_in_stock_badge.png":  {
+                                      "test":  "product-detail.spec.ts::N-06: displays in stock status badge"
+                                  },
+    "N-07_1_skin_type_badges.png":  {
+                                        "test":  "product-detail.spec.ts::N-07: displays skin type badges"
+                                    },
+    "N-08_1_promotion_discount_badge.png":  {
+                                                "test":  "product-detail.spec.ts::N-08: displays promotion discount badge"
+                                            },
+    "N-09_1_tab_description.png":  {
+                                       "test":  "product-detail.spec.ts::N-09: switches between description ingredients and reviews tabs"
+                                   },
+    "N-09_2_tab_ingredients.png":  {
+                                       "test":  "product-detail.spec.ts::N-09: switches between description ingredients and reviews tabs"
+                                   },
+    "N-09_3_tab_reviews.png":  {
+                                   "test":  "product-detail.spec.ts::N-09: switches between description ingredients and reviews tabs"
+                               },
+    "N-10_1_reviews_loading.png":  {
+                                       "test":  "product-detail.spec.ts::N-10: displays product reviews section"
+                                   },
+    "N-10_2_reviews_section.png":  {
+                                       "test":  "product-detail.spec.ts::N-10: displays product reviews section"
+                                   },
+    "N-11_1_reviews_page_1.png":  {
+                                      "test":  "product-detail.spec.ts::N-11: loads more reviews on demand"
+                                  },
+    "N-11_2_reviews_page_2.png":  {
+                                      "test":  "product-detail.spec.ts::N-11: loads more reviews on demand"
+                                  },
+    "N-12_1_similar_products_grid.png":  {
+                                             "test":  "product-detail.spec.ts::N-12: displays related products"
+                                         },
+    "N-12_2_navigated_to_similar_product.png":  {
+                                                    "test":  "product-detail.spec.ts::N-12: displays related products"
+                                                },
+    "N-13_1_cart_before_add.png":  {
+                                       "test":  "product-detail.spec.ts::N-13: adds product to cart and retains selected quantity"
+                                   },
+    "N-13_2_cart_after_add.png":  {
+                                      "test":  "product-detail.spec.ts::N-13: adds product to cart and retains selected quantity"
+                                  },
+    "N-13_3_db_cart_items.png":  {
+                                     "description":  "cart_items row for the buyer after adding the product from the product detail page",
+                                     "test":  "product-detail.spec.ts::N-13: adds product to cart and retains selected quantity"
+                                 },
+    "N-13_3_db_cart_items.json":  {
+                                      "description":  "cart_items row for the buyer after adding the product from the product detail page",
+                                      "test":  "product-detail.spec.ts::N-13: adds product to cart and retains selected quantity"
+                                  },
+    "N-13_4_db_cart_count.png":  {
+                                     "description":  "cart row count and total quantity for the buyer after adding the product",
+                                     "test":  "product-detail.spec.ts::N-13: adds product to cart and retains selected quantity"
+                                 },
+    "N-13_4_db_cart_count.json":  {
+                                      "description":  "cart row count and total quantity for the buyer after adding the product",
+                                      "test":  "product-detail.spec.ts::N-13: adds product to cart and retains selected quantity"
+                                  },
+    "N-14_1_wishlist_before_add.png":  {
+                                           "test":  "product-detail.spec.ts::N-14: toggles product in wishlist"
+                                       },
+    "N-14_2_wishlist_after_add.png":  {
+                                          "test":  "product-detail.spec.ts::N-14: toggles product in wishlist"
+                                      },
+    "N-14_3_db_wishlists.png":  {
+                                    "description":  "wishlists row for the buyer after adding the product from the product detail page",
+                                    "test":  "product-detail.spec.ts::N-14: toggles product in wishlist"
+                                },
+    "N-14_3_db_wishlists.json":  {
+                                     "description":  "wishlists row for the buyer after adding the product from the product detail page",
+                                     "test":  "product-detail.spec.ts::N-14: toggles product in wishlist"
+                                 },
+    "N-14_4_db_wishlist_count.png":  {
+                                         "description":  "wishlist row count for the buyer and product after adding",
+                                         "test":  "product-detail.spec.ts::N-14: toggles product in wishlist"
+                                     },
+    "N-14_4_db_wishlist_count.json":  {
+                                          "description":  "wishlist row count for the buyer and product after adding",
+                                          "test":  "product-detail.spec.ts::N-14: toggles product in wishlist"
+                                      },
+    "N-15_1_review_form_before_submit.png":  {
+                                                 "test":  "product-detail.spec.ts::N-15: submits review for eligible buyer"
+                                             },
+    "N-15_2_review_after_submit.png":  {
+                                           "test":  "product-detail.spec.ts::N-15: submits review for eligible buyer"
+                                       },
+    "N-15_3_db_reviews.png":  {
+                                  "description":  "reviews row for the buyer and product after submitting, with status = pending",
+                                  "test":  "product-detail.spec.ts::N-15: submits review for eligible buyer"
+                              },
+    "N-15_3_db_reviews.json":  {
+                                   "description":  "reviews row for the buyer and product after submitting, with status = pending",
+                                   "test":  "product-detail.spec.ts::N-15: submits review for eligible buyer"
+                               },
+    "N-15_4_db_reviews_count.png":  {
+                                        "description":  "reviews row count for the buyer and product after submitting",
+                                        "test":  "product-detail.spec.ts::N-15: submits review for eligible buyer"
+                                    },
+    "N-15_4_db_reviews_count.json":  {
+                                         "description":  "reviews row count for the buyer and product after submitting",
+                                         "test":  "product-detail.spec.ts::N-15: submits review for eligible buyer"
+                                     },
+    "N-16_1_review_report_dialog_before_submit.png":  {
+                                                          "test":  "product-detail.spec.ts::N-16: reports a review"
+                                                      },
+    "N-16_2_review_after_report.png":  {
+                                           "test":  "product-detail.spec.ts::N-16: reports a review"
+                                       },
+    "N-16_3_db_review_reports.png":  {
+                                         "description":  "review_reports row for the reporter and review after submitting",
+                                         "test":  "product-detail.spec.ts::N-16: reports a review"
+                                     },
+    "N-16_3_db_review_reports.json":  {
+                                          "description":  "review_reports row for the reporter and review after submitting",
+                                          "test":  "product-detail.spec.ts::N-16: reports a review"
+                                      },
+    "N-16_4_db_review_reports_count.png":  {
+                                               "description":  "review_reports row count for the reporter and review after submitting",
+                                               "test":  "product-detail.spec.ts::N-16: reports a review"
+                                           },
+    "N-16_4_db_review_reports_count.json":  {
+                                                "description":  "review_reports row count for the reporter and review after submitting",
+                                                "test":  "product-detail.spec.ts::N-16: reports a review"
+                                            },
+    "N-17_1_ad_banner_before_rotate.png":  {
+                                               "test":  "product-detail.spec.ts::N-17: displays ad banner with internal navigation"
+                                           },
+    "N-17_2_ad_banner_after_rotate.png":  {
+                                              "test":  "product-detail.spec.ts::N-17: displays ad banner with internal navigation"
+                                          },
+    "N-17_3_navigated_to_ad_product.png":  {
+                                               "test":  "product-detail.spec.ts::N-17: displays ad banner with internal navigation"
+                                           },
+    "N-18_0_search_products_before.png":  {
+                                              "description":  "Buyer Search Products page showing the product before opening its details",
+                                              "test":  "product-detail.spec.ts::N-18: navigates back via back button"
+                                          },
+    "N-18_1_back_button.png":  {
+                                   "test":  "product-detail.spec.ts::N-18: navigates back via back button"
+                               },
+    "N-18_2_returned_to_previous_page.png":  {
+                                                 "test":  "product-detail.spec.ts::N-18: navigates back via back button"
+                                             },
+    "N-19_1_product_detail_without_hash.png":  {
+                                                   "test":  "product-detail.spec.ts::N-19: opens reviews tab from hash deep link"
+                                               },
+    "N-19_2_reviews_deep_link.png":  {
+                                         "test":  "product-detail.spec.ts::N-19: opens reviews tab from hash deep link"
+                                     },
+    "N-20_1_product_detail_english.png":  {
+                                              "test":  "product-detail.spec.ts::N-20: toggles language on product detail page"
+                                          },
+    "N-20_2_product_detail_japanese.png":  {
+                                               "test":  "product-detail.spec.ts::N-20: toggles language on product detail page"
+                                           },
+    "N-20_3_product_detail_myanmar.png":  {
+                                              "test":  "product-detail.spec.ts::N-20: toggles language on product detail page"
+                                          },
+    "N-21_1_product_detail_light.png":  {
+                                            "test":  "product-detail.spec.ts::N-21: toggles theme on product detail page"
+                                        },
+    "N-21_2_product_detail_dark.png":  {
+                                           "test":  "product-detail.spec.ts::N-21: toggles theme on product detail page"
+                                       },
+    "N-22_1_desktop_product_detail.png":  {
+                                              "test":  "product-detail.spec.ts::N-22: displays responsive layout on desktop viewport"
+                                          },
+    "N-23_1_mobile_product_detail_top.png":  {
+                                                 "test":  "product-detail.spec.ts::N-23: displays responsive layout with sticky CTA on mobile viewport"
+                                             },
+    "N-23_2_mobile_sticky_cta.png":  {
+                                         "test":  "product-detail.spec.ts::N-23: displays responsive layout with sticky CTA on mobile viewport"
+                                     },
+    "N-24_1_buyer_view_for_comparison.png":  {
+                                                 "test":  "product-detail.spec.ts::N-24: hides commerce content in merchant view"
+                                             },
+    "N-24_2_merchant_view.png":  {
+                                     "test":  "product-detail.spec.ts::N-24: hides commerce content in merchant view"
+                                 },
+    "A-02_1_invalid_product.png":  {
+                                       "test":  "product-detail.spec.ts::A-02: shows invalid product message when id param is missing"
+                                   },
+    "A-05_1_non_buyer_before.png":  {
+                                        "test":  "product-detail.spec.ts::A-05: redirects non-buyer user to unauthorized"
+                                    },
+    "A-05_2_non_buyer_unauthorized.png":  {
+                                              "test":  "product-detail.spec.ts::A-05: redirects non-buyer user to unauthorized"
+                                          },
+    "A-10_1_duplicate_review_before.png":  {
+                                               "test":  "product-detail.spec.ts::A-10: rejects duplicate review submission with 409"
+                                           },
+    "A-10_2_duplicate_review_after.png":  {
+                                              "test":  "product-detail.spec.ts::A-10: rejects duplicate review submission with 409"
+                                          },
+    "A-10_3_db_reviews_count.png":  {
+                                        "description":  "reviews row count for the buyer and product after the duplicate attempt, proving it is still 1",
+                                        "test":  "product-detail.spec.ts::A-10: rejects duplicate review submission with 409"
+                                    },
+    "A-10_3_db_reviews_count.json":  {
+                                         "description":  "reviews row count for the buyer and product after the duplicate attempt, proving it is still 1",
+                                         "test":  "product-detail.spec.ts::A-10: rejects duplicate review submission with 409"
+                                     },
+    "A-11_1_duplicate_report_before.png":  {
+                                               "test":  "product-detail.spec.ts::A-11: rejects duplicate review report with 409"
+                                           },
+    "A-11_2_duplicate_report_after.png":  {
+                                              "test":  "product-detail.spec.ts::A-11: rejects duplicate review report with 409"
+                                          },
+    "A-11_3_db_review_reports_count.png":  {
+                                               "description":  "review_reports row count for the reporter and review after the duplicate attempt, proving it is still 1",
+                                               "test":  "product-detail.spec.ts::A-11: rejects duplicate review report with 409"
+                                           },
+    "A-11_3_db_review_reports_count.json":  {
+                                                "description":  "review_reports row count for the reporter and review after the duplicate attempt, proving it is still 1",
+                                                "test":  "product-detail.spec.ts::A-11: rejects duplicate review report with 409"
+                                            },
+    "A-14_1_deactivated_before.png":  {
+                                          "test":  "product-detail.spec.ts::A-14: blocks actions for deactivated account"
+                                      },
+    "A-14_2_account_deactivated_dialog.png":  {
+                                                  "test":  "product-detail.spec.ts::A-14: blocks actions for deactivated account"
+                                              },
+    "A-03_1_guest_before_add_to_cart.png":  {
+                                                "test":  "product-detail.spec.ts::A-03: redirects guest user attempting to add to cart"
+                                            },
+    "A-03_2_guest_after_add_to_cart.png":  {
+                                               "test":  "product-detail.spec.ts::A-03: redirects guest user attempting to add to cart"
+                                           },
+    "A-03_3_db_cart_count.png":  {
+                                     "description":  "cart row count for the guest email after the attempted add, proving no cart row was created",
+                                     "test":  "product-detail.spec.ts::A-03: redirects guest user attempting to add to cart"
+                                 },
+    "A-03_3_db_cart_count.json":  {
+                                      "description":  "cart row count for the guest email after the attempted add, proving no cart row was created",
+                                      "test":  "product-detail.spec.ts::A-03: redirects guest user attempting to add to cart"
+                                  },
+    "A-04_1_guest_before_add_to_wishlist.png":  {
+                                                    "test":  "product-detail.spec.ts::A-04: redirects guest user attempting to add to wishlist"
+                                                },
+    "A-04_2_guest_after_add_to_wishlist.png":  {
+                                                   "test":  "product-detail.spec.ts::A-04: redirects guest user attempting to add to wishlist"
+                                               },
+    "A-04_3_db_wishlist_count.png":  {
+                                         "description":  "wishlist row count for the guest email after the attempted add, proving no wishlist row was created",
+                                         "test":  "product-detail.spec.ts::A-04: redirects guest user attempting to add to wishlist"
+                                     },
+    "A-04_3_db_wishlist_count.json":  {
+                                          "description":  "wishlist row count for the guest email after the attempted add, proving no wishlist row was created",
+                                          "test":  "product-detail.spec.ts::A-04: redirects guest user attempting to add to wishlist"
+                                      },
+    "A-06_1_rating_missing_before.png":  {
+                                             "test":  "product-detail.spec.ts::A-06: blocks review submission without rating"
+                                         },
+    "A-06_2_rating_required_error.png":  {
+                                             "test":  "product-detail.spec.ts::A-06: blocks review submission without rating"
+                                         },
+    "A-07_1_review_body_missing_before.png":  {
+                                                  "test":  "product-detail.spec.ts::A-07: blocks review submission without body"
+                                              },
+    "A-07_2_review_body_required_error.png":  {
+                                                  "test":  "product-detail.spec.ts::A-07: blocks review submission without body"
+                                              },
+    "A-08_1_not_delivered_before.png":  {
+                                            "test":  "product-detail.spec.ts::A-08: blocks review for buyer without delivered order"
+                                        },
+    "A-08_2_not_delivered_after.png":  {
+                                           "test":  "product-detail.spec.ts::A-08: blocks review for buyer without delivered order"
+                                       },
+    "A-09_1_already_reviewed_before.png":  {
+                                               "test":  "product-detail.spec.ts::A-09: blocks review for buyer who already reviewed"
+                                           },
+    "A-09_2_already_reviewed_after.png":  {
+                                              "test":  "product-detail.spec.ts::A-09: blocks review for buyer who already reviewed"
+                                          },
+    "A-12_1_report_submit_disabled.png":  {
+                                              "test":  "product-detail.spec.ts::A-12: disables report submit without reason"
+                                          },
+    "A-12_2_report_submit_enabled.png":  {
+                                             "test":  "product-detail.spec.ts::A-12: disables report submit without reason"
+                                         },
+    "A-13_1_out_of_stock_before.png":  {
+                                           "test":  "product-detail.spec.ts::A-13: disables add to cart for out of stock product"
+                                       },
+    "A-13_2_out_of_stock_after.png":  {
+                                          "test":  "product-detail.spec.ts::A-13: disables add to cart for out of stock product"
+                                      },
+    "A-13_3_db_cart_count.png":  {
+                                     "description":  "cart row count for the buyer and product, proving no cart row was created",
+                                     "test":  "product-detail.spec.ts::A-13: disables add to cart for out of stock product"
+                                 },
+    "A-13_3_db_cart_count.json":  {
+                                      "description":  "cart row count for the buyer and product, proving no cart row was created",
+                                      "test":  "product-detail.spec.ts::A-13: disables add to cart for out of stock product"
+                                  },
+    "A-13_4_db_product_stock.png":  {
+                                        "description":  "products stock row for the out-of-stock product",
+                                        "test":  "product-detail.spec.ts::A-13: disables add to cart for out of stock product"
+                                    },
+    "A-13_4_db_product_stock.json":  {
+                                         "description":  "products stock row for the out-of-stock product",
+                                         "test":  "product-detail.spec.ts::A-13: disables add to cart for out of stock product"
+                                     },
+    "A-15_1_reviews_loading.png":  {
+                                       "test":  "product-detail.spec.ts::A-15: shows an error message when reviews fail to load"
+                                   },
+    "A-15_2_reviews_load_error.png":  {
+                                          "test":  "product-detail.spec.ts::A-15: shows an error message when reviews fail to load"
+                                      },
+    "A-16_1_product_request_loading.png":  {
+                                               "test":  "product-detail.spec.ts::A-16: shows not found state when product request fails"
+                                           },
+    "A-16_2_product_request_error.png":  {
+                                             "test":  "product-detail.spec.ts::A-16: shows not found state when product request fails"
+                                         },
+    "A-01_1_product_not_found_loading.png":  {
+                                                 "test":  "product-detail.spec.ts::A-01: shows not found state for unknown product"
+                                             },
+    "A-01_2_product_not_found.png":  {
+                                         "test":  "product-detail.spec.ts::A-01: shows not found state for unknown product"
+                                     },
+    "B-02_1_quantity_below_stock_limit.png":  {
+                                                  "test":  "product-detail.spec.ts::B-02: caps quantity at available stock"
+                                              },
+    "B-02_2_quantity_at_stock_limit.png":  {
+                                               "test":  "product-detail.spec.ts::B-02: caps quantity at available stock"
+                                           },
+    "B-04_1_title_255_chars.png":  {
+                                       "test":  "product-detail.spec.ts::B-04: accepts review title of exactly 255 characters"
+                                   },
+    "B-04_2_title_255_submitted.png":  {
+                                           "test":  "product-detail.spec.ts::B-04: accepts review title of exactly 255 characters"
+                                       },
+    "B-04_3_db_reviews.png":  {
+                                  "description":  "reviews row for the buyer and product after submitting, showing the 255-character title",
+                                  "test":  "product-detail.spec.ts::B-04: accepts review title of exactly 255 characters"
+                              },
+    "B-04_3_db_reviews.json":  {
+                                   "description":  "reviews row for the buyer and product after submitting, showing the 255-character title",
+                                   "test":  "product-detail.spec.ts::B-04: accepts review title of exactly 255 characters"
+                               },
+    "B-05_1_title_paste_300.png":  {
+                                       "test":  "product-detail.spec.ts::B-05: caps review title at 255 characters"
+                                   },
+    "B-05_2_title_capped_255.png":  {
+                                        "test":  "product-detail.spec.ts::B-05: caps review title at 255 characters"
+                                    },
+    "B-06_1_body_5000_chars.png":  {
+                                       "test":  "product-detail.spec.ts::B-06: accepts review body of exactly 5000 characters"
+                                   },
+    "B-06_2_body_5000_submitted.png":  {
+                                           "test":  "product-detail.spec.ts::B-06: accepts review body of exactly 5000 characters"
+                                       },
+    "B-06_3_db_reviews.png":  {
+                                  "description":  "reviews row for the buyer and product after submitting, showing the 5000-character body",
+                                  "test":  "product-detail.spec.ts::B-06: accepts review body of exactly 5000 characters"
+                              },
+    "B-06_3_db_reviews.json":  {
+                                   "description":  "reviews row for the buyer and product after submitting, showing the 5000-character body",
+                                   "test":  "product-detail.spec.ts::B-06: accepts review body of exactly 5000 characters"
+                               },
+    "B-07_1_body_paste_6000.png":  {
+                                       "test":  "product-detail.spec.ts::B-07: caps review body at 5000 characters"
+                                   },
+    "B-07_2_body_capped_5000.png":  {
+                                        "test":  "product-detail.spec.ts::B-07: caps review body at 5000 characters"
+                                    },
+    "B-08_1_report_detail_1000_chars.png":  {
+                                                "test":  "product-detail.spec.ts::B-08: accepts report detail of exactly 1000 characters"
+                                            },
+    "B-08_2_report_detail_1000_submitted.png":  {
+                                                    "test":  "product-detail.spec.ts::B-08: accepts report detail of exactly 1000 characters"
+                                                },
+    "B-08_3_db_review_reports.png":  {
+                                         "description":  "review_reports row for the reporter and review after submitting, showing the 1000-character description",
+                                         "test":  "product-detail.spec.ts::B-08: accepts report detail of exactly 1000 characters"
+                                     },
+    "B-08_3_db_review_reports.json":  {
+                                          "description":  "review_reports row for the reporter and review after submitting, showing the 1000-character description",
+                                          "test":  "product-detail.spec.ts::B-08: accepts report detail of exactly 1000 characters"
+                                      },
+    "B-09_1_report_detail_paste_1500.png":  {
+                                                "test":  "product-detail.spec.ts::B-09: caps report detail at 1000 characters"
+                                            },
+    "B-09_2_report_detail_capped_1000.png":  {
+                                                 "test":  "product-detail.spec.ts::B-09: caps report detail at 1000 characters"
+                                             },
+    "B-10_1_rating_1_star.png":  {
+                                     "test":  "product-detail.spec.ts::B-10: accepts rating values 1 and 5"
+                                 },
+    "B-10_2_rating_5_stars.png":  {
+                                      "test":  "product-detail.spec.ts::B-10: accepts rating values 1 and 5"
+                                  },
+    "B-11_1_no_reviews_empty_state.png":  {
+                                              "test":  "product-detail.spec.ts::B-11: displays empty state when product has no reviews"
+                                          },
+    "B-12_1_similar_section_present.png":  {
+                                               "test":  "product-detail.spec.ts::B-12: hides similar products section when no matches"
+                                           },
+    "B-12_2_similar_section_hidden.png":  {
+                                              "test":  "product-detail.spec.ts::B-12: hides similar products section when no matches"
+                                          },
+    "B-16_1_low_stock_at_threshold.png":  {
+                                              "test":  "product-detail.spec.ts::B-16: shows low stock badge at threshold"
+                                          },
+    "B-01_1_quantity_above_minimum.png":  {
+                                              "test":  "product-detail.spec.ts::B-01: disables decrement at minimum quantity of one"
+                                          },
+    "B-01_2_quantity_min_one.png":  {
+                                        "test":  "product-detail.spec.ts::B-01: disables decrement at minimum quantity of one"
+                                    },
+    "B-03_1_no_compare_at_price.png":  {
+                                           "test":  "product-detail.spec.ts::B-03: hides save badge when compare at price is null"
+                                       },
+    "B-13_1_placeholder_image.png":  {
+                                         "test":  "product-detail.spec.ts::B-13: displays placeholder image when product has no images"
+                                     },
+    "B-14_1_no_description_state.png":  {
+                                            "test":  "product-detail.spec.ts::B-14: displays empty description state"
+                                        },
+    "B-15_1_no_ingredients_state.png":  {
+                                            "test":  "product-detail.spec.ts::B-15: displays empty ingredients state"
+                                        },
+    "B-17_1_320px_product_detail.png":  {
+                                            "test":  "product-detail.spec.ts::B-17: has no horizontal overflow at a 320px viewport"
+                                        },
+    "I-01_1_api_product_detail.png":  {
+                                          "description":  "API response evidence for GET http://localhost:8080/api/v1/products/vitamin-c-serum",
+                                          "test":  "product-detail.spec.ts::I-01: returns product detail with embedded promotions and rating breakdown"
+                                      },
+    "I-02_1_api_resolve_identifiers.png":  {
+                                               "description":  "API response evidence for GET http://localhost:8080/api/v1/products/vitamin-c-serum",
+                                               "test":  "product-detail.spec.ts::I-02: resolves uuid slug and sku to the same product"
+                                           },
+    "I-04_1_api_reviews_flat.png":  {
+                                        "description":  "API response evidence for GET http://localhost:8080/api/v1/products/vitamin-c-serum/reviews?page=1\u0026limit=10",
+                                        "test":  "product-detail.spec.ts::I-04: returns paginated reviews with flat shape"
+                                    },
+    "I-06_1_api_reviews_bad_query.png":  {
+                                             "description":  "API response evidence for GET http://localhost:8080/api/v1/products/vitamin-c-serum/reviews?sortBy=invalid",
+                                             "test":  "product-detail.spec.ts::I-06: returns 400 for invalid review query parameters"
+                                         },
+    "I-03_1_api_product_not_found.png":  {
+                                             "description":  "API response evidence for GET http://localhost:8080/api/v1/products/does-not-exist-at-all",
+                                             "test":  "product-detail.spec.ts::I-03: returns 404 for unknown inactive or unapproved product"
+                                         },
+    "I-05_1_api_reviews_sortby.png":  {
+                                          "description":  "API response evidence for GET http://localhost:8080/api/v1/products/vitamin-c-serum/reviews?sortBy=lowest",
+                                          "test":  "product-detail.spec.ts::I-05: honours sortBy on the reviews endpoint"
+                                      },
+    "I-07_1_api_similar_products.png":  {
+                                            "description":  "API response evidence for GET http://localhost:8080/api/v1/products/vitamin-c-serum/similar?limit=8",
+                                            "test":  "product-detail.spec.ts::I-07: returns similar products as a bare array"
+                                        },
+    "I-08_1_api_advertisements.png":  {
+                                          "description":  "API response evidence for GET http://localhost:8080/api/v1/products/vitamin-c-serum/advertisements",
+                                          "test":  "product-detail.spec.ts::I-08: returns at most five eligible advertisements"
+                                      },
+    "I-09_1_api_search_ads.png":  {
+                                      "description":  "API response evidence for GET http://localhost:8080/api/v1/search/ads?placement=productDetail_page_banner",
+                                      "test":  "product-detail.spec.ts::I-09: returns ads for the productDetail_page_banner placement"
+                                  },
+    "I-10_1_api_can_review.png":  {
+                                      "description":  "API response evidence for GET http://localhost:8080/api/v1/products/hydrating-toner/can-review",
+                                      "test":  "product-detail.spec.ts::I-10: returns the review eligibility verdict"
+                                  },
+    "I-11_1_api_can_review_unauthorized.png":  {
+                                                   "description":  "API response evidence for GET http://localhost:8080/api/v1/products/vitamin-c-serum/can-review",
+                                                   "test":  "product-detail.spec.ts::I-11: rejects can-review without a token or for a non-buyer"
+                                               },
+    "I-12_1_api_create_review.png":  {
+                                         "description":  "API response evidence for POST http://localhost:8080/api/v1/products/hydrating-toner/reviews",
+                                         "test":  "product-detail.spec.ts::I-12: creates a review with pending status"
+                                     },
+    "I-12_2_db_reviews.png":  {
+                                  "description":  "reviews row for the buyer and product after the API call, with status = pending",
+                                  "test":  "product-detail.spec.ts::I-12: creates a review with pending status"
+                              },
+    "I-12_2_db_reviews.json":  {
+                                   "description":  "reviews row for the buyer and product after the API call, with status = pending",
+                                   "test":  "product-detail.spec.ts::I-12: creates a review with pending status"
+                               },
+    "I-13_1_api_create_review_not_delivered.png":  {
+                                                       "description":  "API response evidence for POST http://localhost:8080/api/v1/products/hydrating-sheet-mask/reviews",
+                                                       "test":  "product-detail.spec.ts::I-13: rejects review creation without a delivered order"
+                                                   },
+    "I-14_1_api_create_review_duplicate.png":  {
+                                                   "description":  "API response evidence for POST http://localhost:8080/api/v1/products/gentle-foam-cleanser/reviews",
+                                                   "test":  "product-detail.spec.ts::I-14: rejects duplicate review creation with 409"
+                                               },
+    "I-14_2_db_reviews_count.png":  {
+                                        "description":  "reviews row count for the buyer and product after the duplicate call 遯ｶ繝ｻstill 1",
+                                        "test":  "product-detail.spec.ts::I-14: rejects duplicate review creation with 409"
+                                    },
+    "I-14_2_db_reviews_count.json":  {
+                                         "description":  "reviews row count for the buyer and product after the duplicate call 遯ｶ繝ｻstill 1",
+                                         "test":  "product-detail.spec.ts::I-14: rejects duplicate review creation with 409"
+                                     },
+    "I-15_1_api_create_review_unauthorized.png":  {
+                                                      "description":  "API response evidence for POST http://localhost:8080/api/v1/products/vitamin-c-serum/reviews",
+                                                      "test":  "product-detail.spec.ts::I-15: rejects review creation without a token or for a non-buyer"
+                                                  },
+    "I-16_1_api_report_review.png":  {
+                                         "description":  "API response evidence for POST http://localhost:8080/api/v1/reviews/188635a9-67b6-4f34-8882-499931848d8a/report",
+                                         "test":  "product-detail.spec.ts::I-16: creates a review report"
+                                     },
+    "I-16_2_db_review_reports.png":  {
+                                         "description":  "review_reports row for the reporter and review after the API call",
+                                         "test":  "product-detail.spec.ts::I-16: creates a review report"
+                                     },
+    "I-16_2_db_review_reports.json":  {
+                                          "description":  "review_reports row for the reporter and review after the API call",
+                                          "test":  "product-detail.spec.ts::I-16: creates a review report"
+                                      },
+    "I-17_1_api_report_review_duplicate.png":  {
+                                                   "description":  "API response evidence for POST http://localhost:8080/api/v1/reviews/188635a9-67b6-4f34-8882-499931848d8a/report",
+                                                   "test":  "product-detail.spec.ts::I-17: rejects duplicate review report with 409"
+                                               },
+    "I-17_2_db_review_reports_count.png":  {
+                                               "description":  "review_reports row count for the reporter and review after the duplicate call 遯ｶ繝ｻstill 1",
+                                               "test":  "product-detail.spec.ts::I-17: rejects duplicate review report with 409"
+                                           },
+    "I-17_2_db_review_reports_count.json":  {
+                                                "description":  "review_reports row count for the reporter and review after the duplicate call 遯ｶ繝ｻstill 1",
+                                                "test":  "product-detail.spec.ts::I-17: rejects duplicate review report with 409"
+                                            },
+    "I-18_1_api_report_review_unauthorized.png":  {
+                                                      "description":  "API response evidence for POST http://localhost:8080/api/v1/reviews/188635a9-67b6-4f34-8882-499931848d8a/report",
+                                                      "test":  "product-detail.spec.ts::I-18: rejects report without a token or for an unknown review"
+                                                  },
+    "I-19_1_api_error_format.png":  {
+                                        "description":  "API response evidence for GET http://localhost:8080/api/v1/products/does-not-exist-at-all",
+                                        "test":  "product-detail.spec.ts::I-19: error responses follow standard API error format"
+                                    }
+}

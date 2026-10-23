@@ -1,0 +1,19 @@
+{
+  "capturedAt": "2026-10-23T08:33:16.907Z",
+  "description": "review_reports row for the reporter and review after the API call",
+  "results": [
+    {
+      "label": "review_reports row by reporter and review",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "2115989c-5e07-49f0-baae-4604951ba2ff",
+          "review_id": "188635a9-67b6-4f34-8882-499931848d8a",
+          "reason": "spam",
+          "description": "E2E report created by the ProductDetail e2e run.",
+          "status": "pending"
+        }
+      ]
+    }
+  ]
+}
