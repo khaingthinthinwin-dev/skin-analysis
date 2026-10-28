@@ -1,23 +1,17 @@
 {
   "module": "Product_Management",
-  "timestamp": "2026-10-15T02:55:23.355Z",
-  "total": 2,
-  "passed": 2,
+  "timestamp": "2026-10-27T07:19:36.488Z",
+  "total": 1,
+  "passed": 1,
   "failed": 0,
   "skipped": 0,
-  "durationMs": 16295,
+  "durationMs": 6604,
   "tests": [
     {
-      "title": "N-07: should update stock quantity inline",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "title": "B-15: Maximum image upload (10 images)",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
       "status": "passed",
-      "duration": 9090
-    },
-    {
-      "title": "B-06: should display empty state when merchant has no products",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
-      "status": "passed",
-      "duration": 7205
+      "duration": 6604
     }
   ]
 }

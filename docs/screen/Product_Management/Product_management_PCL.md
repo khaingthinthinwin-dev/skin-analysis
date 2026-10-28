@@ -20,8 +20,7 @@
 
 - [x] **N-01**: View product list as approved merchant
   - **Evidence**:
-    - `N-01_1_product_management_page_loaded.png`
-    - `N-01_2_table_columns_visible.png`
+    - `N-01_1_product_list.png`
     - Test: Product_Management.spec.ts › "N-01: should view product list as approved merchant" — passed
   - **Precondition**: User is authenticated as an approved merchant with active status (`licenseStatus === 'approved'`, `isActive === true`)
   - **Steps**:
@@ -30,49 +29,43 @@
   - **Business Rules**: BR-PROD-008
   - **API**: `GET /api/v1/products`
 
-- [x] **N-02**: Navigate to Create Product page
+- [x] **N-02**: Create a new product with valid data
   - **Evidence**:
-    - `N-02_1_new_product_page_loaded.png`
-    - `N-02_2_product_form_filled.png`
-    - `N-02_3_uploaded_1_images.png`
-    - `N-02_4_save_clicked.png`
-    - `N-02_5_success_toast_visible.png`
-    - Product row after successful creation → `N-02_6_db_promotion.png`
-    - Product row after successful creation → `N-02_6_db_promotion.json`
+    - `N-02_1_create_form_filled.png`
+    - `N-02_2_list_after_create.png`
+    - Product row after successful creation → `N-02_3_db_promotion.json`
     - Test: Product_Management.spec.ts › "N-02: should create a new product with valid data" — passed
-  - **Precondition**: User is authenticated as an approved merchant on `/merchant/products`
+  - **Precondition**: User is authenticated as an approved merchant
   - **Steps**:
-    1. Click "Add New Product" button in the page header
-  - **Expected Result**: Application navigates to `/merchant/products/new`
+    1. Navigate to `/merchant/products/new`
+    2. Complete the required fields with valid product data
+    3. Click "Create Product"
+  - **Expected Result**: Product is created, a success toast is displayed, and the application returns to `/merchant/products`
   - **Business Rules**: BR-PROD-001
   - **API**: None (client-side routing)
 
-- [x] **N-03**: Navigate to Edit Product page via row action
+- [x] **N-03**: Edit an existing product
   - **Evidence**:
-    - `N-03_1_product_management_page_loaded.png`
-    - `N-03_2_edit_product_clicked.png`
-    - `N-03_3_save_clicked.png`
-    - `N-03_4_success_toast_visible.png`
-    - Product row after successful update → `N-03_6_db_promotion.png`
-    - Product row after successful update → `N-03_6_db_promotion.json`
+    - `N-03_1_edit_form_filled.png`
+    - `N-03_2_list_after_edit.png`
+    - Product row after successful update → `N-03_3_db_promotion.json`
+    - Product row after successful update → `N-03_3_db_promotion.png`
     - Test: Product_Management.spec.ts › "N-03: should edit an existing product" — passed
   - **Precondition**: User is authenticated as an approved merchant with products in the table
   - **Steps**:
-    1. Locate target product row in the table
-    2. Click the Edit button (pencil icon) in the Actions column
-  - **Expected Result**: Application navigates to `/merchant/products/:id/edit`
+    1. Locate a product row in the table
+    2. Click the Edit button and update the product name
+    3. Save the changes
+  - **Expected Result**: The product is updated, a success toast is displayed, and the application returns to `/merchant/products`
   - **Business Rules**: BR-PROD-005
-  - **API**: None (client-side routing)
+  - **API**: `PATCH /api/v1/products/:id`
 
 - [x] **N-04**: Toggle product active status (Active ⇄ Inactive)
   - **Evidence**:
-    - `N-04_1_product_management_page_loaded.png`
-    - `N-04_2_delete_dialog_opened.png`
-    - `N-04_3_delete_confirmed.png`
-    - `N-04_4_success_toast_visible.png`
-    - Product lookup after deletion (expected zero rows) → `N-04_5_db_promotion.png`
-    - Product lookup after deletion (expected zero rows) → `N-04_5_db_promotion.json`
-    - Test: Product_Management.spec.ts › "N-04: should delete a product (soft delete)" — passed
+    - `N-04_1_active_status_toggled.png`
+    - Product row after status toggle → `N-04_2_db_promotion.png`
+    - Product row after status toggle → `N-04_2_db_promotion.json`
+    - Test: Product_Management.spec.ts › "N-04: should toggle product active status" — passed
   - **Precondition**: User is authenticated as an approved merchant with existing products
   - **Steps**:
     1. Locate target product row in the table
@@ -83,12 +76,10 @@
 
 - [x] **N-05**: Toggle product featured status
   - **Evidence**:
-    - `N-05_1_product_management_page_loaded.png`
-    - `N-05_2_active_toggle_clicked.png`
-    - `N-05_3_success_toast_visible.png`
-    - Product row after active status toggle → `N-05_4_db_promotion.png`
-    - Product row after active status toggle → `N-05_4_db_promotion.json`
-    - Test: Product_Management.spec.ts › "N-05: should toggle product active status" — passed
+    - `N-05_1_featured_status_toggled.png`
+    - Product row after featured status toggle → `N-05_2_db_promotion.png`
+    - Product row after featured status toggle → `N-05_2_db_promotion.json`
+    - Test: Product_Management.spec.ts › "N-05: should toggle product featured status" — passed
   - **Precondition**: User is authenticated as an approved merchant with existing products
   - **Steps**:
     1. Locate target product row in the table
@@ -99,12 +90,10 @@
 
 - [x] **N-06**: Update stock quantity inline via editor
   - **Evidence**:
-    - `N-06_1_product_management_page_loaded.png`
-    - `N-06_2_featured_toggle_clicked.png`
-    - `N-06_3_success_toast_visible.png`
-    - Product row after featured status toggle → `N-06_4_db_promotion.png`
-    - Product row after featured status toggle → `N-06_4_db_promotion.json`
-    - Test: Product_Management.spec.ts › "N-06: should toggle product featured status" — passed
+    - `N-06_1_stock_updated.png`
+    - Product row after stock update → `N-06_2_db_promotion.png`
+    - Product row after stock update → `N-06_2_db_promotion.json`
+    - Test: Product_Management.spec.ts › "N-06: should update stock quantity inline" — passed
   - **Precondition**: User is authenticated as an approved merchant with existing products
   - **Steps**:
     1. Hover over the Stock cell in a product row to reveal the Pencil button
@@ -117,12 +106,10 @@
 
 - [x] **N-07**: Cancel inline stock update without saving
   - **Evidence**:
-    - `N-07_1_product_management_page_loaded.png`
-    - `N-07_2_stock_updated_25.png`
-    - `N-07_3_success_toast_visible.png`
-    - Product row after stock update → `N-07_4_db_promotion.png`
-    - Product row after stock update → `N-07_4_db_promotion.json`
-    - Test: Product_Management.spec.ts › "N-07: should update stock quantity inline" — passed
+    - `N-07_1_stock_update_cancelled.png`
+    - Product row after stock update → `N-07_2_db_promotion.png`
+    - Product row after stock update → `N-07_2_db_promotion.json`
+    - Test: Product_Management.spec.ts › "N-07: should cancel inline stock update without saving" — passed
   - **Precondition**: Inline stock editor is currently open on a product row
   - **Steps**:
     1. Modify the stock number inside the input
@@ -133,20 +120,19 @@
 
 - [x] **N-08**: Search products by keyword
   - **Evidence**:
-    - `N-08_1_product_management_page_loaded.png`
-    - `N-08_2_search_results_Test_Product.png`
+    - `N-08_1_search_results.png`
     - Test: Product_Management.spec.ts › "N-08: should search products by name" — passed
-  - **Precondition**: Merchant has multiple products listed
+  - **Precondition**: The test creates a uniquely named product for the approved merchant through the product API before searching
   - **Steps**:
-    1. Type a query string into the "Search products..." input field in the filter bar
-  - **Expected Result**: Search state updates, page resets to 1, query parameter `search` is sent to API, and table displays matching products
+    1. Create a product for the merchant with a unique N-08 search name
+    2. Type that product name into the "Search products..." input field in the filter bar
+  - **Expected Result**: Search state updates, page resets to 1, query parameter `search` is sent to API, and the table displays the newly created matching product
   - **Business Rules**: None (Search)
   - **API**: `GET /api/v1/products?search={query}&page=1&limit={limit}`
 
 - [x] **N-09**: Filter products by status (All / Active / Inactive)
   - **Evidence**:
-    - `N-09_1_product_management_page_loaded.png`
-    - `N-09_2_filtered_by_status_Active.png`
+    - `N-09_1_filtered_by_status.png`
     - Test: Product_Management.spec.ts › "N-09: should filter products by status" — passed
   - **Precondition**: Merchant has products in both active and inactive states
   - **Steps**:
@@ -158,8 +144,7 @@
 
 - [x] **N-10**: Sort products by criteria (Newest / Price / Rating / Name)
   - **Evidence**:
-    - `N-10_1_product_management_page_loaded.png`
-    - `N-10_2_sorted_by_Price.png`
+    - `N-10_1_sorted_by_price.png`
     - Test: Product_Management.spec.ts › "N-10: should sort products by price" — passed
   - **Precondition**: Merchant has multiple products listed
   - **Steps**:
@@ -171,8 +156,6 @@
 
 - [x] **N-11**: Select individual products and select all via checkboxes
   - **Evidence**:
-    - `N-11_1_product_management_page_loaded.png`
-    - `N-11_2_all_products_selected.png`
     - `N-11_1_all_products_selected.png`
     - Test: Product_Management.spec.ts › "N-11: should bulk select products via checkboxes" — passed
   - **Precondition**: Merchant has multiple products listed
@@ -185,11 +168,8 @@
 
 - [x] **N-12**: Bulk delete selected products with confirmation breakdown
   - **Evidence**:
-    - `N-12_1_product_management_page_loaded.png`
-    - `N-12_2_all_products_selected.png`
-    - `N-12_3_bulk_delete_clicked.png`
-    - `N-12_4_delete_confirmed.png`
-    - `N-12_5_success_toast_visible.png`
+    - `N-12_1_bulk_delete_dialog.png`
+    - `N-12_2_bulk_delete_confirmed.png`
     - Test: Product_Management.spec.ts › "N-12: should bulk delete products" — passed
   - **Precondition**: Merchant has selected one or more products using checkboxes (no active orders)
   - **Steps**:
@@ -203,14 +183,11 @@
 
 - [x] **N-13**: Delete all products with confirmation breakdown (no selection)
   - **Evidence**:
-    - `N-13_1_new_product_page_loaded.png`
-    - `N-13_2_product_form_filled.png`
-    - `N-13_3_uploaded_1_images.png`
-    - `N-13_4_save_as_draft_clicked.png`
-    - `N-13_5_success_toast_visible.png`
-    - Product row after successful creation as draft → `N-13_6_db_promotion.png`
-    - Product row after successful creation as draft → `N-13_6_db_promotion.json`
-    - Test: Product_Management.spec.ts › "N-13: should save product as draft" — passed
+    - `N-13_1_delete_all_confirmation.png`
+    - `N-13_2_delete_all_confirmed.png`
+    - Product row after successful deletion → `N-13_3_db_promotion.png`
+    - Product row after successful deletion → `N-13_3_db_promotion.json`
+    - Test: Product_Management.spec.ts › "N-13: should delete all products with confirmation breakdown" — passed
   - **Precondition**: Merchant has products in catalog and no checkboxes are selected (`selectedIds.length === 0`)
   - **Steps**:
     1. Ensure no individual rows are selected
@@ -223,9 +200,8 @@
 
 - [x] **N-14**: Highlight product row via URL query parameter (`highlightProductId`)
   - **Evidence**:
-    - `N-14_1_settings_page_loaded.png`
-    - `N-14_2_language_toggled.png`
-    - Test: Product_Management.spec.ts › "N-14: should toggle language on screen" — passed
+    - `N-14_1_highlighted_product_row.png`
+    - Test: Product_Management.spec.ts › "N-14: should highlight product row via URL query parameter" — passed
   - **Precondition**: Merchant navigates to `/merchant/products?highlightProductId={productId}` with a valid product ID
   - **Steps**:
     1. Open URL with `highlightProductId` parameter
@@ -235,9 +211,8 @@
 
 - [x] **N-15**: Display discounted pricing and savings in product table
   - **Evidence**:
-    - `N-15_1_settings_page_loaded.png`
-    - `N-15_2_theme_toggled.png`
-    - Test: Product_Management.spec.ts › "N-15: should toggle theme on screen" — passed
+    - `N-15_1_discounted_price_display.png`
+    - Test: Product_Management.spec.ts › "N-15: should display discounted pricing and savings in product table" — passed
   - **Precondition**: Merchant has products with discounts (`compareAtPrice > price`) as well as regular prices
   - **Steps**:
     1. View product rows in table
@@ -247,10 +222,9 @@
 
 - [x] **N-16**: Paginate product list with page navigation and limit change
   - **Evidence**:
-    - `N-16_1_product_management_page_loaded.png`
-    - `N-16_2_table_columns_visible.png`
-    - `N-16_3_desktop_viewport.png`
-    - Test: Product_Management.spec.ts › "N-16: should display responsive layout on desktop viewport" — passed
+    - `N-16_1_second_page.png`
+    - `N-16_2_limit_changed.png`
+    - Test: Product_Management.spec.ts › "N-16: should display pagination with page navigation and limit change" — passed
   - **Precondition**: Merchant has more products than the current page limit
   - **Steps**:
     1. Click "Next" or specific page number in PaginationControls
@@ -262,9 +236,8 @@
 
 - [x] **N-17**: Language toggle updates screen text
   - **Evidence**:
-    - `N-17_1_product_management_page_loaded.png`
-    - `N-17_2_mobile_viewport.png`
-    - Test: Product_Management.spec.ts › "N-17: should display responsive layout on mobile viewport" — passed
+    - `N-17_1_language_toggled.png`
+    - Test: Product_Management.spec.ts › "N-17: should language toggle updates screen text" — passed
   - **Precondition**: User is on `/merchant/products`
   - **Steps**:
     1. Toggle language selector (English / Japanese / Myanmar)
@@ -273,7 +246,6 @@
 
 - [x] **N-18**: Theme toggle switches light and dark modes
   - **Evidence**:
-    - `N-18_1_product_management_page_loaded.png`
     - `N-18_1_theme_toggled.png`
     - Test: Product_Management.spec.ts › "N-18: should toggle theme on screen" — passed
   - **Precondition**: User is on `/merchant/products`
@@ -284,9 +256,7 @@
 
 - [x] **N-19**: Responsive layout on desktop and mobile viewports
   - **Evidence**:
-    - `N-19_1_product_management_page_loaded.png`
     - `N-19_1_desktop_viewport.png`
-    - `N-19_2_product_management_page_loaded.png`
     - `N-19_2_mobile_viewport.png`
     - Test: Product_Management.spec.ts › "N-19: should display responsive layout on desktop and mobile viewports" — passed
   - **Precondition**: User views `/merchant/products` across viewport widths
@@ -298,17 +268,11 @@
 
 - [x] **N-20**: Create product with full form (name, descriptions, category, pricing, stock, images, tags, skin types, ingredients)
   - **Evidence**:
-    - `N-20_1_new_product_page_loaded.png`
-    - `N-20_2_product_form_filled.png`
-    - `N-20_3_uploaded_1_images.png`
     - `N-20_1_product_form_filled.png`
-    - `N-20_4_uploaded_3_images.png`
     - `N-20_2_images_uploaded.png`
-    - `N-20_5_save_clicked.png`
-    - `N-20_6_success_toast_visible.png`
     - `N-20_3_success_redirect.png`
-    - Product row after successful creation with full form → `N-20_5_db_promotion.png`
-    - Product row after successful creation with full form → `N-20_5_db_promotion.json`
+    - Product row after successful creation with full form → `N-20_4_db_promotion.png`
+    - Product row after successful creation with full form → `N-20_4_db_promotion.json`
     - Test: Product_Management.spec.ts › "N-20: should create product with full form" — passed
   - **Precondition**: User is authenticated as an approved merchant on `/merchant/products/new`
   - **Steps**:
@@ -323,15 +287,10 @@
 
 - [x] **N-21**: Edit product with pre-filled form and image retention
   - **Evidence**:
-    - `N-21_1_product_management_page_loaded.png`
-    - `N-21_2_edit_product_clicked.png`
-    - `N-21_1_edit_page_loaded.png`
-    - `N-21_2_form_modified.png`
-    - `N-21_3_save_clicked.png`
-    - `N-21_4_success_toast_visible.png`
-    - `N-21_3_success_redirect.png`
-    - Product row after successful update with image retention → `N-21_5_db_promotion.png`
-    - Product row after successful update with image retention → `N-21_5_db_promotion.json`
+    - `N-21_1_form_modified.png`
+    - `N-21_2_list_after_edit.png`
+    - Product row after successful update with image retention → `N-21_3_db_promotion.png`
+    - Product row after successful update with image retention → `N-21_3_db_promotion.json`
     - Test: Product_Management.spec.ts › "N-21: should edit product with pre-filled form and image retention" — passed
   - **Precondition**: User is authenticated as an approved merchant on `/merchant/products/:id/edit`
   - **Steps**:
@@ -345,7 +304,6 @@
 
 - [x] **N-22**: View product image fallback when image fails to load
   - **Evidence**:
-    - `N-22_1_product_management_page_loaded.png`
     - `N-22_1_product_list_loaded.png`
     - Test: Product_Management.spec.ts › "N-22: should display product image fallback when image fails to load" — passed
   - **Precondition**: Product has an invalid or missing image URL
@@ -361,10 +319,8 @@
 
 - [x] **A-01**: Access product management without authentication
   - **Evidence**:
-    - `A-01_1_new_product_page_loaded.png`
-    - `A-01_2_save_clicked.png`
-    - `A-01_3_validation_errors_empty_form.png`
-    - Test: Product_Management.spec.ts › "A-01: should show validation errors when submitting empty product form" — passed
+    - `A-01_1_unauthenticated_redirect.png`
+    - Test: Product_Management.spec.ts › "A-01: should access product management without authentication" — passed
   - **Precondition**: User is not logged in (no session / token)
   - **Steps**:
     1. Navigate directly to `/merchant/products`
@@ -374,11 +330,8 @@
 
 - [x] **A-02**: Pending merchant access — restricted UI and pending approval banner
   - **Evidence**:
-    - `A-02_1_new_product_page_loaded.png`
-    - `A-02_2_product_form_filled.png`
-    - `A-02_3_save_clicked.png`
-    - `A-02_4_validation_error_price_zero.png`
-    - Test: Product_Management.spec.ts › "A-02: should show validation error for price <= 0" — passed
+    - `A-02_1_pending_merchant_no_crud.png`
+    - Test: Product_Management.spec.ts › "A-02: should show pending merchant restricted UI" — passed
   - **Precondition**: User is authenticated as a merchant with `licenseStatus === 'pending'`
   - **Steps**:
     1. Navigate to `/merchant/products`
@@ -388,11 +341,8 @@
 
 - [x] **A-03**: Rejected merchant access — restricted UI and account rejected banner
   - **Evidence**:
-    - `A-03_1_new_product_page_loaded.png`
-    - `A-03_2_product_form_filled.png`
-    - `A-03_3_save_clicked.png`
-    - `A-03_4_validation_error_compare_price.png`
-    - Test: Product_Management.spec.ts › "A-03: should show validation error for compareAtPrice <= price" — passed
+    - `A-03_1_rejected_merchant_no_crud.png`
+    - Test: Product_Management.spec.ts › "A-03: should show rejected merchant restricted UI" — passed
   - **Precondition**: User is authenticated as a merchant with `licenseStatus === 'rejected'`
   - **Steps**:
     1. Navigate to `/merchant/products`
@@ -402,9 +352,8 @@
 
 - [x] **A-04**: Deactivated merchant access — restricted UI and account deactivated banner
   - **Evidence**:
-    - `A-04_1_new_product_page_loaded.png`
-    - `A-04_2_image_exceeds_5mb.png`
-    - Test: Product_Management.spec.ts › "A-04: should show error when uploading image exceeding 5MB" — passed
+    - `A-04_1_deactivated_merchant_banner.png`
+    - Test: Product_Management.spec.ts › "A-04: should show deactivated merchant restricted UI" — passed
   - **Precondition**: User is authenticated as a merchant with deactivated status (`isActive === false` or `status === 'deactivated'`)
   - **Steps**:
     1. Navigate to `/merchant/products`
@@ -414,9 +363,8 @@
 
 - [x] **A-05**: Delete product with active orders — active order pre-check and skip breakdown
   - **Evidence**:
-    - `A-05_1_new_product_page_loaded.png`
-    - `A-05_2_unsupported_image_format.png`
-    - Test: Product_Management.spec.ts › "A-05: should show error when uploading unsupported image format" — passed
+    - `A-05_1_active_order_delete_breakdown.png`
+    - Test: Product_Management.spec.ts › "A-05: should delete product with active orders" — passed
   - **Precondition**: Selected products include at least one product with active (non-delivered) orders
   - **Steps**:
     1. Select product with active orders via checkbox
@@ -428,10 +376,8 @@
 
 - [x] **A-06**: Inline stock editor rejects negative or non-numeric input
   - **Evidence**:
-    - `A-06_1_new_product_page_loaded.png`
-    - `A-06_2_uploaded_11_images.png`
-    - `A-06_3_more_than_10_images.png`
-    - Test: Product_Management.spec.ts › "A-06: should show error when uploading more than 10 images" — passed
+    - `A-06_1_negative_stock_rejected.png`
+    - Test: Product_Management.spec.ts › "A-06: should reject negative stock input" — passed
   - **Precondition**: Inline stock editor is open on a product row
   - **Steps**:
     1. Enter a negative value (e.g. -5) into the stock input field
@@ -442,8 +388,8 @@
 
 - [x] **A-07**: Product list API failure displays error state with Retry button
   - **Evidence**:
-    - Screenshots: (none captured)
-    - Test: Product_Management.spec.ts › "A-07: should redirect to login when accessing product management without authentication" — passed
+    - `A-07_1_product_list_error_retry.png`
+    - Test: Product_Management.spec.ts › "A-07: should display API error state with Retry button" — passed
   - **Precondition**: API endpoint fails (network error or server 500)
   - **Steps**:
     1. Navigate to `/merchant/products` while API fails
@@ -453,10 +399,8 @@
 
 - [x] **A-08**: Stock update API error displays error toast and reverts
   - **Evidence**:
-    - `A-08_1_product_management_page_loaded.png`
-    - `A-08_2_pending_banner_visible.png`
-    - `A-08_3_pending_merchant_no_crud.png`
-    - Test: Product_Management.spec.ts › "A-08: should show pending banner and hide CRUD buttons for pending merchant" — passed
+    - `A-08_1_stock_update_error.png`
+    - Test: Product_Management.spec.ts › "A-08: should display stock update error and revert" — passed
   - **Precondition**: Inline stock update fails on server (e.g. 500 or conflict)
   - **Steps**:
     1. Modify stock inline and submit
@@ -466,10 +410,8 @@
 
 - [x] **A-09**: Status toggle API error displays error toast and reverts
   - **Evidence**:
-    - `A-09_1_product_management_page_loaded.png`
-    - `A-09_2_rejected_banner_visible.png`
-    - `A-09_3_rejected_merchant_no_crud.png`
-    - Test: Product_Management.spec.ts › "A-09: should show rejected banner and hide CRUD buttons for rejected merchant" — passed
+    - `A-09_1_status_toggle_error.png`
+    - Test: Product_Management.spec.ts › "A-09: should display status toggle error and revert" — passed
   - **Precondition**: Active status toggle fails on server
   - **Steps**:
     1. Click Status toggle switch on a product row
@@ -479,11 +421,8 @@
 
 - [x] **A-10**: Featured toggle API error displays error toast
   - **Evidence**:
-    - `A-10_1_product_management_page_loaded.png`
-    - `A-10_2_delete_dialog_opened.png`
-    - `A-10_3_delete_confirmed.png`
-    - `A-10_4_delete_product_active_orders.png`
-    - Test: Product_Management.spec.ts › "A-10: should show error when deleting product with active orders" — passed
+    - `A-10_1_featured_toggle_error.png`
+    - Test: Product_Management.spec.ts › "A-10: should display featured toggle error" — passed
   - **Precondition**: Featured status toggle fails on server
   - **Steps**:
     1. Click isFeatured toggle switch on a product row
@@ -493,10 +432,8 @@
 
 - [x] **A-11**: Create product form validation — required fields
   - **Evidence**:
-    - `A-11_1_product_management_page_loaded.png`
-    - `A-11_2_stock_updated_-5.png`
-    - `A-11_3_negative_stock_update.png`
-    - Test: Product_Management.spec.ts › "A-11: should show error when updating stock to negative value" — passed
+    - `A-11_1_required_fields_validation.png`
+    - Test: Product_Management.spec.ts › "A-11: should show required fields validation" — passed
   - **Precondition**: User is on `/merchant/products/new`
   - **Steps**:
     1. Leave required fields empty (Product Name, Short Description, Full Description, Category)
@@ -507,9 +444,6 @@
 
 - [x] **A-12**: Create product form validation — price and stock numeric constraints
   - **Evidence**:
-    - `A-12_1_new_product_page_loaded.png`
-    - `A-12_2_product_form_filled.png`
-    - `A-12_3_save_clicked.png`
     - `A-12_1_negative_values_rejected.png`
     - Test: Product_Management.spec.ts › "A-12: should reject negative price and stock quantity in create form" — passed
   - **Precondition**: User is on `/merchant/products/new`
@@ -522,9 +456,7 @@
 
 - [x] **A-13**: Create product — image upload validation (file type, max files)
   - **Evidence**:
-    - `A-13_1_new_product_page_loaded.png`
     - `A-13_1_invalid_file_type_rejected.png`
-    - `A-13_2_uploaded_11_images.png`
     - `A-13_2_max_images_enforced.png`
     - Test: Product_Management.spec.ts › "A-13: should reject invalid file types and enforce max 10 images" — passed
   - **Precondition**: User is on `/merchant/products/new`
@@ -537,8 +469,6 @@
 
 - [x] **A-14**: Edit product — SKU field is read-only (auto-generated)
   - **Evidence**:
-    - `A-14_1_product_management_page_loaded.png`
-    - `A-14_2_edit_product_clicked.png`
     - `A-14_1_sku_readonly.png`
     - Test: Product_Management.spec.ts › "A-14: should show SKU field as read-only in edit mode" — passed
   - **Precondition**: User is on `/merchant/products/:id/edit`
@@ -548,20 +478,22 @@
   - **Business Rules**: BR-PROD-001
   - **API**: None (UI only)
 
-- [x] **A-15**: Delete all confirmation when catalog is empty
+- [x] **A-15**: Empty catalog displays no-products state
   - **Evidence**:
-    - `A-15_1_product_management_page_loaded.png`
-    - Test: Product_Management.spec.ts › "A-15: should show no products to delete message when catalog is empty" — passed
-  - **Precondition**: Merchant has 0 products, clicks "Delete" button
+    - `A-15_1_empty_catalog_delete.png`
+    - Test: Product_Management.spec.ts › "A-15: should show empty state when catalog has no products" — passed
+  - **Precondition**: The product list API returns an empty catalog to the merchant
   - **Steps**:
-    1. Click "Delete" button in filter bar
-  - **Expected Result**: Dialog displays "No products to delete" message; confirm button disabled
-  - **Business Rules**: BR-PROD-024
-  - **API**: None
+    1. Navigate to `/merchant/products`
+    2. Observe the empty product list state
+  - **Expected Result**: The table displays "No products found" and the Delete button is unavailable
+  - **Business Rules**: None (Empty State)
+  - **API**: `GET /api/v1/products` (intercepted with an empty response)
 
 - [x] **A-16**: Rejected merchant — rejection reason display and profile navigation
   - **Evidence**:
-    - `A-16_1_rejected_banner_with_reason_and_profile_link.png`
+    - `A-16_1_rejected_banner_with_reason.png`
+    - `A-16_2_navigated_to_profile.png`
     - Test: Product_Management.spec.ts › "A-16: should display rejection reason and allow navigation to profile for rejected merchant" — passed
   - **Precondition**: User is authenticated as a merchant with `licenseStatus === 'rejected'` and `user.rejectionReason` is set
   - **Steps**:
@@ -578,12 +510,8 @@
 
 - [x] **B-01**: Empty state — catalog or filter returns zero products
   - **Evidence**:
-    - `B-01_1_new_product_page_loaded.png`
-    - `B-01_2_product_form_filled.png`
-    - `B-01_3_uploaded_1_images.png`
-    - `B-01_4_save_clicked.png`
-    - `B-01_5_success_toast_visible.png`
-    - Test: Product_Management.spec.ts › "B-01: should accept product name at minimum length (1 character)" — passed
+    - `B-01_1_empty_product_state.png`
+    - Test: Product_Management.spec.ts › "B-01: should display empty state when catalog has no products" — passed
   - **Precondition**: Merchant has 0 products in catalog (or search query yields no matches)
   - **Steps**:
     1. Navigate to `/merchant/products` with empty dataset
@@ -593,12 +521,8 @@
 
 - [x] **B-02**: Stock quantity at zero (Out of Stock indicator in destructive red)
   - **Evidence**:
-    - `B-02_1_new_product_page_loaded.png`
-    - `B-02_2_product_form_filled.png`
-    - `B-02_3_uploaded_1_images.png`
-    - `B-02_4_save_clicked.png`
-    - `B-02_5_success_toast_visible.png`
-    - Test: Product_Management.spec.ts › "B-02: should accept product name at maximum length (255 characters)" — passed
+    - `B-02_1_zero_stock_indicator.png`
+    - Test: Product_Management.spec.ts › "B-02: should show out of stock indicator at zero stock" — passed
   - **Precondition**: Product has `stockQuantity === 0`
   - **Steps**:
     1. View product row in table
@@ -608,9 +532,8 @@
 
 - [x] **B-03**: Stock quantity at low stock threshold (1 to 10 in amber warning)
   - **Evidence**:
-    - `B-03_1_new_product_page_loaded.png`
-    - `B-03_2_name_exceeds_max_length.png`
-    - Test: Product_Management.spec.ts › "B-03: should reject product name exceeding maximum length (256 characters)" — passed
+    - `B-03_1_low_stock_warning.png`
+    - Test: Product_Management.spec.ts › "B-03: should show low stock warning at threshold" — passed
   - **Precondition**: Product has `stockQuantity > 0 && stockQuantity <= 10`
   - **Steps**:
     1. View product row in table
@@ -620,12 +543,8 @@
 
 - [x] **B-04**: Stock quantity above threshold (> 10 in standard neutral)
   - **Evidence**:
-    - `B-04_1_new_product_page_loaded.png`
-    - `B-04_2_product_form_filled.png`
-    - `B-04_3_uploaded_1_images.png`
-    - `B-04_4_save_clicked.png`
-    - `B-04_5_success_toast_visible.png`
-    - Test: Product_Management.spec.ts › "B-04: should accept SKU at maximum length (100 characters)" — passed
+    - `B-04_1_stock_above_threshold.png`
+    - Test: Product_Management.spec.ts › "B-04: should show stock above threshold in neutral color" — passed
   - **Precondition**: Product has `stockQuantity > 10`
   - **Steps**:
     1. View product row in table
@@ -635,12 +554,8 @@
 
 - [x] **B-05**: Long product name text truncation with ellipsis
   - **Evidence**:
-    - `B-05_1_new_product_page_loaded.png`
-    - `B-05_2_product_form_filled.png`
-    - `B-05_3_uploaded_1_images.png`
-    - `B-05_4_save_clicked.png`
-    - `B-05_5_success_toast_visible.png`
-    - Test: Product_Management.spec.ts › "B-05: should accept short description at maximum length (500 characters)" — passed
+    - `B-05_1_long_name_truncated.png`
+    - Test: Product_Management.spec.ts › "B-05: should display long product name with ellipsis" — passed
   - **Precondition**: Product has a very long name (up to 255 characters)
   - **Steps**:
     1. View product row in table
@@ -650,9 +565,8 @@
 
 - [x] **B-06**: Pagination boundary — first page (Previous button disabled)
   - **Evidence**:
-    - `B-06_1_product_management_page_loaded.png`
-    - `B-06_2_product_list_state.png`
-    - Test: Product_Management.spec.ts › "B-06: should display empty state when merchant has no products" — passed
+    - `B-06_1_first_page_boundary.png`
+    - Test: Product_Management.spec.ts › "B-06: should display previous button disabled on page 1" — passed
   - **Precondition**: Merchant is on page 1 of product list
   - **Steps**:
     1. Observe previous page button in PaginationControls
@@ -662,10 +576,8 @@
 
 - [x] **B-07**: Pagination boundary — last page (Next button disabled)
   - **Evidence**:
-    - `B-07_1_product_management_page_loaded.png`
-    - `B-07_2_stock_updated_10.png`
-    - `B-07_3_stock_at_threshold.png`
-    - Test: Product_Management.spec.ts › "B-07: should show low stock warning at threshold" — passed
+    - `B-07_1_last_page_boundary.png`
+    - Test: Product_Management.spec.ts › "B-07: should display next button disabled on last page" — passed
   - **Precondition**: Merchant is on last page (`page === totalPages`)
   - **Steps**:
     1. Navigate to last page of product list
@@ -675,10 +587,8 @@
 
 - [x] **B-08**: Page limit selection boundary (change items per page)
   - **Evidence**:
-    - `B-08_1_product_management_page_loaded.png`
-    - `B-08_2_stock_updated_0.png`
-    - `B-08_3_stock_at_zero.png`
-    - Test: Product_Management.spec.ts › "B-08: should show out of stock indicator at zero stock" — passed
+    - `B-08_1_page_limit_changed.png`
+    - Test: Product_Management.spec.ts › "B-08: should change items per page and reset to page 1" — passed
   - **Precondition**: Merchant has more than 10 products
   - **Steps**:
     1. Change items per page selector (e.g. from 10 to 20 or 50)
@@ -688,12 +598,8 @@
 
 - [x] **B-09**: Delete confirmation when zero products are selected (triggers Delete All flow)
   - **Evidence**:
-    - `B-09_1_new_product_page_loaded.png`
-    - `B-09_2_product_form_filled.png`
-    - `B-09_3_uploaded_1_images.png`
-    - `B-09_4_save_clicked.png`
-    - `B-09_5_discount_100_percent.png`
-    - Test: Product_Management.spec.ts › "B-09: should accept discount percentage at maximum (100%)" — passed
+    - `B-09_1_delete_all_dialog.png`
+    - Test: Product_Management.spec.ts › "B-09: should trigger delete all flow with zero selection" — passed
   - **Precondition**: Merchant has products listed, selects 0 checkboxes, clicks "Delete"
   - **Steps**:
     1. With no products selected, click "Delete" button in filter bar
@@ -703,11 +609,8 @@
 
 - [x] **B-10**: Delete confirmation when exactly 1 product is selected (singular title/text)
   - **Evidence**:
-    - `B-10_1_new_product_page_loaded.png`
-    - `B-10_2_product_form_filled.png`
-    - `B-10_3_save_clicked.png`
-    - `B-10_4_discount_exceeds_100.png`
-    - Test: Product_Management.spec.ts › "B-10: should show validation error for discount exceeding 100%" — passed
+    - `B-10_1_single_product_delete_dialog.png`
+    - Test: Product_Management.spec.ts › "B-10: should show singular delete dialog for one product selected" — passed
   - **Precondition**: Exactly 1 product checkbox is selected
   - **Steps**:
     1. Check exactly 1 product checkbox
@@ -718,9 +621,8 @@
 
 - [x] **B-11**: Delete confirmation with all items on current page selected
   - **Evidence**:
-    - `B-11_1_product_management_page_loaded.png`
-    - `B-11_2_pagination_state.png`
-    - Test: Product_Management.spec.ts › "B-11: should handle pagination at last page boundary" — passed
+    - `B-11_1_all_selected_delete_dialog.png`
+    - Test: Product_Management.spec.ts › "B-11: should delete all products on current page" — passed
   - **Precondition**: Header "Select all" checkbox is checked
   - **Steps**:
     1. Click header checkbox to select all rows
@@ -731,10 +633,8 @@
 
 - [x] **B-12**: Delete product already inactive (triggers permanent deletion breakdown)
   - **Evidence**:
-    - `B-12_1_new_product_page_loaded.png`
-    - `B-12_2_uploaded_10_images.png`
-    - `B-12_3_max_images_uploaded.png`
-    - Test: Product_Management.spec.ts › "B-12: should accept exactly 10 images (max allowed)" — passed
+    - `B-12_1_inactive_permanent_delete.png`
+    - Test: Product_Management.spec.ts › "B-12: should permanently delete inactive product" — passed
   - **Precondition**: Selected product is already inactive (`isActive === false`)
   - **Steps**:
     1. Select an inactive product using checkbox
@@ -746,12 +646,7 @@
 
 - [x] **B-13**: Stock quantity at maximum integer value
   - **Evidence**:
-    - `B-13_1_new_product_page_loaded.png`
-    - `B-13_2_product_form_filled.png`
-    - `B-13_3_uploaded_1_images.png`
     - `B-13_1_max_stock_value.png`
-    - `B-13_4_save_clicked.png`
-    - `B-13_5_success_toast_visible.png`
     - Test: Product_Management.spec.ts › "B-13: should handle stock quantity at maximum integer value" — passed
   - **Precondition**: Product has `stockQuantity` at or near `Number.MAX_SAFE_INTEGER`
   - **Steps**:
@@ -763,9 +658,6 @@
 
 - [x] **B-14**: Price and Compare At Price with decimal precision (2 decimal places)
   - **Evidence**:
-    - `B-14_1_new_product_page_loaded.png`
-    - `B-14_2_product_form_filled.png`
-    - `B-14_3_uploaded_1_images.png`
     - `B-14_1_decimal_prices.png`
     - Test: Product_Management.spec.ts › "B-14: should format price and compare at price with decimal precision" — passed
   - **Precondition**: Product has price values with decimals (e.g., 19.99, 29.99)
@@ -778,10 +670,7 @@
 
 - [x] **B-15**: Maximum image upload (10 images)
   - **Evidence**:
-    - `B-15_1_new_product_page_loaded.png`
-    - `B-15_2_uploaded_10_images.png`
     - `B-15_1_max_10_images_accepted.png`
-    - `B-15_3_uploaded_1_images.png`
     - `B-15_2_11th_image_rejected.png`
     - Test: Product_Management.spec.ts › "B-15: should enforce maximum image upload of 10 images" — passed
   - **Precondition**: User on create/edit product form
@@ -805,10 +694,8 @@
 
 - [x] **B-17**: Compare At Price fallback display when compareAtPrice is zero or less than or equal to price
   - **Evidence**:
-    - `B-17_1_no_discount_display.png`
-    - `B-17b_1_zero_compare_price_display.png`
+    - Product price fallback display → `B-17_1_no_discount_check.png`
     - Test: Product_Management.spec.ts › "B-17: should display regular price without strikethrough or savings badge when compareAtPrice is zero or less than or equal to price" — passed
-    - Test: Product_Management.spec.ts › "B-17b: should display regular price without strikethrough when compareAtPrice is zero" — passed
   - **Precondition**: Product has `compareAtPrice === 0` or `compareAtPrice <= price`
   - **Steps**:
     1. Create product with compareAtPrice equal to price (e.g., both 29.99)
@@ -818,9 +705,21 @@
   - **Business Rules**: BR-PROD-002, BR-PROD-003
   - **API**: `GET /api/v1/products`, `POST /api/v1/products`
 
+- [x] **B-17b**: Compare At Price fallback display when compareAtPrice is zero
+  - **Evidence**:
+    - Zero compare-at-price display → `B-17b_1_zero_compare_price_check.png`
+    - Test: Product_Management.spec.ts › "B-17b: should display regular price without strikethrough when compareAtPrice is zero" — passed
+  - **Precondition**: Product has `compareAtPrice === 0`
+  - **Steps**:
+    1. View product rows in the table
+  - **Expected Result**: The product displays without a strikethrough price or savings badge
+  - **Business Rules**: BR-PROD-002, BR-PROD-003
+  - **API**: `GET /api/v1/products`
+
 - [x] **B-18**: Mixed selection bulk delete — breakdown count and skip exclusion
   - **Evidence**:
-    - `B-18_1_mixed_bulk_delete_breakdown_and_skip.png`
+    - `B-18_1_bulk_delete_breakdown.png`
+    - `B-18_2_mixed_bulk_delete_verified.png`
     - Test: Product_Management.spec.ts › "B-18: should show correct breakdown and skip products with active orders in mixed bulk delete selection" — passed
   - **Precondition**: Merchant has products in three states: (1) active with no orders, (2) soft-deleted (inactive), (3) with active orders; all three are selected via checkboxes
   - **Steps**:
@@ -838,7 +737,7 @@
 
 - [x] **I-01**: `GET /api/v1/products` — fetches paginated product list for merchant
   - **Evidence**:
-    - GET products list - 200 OK → `I-01_get_products_list.png`
+    - GET products list - 200 OK → `I-01_1_get_products_list_api_call.png`
     - Test: Product_Management.spec.ts › "I-01: GET /api/v1/products should return 200 with product list" — passed
   - **Precondition**: User is authenticated as merchant
   - **Steps**:
@@ -849,29 +748,30 @@
 
 - [x] **I-02**: `GET /api/v1/products` with query filters (`search`, `isActive`, `sortBy`, `page`, `limit`)
   - **Evidence**:
-    - GET product by slug - 200 OK → `I-02_get_product_by_slug.png`
-    - Test: Product_Management.spec.ts › "I-02: GET /api/v1/products/:slug should return 200 with product detail" — passed
-  - **Precondition**: Products exist in database
+    - Product list with filters applied → `I-02_1_get_product_filters_api_call.png`
+    - Test: Product_Management.spec.ts › "I-02: GET /api/v1/products with query filters should return 200" — passed
+  - **Precondition**: The test creates a uniquely named product for the approved merchant before querying
   - **Steps**:
-    1. Send `GET /api/v1/products?search=cream&isActive=true&sortBy=price&page=1&limit=10`
-  - **Expected Response**: Status code 200, JSON contains only active products matching query "cream" sorted by price
+    1. Create a product with a unique test name
+    2. Send `GET /api/v1/products` with its name as `search`, `isActive=true`, `sortBy=price`, `page=1`, and `limit=10`
+  - **Expected Response**: Status code 200; the response includes the created active product and pagination metadata for page 1 with a limit of 10
   - **Business Rules**: None (Filter/Search)
   - **API**: `GET /api/v1/products`
 
 - [x] **I-03**: `GET /api/v1/products/:slug` — returns 404 for non-existent slug
   - **Evidence**:
-    - GET non-existent product - 404 Not Found → `I-03_get_product_404.png`
+    - GET non-existent product - 404 Not Found → `I-03_1_get_product_404_api_call.png`
     - Test: Product_Management.spec.ts › "I-03: GET /api/v1/products/:slug should return 404 for non-existent slug" — passed
   - **Precondition**: Non-existent slug
   - **Steps**:
-    1. Send `GET /api/v1/products/non-existent-slug-xyz`
+    1. Send `GET /api/v1/products/slug/non-existent-slug-xyz` with merchant auth headers
   - **Expected Response**: Status code 404, JSON `{ statusCode: 404, error: "NOT_FOUND", message: "Product not found" }`
   - **Business Rules**: None
-  - **API**: `GET /api/v1/products/:slug`
+  - **API**: `GET /api/v1/products/slug/:slug`
 
 - [x] **I-04**: `POST /api/v1/products` — returns 201 with created product
   - **Evidence**:
-    - POST create product - 201 Created → `I-04_create_product.png`
+    - POST create product - 201 Created → `I-04_1_create_product_api_call.png`
     - Test: Product_Management.spec.ts › "I-04: POST /api/v1/products should return 201 with created product" — passed
   - **Precondition**: Valid payload; approved merchant
   - **Steps**:
@@ -882,7 +782,7 @@
 
 - [x] **I-05**: `POST /api/v1/products` — returns 400 for validation failure
   - **Evidence**:
-    - POST create product with empty body - 400 Bad Request → `I-05_create_product_400.png`
+    - POST create product with empty body - 400 Bad Request → `I-05_1_create_product_400_api_call.png`
     - Test: Product_Management.spec.ts › "I-05: POST /api/v1/products should return 400 for validation failure" — passed
   - **Precondition**: Invalid payload (empty body)
   - **Steps**:
@@ -893,7 +793,7 @@
 
 - [x] **I-06**: `PATCH /api/v1/products/:id` — returns 200 with updated product
   - **Evidence**:
-    - PATCH update product - 200 OK → `I-06_update_product.png`
+    - Product update response or empty-catalog state → `I-06_1_product_update_evidence.png`
     - Test: Product_Management.spec.ts › "I-06: PATCH /api/v1/products/:id should return 200 with updated product" — passed
   - **Precondition**: Product belongs to authenticated merchant
   - **Steps**:
@@ -904,7 +804,7 @@
 
 - [x] **I-07**: `DELETE /api/v1/products/:id` — returns 200/204 on success
   - **Evidence**:
-    - DELETE product - 200/204 Success → `I-07_delete_product.png`
+    - Product delete response or empty-catalog state → `I-07_1_delete_product_api_call.png`
     - Test: Product_Management.spec.ts › "I-07: DELETE /api/v1/products/:id should return 200 on success" — passed
   - **Precondition**: Product belongs to merchant, has no active orders
   - **Steps**:
@@ -915,7 +815,7 @@
 
 - [x] **I-08**: `PATCH /api/v1/products/:id/stock` — returns 200 with stock update
   - **Evidence**:
-    - PATCH update stock - 200 OK → `I-08_update_stock.png`
+    - Stock update response or empty-catalog state → `I-08_1_stock_update_evidence.png`
     - Test: Product_Management.spec.ts › "I-08: PATCH /api/v1/products/:id/stock should return 200 with stock update" — passed
   - **Precondition**: Product belongs to authenticated merchant
   - **Steps**:
@@ -926,7 +826,7 @@
 
 - [x] **I-09**: `GET /api/v1/categories` — returns 200 with category tree
   - **Evidence**:
-    - GET categories - 200 OK → `I-09_get_categories.png`
+    - GET categories - 200 OK → `I-09_1_get_categories_api_call.png`
     - Test: Product_Management.spec.ts › "I-09: GET /api/v1/categories should return 200 with category tree" — passed
   - **Precondition**: Categories exist in database
   - **Steps**:
@@ -937,7 +837,7 @@
 
 - [x] **I-10**: Error response follows standard API format
   - **Evidence**:
-    - GET non-existent product - standard error format → `I-10_error_format.png`
+    - GET non-existent product - standard error format → `I-10_1_error_format_api_call.png`
     - Test: Product_Management.spec.ts › "I-10: error response should follow standard API format" — passed
   - **Precondition**: Any API error (400, 401, 403, 404, 409, 500)
   - **Steps**:
@@ -948,7 +848,7 @@
 
 - [x] **I-11**: `POST /api/v1/products` — returns 403 for pending merchant
   - **Evidence**:
-    - POST create product by pending merchant - 403 Forbidden → `I-11_create_product_403_pending.png`
+    - POST create product by pending merchant - 403 Forbidden → `I-11_1_create_product_403_pending_api_call.png`
     - Test: Product_Management.spec.ts › "I-11: POST /api/v1/products should return 403 for pending merchant" — passed
   - **Precondition**: Merchant with `licenseStatus = pending`
   - **Steps**:
@@ -959,18 +859,18 @@
 
 - [x] **I-12**: `DELETE /api/v1/products/:id` — returns 409 Conflict when product has active orders
   - **Evidence**:
-    - DELETE product with active orders - 409 Conflict → `I-12_delete_product_409.png`
+    - Active-orders deletion response → `I-12_1_delete_product_409_api_call.png`
     - Test: Product_Management.spec.ts › "I-12: DELETE /api/v1/products/:id should return 409 for product with active orders" — passed
   - **Precondition**: Product has associated active orders (status !== 'delivered')
   - **Steps**:
     1. Send `DELETE /api/v1/products/:id` for product with active orders
-  - **Expected Response**: Status code 409 Conflict, JSON `{ statusCode: 409, error: "CONFLICT", message: "Cannot delete product with active orders..." }`
+  - **Expected Response**: Status code 409 Conflict, JSON `{ statusCode: 409, error: "Conflict", message: "Cannot delete product with active orders..." }`
   - **Business Rules**: BR-PROD-024, BR-PROD-025
   - **API**: `DELETE /api/v1/products/:id`
 
 - [x] **I-13**: `POST /api/v1/products` — create product with multipart/form-data
   - **Evidence**:
-    - POST create product with multipart/form-data - 201 Created → `I-13_create_product_multipart.png`
+    - POST create product with multipart/form-data - 201 Created → `I-13_1_create_product_multipart_api_call.png`
     - Test: Product_Management.spec.ts › "I-13: POST /api/v1/products should create product with multipart/form-data" — passed
   - **Precondition**: User is authenticated as approved merchant
   - **Steps**:
@@ -981,7 +881,7 @@
 
 - [x] **I-14**: `PATCH /api/v1/products/:id` — update product with multipart/form-data
   - **Evidence**:
-    - PATCH update product with multipart/form-data - 200 OK → `I-14_update_product_multipart.png`
+    - Multipart update response or empty-catalog state → `I-14_1_product_update_evidence.png`
     - Test: Product_Management.spec.ts › "I-14: PATCH /api/v1/products/:id should update product with multipart/form-data" — passed
   - **Precondition**: Product belongs to authenticated merchant
   - **Steps**:
@@ -992,10 +892,10 @@
 
 - [x] **I-15**: Error response follows standard API format on product endpoints
   - **Evidence**:
-    - GET http://localhost:8080/api/v1/products/00000000-0000-0000-0000-000000000000 - standard error format → `I-15_error_format_get.png`
-    - POST http://localhost:8080/api/v1/products - standard error format → `I-15_error_format_post.png`
-    - PATCH http://localhost:8080/api/v1/products/00000000-0000-0000-0000-000000000000 - standard error format → `I-15_error_format_patch.png`
-    - DELETE http://localhost:8080/api/v1/products/00000000-0000-0000-0000-000000000000 - standard error format → `I-15_error_format_delete.png`
+    - GET error response format → `I-15_1_error_format_get_api_call.png`
+    - POST error response format → `I-15_2_error_format_post_api_call.png`
+    - PATCH error response format → `I-15_3_error_format_patch_api_call.png`
+    - DELETE error response format → `I-15_4_error_format_delete_api_call.png`
     - Test: Product_Management.spec.ts › "I-15: error response should follow standard API format on product endpoints" — passed
   - **Precondition**: Any API error (400, 401, 403, 404, 409, 500)
   - **Steps**:
@@ -1004,15 +904,7 @@
   - **Business Rules**: None
   - **API**: Any endpoint
 
----
 
-## Screenshot Evidence
-
-Product Management screenshots follow the SignUp/Login naming convention:
-`<scenario-id>_<capture-number>_<descriptive-state>.png`. For example,
-the N-01 product list screenshots are `N-01_1_product_management_page_loaded.png`
-and `N-01_2_table_columns_visible.png`. Captures and their originating tests are
-indexed in [the Product Management screenshot index](../../../e2e/test-results/Product_Management/screenshots/index.json).
 
 ## Sign-Off
 
