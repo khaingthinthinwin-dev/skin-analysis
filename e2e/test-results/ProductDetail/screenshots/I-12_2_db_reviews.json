@@ -1,0 +1,19 @@
+{
+  "capturedAt": "2026-10-23T08:33:03.629Z",
+  "description": "reviews row for the buyer and product after the API call, with status = pending",
+  "results": [
+    {
+      "label": "reviews row by buyer and product",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "98debaee-9c06-44f4-92b8-ad07b05b0a6d",
+          "rating": 5,
+          "status": "pending",
+          "is_verified_purchase": true,
+          "created_at": "2026-10-23T02:03:03.235Z"
+        }
+      ]
+    }
+  ]
+}

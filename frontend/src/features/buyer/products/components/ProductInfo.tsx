@@ -7,6 +7,11 @@ import { ProductPurchaseActions } from './ProductPurchaseActions';
 interface ProductInfoProps {
   product: ProductDetail;
   isMerchantView?: boolean;
+  /**
+   * Requests the reviews tab. The page owns the tab state, because the
+   * `#reviews` anchor only exists once the reviews panel is mounted.
+   */
+  onShowReviews?: () => void;
 }
 
 function formatPrice(price: number | string) {
@@ -33,7 +38,11 @@ function getStockStatus(
   return { label: labels.inStock(product.stockQuantity), variant: 'default' };
 }
 
-export function ProductInfo({ product, isMerchantView = false }: ProductInfoProps) {
+export function ProductInfo({
+  product,
+  isMerchantView = false,
+  onShowReviews,
+}: ProductInfoProps) {
   const { t } = useTranslation();
   const discount = product.promotions[0];
   const stock = getStockStatus(product, {
@@ -44,8 +53,13 @@ export function ProductInfo({ product, isMerchantView = false }: ProductInfoProp
       t('buyer.products.stock.inStockStatus', 'In stock ({{count}})', { count }),
   });
 
-  const showReviews = () =>
+  const showReviews = () => {
+    if (onShowReviews) {
+      onShowReviews();
+      return;
+    }
     document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
     <div className="space-y-4">

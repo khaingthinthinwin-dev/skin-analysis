@@ -102,7 +102,7 @@ function formatCell(value: unknown): string {
   return String(value);
 }
 
-function renderDbHtml(results: QueryResult[], description?: string): string {
+function renderDbHtml(results: QueryResult[], description?: string, productImageUrl?: string): string {
   const queryBlocks = results
     .map((r) => {
       const lines = r.displaySql
@@ -148,6 +148,8 @@ function renderDbHtml(results: QueryResult[], description?: string): string {
   .header { background: #fff; border-bottom: 1px solid #ccc; padding: 8px 14px; font-size: 13px; }
   .header strong { font-weight: 600; }
   .desc { color: #555; margin-top: 2px; }
+  .product-photo { display: flex; align-items: center; gap: 10px; margin-top: 8px; color: #555; font-size: 11px; }
+  .product-photo img { width: 64px; height: 64px; object-fit: cover; border: 1px solid #ccc; border-radius: 4px; }
   .tabs { display: flex; background: #e9e9e9; border-bottom: 1px solid #ccc; padding: 0 10px; gap: 4px; }
   .tab { padding: 8px 16px; font-size: 13px; color: #333; }
   .tab.active { background: #fff; border: 1px solid #ccc; border-bottom: none; font-weight: 600; margin-bottom: -1px; }
@@ -172,6 +174,7 @@ function renderDbHtml(results: QueryResult[], description?: string): string {
   <div class="header">
     <strong>Database Query Result</strong>
     <div class="desc">${escapeHtml(description || 'PostgreSQL — live SELECT evidence')}</div>
+    ${productImageUrl ? `<div class="product-photo"><img src="${escapeHtml(productImageUrl)}" alt="Product photo" /><span>Product photo</span></div>` : ''}
   </div>
   <div class="tabs">
     <div class="tab active">Query</div>
@@ -208,6 +211,15 @@ async function captureHtmlPng(page: Page, html: string, filePath: string): Promi
   try {
     await dbPage.setViewportSize({ width: 1600, height: 1000 });
     await dbPage.setContent(html, { waitUntil: 'load' });
+    const productPhoto = dbPage.locator('.product-photo img');
+    if (await productPhoto.count()) {
+      await productPhoto.evaluate((image) => new Promise<void>((resolve) => {
+        const img = image as HTMLImageElement;
+        if (img.complete) return resolve();
+        img.addEventListener('load', () => resolve(), { once: true });
+        img.addEventListener('error', () => resolve(), { once: true });
+      }));
+    }
     await dbPage.waitForTimeout(150);
     const height = await dbPage.evaluate(() => {
       const footer = document.querySelector('.footer');
@@ -233,6 +245,7 @@ export type DbQuery = {
 
 export type DbEvidenceOptions = {
   description?: string;
+  productImageUrl?: string;
   queries: DbQuery[];
 };
 
@@ -293,7 +306,10 @@ export async function captureDbEvidence(
     };
     fs.writeFileSync(jsonPath, JSON.stringify(payload, null, 2), 'utf-8');
 
-    const html = renderDbHtml(results, opts.description);
+    const productImageUrl = opts.productImageUrl
+      ? new URL(opts.productImageUrl, page.url()).toString()
+      : undefined;
+    const html = renderDbHtml(results, opts.description, productImageUrl);
     await captureHtmlPng(page, html, pngPath);
 
     upsertIndex(evidenceDir, `${base}.png`, opts.description, testKey);
@@ -392,7 +408,8 @@ export async function captureWishlistDbEvidence(
   stepName: string,
   email: string,
   description?: string,
-  productId?: string
+  productId?: string,
+  productImageUrl?: string
 ): Promise<{ pngPath: string; jsonPath: string }> {
   const values: string[] = [email];
   const filter = productId ? ' AND w.product_id = $2' : '';
@@ -400,6 +417,7 @@ export async function captureWishlistDbEvidence(
 
   return captureDbEvidence(page, stepName, {
     description,
+    productImageUrl,
     queries: [
       {
         label: productId ? 'wishlist row by buyer and product' : 'wishlists by buyer email',
@@ -467,7 +485,8 @@ export async function captureCartDbEvidence(
   stepName: string,
   email: string,
   description?: string,
-  productId?: string
+  productId?: string,
+  productImageUrl?: string
 ): Promise<{ pngPath: string; jsonPath: string }> {
   const values: string[] = [email];
   const filter = productId ? ' AND ci.product_id = $2' : '';
@@ -475,6 +494,7 @@ export async function captureCartDbEvidence(
 
   return captureDbEvidence(page, stepName, {
     description,
+    productImageUrl,
     queries: [
       {
         label: productId ? 'cart row by buyer and product' : 'cart_items by buyer email',
@@ -811,3 +831,94 @@ export async function runDb<T>(fn: (client: Client) => Promise<T>): Promise<T> {
     await client.end();
   }
 }
+
+/* ------------------------------------------------------------------------- *
+ * Ad Management (Admin → Advertisement Management & Fees)
+ * ------------------------------------------------------------------------- */
+
+export async function captureAdDbEvidence(
+  page: Page,
+  stepName: string,
+  adId: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'advertisements row by id',
+        text: `SELECT a.id, a.shop_id, s.name AS shop_name, a.title, a.approval_status, a.payment_status,
+                      a.approved_by, a.approved_at, a.rejection_reason, a.created_at
+               FROM advertisements a
+               LEFT JOIN shops s ON s.id = a.shop_id
+               WHERE a.id = $1`,
+        values: [adId],
+      },
+    ],
+  });
+}
+
+export async function captureBulkAdsDbEvidence(
+  page: Page,
+  stepName: string,
+  adIds: string[],
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'advertisements rows by ids',
+        text: `SELECT a.id, a.shop_id, s.name AS shop_name, a.title, a.approval_status, a.payment_status,
+                      a.approved_by, a.approved_at, a.rejection_reason, a.created_at
+               FROM advertisements a
+               LEFT JOIN shops s ON s.id = a.shop_id
+               WHERE a.id = ANY($1::uuid[])
+               ORDER BY a.created_at DESC`,
+        values: [adIds],
+      },
+    ],
+  });
+}
+
+export async function captureAdListDbEvidence(
+  page: Page,
+  stepName: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'pending advertisements queue',
+        text: `SELECT a.id, a.title, a.approval_status, a.payment_status, s.name AS shop_name, a.created_at
+               FROM advertisements a
+               LEFT JOIN shops s ON s.id = a.shop_id
+               WHERE a.approval_status = 'pending'
+               ORDER BY a.created_at DESC
+               LIMIT 10`,
+      },
+    ],
+  });
+}
+
+export async function captureFeeSettingDbEvidence(
+  page: Page,
+  stepName: string,
+  feeId: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'ad_fee_settings row by id',
+        text: `SELECT id, placement, tier, daily_rate, duration_days, max_ads, is_active, created_at
+               FROM ad_fee_settings
+               WHERE id = $1`,
+        values: [feeId],
+      },
+    ],
+  });
+}
+

@@ -83,7 +83,7 @@ test.describe('ad-fee.api — API Contract Tests', () => {
     }
     await captureApiEvidence(
       page,
-      'I-07',
+      'I-07_1_list_fee_settings',
       'GET',
       '/admin/ad-fees',
       200,
@@ -99,7 +99,7 @@ test.describe('ad-fee.api — API Contract Tests', () => {
     expect(result.isActive).toBe(true);
     await captureApiEvidence(
       page,
-      'I-08',
+      'I-08_1_create_fee_setting',
       'POST',
       '/admin/ad-fees',
       201,
@@ -126,7 +126,7 @@ test.describe('ad-fee.api — API Contract Tests', () => {
     expect(result.durationDays).toBe(60);
     await captureApiEvidence(
       page,
-      'I-09',
+      'I-09_1_update_fee_setting',
       'PUT',
       '/admin/ad-fees/:id',
       response.status(),
@@ -145,7 +145,7 @@ test.describe('ad-fee.api — API Contract Tests', () => {
     expect(unwrap<FeeSetting>(await response.json()).isActive).toBe(false);
     await captureApiEvidence(
       page,
-      'I-10',
+      'I-10_1_deactivate_fee_setting',
       'PATCH',
       '/admin/ad-fees/:id/deactivate',
       response.status(),
@@ -169,7 +169,7 @@ test.describe('ad-fee.api — API Contract Tests', () => {
     }
     await captureApiEvidence(
       page,
-      'I-11',
+      'I-11_1_fee_history_sorted',
       'GET',
       '/admin/ad-fees/history',
       response.status(),
@@ -193,7 +193,7 @@ test.describe('ad-fee.api — API Contract Tests', () => {
     expect(unwrap<FeeSetting>(await response.json()).isActive).toBe(true);
     await captureApiEvidence(
       page,
-      'I-16',
+      'I-16_1_reactivate_fee_setting',
       'PATCH',
       '/admin/ad-fees/:id/reactivate',
       response.status(),
@@ -240,7 +240,7 @@ test.describe('ad-fee.api — API Contract Tests', () => {
     expect((await previousResponse.json()).data.deletedCount).toBe(1);
     await captureApiEvidence(
       page,
-      'I-17',
+      'I-17_1_delete_fee_history_rules',
       'DELETE',
       '/admin/ad-fees/history (actual current-month record)',
       response.status(),
@@ -269,7 +269,7 @@ test.describe('ad-fee.api — API Contract Tests', () => {
     expect(result.meta).toMatchObject({ page: 1, limit: 20 });
     await captureApiEvidence(
       page,
-      'I-18',
+      'I-18_1_fee_history_filters_and_pagination',
       'GET',
       '/admin/ad-fees/history?month=2026-09&placement=search_page_banner&tier=basic&page=1&limit=20',
       response.status(),

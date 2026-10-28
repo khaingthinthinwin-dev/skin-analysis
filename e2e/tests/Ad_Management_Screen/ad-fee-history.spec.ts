@@ -1,4 +1,7 @@
 import { test, expect } from '../../fixtures/auth.fixture';
+import { API_BASE_URL } from '../../utils/constants';
+import { adminHeaders } from '../../utils/api-auth';
+import { getExportAuditEntriesForDate } from '../../utils/ad-test-data';
 import { AdFeeHistoryPage } from '../../pages/Ad_Management_Screen/AdFeeHistoryPage';
 import { captureFinalTestScreenshot } from '../../utils/screenshot';
 
@@ -22,8 +25,35 @@ test.describe('Admin Fee Change History — PCL Normal Scenarios', () => {
   });
 
   test.describe('N-10: View fee change history', () => {
-    test('should show history table with date, placement, tier, old/new rates', async ({ page }) => {
+    test('should show history table with date, placement, tier, old/new rates', async ({ page, request }) => {
       await historyPage.goto();
+      // API verification: fee history returns records with date, placement, tier, old/new rates
+      const historyResponse = await request.get(`${API_BASE_URL}/admin/ad-fees/history`, {
+        headers: await adminHeaders(request),
+      });
+      expect(historyResponse.status()).toBe(200);
+      const historyBody = await historyResponse.json();
+      const historyRecords = (historyBody.data?.data ?? historyBody.data ?? []) as Array<{
+        createdAt: string;
+        placement: string;
+        tier: string;
+        oldDailyRate: string | null;
+        newDailyRate: string;
+        changedBy: string;
+        changeReason: string | null;
+        effectiveFrom: string;
+      }>;
+      expect(historyRecords.length).toBeGreaterThan(0);
+      // Verify each record has required fields
+      historyRecords.forEach((record: any) => {
+        expect(record.createdAt).toBeDefined();
+        expect(record.placement).toBeDefined();
+        expect(record.tier).toBeDefined();
+        expect(record.newDailyRate).toBeDefined();
+        expect(record.changedBy).toBeDefined();
+        expect(record.changeReason).toBeDefined();
+        expect(record.effectiveFrom).toBeDefined();
+      });
       await historyPage.captureHistoryPage();
     });
   });
@@ -45,15 +75,46 @@ test.describe('Admin Fee Change History — PCL Normal Scenarios', () => {
   });
 
   test.describe('A-15: Batch export fee history', () => {
-    test('should generate fee history report for batch export', async ({ page }) => {
+    test('should generate fee history report for batch export', async ({ page, request }) => {
       await historyPage.goto();
+      // API verification: batch export generates fee history report
+      const exportResponse = await request.post(`${API_BASE_URL}/admin/ads/export/fee-history`, {
+        headers: await adminHeaders(request),
+        data: { format: 'csv', dateFrom: '2026-05-01', dateTo: '2026-05-01' },
+      });
+      expect(exportResponse.status()).toBe(200);
+      const exportContentType = exportResponse.headers()['content-type'] || '';
+      expect(exportContentType.toLowerCase()).toMatch(/text\/csv|application\/csv|text\/plain/);
+      const exportCsv = await exportResponse.text();
+      expect(exportCsv.length).toBeGreaterThan(0);
+      // Audit event verification: EXPORT_GENERATED recorded for the batch export
+      const auditEntries = await getExportAuditEntriesForDate('2026-05-01');
+      expect(auditEntries.find((entry) => entry.reportType === 'fee_history')).toBeDefined();
       await historyPage.captureBatchExport();
     });
   });
 
   test.describe('A-17: Permission control on Fee Change History', () => {
-    test('should limit Fee Change History access to authorized admins', async ({ page }) => {
+    test('should limit Fee Change History access to authorized admins', async ({ page, request }) => {
       await historyPage.goto();
+      // API verification: unauthenticated access returns 401
+      const unauthResponse = await request.get(`${API_BASE_URL}/admin/ad-fees/history`);
+      expect(unauthResponse.status()).toBe(401);
+      // API verification: authenticated admin can access
+      const authHeaders = await adminHeaders(request);
+      const authResponse = await request.get(`${API_BASE_URL}/admin/ad-fees/history`, {
+        headers: authHeaders,
+      });
+      expect(authResponse.status()).toBe(200);
+      const authBody = await authResponse.json();
+      const historyRecords = (authBody.data?.data ?? authBody.data ?? []) as Array<{
+        createdAt: string;
+        placement: string;
+        tier: string;
+        oldDailyRate: string | null;
+        newDailyRate: string;
+      }>;
+      expect(historyRecords.length).toBeGreaterThan(0);
       await historyPage.captureHistoryPermission();
     });
   });
@@ -91,13 +152,6 @@ test.describe('Admin Fee Change History — PCL Boundary Scenarios', () => {
 });
 
 test.describe('Admin Fee Change History — PCL Interface Scenarios', () => {
-  test.describe('N-15: Language toggle works', () => {
-    test('should update labels when toggling language on fee history screen', async ({ page }) => {
-      await historyPage.goto();
-      // Language toggle
-    });
-  });
-
   test.describe('N-16: Theme toggle works', () => {
     test('should switch theme on fee history screen without break', async ({ page }) => {
       await historyPage.goto();

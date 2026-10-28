@@ -89,8 +89,9 @@ export function RevenueSummaryGroup({ data, loading, period, from, to, onPeriodC
 
   // While a custom range is being picked the figures stay pending instead of showing stale numbers.
   const displayData = customPending ? undefined : data;
-  const metricText = (value?: string) => (value === undefined ? '—' : formatCurrencyAmount(value));
   const orderCount = displayData?.orderCount ?? 0;
+  const metricText = (value?: string) =>
+    value === undefined || orderCount === 0 ? '—' : formatCurrencyAmount(value);
   // BR-OI-032: with no orders in scope there is no rate to quote, so the caption
   // reads "Commission at —" instead of a fabricated "0% (current rate)". With
   // orders, orderCommission owns the wording: "12% (current rate)" while the rate

@@ -1,0 +1,175 @@
+{
+  "N-01_1_merchant_order_insights.png": {
+    "test": "order-insights-merchant.spec.ts::N-01: approved merchant sees shop-scoped summaries and order list"
+  },
+  "N-02_1_last_month_revenue.png": {
+    "test": "order-insights-merchant.spec.ts::N-02: merchant revenue summary period selection requests the chosen period"
+  },
+  "N-05_1_completed_orders_filter.png": {
+    "test": "order-insights-merchant.spec.ts::N-05: completed orders shortcut applies delivered filter and resets page"
+  },
+  "I-02_1_merchant_sales_summary_api.png": {
+    "description": "API GET http://localhost:8080/api/v1/order-insights/merchant/sales-summary returned 200",
+    "test": "order-insights-merchant.spec.ts::I-01/I-02/I-03: merchant summary APIs return their documented contracts"
+  },
+  "I-03_1_merchant_revenue_summary_api.png": {
+    "description": "API GET http://localhost:8080/api/v1/order-insights/merchant/revenue-summary?period=this_month returned 200",
+    "test": "order-insights-merchant.spec.ts::I-01/I-02/I-03: merchant summary APIs return their documented contracts"
+  },
+  "I-01_1_merchant_orders_api.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders?page=1&limit=10 returned 200",
+    "test": "order-insights-merchant.spec.ts::I-01/I-02/I-03: merchant summary APIs return their documented contracts"
+  },
+  "A-02_1_merchant_summary_unauthenticated.png": {
+    "description": "API GET http://localhost:8080/api/v1/order-insights/merchant/sales-summary returned 401",
+    "test": "order-insights-merchant.spec.ts::A-02: unauthenticated visitor is redirected from merchant insights and summary API"
+  },
+  "N-03_1_custom_range_dialog.png": {
+    "test": "order-insights-merchant.spec.ts::N-03: merchant applies a valid custom revenue range"
+  },
+  "N-03_2_custom_range_applied.png": {
+    "test": "order-insights-merchant.spec.ts::N-03: merchant applies a valid custom revenue range"
+  },
+  "N-04_1_second_page.png": {
+    "test": "order-insights-merchant.spec.ts::N-04: merchant filters, searches, sorts, and paginates the order list"
+  },
+  "N-04_2_status_filter.png": {
+    "test": "order-insights-merchant.spec.ts::N-04: merchant filters, searches, sorts, and paginates the order list"
+  },
+  "N-04_3_payment_filter.png": {
+    "test": "order-insights-merchant.spec.ts::N-04: merchant filters, searches, sorts, and paginates the order list"
+  },
+  "N-04_4_date_filter.png": {
+    "test": "order-insights-merchant.spec.ts::N-04: merchant filters, searches, sorts, and paginates the order list"
+  },
+  "N-04_5_order_search.png": {
+    "test": "order-insights-merchant.spec.ts::N-04: merchant filters, searches, sorts, and paginates the order list"
+  },
+  "N-04_6_date_sort.png": {
+    "test": "order-insights-merchant.spec.ts::N-04: merchant filters, searches, sorts, and paginates the order list"
+  },
+  "N-04_7_total_sort.png": {
+    "test": "order-insights-merchant.spec.ts::N-04: merchant filters, searches, sorts, and paginates the order list"
+  },
+  "N-06_1_export_scope_dialog.png": {
+    "test": "order-insights-merchant.spec.ts::N-06: merchant exports all matching orders as CSV"
+  },
+  "N-06_2_csv_export_started.png": {
+    "test": "order-insights-merchant.spec.ts::N-06: merchant exports all matching orders as CSV"
+  },
+  "A-01_1_unapproved_access_denied.png": {
+    "test": "order-insights-merchant.spec.ts::A-01: unapproved merchant is denied summary access"
+  },
+  "A-01_2_unapproved_summary_403.png": {
+    "description": "API GET http://localhost:8080/api/v1/order-insights/merchant/sales-summary returned 403",
+    "test": "order-insights-merchant.spec.ts::A-01: unapproved merchant is denied summary access"
+  },
+  "A-03_1_merchant_orders_scope_forbidden.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders?merchantId=378b09f6-352e-4519-b22e-4ec1420d0dc3 returned 403",
+    "test": "order-insights-merchant.spec.ts::A-03: merchant cannot request another merchant or shop scope"
+  },
+  "A-03_2_shop_orders_scope_forbidden.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders?shopId=378b09f6-352e-4519-b22e-4ec1420d0dc3 returned 403",
+    "test": "order-insights-merchant.spec.ts::A-03: merchant cannot request another merchant or shop scope"
+  },
+  "A-03_3_merchant_sales_scope_forbidden.png": {
+    "description": "API GET http://localhost:8080/api/v1/order-insights/merchant/sales-summary?merchantId=378b09f6-352e-4519-b22e-4ec1420d0dc3 returned 403",
+    "test": "order-insights-merchant.spec.ts::A-03: merchant cannot request another merchant or shop scope"
+  },
+  "A-03_4_merchant_revenue_scope_forbidden.png": {
+    "description": "API GET http://localhost:8080/api/v1/order-insights/merchant/revenue-summary?merchantId=378b09f6-352e-4519-b22e-4ec1420d0dc3 returned 403",
+    "test": "order-insights-merchant.spec.ts::A-03: merchant cannot request another merchant or shop scope"
+  },
+  "A-04_1_missing_custom_dates.png": {
+    "test": "order-insights-merchant.spec.ts::A-04: invalid custom range is blocked in the dialog and API"
+  },
+  "A-04_2_reversed_custom_range_422.png": {
+    "description": "API GET http://localhost:8080/api/v1/order-insights/merchant/revenue-summary?period=custom&from=2026-10-10&to=2026-10-01 returned 422",
+    "test": "order-insights-merchant.spec.ts::A-04: invalid custom range is blocked in the dialog and API"
+  },
+  "A-05_1_query_error_retry.png": {
+    "test": "order-insights-merchant.spec.ts::A-05: failed summary and order list queries offer retry feedback"
+  },
+  "A-05_2_order_list_retried.png": {
+    "test": "order-insights-merchant.spec.ts::A-05: failed summary and order list queries offer retry feedback"
+  },
+  "A-05_3_forbidden_summary_alert.png": {
+    "test": "order-insights-merchant.spec.ts::A-05: a forbidden page query displays the page-level access alert"
+  },
+  "B-01_1_no_matching_orders.png": {
+    "test": "order-insights-merchant.spec.ts::B-01: no matching orders shows empty state and disables export"
+  },
+  "B-02_1_empty_revenue_period.png": {
+    "test": "order-insights-merchant.spec.ts::B-02: empty revenue period shows zero values and no invented commission rate"
+  },
+  "B-03_1_page_size_10.png": {
+    "test": "order-insights-merchant.spec.ts::B-03: merchant can use page-size boundaries 10 and 50"
+  },
+  "B-03_2_page_size_50.png": {
+    "test": "order-insights-merchant.spec.ts::B-03: merchant can use page-size boundaries 10 and 50"
+  },
+  "B-04_1_desktop_layout.png": {
+    "test": "order-insights-merchant.spec.ts::B-04: merchant insights controls remain reachable on mobile"
+  },
+  "B-04_2_mobile_layout.png": {
+    "test": "order-insights-merchant.spec.ts::B-04: merchant insights controls remain reachable on mobile"
+  },
+  "B-05_1_cancel_custom_range.png": {
+    "test": "order-insights-merchant.spec.ts::B-05: cancelling a custom range preserves the applied summary period"
+  },
+  "N-07_1_japanese_language.png": {
+    "test": "order-insights-merchant.spec.ts::N-07: merchant can change the language and theme on the page"
+  },
+  "N-07_2_theme_toggled.png": {
+    "test": "order-insights-merchant.spec.ts::N-07: merchant can change the language and theme on the page"
+  },
+  "N-08_1_en_insights_list.png": {
+    "test": "order-insights-merchant.spec.ts::N-08: English, Japanese, and Myanmar render on merchant list and detail"
+  },
+  "N-08_2_ja_insights_list.png": {
+    "test": "order-insights-merchant.spec.ts::N-08: English, Japanese, and Myanmar render on merchant list and detail"
+  },
+  "N-08_3_my_insights_list.png": {
+    "test": "order-insights-merchant.spec.ts::N-08: English, Japanese, and Myanmar render on merchant list and detail"
+  },
+  "N-08_4_en_order_detail.png": {
+    "test": "order-insights-merchant.spec.ts::N-08: English, Japanese, and Myanmar render on merchant list and detail"
+  },
+  "N-08_5_ja_order_detail.png": {
+    "test": "order-insights-merchant.spec.ts::N-08: English, Japanese, and Myanmar render on merchant list and detail"
+  },
+  "N-08_6_my_order_detail.png": {
+    "test": "order-insights-merchant.spec.ts::N-08: English, Japanese, and Myanmar render on merchant list and detail"
+  },
+  "N-09_1_japanese_selected.png": {
+    "test": "order-insights-merchant.spec.ts::N-09: selected language persists through detail navigation and reload"
+  },
+  "N-09_2_language_on_detail.png": {
+    "test": "order-insights-merchant.spec.ts::N-09: selected language persists through detail navigation and reload"
+  },
+  "N-09_3_language_after_reload.png": {
+    "test": "order-insights-merchant.spec.ts::N-09: selected language persists through detail navigation and reload"
+  },
+  "N-10_1_unread_order_notification.png": {
+    "test": "order-insights-merchant.spec.ts::N-10: merchant opens an unread new-order notification"
+  },
+  "N-10_2_order_detail_from_notification.png": {
+    "test": "order-insights-merchant.spec.ts::N-10: merchant opens an unread new-order notification"
+  },
+  "I-04_1_sales_summary_guard_contract.png": {
+    "description": "API GET http://localhost:8080/api/v1/order-insights/merchant/sales-summary returned 403",
+    "test": "order-insights-merchant.spec.ts::I-04: merchant summary APIs reject unauthenticated and unapproved users"
+  },
+  "I-04_2_revenue_summary_guard_contract.png": {
+    "description": "API GET http://localhost:8080/api/v1/order-insights/merchant/revenue-summary returned 403",
+    "test": "order-insights-merchant.spec.ts::I-04: merchant summary APIs reject unauthenticated and unapproved users"
+  },
+  "I-05_1_invalid_revenue_range_422.png": {
+    "description": "API GET http://localhost:8080/api/v1/order-insights/merchant/revenue-summary?period=custom&from=2026-10-20 returned 422",
+    "test": "order-insights-merchant.spec.ts::I-05: revenue summary rejects invalid custom bounds"
+  },
+  "I-05_2_summary_rate_limit_429.png": {
+    "description": "API GET http://localhost:8080/api/v1/order-insights/merchant/sales-summary returned 429",
+    "test": "order-insights-merchant.spec.ts::I-05: revenue summary rejects invalid custom bounds"
+  }
+}
