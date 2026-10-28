@@ -67,7 +67,7 @@ function loadScreenshotIndex(screenshotDir: string): ScreenshotIndex {
   }
 }
 
-async function updateScreenshotIndex(
+export async function updateScreenshotIndex(
   screenshotDir: string,
   filename: string,
   description: string | undefined,
@@ -101,7 +101,24 @@ async function updateScreenshotIndex(
       ...(description ? { description } : {}),
       ...(testKey ? { test: testKey } : {}),
     };
-    fs.writeFileSync(indexPath, JSON.stringify(index, null, 2), 'utf-8');
+    const tempPath = `${indexPath}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
+    try {
+      fs.writeFileSync(tempPath, JSON.stringify(index, null, 2), 'utf-8');
+      for (let attempt = 0; ; attempt += 1) {
+        try {
+          fs.renameSync(tempPath, indexPath);
+          break;
+        } catch (error) {
+          const code = (error as NodeJS.ErrnoException).code;
+          if (!['EACCES', 'EBUSY', 'EPERM', 'UNKNOWN'].includes(code ?? '') || attempt >= 4) {
+            throw error;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
+        }
+      }
+    } finally {
+      if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+    }
   } finally {
     fs.closeSync(lockFd);
     fs.unlinkSync(lockPath);

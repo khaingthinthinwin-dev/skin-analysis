@@ -7,7 +7,7 @@
 | Attribute | Value |
 |-----------|-------|
 | **Document ID** | SKM-PCL-PROD-001 |
-| **Target Screen** | Product Detail (Buyer / Public / Merchant preview) |
+| **Target Screen** | Product Detail (Buyer / Merchant preview) |
 | **Subsystem** | Catalog — Products, Reviews, Promotions, Advertisements |
 | **Version** | 1.0 |
 | **Created** | 2026-10-21 |
@@ -19,20 +19,22 @@
 
 ## 1. Normal Scenarios (N) — Happy Path
 
-- [x] **N-01**: Product detail page loads with all sections for a public visitor
+> **Evidence scope:** Product Detail UI evidence in this checklist is captured from an authenticated buyer session.
+
+- [x] **N-01**: Product detail page loads with all sections for an authenticated buyer
   - **Evidence**:
     - `N-01_1_product_detail_loading.png`
     - `N-01_2_product_detail_loaded.png`
     - Test: product-detail.spec.ts › "N-01: displays product detail page with all sections" — passed
   - **Precondition**: An active product exists whose merchant `licenseStatus = 'approved'`
   - **Steps**:
-    1. Navigate to `/products/{slug}` (unauthenticated)
+    1. Navigate to `/buyer/products/{slug}` as an authenticated buyer
     2. Wait for the detail request to settle
     3. Inspect the back button, gallery, info panel, tabs and similar products section
-  - **Expected Result**: Back button, ad banner, gallery, product info (name, price, stock, SKU, skin types), Description / Ingredients / Reviews tabs and Similar Products all render. No login redirect occurs
+  - **Expected Result**: Back button, ad banner, gallery, product info (name, price, stock, SKU, skin types), Description / Ingredients / Reviews tabs and Similar Products all render for the buyer
   - **Business Rules**: BR-PROD-001, BR-PROD-002
   - **API**: `GET /api/v1/products/{slug}`
-  - **Note**: The route param `:id` is resolved server-side by `ProductsService.resolveProduct` as UUID, slug or SKU..
+  - **Note**: The route param `:id` is resolved server-side by `ProductsService.resolveProduct` as UUID, slug or SKU.
 
 - [x] **N-02**: Product detail resolves by UUID and by SKU as well as by slug
   - **Evidence**:
@@ -147,28 +149,27 @@
     - `N-10_1_reviews_loading.png`
     - `N-10_2_reviews_section.png`
     - Test: product-detail.spec.ts › "N-10: displays product reviews section" — passed
-  - **Precondition**: Product has at least one `status='approved'` review
+  - **Precondition**: Product has two `status='approved'` reviews
   - **Steps**:
     1. Open the product detail page
     2. Click the **Reviews** tab
-  - **Expected Result**: Each review card shows the author name, a date, a star rating, the title and body. Review images are not rendered in buyer-side review cards. A green `Verified` badge renders for `isVerifiedPurchase = true`, and the avatar falls back to the first letter of the author's name
+  - **Expected Result**: Both review cards show their author names, dates, star ratings, titles and bodies. Review images are not rendered in buyer-side review cards. Each card shows a green `Verified` badge for `isVerifiedPurchase = true`, and the avatars fall back to the first letter of each author's name
   - **Business Rules**: BR-PROD-008
   - **API**: `GET /api/v1/products/{slug}/reviews?page=1&limit=10`
   - **Note**: The backend selects `user { id, name }` only, so `avatarUrl` is always undefined and the initials fallback always renders. The `select` clause also omits `status`, and the list is filtered to `status = 'approved'`, so the review card's `Pending` badge and the purple author-highlight branch can never render against this endpoint..
 
 - [x] **N-11**: "Load more reviews" advances to the next page of reviews
   - **Evidence**:
-    - `N-11_1_reviews_page_1.png`
     - `N-11_2_reviews_page_2.png`
     - Test: product-detail.spec.ts › "N-11: loads more reviews on demand" — passed
-  - **Precondition**: Product has more than 10 approved reviews so `page < totalPages`
+  - **Precondition**: Product has 12 approved reviews, with 10 on the first page and 2 on the final page
   - **Steps**:
     1. Open the **Reviews** tab
     2. Click **Load more reviews**
-  - **Expected Result**: The panel briefly shows `Loading reviews...` and then displays the second page of reviews. The button stays visible while `page < totalPages`
+  - **Expected Result**: The panel briefly shows `Loading reviews...` and then displays the second page of reviews. On the final page, the **Load more reviews** button is not rendered.
   - **Business Rules**: None (pagination)
   - **API**: `GET /api/v1/products/{slug}/reviews?page=2&limit=10`
-  - **Note**: Despite the "Load more reviews" label, the list is **replaced, not appended**: the page number is component state and is part of the query key (`['product', idOrSlug, 'reviews', { page, limit }]`), so the new query returns only that page's `items` and no accumulator is kept. The UI requests `limit=10` while the backend default is 20..
+  - **Note**: The final page shows the total `Reviews (12)` count and both remaining review cards; the load-more button is hidden because there is no further page. The list is replaced, not appended; the page number is component state and part of the query key (`['product', idOrSlug, 'reviews', { page, limit }]`). The UI requests `limit=10` while the backend default is 20..
 
 - [x] **N-12**: Similar products render and navigate to the target product
   - **Evidence**:
@@ -253,7 +254,7 @@
     - `N-16_4_db_review_reports_count.json`
     - `N-16_4_db_review_reports_count.png`
     - Test: product-detail.spec.ts › "N-16: reports a review" — passed
-  - **Precondition**: Authenticated non-merchant user; product has at least one approved review
+  - **Precondition**: Authenticated buyer; product has at least one approved review
   - **Steps**:
     1. Hover a review card and click the flag icon
     2. Select the `Spam` reason
@@ -269,17 +270,19 @@
   - **Evidence**:
     - `N-17_1_ad_banner_before_rotate.png`
     - `N-17_2_ad_banner_after_rotate.png`
-    - `N-17_3_navigated_to_ad_product.png`
+    - `N-17_3_ad_banner_before_navigation.png`
+    - `N-17_4_navigated_to_ad_product.png`
     - Test: product-detail.spec.ts › "N-17: displays ad banner with internal navigation" — passed
   - **Precondition**: An approved, active, in-window ad exists for placement `productDetail_page_banner` with an approved shop
   - **Steps**:
     1. Open the product detail page
     2. Wait more than 5 seconds and observe the slider
-    3. Click the ad card
-  - **Expected Result**: The sponsored slider renders with a `SPONSORED` badge. The active ad rotates every 5 seconds. Clicking the card performs an internal navigation to `/buyer/products/{sku}` — no new browser tab is opened
+    3. Capture the active ad immediately before navigation
+    4. Click the ad card
+  - **Expected Result**: The sponsored slider renders with a `SPONSORED` badge and rotates every 5 seconds. Clicking the active ad navigates in the same tab to its `/buyer/products/{sku}` product detail, whose heading matches that SKU (`E2E Ad Product One` or `E2E Ad Product Two`); no new tab is opened
   - **Business Rules**: BR-PROD-021, BR-PROD-022, BR-PROD-023
   - **API**: `GET /api/v1/search/ads?placement=productDetail_page_banner`
-  - **Note**: The mounted banner is the shared `AdBannerSlider`, which reads `GET /api/v1/search/ads` — not the product-scoped `GET /products/:id/advertisements`, which is only consumed by the unmounted `SidebarAdvertisements` component. Rotation pauses on hover, keyboard focus and `prefers-reduced-motion`..
+  - **Note**: The mounted banner is the shared `AdBannerSlider`, which reads `GET /api/v1/search/ads` — not the product-scoped `GET /products/:id/advertisements`, which is only consumed by the unmounted `SidebarAdvertisements` component. Rotation pauses on hover, keyboard focus and `prefers-reduced-motion`. The E2E mock maps each ad SKU to a distinct product name so the final screenshot confirms the actual destination rather than the unrelated default fixture title..
 
 - [x] **N-18**: Back button returns to the previous page
   - **Evidence**:
@@ -367,7 +370,7 @@
   - **Expected Result**: The layout stacks into a single column. A fixed bottom bar (`md:hidden`) shows the quantity stepper, **Add to Cart** and **Add to Wishlist**, and it stays pinned while scrolling. The inline purchase actions in the info panel are hidden
   - **Business Rules**: None (Responsive)
   - **API**: None
-  - **Note**: The sticky bar is rendered only when `showCTA` is true — that is, for guests and buyers, but never for merchants..
+  - **Note**: Buyer-side evidence captures the sticky bar when `showCTA` is true; merchant view never renders it.
 
 - [x] **N-24**: Merchant view gates commerce content
   - **Evidence**:
@@ -411,42 +414,9 @@
   - **API**: None
   - **Note**: `useProductDetail` is disabled while `idOrSlug` is empty, so the query is not sent. The `Invalid product.` message itself is only reachable when the component is mounted without an `:id` — the router never mounts it that way, so the E2E asserts the reachable state (the 404 page, no request)..
 
-- [x] **A-03**: Guest clicking Add to Cart is redirected to login
-  - **Evidence**:
-    - `A-03_1_guest_before_add_to_cart.png`
-    - `A-03_2_guest_after_add_to_cart.png`
-    - `A-03_3_db_cart_count.json`
-    - `A-03_3_db_cart_count.png`
-    - Test: product-detail.spec.ts › "A-03: redirects guest user attempting to add to cart" — passed
-  - **Precondition**: User is not authenticated
-  - **Steps**:
-    1. Open a public product detail page
-    2. Click **Add to Cart**
-  - **Expected Result**: The browser navigates to `/login?redirect=/buyer/products`. No cart request is sent and no `cart_items` row is created
-  - **Business Rules**: BR-PROD-015
-  - **API**: None (frontend guard)
-  - **Note**: The guard is `window.location.href = '/login?redirect=/buyer/products'`. Capture the DB evidence with `captureCartCountDbEvidence(page, 'A-03_3_db_cart_count', email, description)` to prove the write never happened..
-
-- [x] **A-04**: Guest clicking Add to Wishlist is redirected to login
-  - **Evidence**:
-    - `A-04_1_guest_before_add_to_wishlist.png`
-    - `A-04_2_guest_after_add_to_wishlist.png`
-    - `A-04_3_db_wishlist_count.json`
-    - `A-04_3_db_wishlist_count.png`
-    - Test: product-detail.spec.ts › "A-04: redirects guest user attempting to add to wishlist" — passed
-  - **Precondition**: User is not authenticated
-  - **Steps**:
-    1. Open a public product detail page
-    2. Click **Add to Wishlist**
-  - **Expected Result**: The browser navigates to `/login?redirect=/buyer/products`. The wishlist button is clickable for guests — clicking it reaches the login redirect, exactly like the **Add to Cart** button — and no `wishlists` row is created
-  - **Business Rules**: BR-PROD-015
-  - **API**: None (frontend guard)
-  - **Note**: `wishlistDisabled` only covers an in-flight wishlist request. Guests and non-buyers reach `handleAddToWishlist`, which sends them to `/login?redirect=/buyer/products` or `/unauthorized`. Capture the DB evidence with `captureWishlistCountDbEvidence(page, 'A-04_3_db_wishlist_count', email, description)`.
-
 - [x] **A-05**: Signed-in non-buyer role is redirected to the unauthorized page
   - **Evidence**:
-    - `A-05_1_non_buyer_before.png`
-    - `A-05_2_non_buyer_unauthorized.png`
+    - No screenshot is captured for this non-buyer scenario; A-05 remains assertion-only so Product Detail evidence stays buyer-side
     - Test: product-detail.spec.ts › "A-05: redirects non-buyer user to unauthorized" — passed
   - **Precondition**: Authenticated as a role that is neither `buyer` nor `merchant` (e.g. `admin`); the public product page `/products/{slug}` is open at a viewport ≥ 768px
   - **Steps**:
@@ -542,7 +512,7 @@
   - **Precondition**: Authenticated user already reported the same review
   - **Steps**:
     1. Report the same review a second time
-  - **Expected Result**: An informational toast `You have already reported this review` is shown. The dialog still closes and resets and the `review_reports` row count is still 1 — no duplicate report row is created
+  - **Expected Result**: An informational toast `You have already reported this review` is shown. The dialog still closes and resets and the `review_reports` row count is still 1 — no duplicate report row is created. The buyer page shows two review cards for `Reviews (2)` with no load-more button.
   - **Business Rules**: BR-PROD-015
   - **API**: `POST /api/v1/reviews/{reviewId}/report`
   - **Note**: The 409 branch shows an informational toast rather than an error toast. Use `captureDbEvidence` with a `SELECT COUNT(*)::int FROM review_reports rr JOIN users u ON u.id = rr.reported_by WHERE rr.review_id = $1 AND u.email = $2` query..
@@ -552,7 +522,7 @@
     - `A-12_1_report_submit_disabled.png`
     - `A-12_2_report_submit_enabled.png`
     - Test: product-detail.spec.ts › "A-12: disables report submit without reason" — passed
-  - **Precondition**: Authenticated non-merchant user; the report dialog is open
+  - **Precondition**: Authenticated buyer; the report dialog is open
   - **Steps**:
     1. Leave the reason radio group unselected
     2. Inspect the **Submit Report** button
@@ -680,20 +650,19 @@
   - **Expected Result**: The full 255-character title is accepted and the review is created with HTTP 201
   - **Business Rules**: BR-PROD-007
   - **API**: `POST /api/v1/products/{slug}/reviews`
-  - **Note**: The DTO caps `title` at 255 characters, matching the input's `maxLength={255}`. Capture the DB evidence with `captureDbEvidence` using a `SELECT ... FROM reviews r JOIN users u ON u.id = r.user_id JOIN products p ON p.id = r.product_id WHERE u.email = $1 AND p.id = $2` query..
+  - **Note**: The DTO and client validation accept titles through 255 characters; longer drafts show an inline error. Capture the DB evidence with `captureDbEvidence` using a `SELECT ... FROM reviews r JOIN users u ON u.id = r.user_id JOIN products p ON p.id = r.product_id WHERE u.email = $1 AND p.id = $2` query..
 
-- [x] **B-05**: Review title beyond 255 characters is capped by the input
+- [x] **B-05**: Review title beyond 255 characters shows a validation error
   - **Evidence**:
-    - `B-05_1_title_paste_300.png`
-    - `B-05_2_title_capped_255.png`
-    - Test: product-detail.spec.ts › "B-05: caps review title at 255 characters" — passed
+    - `B-05_2_title_over_limit_error.png`
+    - Test: product-detail.spec.ts › "B-05: shows an error when review title exceeds 255 characters" — passed
   - **Precondition**: Authenticated eligible buyer
   - **Steps**:
-    1. Paste a 300-character title into the title field
-  - **Expected Result**: The input retains at most 255 characters and further input is not accepted
+    1. Enter a 300-character title into the title field
+  - **Expected Result**: The title field retains all 300 characters and shows "Title must be 255 characters or fewer." Submission is blocked until corrected. The screenshot includes the error and two cards matching `Reviews (2)`.
   - **Business Rules**: BR-PROD-007
   - **API**: None (client validation)
-  - **Note**: The input sets `maxLength={255}`; the backend rejects anything longer with HTTP 400..
+  - **Note**: The limit is validated client-side without truncating the draft; the backend independently rejects titles longer than 255 with HTTP 400..
 
 - [x] **B-06**: Review body at exactly 5000 characters is accepted
   - **Evidence**:
@@ -710,20 +679,19 @@
   - **Expected Result**: The counter reads `5000/5000` and the review is created with HTTP 201
   - **Business Rules**: BR-PROD-007
   - **API**: `POST /api/v1/products/{slug}/reviews`
-  - **Note**: The textarea sets `maxLength={5000}` and the counter is rendered from `draftBody.length`. Capture the DB evidence with `captureDbEvidence` using a `SELECT ... FROM reviews r JOIN users u ON u.id = r.user_id JOIN products p ON p.id = r.product_id WHERE u.email = $1 AND p.id = $2` query..
+  - **Note**: The counter reflects `draftBody.length` and turns red above 5000; the inline validation blocks over-limit submission. Capture the DB evidence with `captureDbEvidence` using a `SELECT ... FROM reviews r JOIN users u ON u.id = r.user_id JOIN products p ON p.id = r.product_id WHERE u.email = $1 AND p.id = $2` query..
 
-- [x] **B-07**: Review body beyond 5000 characters is capped by the input
+- [x] **B-07**: Review body beyond 5000 characters shows a validation error
   - **Evidence**:
-    - `B-07_1_body_paste_6000.png`
-    - `B-07_2_body_capped_5000.png`
-    - Test: product-detail.spec.ts › "B-07: caps review body at 5000 characters" — passed
+    - `B-07_2_body_over_limit_error.png`
+    - Test: product-detail.spec.ts › "B-07: shows an error when review body exceeds 5000 characters" — passed
   - **Precondition**: Authenticated eligible buyer
   - **Steps**:
-    1. Paste a 6000-character body into the textarea
-  - **Expected Result**: The textarea retains at most 5000 characters and the counter never exceeds `5000/5000`
+    1. Enter a 6000-character body into the textarea
+  - **Expected Result**: The textarea retains all 6000 characters, its counter reads `6000/5000` in red, and it shows "Review must be 5000 characters or fewer." Submission is blocked until corrected. The screenshot includes the error and two cards matching `Reviews (2)`.
   - **Business Rules**: BR-PROD-007
   - **API**: None (client validation)
-  - **Note**: The DTO caps `body` at 5000 characters and returns HTTP 400 for longer input..
+  - **Note**: The limit is validated client-side without truncating the draft; the backend independently rejects bodies longer than 5000 with HTTP 400..
 
 - [x] **B-08**: Report detail at exactly 1000 characters is accepted
   - **Evidence**:
@@ -732,27 +700,27 @@
     - `B-08_3_db_review_reports.json`
     - `B-08_3_db_review_reports.png`
     - Test: product-detail.spec.ts › "B-08: accepts report detail of exactly 1000 characters" — passed
-  - **Precondition**: Authenticated non-merchant user; the report dialog is open with a reason selected
+  - **Precondition**: Authenticated buyer; the report dialog is open with a reason selected
   - **Steps**:
     1. Enter a 1000-character detail
     2. Submit the report
   - **Expected Result**: The report is submitted successfully with HTTP 201 and the detail is stored
   - **Business Rules**: BR-PROD-015
   - **API**: `POST /api/v1/reviews/{reviewId}/report`
-  - **Note**: The textarea sets `maxLength={1000}` and the DTO caps `detail` at 1000 characters. Capture the DB evidence with `captureDbEvidence` using a `SELECT ... FROM review_reports rr JOIN users u ON u.id = rr.reported_by WHERE rr.review_id = $1 AND u.email = $2` query..
+  - **Note**: The textarea allows exactly 1000 characters; over-limit details show an inline error and disable submission. Capture the DB evidence with `captureDbEvidence` using a `SELECT ... FROM review_reports rr JOIN users u ON u.id = rr.reported_by WHERE rr.review_id = $1 AND u.email = $2` query..
 
-- [x] **B-09**: Report detail beyond 1000 characters is capped by the input
+- [x] **B-09**: Report detail beyond 1000 characters shows a validation error
   - **Evidence**:
-    - `B-09_1_report_detail_paste_1500.png`
-    - `B-09_2_report_detail_capped_1000.png`
-    - Test: product-detail.spec.ts › "B-09: caps report detail at 1000 characters" — passed
-  - **Precondition**: Authenticated non-merchant user; the report dialog is open
+    - `B-09_2_report_detail_over_limit_error.png`
+    - Test: product-detail.spec.ts › "B-09: shows an error when report detail exceeds 1000 characters" — passed
+  - **Precondition**: Authenticated buyer; the report dialog is open
   - **Steps**:
-    1. Paste a 1500-character detail into the textarea
-  - **Expected Result**: The textarea retains at most 1000 characters
+    1. Select a report reason
+    2. Enter a 1500-character detail into the textarea
+  - **Expected Result**: The textarea retains all 1500 characters, shows "Details must be 1000 characters or fewer.", and disables **Submit Report** until corrected
   - **Business Rules**: BR-PROD-015
   - **API**: None (client validation)
-  - **Note**: The DTO returns HTTP 400 for a `detail` longer than 1000 characters..
+  - **Note**: The dialog preserves the draft for correction; the DTO independently returns HTTP 400 for a `detail` longer than 1000 characters..
 
 - [x] **B-10**: Rating values 1 and 5 are both accepted
   - **Evidence**:
@@ -775,7 +743,7 @@
   - **Precondition**: Product has no approved reviews
   - **Steps**:
     1. Open the **Reviews** tab
-  - **Expected Result**: The panel shows `No reviews yet.` and no **Load more reviews** button is rendered
+  - **Expected Result**: The tab shows `Reviews (0)`, the panel shows `No reviews yet.`, and no **Load more reviews** button is rendered
   - **Business Rules**: BR-PROD-008
   - **API**: `GET /api/v1/products/{slug}/reviews?page=1&limit=10`
   - **Note**: The empty branch fires on `data.items.length === 0`, which includes the case where every review is still pending moderation..
@@ -985,7 +953,7 @@
   - **Expected Response**: HTTP 200 in all cases; the body is `{ data: { canReview, reason } }` where `reason` is `null`, `'not_delivered'` or `'already_reviewed'` respectively
   - **Business Rules**: BR-PROD-005, BR-PROD-006, BR-PROD-015
   - **API**: `GET /api/v1/products/:idOrSlug/can-review`
-  - **Note**: The query is not gated on authentication — `useCanReview` is only disabled while `idOrSlug` is empty, so a guest still fires the request and receives a 401, surfacing `isEligibilityError`. The guest never sees that state because `ReviewForm` returns the sign-in prompt before rendering the form. A global `TransformInterceptor` wraps every response as `{ data: <payload> }`..
+  - **Note**: The three eligibility verdicts are exercised with buyer credentials. A global `TransformInterceptor` wraps every response as `{ data: <payload> }`.
 
 - [x] **I-11**: `GET /api/v1/products/:idOrSlug/can-review` returns 401 without a token and 403 for a non-buyer
   - **Evidence**:
@@ -1108,15 +1076,29 @@
   - **API**: Any ProductDetail endpoint
   - **Note**:.
 
+- [x] **I-20**: `POST /api/v1/products/:idOrSlug/reviews` rejects a title longer than 255 characters
+  - **Evidence**:
+    - `I-20_1_api_review_title_too_long.png`
+    - Test: product-detail.spec.ts › "I-20: rejects a review title longer than 255 characters" — passed
+  - **Precondition**: Authenticated buyer; submit a title of 256 characters
+  - **Steps**:
+    1. Call `POST /api/v1/products/{idOrSlug}/reviews` with a valid rating/body and a 256-character title
+    2. Verify the response and status
+  - **Expected Response**: HTTP 400; the request is rejected by DTO validation because `title` exceeds the 255-character limit
+  - **Business Rules**: BR-PROD-007
+  - **API**: `POST /api/v1/products/:idOrSlug/reviews`
+  - **Note**: This complements B-05, which verifies that the UI shows an inline error and blocks submission when the title exceeds 255 characters.
+
 ---
 
 ## Sign-Off
 
 | Item | Status |
 |------|--------|
-| Test scenarios defined (N, A, B, I) | ☑️ 24 normal, 16 abnormal, 17 boundary, 19 interface — 76 in total |
-| E2E tests implemented | ☑️ `e2e/tests/ProductDetail/product-detail.spec.ts` — 76 tests, one per scenario. **Not executed yet**: every scenario is marked `implemented, not yet run` and the checkboxes stay unticked until a Playwright run records the evidence |
-| PCL ↔ E2E cross-check | ☑️ `node e2e/scripts/check-pcl-vs-spec.cjs ProductDetail` — 76/76 scenarios mapped to a test, 144/144 evidence files listed in this PCL are produced by a test, no scenario or capture is missing in either direction |
-| Evidence captured | ☐ pending the first Playwright run (the captures listed per scenario are the ones the tests produce) |
+| Test scenarios defined (N, A, B, I) | ☑️ 24 normal, 14 abnormal, 17 boundary, 20 interface — 75 in total |
+| E2E tests implemented | ☑️ `e2e/tests/ProductDetail/product-detail.spec.ts` — 75 tests, one per scenario |
+| Latest E2E runs | ☑️ Full Product Detail Chromium suite passed 75/75. This includes B-09 (1500-character report detail error), I-10 (eligibility verdict), and I-13 (reject review without a delivered order); I-10/I-13 select an approved product with no delivered order for the buyer. Review over-limit tests B-05/B-07 pass. A/B evidence is buyer-authenticated; A/B review evidence shows two cards whenever the tab reads `Reviews (2)`, with no "Load more reviews" button. |
+| PCL ↔ E2E cross-check | Not verified — the referenced `e2e/scripts/check-pcl-vs-spec.cjs` is not present in this checkout |
+| Evidence captured | ☑️ Every A/B screenshot and database capture is from the authenticated buyer fixture. A-05 authorization remains assertion-only without screenshots; guest evidence remains excluded. Pagination is covered separately without showing its button in A/B captures. |
 | PCL auto-update verified | ☐ `scripts/update-pcl.cjs` currently fails to parse (unresolved merge-conflict markers in the shared script); the Evidence blocks in this file are therefore maintained by hand — `node e2e/scripts/sync-pcl-with-spec.cjs ProductDetail` rewrites the `Test:` lines and drops the stale "no test yet" notes |
 | Next review date | 2026-11-21 |

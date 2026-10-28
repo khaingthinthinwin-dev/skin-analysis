@@ -77,9 +77,11 @@ The subsystem ensures that only active products of approved-licensed merchants a
 
 | Attribute | Value |
 |-----------|-------|
-| **Primary Actor** | Buyer (authenticated and unauthenticated visitors); Merchant (read-only preview) |
+| **Primary Actor** | Authenticated Buyer; Merchant (read-only preview) |
 | **Required Authentication** | None (view product/reviews/similar/ads). JWT `buyer` (create review, `can-review`). JWT any-authenticated (report review). JWT `buyer` (cart/wishlist). |
-| **Data Scope** | Single active product (public); own eligibility/review/cart/wishlist (authenticated) |
+| **Data Scope** | Single active product; authenticated buyer's own eligibility, review, cart and wishlist |
+
+> **Buyer-side scope:** Product Detail user-flow scenarios and UI evidence in this specification use an authenticated buyer. Public read-endpoint access remains defined by the access-control rules below.
 
 ### 1.4 Relationships with Other Functions and Peripheral Systems
 
@@ -325,7 +327,7 @@ Navigate /products/:id  ─►  GET /products/:idOrSlug
 | EL-18 | Report Review Dialog | Dialog | `buyer.products.report.*` | No | Reason radio + details |
 | EL-19 | Similar Products | Card Grid | `buyer.products.similar.title` | No | limit=8 |
 | EL-20 | Ad Banner Slider | Ad Carousel | `buyer.checkout.sponsoredAds.*` | No | `productDetail_page_banner`; internal nav |
-| EL-21 | Sticky Mobile CTA Bar | Fixed Container | — | No | `md:hidden`; buyer/visitor only |
+| EL-21 | Sticky Mobile CTA Bar | Fixed Container | — | No | `md:hidden`; shown in buyer-side UI evidence; hidden for merchant preview |
 
 **Default State:**
 - Detail loads with skeleton; missing `:id` → "Invalid product."; error → "Product not found." + Browse link.
@@ -602,6 +604,9 @@ Frontend `ProductDetail` interface (`product.service.ts`): `id, slug, name, desc
 | `reason='already_reviewed'` | "You have already reviewed this product." |
 | `draftRating === 0` | "Please select a rating." |
 | empty `body` | "Please write your review." |
+| `title.length > 255` | "Title must be 255 characters or fewer." |
+| `body.length > 5000` | "Review must be 5000 characters or fewer." |
+| Report `detail.length > 1000` | "Details must be 1000 characters or fewer." |
 
 ---
 

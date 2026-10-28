@@ -47,10 +47,12 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 
 | Attribute | Value |
 | :--- | :--- |
-| **Primary Actors** | Buyer (authenticated and unauthenticated visitors); Merchant (read-only preview — CTA/ads/review form/similar hidden) |
+| **Primary Actors** | Authenticated Buyer; Merchant (read-only preview — CTA/ads/review form/similar hidden) |
 | **Required Authentication** | None (view product, view reviews, view similar, view ads). JWT `buyer` role (create review, `can-review` check). JWT any-authenticated (report review). JWT `buyer` (cart/wishlist — Cart & Wishlist modules). |
-| **Data Scope** | Single active product (public); own eligibility, own review, own cart/wishlist (authenticated) |
+| **Data Scope** | Single active product; authenticated buyer's own eligibility, review, cart and wishlist |
 | **Access Control** | Read endpoints are `@Public()`. `POST /products/:idOrSlug/reviews` and `GET /products/:idOrSlug/can-review` require `JwtAuthGuard + RolesGuard('buyer')`. `POST /reviews/:id/report` requires `JwtAuthGuard` (any authenticated role). |
+
+> **Buyer-side scope:** Product Detail user-flow scenarios and UI evidence in this specification use an authenticated buyer. Public read-endpoint access remains defined by the access-control rules above.
 
 ### 2.3 Core Functions & Basic Design Principles (主要機能・基本設計方針)
 
@@ -166,7 +168,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | 12 | `btnAddToCart` | Add to Cart Button | Button (primary, icon) | — | Mandatory | Disabled when `stockQuantity <= 0` or `isAdding` | — | — | Spinner + "Adding..." while pending. Success toast "Added to cart". `409` opens "Already in Cart" dialog. Unauthenticated → redirect `/login?redirect=/buyer/products`; non-buyer → `/unauthorized`; deactivated → dialog. Rule BR-PROD-004/010. |
 | 13 | `btnWishlist` | Add to Wishlist Button | Button (icon + label) | — | — | "Add to Wishlist" (outline) | — | — | Full-width labeled button (not icon-only). When already in wishlist: pink filled "Added to Wishlist" state, derived from the buyer's wishlist list (`items.some(productId)`). Disabled when unauthenticated / non-buyer / pending. `409` → "Already in Wishlist" dialog. Add only; removal handled by Wishlist module. |
 
-> **Placement:** On desktop (≥768px) Purchase Actions render inline inside Product Info (`hidden md:block`). On mobile they render in the sticky bottom bar (`[D]`, `md:hidden`), shown only for unauthenticated visitors and buyers (`showCTA = !isMerchantView && (!isAuthenticated || role === 'buyer')`).
+> **Placement:** On desktop (≥768px) Purchase Actions render inline inside Product Info (`hidden md:block`). On mobile they render in the sticky bottom bar (`[D]`, `md:hidden`). Buyer-side evidence covers both placements; merchant preview hides them.
 
 ### 4.4 Section [E]: Sold By (出品者情報)
 
@@ -187,8 +189,8 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 20 | `wgtRatingInput` | Rating Stars (input) | Interactive Star Widget | INTEGER | Mandatory | No selection (0 stars) | Integer 1–5 | `reviews.rating` | `StarRating interactive`; clicking a star sets the draft rating and clears the inline error. |
-| 21 | `txtReviewTitle` | Review Title Input | Input (`text`) | String(255) | — | Empty. Placeholder: "Title (optional)" | `maxLength={255}` | `reviews.title` | Optional. |
-| 22 | `txaReviewBody` | Review Body Textarea | Textarea | TEXT (5000) | Mandatory (client) | Empty. Placeholder: "Share your experience..." | `maxLength={5000}`, 4 rows | `reviews.body` | Required client-side (trimmed). Live character counter `{{length}}/5000`. |
+| 21 | `txtReviewTitle` | Review Title Input | Input (`text`) | String(255) | — | Empty. Placeholder: "Title (optional)" | Values longer than 255 show an inline validation error and block submission | `reviews.title` | Optional; over-limit text remains visible so the user can correct it. |
+| 22 | `txaReviewBody` | Review Body Textarea | Textarea | TEXT (5000) | Mandatory (client) | Empty. Placeholder: "Share your experience..." | 4 rows; values longer than 5000 show an inline validation error and block submission | `reviews.body` | Required client-side (trimmed). Live character counter `{{length}}/5000`; counter turns red over the limit. |
 | 24 | `btnSubmitReview` | Submit Review Button | Button (primary) | — | Conditional | Disabled while `isSubmitting` or eligibility check pending | — | — | Spinner + "Submitting...". Gated by `can-review` (§5.6). Success → invalidate `['product',id,'reviews'|'can-review'|id]` + toast "Your review has been submitted and is awaiting approval." |
 | 25 | `lblLoginPrompt` | Login Prompt | Static Label + Link | String | Conditional | `Sign in to write a review.` | — | — | Rendered instead of the form when unauthenticated; link to `/login`. |
 | 25a | `msgReviewEligibility` | Eligibility Message | Static Label | String | Conditional | — | — | `can-review.reason` | `not_delivered` → "You can only review products you have purchased and received."; `already_reviewed` → "You have already reviewed this product."; eligibility fetch error → "We could not verify your purchase…". |
@@ -204,7 +206,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | 27a | `btnReportReview` | Report Review Button | Icon Button (Flag) | — | — | Hidden; revealed on card hover (`opacity-0 group-hover:opacity-100`) | — | `review_reports` | Hidden entirely for merchant role. Opens `dlgReportReview`. |
 | 27b | `dlgReportReview` | Report Review Dialog | Dialog / Modal | — | Conditional | Hidden until triggered | — | `review_reports` | Title "Report Review"; description text; RadioGroup of reasons + optional details textarea; Cancel / Submit Report. |
 | 27c | `rdoReportReason` | Report Reason | Radio Group | Enum | Mandatory | No selection (Submit disabled) | `spam`, `inappropriate`, `fake`, `other` | `review_reports.reason` | Required to enable submit. |
-| 27d | `txaReportDetails` | Report Details | Textarea | TEXT (1000) | — | Empty. Placeholder: "Provide additional details... (optional)" | `maxLength={1000}`, 3 rows | request `detail` → `review_reports.description` | Optional. **Request field name is `detail`** (stored as `description`). |
+| 27d | `txaReportDetails` | Report Details | Textarea | TEXT (1000) | — | Empty. Placeholder: "Provide additional details... (optional)" | Values longer than 1000 show an inline validation error and disable submit; 3 rows | request `detail` → `review_reports.description` | Optional; over-limit text remains visible for correction. **Request field name is `detail`** (stored as `description`). |
 
 ### 4.7 Section [H]: Similar Products (関連商品)
 
@@ -319,8 +321,10 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | **VAL-PROD-016** | `btnSubmitReview` | Signed in but not a buyer | Submit error text | "Only buyers who purchased this product can leave a review." | "購入者のみレビューを書けます。" |
 | **VAL-PROD-017** | `btnSubmitReview` | `can-review` reason `not_delivered` | Submit error text | "You can only review products you have purchased and received." | "購入・受取済みの商品のみレビューできます。" |
 | **VAL-PROD-018** | `btnSubmitReview` | `can-review` reason `already_reviewed` | Submit error text | "You have already reviewed this product." | "この商品は既にレビュー済みです。" |
+| **VAL-PROD-019** | `txtReviewTitle` | Title length exceeds 255 | Red inline text below field; submission blocked | "Title must be 255 characters or fewer." | "タイトルは255文字以内で入力してください。" |
+| **VAL-PROD-020** | `txaReviewBody` | Body length exceeds 5000 | Red inline text and red character counter; submission blocked | "Review must be 5000 characters or fewer." | "レビューは5000文字以内で入力してください。" |
 
-> Server-side DTO limits (`title ≤ 255`, `body ≤ 5000`, `images ≤ 5`, `rating ∈ [1,5]`) are enforced by class-validator; the client also caps title at 255 and body at 5000 via `maxLength`.
+> Server-side DTO limits (`title ≤ 255`, `body ≤ 5000`, `images ≤ 5`, `rating ∈ [1,5]`) are enforced by class-validator. The client preserves over-limit title/body drafts, displays inline errors and blocks submission until corrected.
 
 #### 6.2.1 Review Reporting Validation Errors
 
@@ -820,7 +824,7 @@ Includes `promotions[]` and `ratingBreakdown[]`; `merchant` has no nested `shop`
 - **Currency:** Prices are rendered in **MMK** (`{{amount}} MMK`) via `Intl.NumberFormat('en-US')` (thousands separator, no currency symbol).
 - **Compare-at savings:** Shows an absolute **"Save {diff} MMK"** badge, not a percentage.
 - **Merchant view:** When `user.role === 'merchant'`, the ad banner, purchase actions, promotion badge, sold-by, Description/Ingredients tabs, and Similar Products are hidden (preview mode).
-- **Sticky mobile CTA:** Purchase actions are rendered in a `fixed bottom-0 z-40 md:hidden` bar for unauthenticated visitors and buyers only.
+- **Sticky mobile CTA:** Purchase actions are rendered in a `fixed bottom-0 z-40 md:hidden` bar; buyer-side evidence covers this placement and merchant preview hides it.
 - **Description rendering:** `products.description` is rendered as **HTML** via `dangerouslySetInnerHTML` with scoped typography classes. Content is admin/merchant-authored and moderated upstream; React does **not** auto-escape this field. See SKM-DEV-001 for sanitization/CSP expectations (Rule BR-PROD-017 follow-up).
 - **Review moderation:** A newly submitted review is `pending`; the success toast tells the buyer it awaits approval, and it will not appear in the public list until approved.
 - **Ads are internal:** The ad card navigates internally to the resolved product (`/buyer/products/{sku}`); there is no external `rel="noopener noreferrer nofollow sponsored"` link on this screen.

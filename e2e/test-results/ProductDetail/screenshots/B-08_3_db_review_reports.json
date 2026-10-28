@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-23T08:32:11.296Z",
+  "capturedAt": "2026-10-28T08:41:19.858Z",
   "description": "review_reports row for the reporter and review after submitting, showing the 1000-character description",
   "results": [
     {
@@ -7,7 +7,7 @@
       "rowCount": 1,
       "rows": [
         {
-          "id": "0a319bb0-d88c-4bf9-bc6e-b6de9dec2c61",
+          "id": "807beba3-9574-45be-a784-384bd59107b9",
           "reason": "spam",
           "status": "pending",
           "description_length": 1000

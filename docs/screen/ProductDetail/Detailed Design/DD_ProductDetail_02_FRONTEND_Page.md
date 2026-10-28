@@ -49,7 +49,9 @@ ProductDetail (page)
 | `useAuth()` | AuthProvider | `isAuthenticated`, `user` (role) |
 | `useProductDetail(idOrSlug)` | TanStack Query | Fetches product detail, always refetch on mount |
 | `isMerchantView` | `user?.role === 'merchant'` | Hides CTAs for merchant users |
-| `showCTA` | `!isMerchantView && (!isAuthenticated || user?.role === 'buyer')` | Controls sticky mobile purchase bar visibility |
+| `showCTA` | CTA eligibility, excluding merchant preview | Controls sticky mobile purchase bar visibility |
+
+Buyer-side UI scenarios and evidence use an authenticated buyer session. Merchant preview continues to hide purchase actions.
 
 ### 2.3 UI States
 
@@ -153,8 +155,8 @@ export function useSidebarAds(idOrSlug: string) {
 | SimilarProducts | `features/buyer/products/components/SimilarProducts.tsx` | Product card grid, navigates to `/products/:id` |
 | ProductPurchaseActions | `features/buyer/products/components/ProductPurchaseActions.tsx` | Quantity stepper, Add to Cart, Wishlist toggle |
 | QuantityStepper | `features/buyer/products/components/QuantityStepper.tsx` | Decrement/increment within `[1, stockQuantity]` |
-| ReviewForm | `features/buyer/products/components/ReviewForm.tsx` | Rating stars, title, body (client-required; no image-upload control — `images` is DTO-only) |
-| ReviewReportDialog | `features/buyer/products/components/ReviewReportDialog.tsx` | Report reason (spam/inappropriate/fake/other) + optional detail |
+| ReviewForm | `features/buyer/products/components/ReviewForm.tsx` | Rating stars, optional title (255 max), required body (5000 max), and inline over-limit validation errors; no image-upload control — `images` is DTO-only |
+| ReviewReportDialog | `features/buyer/products/components/ReviewReportDialog.tsx` | Report reason (spam/inappropriate/fake/other) + optional detail (1000 max); over-limit text shows an inline error and blocks submission |
 | ActivePromotion | `features/buyer/products/components/ActivePromotion.tsx` | Promotion discount badge from `promotions[0]` (component implemented but currently unmounted) |
 | SidebarAdvertisements | `features/buyer/products/components/SidebarAdvertisements.tsx` | Sponsored ad slider (max 5, auto-rotate 5s) |
 
@@ -178,7 +180,7 @@ export function useSidebarAds(idOrSlug: string) {
 | HTTP Status | Scenario | Frontend Behavior |
 |-------------|----------|-------------------|
 | 400 | Invalid `idOrSlug` / validation failure | Error toast or inline field error |
-| 401 | Mutation unauthenticated | Login modal / redirect to `/login` |
+| 401 | Missing authentication for a protected mutation | Login modal / redirect to `/login` |
 | 403 | Non-buyer role on mutation | Redirect to `/unauthorized` |
 | 404 | Product not found | EmptyState with "Browse products" link |
 | 409 | Duplicate review / wishlist / report | Keep state (filled heart / disabled form) + toast |
@@ -192,6 +194,7 @@ export function useSidebarAds(idOrSlug: string) {
 - Mutation controls disabled with spinner while pending.
 - Below-fold related products and reviews are lazy-loaded.
 - Duplicate form submission prevented while review or cart mutations are active.
+- Review title/body inputs preserve over-limit text for correction, show inline limit errors immediately and block submission until both values are within their DTO limits.
 
 ## 7. Cross-References
 
@@ -215,7 +218,7 @@ export function useSidebarAds(idOrSlug: string) {
 | `quantity` | `number` | `1` | Cart quantity; clamped to `1..stockQuantity` |
 
 - Reviews are only loaded after the Reviews tab becomes active.
-- The review form is hidden for unauthenticated visitors; a login prompt is shown instead.
+- Review form visibility is authentication-gated; the documented Product Detail UI flow uses an authenticated buyer session.
 
 ```
 
@@ -254,4 +257,3 @@ Mutation hook. Handles 409 ("already reported") and 429 (rate limited) with spec
 | Product Tabs | ProductTabs | Description / Ingredients / Reviews tabs; review form gated by auth |
 | Similar Products | SimilarProducts | Lazy-loaded, `idOrSlug={product.id}` |
 | Sticky CTA Bar | ProductPurchaseActions | Mobile only, fixed bottom; quantity stepper + Add to Cart + Wishlist |
-
