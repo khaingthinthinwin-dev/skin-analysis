@@ -607,6 +607,7 @@ export const RATE_AUDIT_SQL = `SELECT id, user_id, action, entity_type, entity_i
        old_value, new_value, ip_address, created_at
 FROM audit_logs
 WHERE action = 'COMMISSION_RATE_UPDATED'
+  AND created_at >= $1
 ORDER BY created_at DESC
 LIMIT 5`;
 
@@ -614,6 +615,7 @@ export const TARGET_AUDIT_SQL = `SELECT id, user_id, action, entity_type, entity
        old_value, new_value, ip_address, created_at
 FROM audit_logs
 WHERE action = 'TARGET_UPDATED'
+  AND created_at >= $1
 ORDER BY created_at DESC
 LIMIT 5`;
 
@@ -621,6 +623,7 @@ export const PAYOUT_AUDIT_SQL = `SELECT id, user_id, action, entity_type, entity
        old_value, new_value, ip_address, created_at
 FROM audit_logs
 WHERE action IN ('PAYOUT_PROCESSED', 'PAYOUT_REVIEWED', 'PAYOUT_DELETED')
+  AND created_at >= $1
 ORDER BY created_at DESC
 LIMIT 5`;
 
@@ -628,6 +631,7 @@ export const EXPORT_AUDIT_SQL = `SELECT id, user_id, action, entity_type, entity
        old_value, new_value, ip_address, created_at
 FROM audit_logs
 WHERE action = 'EXPORT_GENERATED'
+  AND created_at >= $1
 ORDER BY created_at DESC
 LIMIT 8`;
 
@@ -664,14 +668,19 @@ FROM audit_logs`;
 export async function captureDbEvidenceCommissionRate(
   page: Page,
   stepName: string,
-  description?: string
+  description?: string,
+  since?: string
 ): Promise<{ pngPath: string; jsonPath: string }> {
   return captureDbEvidence(page, stepName, {
     description,
     queries: [
       { label: 'commission_settings (current rate)', text: COMMISSION_SETTINGS_SQL },
       { label: 'commission_rate_history (newest first)', text: COMMISSION_RATE_HISTORY_SQL },
-      { label: 'audit_logs — COMMISSION_RATE_UPDATED', text: RATE_AUDIT_SQL },
+      {
+        label: 'audit_logs — COMMISSION_RATE_UPDATED (this run only)',
+        text: RATE_AUDIT_SQL,
+        values: [since ?? '1970-01-01 00:00:00'],
+      },
     ],
   });
 }
@@ -680,13 +689,18 @@ export async function captureDbEvidenceCommissionRate(
 export async function captureDbEvidenceRevenueTarget(
   page: Page,
   stepName: string,
-  description?: string
+  description?: string,
+  since?: string
 ): Promise<{ pngPath: string; jsonPath: string }> {
   return captureDbEvidence(page, stepName, {
     description,
     queries: [
       { label: 'revenue_targets (all periods)', text: REVENUE_TARGETS_SQL },
-      { label: 'audit_logs — TARGET_UPDATED', text: TARGET_AUDIT_SQL },
+      {
+        label: 'audit_logs — TARGET_UPDATED (this run only)',
+        text: TARGET_AUDIT_SQL,
+        values: [since ?? '1970-01-01 00:00:00'],
+      },
     ],
   });
 }
@@ -695,14 +709,19 @@ export async function captureDbEvidenceRevenueTarget(
 export async function captureDbEvidencePayout(
   page: Page,
   stepName: string,
-  description?: string
+  description?: string,
+  since?: string
 ): Promise<{ pngPath: string; jsonPath: string }> {
   return captureDbEvidence(page, stepName, {
     description,
     queries: [
       { label: 'payouts (newest period first)', text: PAYOUTS_SQL },
       { label: 'payout_items', text: PAYOUT_ITEMS_SQL },
-      { label: 'audit_logs — payout events', text: PAYOUT_AUDIT_SQL },
+      {
+        label: 'audit_logs — payout events (this run only)',
+        text: PAYOUT_AUDIT_SQL,
+        values: [since ?? '1970-01-01 00:00:00'],
+      },
     ],
   });
 }
@@ -711,12 +730,17 @@ export async function captureDbEvidencePayout(
 export async function captureDbEvidenceExportAudit(
   page: Page,
   stepName: string,
-  description?: string
+  description?: string,
+  since?: string
 ): Promise<{ pngPath: string; jsonPath: string }> {
   return captureDbEvidence(page, stepName, {
     description,
     queries: [
-      { label: 'audit_logs — EXPORT_GENERATED', text: EXPORT_AUDIT_SQL },
+      {
+        label: 'audit_logs — EXPORT_GENERATED (this run only)',
+        text: EXPORT_AUDIT_SQL,
+        values: [since ?? '1970-01-01 00:00:00'],
+      },
       { label: 'commission_settings (unchanged?)', text: COMMISSION_SETTINGS_SQL },
       { label: 'revenue_targets (unchanged?)', text: REVENUE_TARGETS_SQL },
     ],
@@ -772,3 +796,94 @@ export async function runDb<T>(fn: (client: Client) => Promise<T>): Promise<T> {
     await client.end();
   }
 }
+
+/* ------------------------------------------------------------------------- *
+ * Ad Management (Admin → Advertisement Management & Fees)
+ * ------------------------------------------------------------------------- */
+
+export async function captureAdDbEvidence(
+  page: Page,
+  stepName: string,
+  adId: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'advertisements row by id',
+        text: `SELECT a.id, a.shop_id, s.name AS shop_name, a.title, a.approval_status, a.payment_status,
+                      a.approved_by, a.approved_at, a.rejection_reason, a.created_at
+               FROM advertisements a
+               LEFT JOIN shops s ON s.id = a.shop_id
+               WHERE a.id = $1`,
+        values: [adId],
+      },
+    ],
+  });
+}
+
+export async function captureBulkAdsDbEvidence(
+  page: Page,
+  stepName: string,
+  adIds: string[],
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'advertisements rows by ids',
+        text: `SELECT a.id, a.shop_id, s.name AS shop_name, a.title, a.approval_status, a.payment_status,
+                      a.approved_by, a.approved_at, a.rejection_reason, a.created_at
+               FROM advertisements a
+               LEFT JOIN shops s ON s.id = a.shop_id
+               WHERE a.id = ANY($1::uuid[])
+               ORDER BY a.created_at DESC`,
+        values: [adIds],
+      },
+    ],
+  });
+}
+
+export async function captureAdListDbEvidence(
+  page: Page,
+  stepName: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'pending advertisements queue',
+        text: `SELECT a.id, a.title, a.approval_status, a.payment_status, s.name AS shop_name, a.created_at
+               FROM advertisements a
+               LEFT JOIN shops s ON s.id = a.shop_id
+               WHERE a.approval_status = 'pending'
+               ORDER BY a.created_at DESC
+               LIMIT 10`,
+      },
+    ],
+  });
+}
+
+export async function captureFeeSettingDbEvidence(
+  page: Page,
+  stepName: string,
+  feeId: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'ad_fee_settings row by id',
+        text: `SELECT id, placement, tier, daily_rate, duration_days, max_ads, is_active, created_at
+               FROM ad_fee_settings
+               WHERE id = $1`,
+        values: [feeId],
+      },
+    ],
+  });
+}
+

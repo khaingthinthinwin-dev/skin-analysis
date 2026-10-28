@@ -1,0 +1,81 @@
+{
+  "capturedAt": "2026-10-22T07:14:23.558Z",
+  "description": "DB CHANGES — commission_settings updated in place, one new rate-history row, one new audit row",
+  "results": [
+    {
+      "label": "commission_settings (current rate)",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "2223cfdd-b55e-485d-a16c-da0b663af67e",
+          "commission_rate": "12.00",
+          "updated_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "updated_at": "2026-10-22T00:44:23.074Z",
+          "created_at": "2026-09-11T00:32:41.133Z"
+        }
+      ]
+    },
+    {
+      "label": "commission_rate_history (newest first)",
+      "rowCount": 5,
+      "rows": [
+        {
+          "id": "f009087b-8cfc-474e-9aea-31f85acea902",
+          "commission_rate": "12.00",
+          "effective_from": "2026-10-22T00:44:23.074Z",
+          "created_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "created_at": "2026-10-22T00:44:23.080Z"
+        },
+        {
+          "id": "1479e6b2-75af-4c7d-8a2d-0fa8cc8c65cc",
+          "commission_rate": "15.00",
+          "effective_from": "2026-10-22T00:36:29.661Z",
+          "created_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "created_at": "2026-10-22T00:36:29.666Z"
+        },
+        {
+          "id": "a8b1f556-e35c-4a2d-9bc8-a25fa84d2bb5",
+          "commission_rate": "12.50",
+          "effective_from": "2026-10-22T00:36:29.650Z",
+          "created_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "created_at": "2026-10-22T00:36:29.654Z"
+        },
+        {
+          "id": "8b94a96b-cabb-41b0-a76e-6fe81649dbfd",
+          "commission_rate": "15.00",
+          "effective_from": "2026-10-22T00:33:54.818Z",
+          "created_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "created_at": "2026-10-22T00:33:54.818Z"
+        },
+        {
+          "id": "5f38b273-f924-4455-ba25-8645580b244f",
+          "commission_rate": "12.00",
+          "effective_from": "2026-10-22T00:33:54.754Z",
+          "created_by": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "created_at": "2026-10-22T00:33:54.754Z"
+        }
+      ]
+    },
+    {
+      "label": "audit_logs — COMMISSION_RATE_UPDATED (this run only)",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "44afa1f4-4c50-4100-820d-f64d63815408",
+          "user_id": "f3de6e6d-c6e6-4e6e-8d43-58332e22dfa6",
+          "action": "COMMISSION_RATE_UPDATED",
+          "entity_type": "CommissionSetting",
+          "entity_id": "2223cfdd-b55e-485d-a16c-da0b663af67e",
+          "old_value": {
+            "rate": "15"
+          },
+          "new_value": {
+            "rate": "12"
+          },
+          "ip_address": "::1",
+          "created_at": "2026-10-22T00:44:23.083Z"
+        }
+      ]
+    }
+  ]
+}

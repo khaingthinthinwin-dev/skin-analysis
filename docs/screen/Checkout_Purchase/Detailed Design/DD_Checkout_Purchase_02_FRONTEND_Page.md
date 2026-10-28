@@ -1,13 +1,13 @@
 ﻿# DD_CHECK-02 — Frontend Page (Checkout / Order Confirmation)
 
-> **Doc ID:** SKM-DD-CHECK-02 | **Version:** 1.0 | **Status:** Draft
-> **Last Updated:** 2026-09-03
+> **Doc ID:** SKM-DD-CHECK-02 | **Version:** 1.1 | **Status:** Draft
+> **Last Updated:** 2026-10-22
 
 ---
 
 ## 1. Overview
 
-The Checkout & Purchase pages consist of two main screens: **Checkout** (`/checkout`) and **Order Confirmation** (`/checkout/confirmation/:orderId`). Together they implement the buyer-facing purchase workflow — converting cart contents into a confirmed order with status `placed`, validating stock, applying coupon discounts, calculating totals (subtotal − discount), persisting order records, and rendering the post-purchase confirmation. The Checkout page also renders the sponsored ad slide-down panel (UC-CHECK-008, BR-AD-001~012).
+The Checkout & Purchase pages consist of two main screens: **Checkout** (`/buyer/checkout`) and **Order Confirmation** (`/buyer/checkout/confirmation/:orderId`). Together they implement the buyer-facing purchase workflow — converting cart contents into a confirmed order with status `placed`, validating stock, applying coupon discounts, calculating totals (subtotal − discount), persisting order records, and rendering the post-purchase confirmation. The Checkout page also renders the shared `AdBannerSlider` for `checkout_page_banner` via `GET /api/v1/search/ads` (UC-CHECK-008).
 
 - **File Path (Checkout):** `frontend/src/pages/Checkout.tsx`
 - **File Path (Order Confirmation):** `frontend/src/pages/OrderConfirmation.tsx`
@@ -20,8 +20,8 @@ The Checkout & Purchase pages consist of two main screens: **Checkout** (`/check
 
 | Screen | Route | Role Guard | Data Scope | License Gate |
 |--------|-------|-----------|------------|--------------|
-| Checkout | `/checkout` | `buyer` | Own cart items, own shipping addresses, own payment records | — |
-| Order Confirmation | `/checkout/confirmation/:orderId` | `buyer` | Order owned by `currentUser.id` (BR-CHECK-015) | — |
+| Checkout | `/buyer/checkout` | `buyer` | Own cart items, own shipping addresses, own payment records | — |
+| Order Confirmation | `/buyer/checkout/confirmation/:orderId` | `buyer` | Order owned by `currentUser.id` (BR-CHECK-015) | — |
 
 
 ---
@@ -138,54 +138,50 @@ The Checkout & Purchase pages consist of two main screens: **Checkout** (`/check
 
 The shared `BuyerLayout` header provides language toggle (EN/JA/MY) and theme toggle. No checkout-specific header elements.
 
-### 3.2 Section [D0]: Sponsored Ad Slide-Down Panel
+### 3.2 Section [D0]: Sponsored Ad Banner (AdBannerSlider)
 
-> **This is the most complex section.** The sponsored ad panel is a slide-down carousel that fetches and displays merchant-purchased advertisements for the `checkout_top` placement. It must be documented in full — including carousel behavior, accessibility, and graceful degradation — per BR-AD-009~012.
+The checkout page renders `AdBannerSlider` after the header and before the form. Data is fetched from `GET /api/v1/search/ads?placement=checkout_page_banner`. 
 
-#### 3.2.1 Panel Behavior & Lifecycle
+#### 3.2.1 Behavior & Lifecycle
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | Component mounts (Checkout page loaded). Fetches in parallel to cart data; does not block checkout loading. |
-| **API Endpoint** | `GET /api/v1/ads?placement=checkout_top` |
-| **Request Headers** | None (public cache) |
-| **Animation (appear)** | Slide-down, 300ms ease-out, once per mount. With `prefers-reduced-motion: reduce`, panel appears instantly without animation. |
-| **Carousel Auto-Slide** | Auto-advance to next ad every 5 seconds using vertical slide-down transition (500ms). Maximum 5 slides; loop after the last. |
-| **Pause-on-Interaction** | Auto-advancement pauses on hover or keyboard focus within the ad panel; resumes on pointer leave / blur (WCAG 2.2.2). |
-| **Max Ads** | Maximum 5 ads displayed (BR-AD-004). |
-| **Close** | Manual close (✕ button) hides the panel for the session. |
+| **Trigger** | Component mounts (Checkout page loaded). Fetches via `useSponsoredAds` / `ad.service.ts`; does not block checkout loading. |
+| **API Endpoint** | `GET /api/v1/search/ads?placement=checkout_page_banner` |
+| **Request Headers** | Public route; no checkout JWT required by the ads endpoint. |
+| **Animation (appear)** | Card-based carousel (no vertical slide-down entrance). With `prefers-reduced-motion: reduce`, timed auto-advance is disabled. |
+| **Carousel Auto-Slide** | Auto-advance to next ad every 5 seconds. Maximum 5 results. Loops back to first. |
+| **Pause-on-Interaction** | Auto-advancement pauses on hover and on keyboard focus within the panel/card content; resumes on pointer leave / blur. |
+| **Max Ads** | Maximum 5 ads (capped by `SearchService.take(5)`). |
+| **Close** | Not implemented as a separate close button in current UI (panel hides only when empty/error). |
+| **Analytics** | No `onAdClick` callback passed from Checkout; click analytics are not sent from checkout. |
 
+#### 3.2.2 Ad Priority & Selection Rules
 
-#### 3.2.2 Ad Priority & Selection Rules (BR-AD-005~008)
+1. Filter: approved and active ads, `startsAt <= now <= expiresAt`, approved shops, matching `checkout_page_banner` placement.
+2. Ordering: `startsAt DESC`.
+3. Limit: at most 5 results.
+4. Tier: every ad is returned as `tier: "standard"`. **No premium-first ranking, no round-robin rotation, no Redis/result cache** are applied on this route.
 
-1. Filter: Select approved, active ads whose schedule covers the current time (`is_approved = true`, `is_active = true`, `schedule_start <= now <= schedule_end`).
-2. Apply package placement and tier priority rules: **Premium > Standard > Basic**.
-3. Round-robin rotation within each tier.
-4. Limit the slider to a maximum of 5 ads.
-5. Cache the resulting ad list in Redis with key `cache:ads:checkout-top`, TTL 5 minutes.
-#### 3.2.3 Accessibility (WCAG 2.2.2)
+#### 3.2.3 Accessibility
 
-- Pause-on-interaction: auto-advancement pauses on hover/focus, resumes on leave/blur.
-- Reduced-motion: `prefers-reduced-motion: reduce` disables slide-down animation (instant appear) and disables auto-slide (static display of first ad only).
-- Keyboard navigable: previous/next arrows and close button are focusable and operable.
-- Ad content: image alt text from ad title; CTA button labeled with `ctaText`.
+- Pause-on-interaction on hover/focus (WCAG 2.2.2).
+- Reduced-motion disables timed auto-advance.
+- Carousel controls (prev/next/dots) are keyboard accessible when present.
+- Image alt text uses ad title; card is clickable and resolves to the ad/product destination.
 
-#### 3.2.4 Field / Item Table (画面項目設計書 §4.2)
+#### 3.2.4 Field / Item Table
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules | Maps to (EL) |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- | :--- |
-| 1 | `slotAdCheckout` | Ad Panel Container / 広告パネルコンテナ | Slide-Down Panel | — | No | Hidden (appears on successful ad fetch) | Slide-down 300ms ease-out; instant with reduced-motion | `advertisements` (checkout_top placement) | Graceful hide on error/empty. i18n key: `checkout.adPanel.container`. | EL-32 |
-| 4 | `lblAdTitle` | Ad Title / 広告タイトル | Text (Heading) | String (255) | No | — | — | `advertisements.title` | — | EL-35 |
-| 5 | `lblAdDescription` | Ad Description / 広告説明 | Text | String (500) | Conditional | Hidden when absent | — | `advertisements.description` | Only rendered when description is non-empty. i18n key: `checkout.adPanel.description`. | EL-36 |
-| 6 | `btnAdCta` | Ad CTA Button / 広告CTAボタン | Button | String (50) | No | — | Opens `ctaUrl` in new tab | `advertisements.cta_text`, `advertisements.cta_url` | Click tracked via analytics. i18n key: `checkout.adPanel.cta`. | EL-37 |
-| 7 | `lblAdSponsored` | Sponsored Badge / スポンサーバッジ | Badge | String | No | Text: "Sponsored" | — | Hardcoded UI text | i18n key: `checkout.adPanel.sponsored`. | EL-38 |
-| 8 | `grpAdIndicator` | Slide Indicator / スライドインジケーター | Dot Indicator Group | — | No | Shows current slide position | — | — | One dot per ad (max 5). Active dot highlighted. i18n key: `checkout.adPanel.indicator`. | EL-39 |
-| 9 | `btnAdPrev` | Previous Ad Button / 前広告ボタン | Icon Button (◀) | — | No | — | — | — | Pauses auto-advance on interaction. i18n key: `checkout.adPanel.prev`. | — |
-| 10 | `btnAdNext` | Next Ad Button / 次広告ボタン | Icon Button (▶) | — | No | — | — | — | Pauses auto-advance on interaction. i18n key: `checkout.adPanel.next`. | — |
-
-| **Graceful Degradation** | On API error or empty response: hide ad panel entirely (no error state shown to user). The panel is non-essential to checkout. |
-| 2 | `btnAdClose` | Ad Close Button / 広告閉じるボタン | Icon Button (✕) | — | No | Visible when panel shown | — | — | Hides panel for session. i18n key: `checkout.adPanel.close`. | EL-33 |
-| 3 | `imgAdBanner` | Ad Image/Banner / 広告画像 | Image | URL | No | — | Alt text = ad title | `advertisements.image_url` | i18n key: `checkout.adPanel.imageAlt`. | EL-34 |
+| 1 | `slotAdCheckout` | Ad Banner / 広告バナー | Shared `AdBannerSlider` (card carousel) | — | No | Hidden when empty/error | 5s auto-advance, max 5, pause on hover/focus; reduced-motion disables auto-advance. | `GET /api/v1/search/ads?placement=checkout_page_banner` | Graceful hide on error/empty. No vertical slide-down transition. | EL-32 |
+| 2 | `cardAdSlide` | Ad Card | Card (`div`, role `link`) | — | Per visible ad | One card visible | Stacked on mobile, horizontal on md+. Clickable to resolved destination. | Ad DTO | `onAdClick` not passed from checkout. | EL-34 |
+| 3 | `imgAdBanner` | Ad Image | Image (`img`) | URL | Conditional | Fallback chain: ad image → product image → sample image | Responsive; image error advances fallback | `imageUrl` / product image | Alt text = ad title. | EL-35 |
+| 4 | `lblAdTitle` | Ad Title | Heading (`h3`) | String | Conditional | Ad title or product name | Line clamp/truncation by viewport | `title` / product name | — | EL-36 |
+| 5 | `txtAdDescription` | Ad Description | Paragraph (`p`) | String | Conditional | Hidden when absent | HTML stripped | `description` | — | EL-37 |
+| 6 | `btnAdCta` | Learn More Button | Button | String | Conditional | Text "Learn more" | Navigates to same destination as card | Ad/product destination | Not tracked via analytics on checkout. | EL-38 |
+| 7 | `badgeSponsored` | Announcement/Shop Badges | Badge (`span`) | String | Conditional | "SPONSORED" fallback or announcement; second badge shop/category/default | Rendered above title | `announcementMessage`, merchant/category | No separate amber localized Sponsored badge. | EL-39 |
+| 8 | `trackAdSlides` | Carousel Controls | Chevron/dot buttons | — | Conditional | Shown when > 1 ad | Previous/next wrap, dots select slide, pause on hover/focus | Ad list | Reduced-motion disables auto-advance. | — |
 
 ### 3.3 Section [B]: Order Summary
 
@@ -295,16 +291,16 @@ Buyer selects one payment method. Required per BR-CHECK-005.
 | 50 | `lblConfirmTitle` | Success Title | Heading (`<h1>`) | String | — | Visible. Text: "Order Placed Successfully!" / "注文が完了しました！" | — | Hardcoded UI text | i18n key: `checkout.confirmation.title`. Tailwind: `text-2xl font-bold text-center mt-4`. | EL-81 |
 | 51 | `lblConfirmOrderId` | Order ID | Static Label (`<p>`) | UUID | — | Visible. "Order #ABC-12345" | — | `orders.id` | i18n key: `checkout.confirmation.orderId`. Displays first 8 chars of UUID. Tailwind: `text-center text-muted-foreground`. | EL-83 |
 | 52 | `lblConfirmStatus` | Order Status Badge | Badge | Enum | — | Visible. Status: "Placed" | — | `orders.status` | i18n key: `checkout.confirmation.status`. Color-coded badge. | — |
-| 53 | `lblConfirmEstDelivery` | Estimated Delivery | Static Label (`<p>`) | Date | Conditional | Visible for shipped/out_for_delivery orders. | — | Calculated | i18n key: `checkout.confirmation.estimatedDelivery`. Tailwind: `text-center text-muted-foreground`. | EL-86 |
+| EL-44 | Estimated Delivery | Text | `checkout.confirmation.estimatedDelivery` | No | `estimatedDelivery` is returned by order placement response but is **not rendered** on the confirmation page (PCL N-07). |
 | 54 | `cardConfirmSummary` | Order Summary Card | Card | — | — | Visible. Contains items, totals, shipping address. | — | Order data | Tailwind: `mt-6 border rounded-lg p-4`. | — |
 
 ### 4.2 Section [K]: Action Buttons
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules | Maps to (EL) |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- | :--- |
-| 55 | `btnContinueShopping` | Continue Shopping Button | Button (`button`, `primary`) | — | — | Visible. Text: "Continue Shopping" / "買い物を続ける" | — | — | i18n key: `checkout.confirmation.continueShopping`. Navigates to `/products`. Tailwind: `w-full`. | EL-90 |
+| 55 | `btnContinueShopping` | Continue Shopping Button | Button (`button`, `primary`) | — | — | Visible. Text: "Continue Shopping" / "買い物を続ける" | — | — | i18n key: `checkout.confirmation.continueShopping`. Navigates to `/buyer/search`. Tailwind: `w-full`. | EL-90 |
 | 56 | `btnViewOrder` | View Order Button | Button (`button`, `secondary`) | — | — | Visible. Text: "View Order" / "注文を表示" | — | — | i18n key: `checkout.confirmation.viewOrder`. Navigates to `/orders/:orderId`. Tailwind: `w-full`. | EL-91 |
-| 57 | `btnPrintReceipt` | Print Receipt Button | Button (`button`, `ghost`) | — | — | Visible. Text: "Print Receipt" / "領収書を印刷" | — | — | i18n key: `checkout.confirmation.print`. Calls `window.print()`. Tailwind: `w-full`. | — |
+| 57 | `btnPrintReceipt` | Print Receipt Button | Button (`button`, `ghost`) | — | — | Not rendered (absent in current UI). | — | — | Not implemented. | — |
 
 ---
 

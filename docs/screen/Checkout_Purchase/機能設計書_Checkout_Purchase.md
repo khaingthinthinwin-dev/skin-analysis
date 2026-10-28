@@ -10,11 +10,11 @@
 | **Target Screen** | Purchase & Checkout (購入・チェックアウト) |
 | **Subsystem** | Buyer Module — Checkout, Order Placement & Order History |
 | **Function ID** | FN-CHECK-001, FN-ORDER-001 |
-| **Version** | 1.3 |
+| **Version** | 1.4 |
 | **Created** | 2026-08-17 |
-| **Last Updated** | 2026-08-27 |
+| **Last Updated** | 2026-10-21 |
 | **Author** | Software Architect |
-| **Status** | Released (承認済み) |
+| **Status** | Source-aligned (implementation baseline; planned gaps identified) |
 | **Classification** | Internal — Engineering Division |
 
 ---
@@ -23,8 +23,9 @@
 
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
+| 1.4 | 2026-10-22 | Software Architect | Updated to reflect PCL v1.3 audit: order confirmation uses derived orderNumber, estimated delivery not rendered, ads via search/ads with no tier/cache/rotation, coupon zero-total only at order placement, inventory_transactions not written, notification created per merchant group, rate limits global-only, and identified gaps (stock warning UI, coupon format/zero-total at validation, notes maxLength server-side, protected route redirect path). |
+| 1.3 | 2026-08-27 | Software Architect | Added sponsored ad slot design for Checkout Top. The actual implementation is reconciled in v1.4 below. |
 | 1.2 | 2026-08-23 | Software Architect | Removed shipping fee and tax fee from checkout calculation. Total is now calculated as subtotal - discount. |
-| 1.3 | 2026-08-27 | Software Architect | Added sponsored ad slot specification for Checkout Top placement (UC-CHECK-008, Sec 4.4, Sec 5.1 EL-32~39, Sec 6.2, Sec 7.4, Sec 9.2.1, Sec 10.2, Sec 13.2). Includes ad fetch API, tier priority rules (Premium > Standard > Basic), round-robin rotation, slide-down panel behavior, auto-slide (5s interval, max 5 ads), responsive layouts, graceful degradation on error, pause-on-interaction (WCAG 2.2.2), reduced-motion support, click tracking analytics, Redis caching (TTL 5min), and cross-reference traceability updates. |
 | 1.1 | 2026-08-18 | Software Architect | Added checkout persistence design for cart conversion, inventory transaction logging, and order status history tracking. |
 | 1.0 | 2026-08-17 | Software Architect | Initial functional specification for Purchase and Checkout pages covering use cases, business rules, validation, error handling, and permission control. Aligned with REQUIREMENT_SPEC v1.5, DATABASE_SPEC v2.0, and DEVELOPMENT_RULES v2.0. |
 
@@ -50,6 +51,8 @@
 
 ---
 
+> **Implementation baseline (2026-10-22):** This specification records the behavior in the current frontend and backend. Requirements that are not implemented are explicitly marked as target/gap behavior. Checkout is mounted at `/buyer/checkout`; order APIs are under `/api/v1`. The detailed checkout implementation audit is `Checkout_Purchase_PCL.md` (v1.3, updated 2026-10-22). All N/A/B/I scenarios are tracked there with evidence.
+
 ## 1. Functional Overview
 
 ### 1.1 Purpose and Scope
@@ -66,10 +69,10 @@ This screen is responsible for the following core functional areas:
 2. **Coupon Validation** — Validating and applying discount codes (percentage or fixed) at checkout, enforcing expiry, minimum order amount, and single-use constraints.
 3. **Order Calculation** — Computing subtotal, discount amount, and final total based on cart items and applied coupons.
 4. **Order Placement** — Creating order records with status `placed`, decrementing stock atomically, clearing the cart, and returning order confirmation.
-5. **Sponsored Ad Display** — Rendering a slide-down ad panel on the checkout page with approved, active, in-schedule ads from Merchant-purchased Advertisement Packages, applying package placement and tier priority rules.
+5. **Sponsored Ad Display** — Rendering the shared `AdBannerSlider` on checkout using `checkout_page_banner`. The page uses the shared search ads endpoint; a separate checkout sponsored-ads endpoint exists but is not used by the mounted page.
 6. **Order History** — Displaying a paginated list of all past orders with status, date, total, and item count.
 7. **Order Details** — Showing full order information including items, shipping address, payment status, and order timeline.
-8. **Order Tracking** — Providing real-time order status tracking with timeline visualization and estimated delivery date.
+8. **Order Tracking** — Backend tracking data is available at `GET /api/v1/orders/:orderId/tracking`; no buyer tracking page route is currently mounted.
 9. **Notification Delivery** — Sending order confirmation and status change notifications to the buyer and relevant merchant.
 
 ### 1.3 Target Users
@@ -79,7 +82,7 @@ This screen is responsible for the following core functional areas:
 | **Primary Actor** | Authenticated Buyer |
 | **Required Authentication** | JWT Bearer Token |
 | **Data Scope** | Own orders, own shipping addresses, own payment records |
-| **Guest Behavior** | Checkout unavailable. When a guest user attempts to access `/checkout`, an alert modal is displayed: "Please log in to complete your purchase." Clicking [Log in] navigates to the login page (`/login`). |
+| **Guest Behavior** | On `/buyer/checkout`, unauthenticated users see a login dialog. [Log in] navigates to `/login?redirect=%2Fcheckout`; closing the dialog returns to `/buyer/cart`. |
 
 ### 1.4 Relationships with Other Functions and Peripheral Systems
 
@@ -145,14 +148,14 @@ This screen is responsible for the following core functional areas:
 
 | UC-ID | Use Case Name | Precondition | Postcondition | Triggering Actor |
 |-------|---------------|--------------|---------------|------------------|
-| UC-CHECK-001 | View Checkout Page | User is authenticated. Cart has at least one in-stock item. | Checkout page displayed with order summary, shipping form, and payment options. | Authenticated Buyer |
+| UC-CHECK-001 | View Checkout Page | User is authenticated. | Checkout page displays order summary, shipping form, payment options, and eligible ads. An empty cart currently returns checkout data with an empty item list; the page does not automatically redirect. | Authenticated Buyer |
 | UC-CHECK-002 | Apply Coupon Code | User is on checkout page. Valid coupon code entered. | Discount applied. Order total recalculated. | Authenticated Buyer |
 | UC-CHECK-003 | Remove Coupon Code | User is on checkout page. Coupon code already applied. | Discount removed. Order total recalculated. | Authenticated Buyer |
 | UC-CHECK-004 | Place Order | User is on checkout page. Shipping address valid. Payment method selected. Stock validated. | Order created with status `placed`. Stock decremented. Cart cleared. Order confirmation displayed. | Authenticated Buyer |
 | UC-CHECK-005 | View Order History | User is authenticated. User has past orders. | Paginated order list displayed with status, date, total, and item count. | Authenticated Buyer |
 | UC-CHECK-006 | View Order Detail | User is authenticated. Order exists and belongs to user. | Full order detail displayed with items, shipping address, payment status, and timeline. | Authenticated Buyer |
 | UC-CHECK-007 | Track Order | User is authenticated. Order exists. | Order tracking timeline displayed with current status and estimated delivery. | Authenticated Buyer |
-| UC-CHECK-008 | View Sponsored Ad Slot | User is authenticated. Checkout page loaded. | Approved, active, in-schedule ads displayed in slide-down panel with tier priority (Premium > Standard > Basic). Auto-slides every 5 seconds, max 5 ads. | Authenticated Buyer |
+| UC-CHECK-008 | View Sponsored Ad Slot | Checkout page loaded. | Shared ad banner displays eligible `checkout_page_banner` ads; empty/error data hides the panel. The search endpoint returns up to five results ordered by `startsAt DESC` and currently assigns `tier: standard` to each; no five-minute response cache or tier ranking is applied. | Authenticated Buyer |
 
 ### 2.2 Primary Business Workflow — Checkout
 
@@ -235,7 +238,7 @@ This screen is responsible for the following core functional areas:
            ▼                                    ▼
      ┌──────────────┐                 ┌─────────────────────┐
      │  SUCCESS     │                 │  FAILURE            │
-     │  (201)       │                 │  (400/409)          │
+     │  (201)       │                 │  (400)              │
      └──────┬───────┘                 └─────────┬───────────┘
             │                                   │
             ▼                                   ▼
@@ -377,7 +380,7 @@ This screen is responsible for the following core functional areas:
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
 | BR-CHECK-001 | Authentication Required | Only authenticated users can access checkout. | Backend (JwtAuthGuard) |
-| BR-CHECK-002 | Cart Not Empty | Checkout requires at least one item in cart. | Backend (service validation) |
+| BR-CHECK-002 | Cart Not Empty | Order placement requires a non-empty cart. `GET /checkout` currently returns HTTP 200 with `items: []` when the cart is empty. | Order placement service; not enforced by checkout-data endpoint |
 | BR-CHECK-003 | Buyer Role Only | Checkout is restricted to Buyer role. Merchants and Admins get 403 Forbidden. | Backend (requireBuyerRole guard) |
 | BR-CHECK-004 | Shipping Address Required | Shipping address must include: recipient name, phone, address line 1, city, state, postal code, country. | Backend (DTO validation) |
 | BR-CHECK-005 | Payment Method Required | Payment method must be selected. | Backend (DTO validation) |
@@ -386,10 +389,10 @@ This screen is responsible for the following core functional areas:
 | BR-CHECK-008 | Subtotal Calculation | Subtotal = sum of (unit_price × quantity) for all items. | Backend (computed field) |
 | BR-CHECK-009 | Discount Calculation | Discount is calculated after subtotal, based on applied coupon. Percentage discount: subtotal × (discount_value / 100). Fixed discount: discount_value (capped at subtotal). | Backend (order service) |
 | BR-CHECK-010 | Total Calculation | total = subtotal - discount. Total must be > 0. | Backend (order service) |
-| BR-CHECK-011 | Atomic Stock Decrement | Stock is decremented atomically within the order transaction. If any item fails stock check, entire order is rejected. | Backend (Prisma transaction) |
+| BR-CHECK-011 | Transactional Stock Decrement | Product stock decrements execute within the order Prisma transaction after the service checks cart availability. The current service does not use row-level product locks. | Backend (Prisma transaction) |
 | BR-CHECK-012 | Cart Clearance | Successful order placement clears all items from the user's cart. | Backend (order service) |
 | BR-CHECK-013 | Order Confirmation | Order confirmation page displays order ID, status, items, and total. | Frontend |
-| BR-CHECK-014 | Checkout Persistence Atomicity | Creation of an order, order items, initial status history, inventory transactions, product stock updates, coupon usage update, and cart-item deletion must commit or roll back as one database transaction. | Backend (Prisma transaction) |
+| BR-CHECK-014 | Checkout Persistence Atomicity | Orders, order items, initial status history, product stock updates, promotion usage updates, notifications, and cart-item deletion run within the Prisma transaction. Checkout does not create `inventory_transactions` rows. | Backend (Prisma transaction) |
 | BR-CHECK-015 | Immutable Order Snapshot | Each `order_items` row copies the cart item quantity and the current authoritative product price at checkout. Later changes to `cart_items` or `products` must not alter the order. | Backend (order service) |
 
 ### 4.2 Coupon Rules
@@ -400,29 +403,28 @@ This screen is responsible for the following core functional areas:
 | BR-COUPON-002 | Expiry Check | Coupon must not be expired (expires_at > now). | Backend (service validation) |
 | BR-COUPON-003 | Minimum Order | If min_order_amount is set, subtotal must meet or exceed it. | Backend (service validation) |
 | BR-COUPON-004 | Usage Limit | If max_uses is set, used_count must be < max_uses. | Backend (service validation) |
-| BR-COUPON-005 | Single Use Per User | Each user can use a coupon code only once per order. | Backend (service validation) |
+| BR-COUPON-005 | Single Use Per User | Coupon validation checks prior buyer use; order placement also rejects previously used vouchers/coupons. | Backend service |
 | BR-COUPON-006 | Merchant Scope | Coupon must belong to the merchant whose products are in the cart. (For MVP: any valid coupon applies.) | Backend (future) |
 | BR-COUPON-007 | Discount Type | `percentage`: discount = subtotal × (value / 100). `fixed`: discount = min(value, subtotal). | Backend (order service) |
-| BR-COUPON-008 | One Coupon Per Order | Only one coupon can be applied per order. Applying a new coupon replaces the previous one. | Backend (service logic) |
+| BR-COUPON-008 | One Coupon Per Merchant Order | Checkout stores at most one voucher per merchant and can remove it client-side. Multi-merchant carts may create separate orders with separate voucher codes. | Frontend state and backend order service |
 | BR-COUPON-009 | Usage Increment | On successful order, coupon used_count is incremented atomically. | Backend (Prisma transaction) |
 
 ### 4.3 Sponsored Ad Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-AD-001 | Placement Eligibility | Ads are eligible only if they belong to a purchased Advertisement Package whose placement includes Checkout Top. | Backend (ads service) |
-| BR-AD-002 | Approval Status | Only approved ads (`is_approved = true`) are eligible. | Backend (ads service) |
-| BR-AD-003 | Active Status | Only active ads (`is_active = true`) are eligible. | Backend (ads service) |
-| BR-AD-004 | Schedule Check | Ads whose `schedule_start <= now <= schedule_end` are eligible. | Backend (ads service) |
-| BR-AD-005 | Tier Priority | Ads are prioritized by package tier: Premium > Standard > Basic. | Backend (ads service) |
-| BR-AD-006 | Round-Robin Rotation | Within the same tier, ads are rotated using round-robin. | Backend (ads service) |
-| BR-AD-007 | Maximum Ads | The slide-down panel displays a maximum of 5 ads. | Backend (ads service) |
-| BR-AD-008 | Cache Strategy | Ad slot results are cached in Redis with key `cache:ads:checkout-top`, TTL 5 minutes. | Backend (ads service) |
-| BR-AD-009 | Graceful Degradation | On ad fetch error or no eligible ads, the ad panel is hidden — checkout functions normally without ads. | Frontend |
-| BR-AD-010 | Reduced Motion | When `prefers-reduced-motion: reduce`, slide-down animation is skipped (instant appear). Rotation rules unchanged. | Frontend |
-| BR-AD-011 | Pause on Interaction | Auto-advancement pauses on hover or keyboard focus within ad panel; resumes on pointer leave / blur (WCAG 2.2.2). | Frontend |
-| BR-AD-012 | Click Tracking | CTA click fires `ad.click` analytics event with `ad_id` and `placement`. | Frontend |
-
+| BR-AD-001 | Placement Eligibility | Checkout requests `checkout_page_banner`; the search ads service filters by matching fee-setting placement. | Backend SearchService |
+| BR-AD-002 | Approval Status | Only approved ads are returned. | Backend SearchService |
+| BR-AD-003 | Active Status | Only active ads are returned. | Backend SearchService |
+| BR-AD-004 | Schedule Check | Ads must satisfy `startsAt <= now` and `expiresAt >= now`; ads from unapproved shops are excluded. | Backend SearchService |
+| BR-AD-005 | Result Ordering | Ads sort by `startsAt DESC`; the response DTO currently assigns `tier: standard` to every ad. No premium/standard/basic ranking is applied. | Backend SearchService |
+| BR-AD-006 | Rotation | No round-robin rotation is applied on the checkout search ads route. | Current implementation |
+| BR-AD-007 | Maximum Ads | Search ads endpoint returns at most five ads. | Backend SearchService |
+| BR-AD-008 | Checkout Ad Cache | No Redis result cache is applied on the checkout search ads route. | Current implementation |
+| BR-AD-009 | Graceful Degradation | Empty/error data yields no visible banner; checkout continues without ads. | Frontend |
+| BR-AD-010 | Reduced Motion | Slider suppresses timed auto-advance for `prefers-reduced-motion: reduce`; no separate slide-down entrance animation is implemented. | Frontend |
+| BR-AD-011 | Pause on Interaction | Auto-advance pauses on hover or keyboard focus and resumes after leave/blur. | Frontend |
+| BR-AD-012 | Click Tracking | Slider supports a click callback, but Checkout does not pass one; checkout ad clicks are not tracked through this callback. | Frontend (not wired on checkout) |
 ### 4.4 Order History Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
@@ -444,7 +446,7 @@ This screen is responsible for the following core functional areas:
 
 ## 5. Screen Specifications
 
-### 5.1 Screen: Checkout Page (`/checkout`)
+### 5.1 Screen: Checkout Page (`/buyer/checkout`)
 
 **Purpose:** Allow authenticated buyers to review their order, enter shipping details, select payment method, and place the order.
 
@@ -485,21 +487,21 @@ This screen is responsible for the following core functional areas:
 | EL-29 | Guest Login Alert Modal | Dialog/Modal | `checkout.guestLoginAlert` | Conditional | Alert modal for unauthenticated users: "Please log in to complete your purchase." with [Log in] button navigating to `/login` |
 | EL-30 | Loading Overlay | Overlay | — | Conditional | Shown during order submission |
 | EL-31 | Stock Warning Alert | Alert | — | Conditional | "Some items have changed stock availability" |
-| EL-32 | Sponsored Ad Slide-Down Panel | Slide-down panel (div) | `checkout.sponsored.label` | Conditional | Hidden until ad response arrives. On first eligible ad: slides down into view below [A] Page Header and above [B]+[C] row — horizontally centered across full container width (300ms ease-out, once per mount). Contains up to 5 ad slides with auto-slide every 5 seconds. |
-| EL-33 | Ad Slide Track | Slider track (div) | — | Conditional | Renders when ad panel is expanded. Vertical slide-down transition between slides (500ms ease-in-out); advance interval 5s. |
-| EL-34 | Ad Slide Card | Card (flex container) | — | Conditional | One card per eligible ad (max 5). Desktop/tablet (≥ 768px): horizontal — image left (w-80), text block right. Mobile (< 768px): stacked — image top, content below. Whole card clickable. |
-| EL-35 | Ad Image / Banner | Image (img) | — | Conditional | Desktop: fixed 320×120, object-cover. Mobile: full-width 16:9, object-cover. Lazy-loaded. Alt text from i18n template. |
-| EL-36 | Ad Title | Heading (h3) | — | Conditional | Single-line truncation. |
-| EL-37 | Ad Description | Paragraph (p) | — | Conditional | Clamped to 2 lines. Hidden when null/empty. |
-| EL-38 | Ad CTA Button | Button/Link (primary) | — | Conditional | Desktop: inline, right-aligned. Mobile: full-width. Keyboard-focusable with visible primary focus ring. |
-| EL-39 | Sponsored Badge | Badge (span) | `checkout.sponsored.label` | Mandatory | Text: "Sponsored" / "スポンサー提供". Uppercase, amber background + dark text. Distinguishes ads from organic content. |
+| EL-32 | Sponsored Ad Banner | Card | — | Conditional | Shared `AdBannerSlider` after the checkout header; hidden when no eligible ads or query data is unavailable. |
+| EL-33 | Ad Carousel | Card content | — | Conditional | One ad is visible at a time; auto-advances every 5 seconds and loops, with previous/next controls and dots when multiple ads exist. No vertical slide-down transition. |
+| EL-34 | Ad Card | Card | — | Conditional | Current ad is clickable; shared ads endpoint returns at most five. Layout stacks on narrow screens and is horizontal at medium widths. |
+| EL-35 | Ad Image | Image (img) | — | Conditional | Uses the ad image, then product image/sample image fallback; alt text uses the ad title. |
+| EL-36 | Ad Title | Heading (h3) | — | Conditional | Uses ad title or resolved product name; line treatment responds to viewport width. |
+| EL-37 | Ad Description | Paragraph (p) | — | Conditional | HTML tags are stripped; hidden when no description is available. |
+| EL-38 | Ad CTA Button | Button | — | Conditional | “Learn more”; navigates to product or ad destination. |
+| EL-39 | Ad Announcement / Shop Badge | Badge (span) | — | Conditional | Announcement message (fallback “SPONSORED”) and shop/category tag; not the designed localized Sponsored badge. |
 | EL-40 | Success Icon | Icon (checkmark) | — | Yes | Large green checkmark |
 | EL-41 | Success Title | Heading (h1) | `checkout.confirmation.title` | Yes | "Order Placed Successfully!" |
 | EL-42 | Order ID | Text | `checkout.confirmation.orderId` | Yes | "Order #ABC-12345" |
 | EL-43 | Order Status | Badge | `checkout.confirmation.status` | Yes | "Placed" status badge |
-| EL-44 | Estimated Delivery | Text | `checkout.confirmation.estimatedDelivery` | Conditional | "Estimated delivery: Aug 20, 2026" |
+| EL-44 | Estimated Delivery | Text | `checkout.confirmation.estimatedDelivery` | Conditional | `estimatedDelivery` is returned by order placement but is not currently rendered on confirmation. |
 | EL-45 | Order Summary Card | Card | — | Yes | Items, totals, shipping address |
-| EL-46 | Continue Shopping Button | Button (primary) | `checkout.confirmation.continueShopping` | Yes | Navigate to /products |
+| EL-46 | Continue Shopping Button | Button (primary) | `checkout.confirmation.continueShopping` | Yes | Navigates to `/buyer/search`. |
 | EL-47 | View Order Button | Button (secondary) | `checkout.confirmation.viewOrder` | Yes | Navigate to /orders/:orderId |
 | EL-48 | Print Receipt Button | Button (ghost) | `checkout.confirmation.print` | No | Print order confirmation |
 
@@ -511,7 +513,7 @@ This screen is responsible for the following core functional areas:
 - Place Order button disabled until form is valid
 - Loading overlay shown during submission
 
-### 5.2 Screen: Order Confirmation Page (`/checkout/confirmation/:orderId`)
+### 5.2 Screen: Order Confirmation Page (`/buyer/checkout/confirmation/:orderId`)
 
 **Purpose:** Confirm successful order placement and display order summary.
 
@@ -525,9 +527,9 @@ This screen is responsible for the following core functional areas:
 | EL-41 | Success Title | Heading (h1) | `checkout.confirmation.title` | Yes | "Order Placed Successfully!" |
 | EL-42 | Order ID | Text | `checkout.confirmation.orderId` | Yes | "Order #ABC-12345" |
 | EL-43 | Order Status | Badge | `checkout.confirmation.status` | Yes | "Placed" status badge |
-| EL-44 | Estimated Delivery | Text | `checkout.confirmation.estimatedDelivery` | Conditional | "Estimated delivery: Aug 20, 2026" |
+| EL-44 | Estimated Delivery | Text | `checkout.confirmation.estimatedDelivery` | Conditional | `estimatedDelivery` is returned by order placement but is not currently rendered on confirmation. |
 | EL-45 | Order Summary Card | Card | — | Yes | Items, totals, shipping address |
-| EL-46 | Continue Shopping Button | Button (primary) | `checkout.confirmation.continueShopping` | Yes | Navigate to /products |
+| EL-46 | Continue Shopping Button | Button (primary) | `checkout.confirmation.continueShopping` | Yes | Navigates to `/buyer/search`. |
 | EL-47 | View Order Button | Button (secondary) | `checkout.confirmation.viewOrder` | Yes | Navigate to /orders/:orderId |
 | EL-48 | Print Receipt Button | Button (ghost) | `checkout.confirmation.print` | No | Print order confirmation |
 
@@ -598,7 +600,7 @@ This screen is responsible for the following core functional areas:
 - Full order details displayed
 - Timeline showing current status
 
-### 5.5 Screen: Order Tracking Page (`/orders/:orderId/tracking`)
+### 5.5 Order Tracking Data (`GET /api/v1/orders/:orderId/tracking`; no mounted buyer tracking page)
 
 **Purpose:** Display real-time order tracking with status timeline and estimated delivery.
 
@@ -626,47 +628,24 @@ This screen is responsible for the following core functional areas:
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | Navigation to `/checkout` from cart page |
+| **Trigger** | Navigation to `/buyer/checkout` |
 | **API Endpoint** | `GET /api/v1/checkout` |
 | **Request Headers** | `Authorization: Bearer <accessToken>` |
-| **Pre-Submission Validation** | User authenticated, role = buyer, cart has items |
-| **Processing Steps** | 1. Validate JWT token. 2. Verify user role is `buyer`. 3. Fetch cart items with product details. 4. Validate stock for all items. 5. Calculate subtotal. 6. Fetch user's saved addresses (if any). 7. Return checkout data. |
-| **Success Response** | 200 OK with cart items, subtotal, stock status, and user addresses |
-| **Post-Action** | Render checkout form with order summary |
-
+| **Pre-Submission Validation** | JWT and buyer role are required. Empty cart is not rejected by this GET operation. |
+| **Processing Steps** | Upsert the buyer cart; fetch items with product and merchant data; compute current-price line totals and subtotal; return `items`, `subtotal`, `discountAmount: "0.00"`, `total`, and `cartId`. Each item includes `isAvailable`, `merchantId`, and `merchantName`. No saved-address lookup occurs. |
+| **Success Response** | HTTP 200, including an empty `items` array when the cart has no items. |
+| **Post-Action** | Render checkout form and order summary; page displays a load error only when the request fails. |
 ### 6.2 Operation: Load Sponsored Ad Slot
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | Component mounts (Checkout page loaded) |
-| **API Endpoint** | `GET /api/v1/ads?placement=checkout_top` |
-| **Request Headers** | None (public cache) |
-| **Pre-Submission Validation** | User authenticated (page-level) |
-| **Processing Steps** | 1. Fetch ad slot in parallel to cart data fetch (does not block checkout loading). 2. Filter: Select approved advertisement records from Merchant-purchased Advertisement Packages for the Checkout Top placement. 3. Filter: Keep only approved, active ads whose schedule covers the current time (`is_approved = true`, `is_active = true`, `schedule_start <= now <= schedule_end`). 4. Apply package placement and tier priority rules (Premium > Standard > Basic), with round-robin rotation within each tier. 5. Limit the slider to a maximum of 5 ads. 6. Cache the resulting ad list in Redis with key `cache:ads:checkout-top`, TTL 5 minutes. 7. If eligible ads exist, slide panel into view (300ms ease-out, once per mount). With `prefers-reduced-motion: reduce`, panel appears instantly without animation. 8. Render each ad's image/banner, title, description (hidden when absent), CTA button, and Sponsored badge. 9. Auto-advance to the next ad every 5 seconds using vertical slide-down transition (500ms). Maximum 5 slides; loop after the last. 10. Pause auto-advancement on hover or keyboard focus within ad panel; resume on pointer leave / blur (WCAG 2.2.2). |
-| **Success Response** | 200 OK with array of ad objects |
-| **Error Response** | On error or empty response: hide ad panel entirely (graceful degradation) |
-| **Post-Action** | Render ad panel if eligible ads exist; otherwise skip ad panel rendering |
-
-#### 6.2.1 Ad Slot Response Structure
-
-```json
-{
-  "data": [
-    {
-      "id": "uuid",
-      "imageUrl": "https://cdn.example.com/ads/banner1.jpg",
-      "title": "Summer Sale - 20% Off",
-      "description": "Limited time offer on all skincare products.",
-      "ctaText": "Shop Now",
-      "ctaUrl": "https://example.com/summer-sale",
-      "priority": "premium",
-      "scheduleStart": "2026-08-20T00:00:00.000Z",
-      "scheduleEnd": "2026-09-30T23:59:59.000Z"
-    }
-  ]
-}
-```
-
+| **Trigger** | `AdBannerSlider` mounts on Checkout page |
+| **API Endpoint** | `GET /api/v1/search/ads?placement=checkout_page_banner` (mounted page uses `features/search/services/ad.service.ts`) |
+| **Request Headers** | Public route; checkout JWT is not required by the ads endpoint. |
+| **Processing Steps** | `SearchService.getAdsByPlacement` filters fee-setting placement, approved ads, active ads, `startsAt <= now`, `expiresAt >= now`, and approved shops. It orders by `startsAt DESC`, takes at most five, and projects tier as `standard`. No payment-status filter, named tier ranking, Redis rotation, or result cache is applied on this route. The frontend filters placement/schedule, hides empty data, auto-advances every five seconds, pauses on hover/focus, and disables its timer for reduced motion. Checkout does not pass analytics callbacks. |
+| **Success Response** | `{ data: [...] }` with ad fields including `id`, `placement`, `title`, `announcementMessage`, `description`, `imageUrl`, `sku`, `tier`, `approvalStatus`, `startsAt`, and `expiresAt`. |
+| **Error Response** | Search ads service response is treated as query error by frontend; no banner is rendered. |
+| **Not Implemented in Current Checkout Path** | The separate `/api/v1/checkout/sponsored-ads` endpoint is not used by the page. No five-minute checkout-result cache, premium-first tier ordering, rotation, slide-down entrance transition, or checkout click-analytics callback is implemented. |
 ### 6.3 Operation: Validate Coupon Code
 
 | Attribute | Specification |
@@ -689,35 +668,29 @@ This screen is responsible for the following core functional areas:
 | **API Endpoint** | `POST /api/v1/orders` |
 | **Request Headers** | `Authorization: Bearer <accessToken>` |
 | **Request Content-Type** | `application/json` |
-| **Request Body** | `{ shippingAddress: ShippingAddressDTO, paymentMethod: string, couponCode?: string, notes?: string }` |
+| **Request Body** | `{ shippingAddress: ShippingAddressDTO, paymentMethod: string, couponCode?: string, voucherCodes?: Record<merchantId, code>, notes?: string }` |
 | **Pre-Submission Validation** | All required fields present, cart not empty |
-| **Processing Steps** | 1. Validate JWT token. 2. Verify user role is `buyer`. 3. Validate request body (DTO). 4. Fetch cart items with current product prices and stock. 5. Re-validate stock for all items. 6. Calculate subtotal from DB prices. 7. Validate and apply coupon if provided (BR-COUPON-001~008). 8. Calculate discount and total. 9. Create order record (status: `placed`). 10. Create order_items records. 11. Decrement stock atomically for all items. 12. Increment coupon used_count if coupon applied. 13. Clear user's cart. 14. Send order notification to merchant. 15. Return order confirmation. 16. Log ORDER_PLACED event. |
-| **Success Response** | 201 Created with order confirmation data |
-| **Error Response** | 400 (validation), 409 (insufficient stock) |
+| **Processing Steps** | Validate DTO; reject empty cart or inactive/insufficient-stock products; group cart by merchant; recalculate using database prices; apply submitted per-merchant vouchers (or legacy coupon); reject a group total at or below zero. In one Prisma transaction create one `placed` / `pending` order per merchant, items, initial status history and merchant notification, increment promotion usage, decrement stock, then delete cart items. |
+| **Success Response** | 201 Created with `{ data: { orders: [...] } }`; one order object per merchant group, including generated `orderNumber` (`ORD-` + first 8 uppercase UUID characters) and estimated delivery at creation time + 7 days. |
+| **Error Response** | 400 for DTO/domain failures, including empty cart and insufficient stock. |
 | **Post-Action** | Navigate to order confirmation page |
 
 #### 6.4.1 Checkout Persistence and Transaction Design
 
-All write steps below are executed inside one database transaction. The service uses row-level locks (or an equivalent conditional update) for the selected product rows so that stock is rechecked against the latest committed value. A failure at any step rolls back the order, order items, stock changes, inventory records, coupon update, and cart changes; no partial order is exposed to the buyer or merchant.
+Order records, order items, stock decrements, promotion increments, notifications, status history, and cart-item deletion are executed in the Prisma transaction. A failure within the transaction rolls back those writes. The current order service does not implement row-level product locks and does not write inventory transaction records.
 
 ##### A. Cart Integration Logic (`carts`, `cart_items` to `orders`, `order_items`)
 
 1. Load the single cart whose `carts.user_id` equals the authenticated buyer ID, together with its `cart_items` and the referenced `products`.
-2. Reject the request with `400 BAD_REQUEST` if no cart exists or it has no items. Reject with `409 CONFLICT` if any referenced product is inactive, unavailable, belongs to an invalid merchant, or has insufficient stock.
+2. Reject the request with `400 BAD_REQUEST` if no cart exists or it has no items. Reject with `400 BAD_REQUEST` if any cart product is inactive or has insufficient stock.
 3. Group cart items by `products.merchant_id`. Because an `orders` row has one `merchant_id`, create one order per merchant group. The request succeeds only if every group can be created; otherwise the complete transaction rolls back. For a single-merchant cart this produces one order.
-4. For each group, calculate price and totals from the locked product records, not from client input. Insert `orders` with `buyer_id`, the group `merchant_id`, shipping/payment fields, computed amounts, and `status = 'placed'`.
+4. For each group, calculate price and totals from the cart product records loaded by the service, not from client input. Insert `orders` with `buyer_id`, the group `merchant_id`, shipping/payment fields, computed amounts, and `status = 'placed'`.
 5. Insert one `order_items` row per source `cart_items` row, copying `product_id`, `merchant_id`, requested `quantity`, current product price as `unit_price`, and `quantity * unit_price` as `total_price`. `cart_items` remain the mutable shopping intent; `order_items` are the immutable purchase snapshot.
 6. Delete only the `cart_items` rows successfully converted to order items. Once all rows have been consumed, retain the buyer's empty `carts` row for subsequent use. A failed checkout leaves the cart unchanged.
 
 ##### B. Inventory Transaction Logic (`inventory_transactions`)
 
-For each created `order_items` row, read the locked `products.stock_quantity` as `before_quantity`, verify `before_quantity >= order_items.quantity`, then update the product stock to `after_quantity = before_quantity - order_items.quantity`. Insert an `inventory_transactions` row in the same transaction with:
-
-| Event | `transaction_type` | `quantity` | `before_quantity` / `after_quantity` | Reference and audit fields |
-|-------|--------------------|------------|----------------------------------------|----------------------------|
-| Order confirmation | `order_created` | `-order_items.quantity` | Stock immediately before/after the decrement | `product_id`, `merchant_id`, `reference_type = 'order'`, `reference_id = orders.id`, `reason = 'Checkout order placed'`, `created_by = buyer_id` |
-
-The transaction log is append-only: `order_created` rows are never edited or deleted during normal operation.
+Checkout does not create `inventory_transactions` rows. Product stock is decremented for each order item inside the order transaction; inventory ledger entries described in older design material are not part of the current checkout implementation.
 
 ##### C. Order Status History Tracking (`order_status_history`)
 
@@ -725,7 +698,7 @@ The transaction log is append-only: `order_created` rows are never edited or del
 
 | Transition | `orders.status` update | History record |
 |------------|------------------------|----------------|
-| Checkout succeeds | Create as `placed` | Insert `order_id`, the `placed` status ID, `changed_by = buyer_id`, and note `Order placed via checkout`. |
+| Checkout succeeds | Create as `placed` | Insert the order ID, `placed` status ID, and note `Order placed`. |
 | Merchant confirms | `placed` to `confirmed` | Insert the `confirmed` status ID, `changed_by = merchant user ID`, and optional operational note. |
 | System/courier fulfillment transition | Update to the allowed next state | Insert the target status ID; `changed_by` is the acting user when known, otherwise `NULL`, with a system/courier note. |
 
@@ -775,13 +748,13 @@ Status history rows are never updated or deleted during normal operation. The or
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|------------|
 | `recipientName` | Recipient Name | 受取人氏名 | VARCHAR(200) | Yes | `@IsString()`, `@IsNotEmpty()`, `@MaxLength(200)` |
-| `phone` | Phone Number | 電話番号 | VARCHAR(20) | Yes | `@IsString()`, `@IsNotEmpty()`, `@MaxLength(20)` |
+| `phone` | Phone Number | 電話番号 | VARCHAR(20) | Yes | Backend: `@IsString()`, `@IsNotEmpty()`, `@MaxLength(20)`; frontend allows digits only, requires leading 0 and length 9 or 11, and caps input at 11. |
 | `addressLine1` | Address Line 1 | 住所1 | VARCHAR(255) | Yes | `@IsString()`, `@IsNotEmpty()`, `@MaxLength(255)` |
 | `addressLine2` | Address Line 2 | 住所2 | VARCHAR(255) | No | `@IsOptional()`, `@IsString()`, `@MaxLength(255)` |
 | `city` | City | 市区町村 | VARCHAR(100) | Yes | `@IsString()`, `@IsNotEmpty()`, `@MaxLength(100)` |
 | `state` | State/Province | 都道府県 | VARCHAR(100) | Yes | `@IsString()`, `@IsNotEmpty()`, `@MaxLength(100)` |
 | `postalCode` | Postal Code | 郵便番号 | VARCHAR(20) | Yes | `@IsString()`, `@IsNotEmpty()`, `@MaxLength(20)` |
-| `country` | Country | 国 | VARCHAR(100) | Yes | `@IsString()`, `@IsNotEmpty()`, `@MaxLength(100)` |
+| `country` | Country | 国 | VARCHAR(100) | Yes | Backend: `@IsString()`, `@IsNotEmpty()`, `@MaxLength(100)`; frontend uses a fixed country list and defaults to `JP`. |
 
 ### 7.2 Input Specification — Order Placement (入力定義)
 
@@ -789,30 +762,30 @@ Status history rows are never updated or deleted during normal operation. The or
 |-------|-------------------|-------------------|-------------------|:--------:|------------|
 | `shippingAddress` | Shipping Address | 配送先住所 | JSON Object | Yes | Nested validation (Sec 7.1) |
 | `paymentMethod` | Payment Method | 決済方法 | ENUM | Yes | `@IsIn(['cod', 'bank_transfer', 'card'])` |
-| `couponCode` | Coupon Code | クーポンコード | VARCHAR(50) | No | `@IsOptional()`, `@IsString()`, `@MaxLength(50)` |
-| `notes` | Order Notes | 備考 | TEXT | No | `@IsOptional()`, `@IsString()`, `@MaxLength(500)` |
+| `couponCode` | Coupon Code | クーポンコード | String | No | `@IsOptional()`, `@IsString()`; legacy single code. |
+| `voucherCodes` | Per-merchant vouchers | 店舗別クーポン | Object | No | `@IsOptional()`, `@IsObject()`; map of merchant ID to code. |
+| `notes` | Order Notes | 備考 | String | No | Backend: `@IsOptional()`, `@IsString()` (no server maximum); frontend textarea limits input to 500 characters. |
 
 ### 7.3 Input Specification — Coupon Validation (入力定義)
 
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|------------|
-| `couponCode` | Coupon Code | クーポンコード | VARCHAR(50) | Yes | `@IsString()`, `@IsNotEmpty()`, `@MaxLength(50)` |
-| `subtotal` | Subtotal | 小計 | DECIMAL(10,2) | Yes | `@IsNumber()`, `@Min(0)` |
+| `couponCode` | Coupon Code | クーポンコード | String | Yes | `@IsString()`, `@IsNotEmpty()`; no maximum length decorator. |
+| `subtotal` | Subtotal | 小計 | Number | Yes | `@IsNumber()`, `@Min(0.01)`; DTO message: “Subtotal must be greater than 0”. |
 
-### 7.4 Output Specification — Sponsored Ad Slot (出力定義)
+### 7.4 Output Specification — Sponsored Ad Slot
+
+The mounted checkout page consumes the shared search-ad DTO, not the separate checkout service DTO.
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `id` | `advertisements.id` | UUID string |
-| `imageUrl` | `advertisements.image_url` | URL string |
-| `title` | `advertisements.title` | String |
-| `description` | `advertisements.description` | String (nullable) |
-| `ctaText` | `advertisements.cta_text` | String |
-| `ctaUrl` | `advertisements.cta_url` | URL string |
-| `priority` | Package tier | "premium" / "standard" / "basic" |
-| `scheduleStart` | `advertisements.schedule_start` | ISO 8601 timestamp |
-| `scheduleEnd` | `advertisements.schedule_end` | ISO 8601 timestamp |
-
+| `adId` | `advertisements.id` | UUID string |
+| `placement` | `ad_fee_settings.placement` | `checkout_page_banner` |
+| `title`, `description`, `announcementMessage` | Advertisement record | Strings (description may be absent) |
+| `imageUrl`, `sku` | Advertisement record | URL/string; SKU nullable |
+| `ctaText`, `priorityAmount`, `shopName` | Shared ads projection | String/decimal/shop name |
+| `startsAt`, `expiresAt` | Advertisement schedule | ISO 8601 timestamp or null |
+| `productId`, `productSlug` | Product resolved by SKU or image | UUID/slug or null |
 ### 7.5 Output Specification — Order Confirmation (出力定義)
 
 | Field | Data Source | Display Format |
@@ -884,12 +857,12 @@ Status history rows are never updated or deleted during normal operation. The or
 
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
-| `recipientName` | Required, 1-200 chars | "Recipient name is required" | "受取人氏名は必須です" |
-| `phone` | Required, 1-20 chars, phone format | "Phone number is required" / "Invalid phone number" | "電話番号は必須です" / "無効な電話番号です" |
+| `recipientName` | Required, 1-200 chars; frontend allows Unicode letters and spaces only | "Recipient name is required" / "Name must contain letters and spaces only" | 「受取人氏名は必須です」/「氏名は文字と空白のみ入力できます」 |
+| `phone` | Backend required, max 20; frontend digits only, starts with 0 and length 9 or 11; input max 11 | "Phone number is required" / "Phone must start with 0 and be 9 or 11 digits" | 「電話番号は必須です」/「電話番号の形式が正しくありません」 |
 | `addressLine1` | Required, 1-255 chars | "Address is required" | "住所は必須です" |
 | `city` | Required, 1-100 chars | "City is required" | "市区町村は必須です" |
 | `state` | Required, 1-100 chars | "State is required" | "都道府県は必須です" |
-| `postalCode` | Required, 1-20 chars | "Postal code is required" | "郵便番号は必須です" |
+| `postalCode` | Backend required, max 20; frontend digits only and 4-7 digits | "Postal code is required" / "Postal code must be between 4 and 7 digits" | 「郵便番号は必須です」/「郵便番号は4～7桁で入力してください」 |
 | `country` | Required, 1-100 chars | "Country is required" | "国は必須です" |
 
 ### 8.2 Payment Method Validation
@@ -934,17 +907,12 @@ Status history rows are never updated or deleted during normal operation. The or
 
 | HTTP Status | Error Code | Scenario | User-Facing Behavior |
 |-------------|------------|----------|---------------------|
-| `400` | `BAD_REQUEST` | Validation failures (missing shipping fields) | Field-level inline errors + toast |
-| `400` | `BAD_REQUEST` | Cart is empty | Toast: "Your cart is empty" |
-| `400` | `BAD_REQUEST` | Invalid payment method | Toast: "Invalid payment method" |
-| `400` | `BAD_REQUEST` | Invalid coupon code | Toast: "Invalid coupon code" |
-| `400` | `BAD_REQUEST` | Coupon expired | Toast: "Coupon has expired" |
-| `400` | `BAD_REQUEST` | Minimum order not met | Toast: "Minimum order amount not met" |
-| `400` | `BAD_REQUEST` | Coupon usage limit reached | Toast: "Coupon usage limit reached" |
-| `401` | `UNAUTHORIZED` | Missing or invalid JWT token | Redirect to login |
-| `403` | `FORBIDDEN` | Non-buyer role (merchant/admin) | Toast: "Shopping features are only available to buyers" |
-| `409` | `CONFLICT` | Insufficient stock during submission | Toast: "Some items are no longer available. Please review your cart." |
-| `500` | `INTERNAL_SERVER_ERROR` | Server error | Toast: "Something went wrong. Please try again." |
+| `400` | `VAL_001` / validation details | Invalid order DTO, empty cart on order submission, unavailable stock, or non-positive order total | Order submit catch shows generic failure toast; validation is surfaced inline by form where applicable |
+| `400` | `VAL_001` | Coupon inactive/expired, minimum amount unmet, usage cap reached, or invalid discount at order placement | Coupon mutation error or generic order-failure toast |
+| `404` | `RES_001` | Coupon code not found during coupon validation | Coupon mutation error |
+| `401` | `AUTH_001` | Missing/invalid JWT | Auth flow handles session; checkout page itself shows login dialog when unauthenticated |
+| `403` | `RES_004` | Non-buyer on checkout/coupon routes | RolesGuard rejects request |
+| `500` | Server error | Unexpected error | Order submit catch shows generic failure toast |
 
 ### 9.2.1 Error Classification Table — Sponsored Ad Slot
 
@@ -987,21 +955,23 @@ Note: Ad slot failures are non-critical. The checkout page functions normally wi
 
 | Endpoint | Access Level | Description |
 |----------|-------------|-------------|
-| `GET /checkout` | Protected (Buyer) | Load checkout page data |
-| `GET /ads` | Public (cached) | Load sponsored ad slot for checkout |
-| `POST /checkout/validate-coupon` | Protected (Buyer) | Validate and apply coupon |
-| `POST /orders` | Protected (Buyer) | Place new order |
-| `GET /orders` | Protected (Buyer) | View order history |
-| `GET /orders/:id` | Protected (Buyer) | View order detail |
-| `GET /orders/:id/tracking` | Protected (Buyer) | Track order status |
+| `GET /checkout` | Protected (buyer role) | Load checkout page data |
+| `GET /search/ads?placement=checkout_page_banner` | Public shared search ads route | Checkout banner request used by mounted page |
+| `GET /checkout/sponsored-ads` | Controller JWT/role guards apply | Separate endpoint exists but is not used by mounted page |
+| `POST /checkout/validate-coupon` | Protected (buyer role; active-user guard) | Validate coupon against supplied subtotal |
+| `GET /checkout/merchant-promotions/:merchantId` | Protected (buyer role) | List available merchant promotions |
+| `POST /orders` | JWT/role guarded for buyer, merchant, admin, super_admin; active-user guarded | Place order; controller permits roles beyond buyer |
+| `GET /orders` | JWT/role guarded | View order history, scoped by caller role |
+| `GET /orders/:id` | JWT/role guarded | View order detail with service access checks |
+| `GET /orders/:id/tracking` | JWT/role guarded | Get tracking data; no mounted buyer tracking page route |
 
 ### 10.3 Role-Based Access
 
 | Role | Can Access Checkout | Can Place Orders | Can View History |
 |------|:-------------------:|:----------------:|:----------------:|
 | `buyer` | ✓ | ✓ | ✓ |
-| `merchant` | ✗ | ✗ | ✗ |
-| `admin` | ✗ | ✗ | ✗ |
+| `merchant` | ✗ | Controller permits; service semantics apply | Role-dependent |
+| `admin` / `super_admin` | ✗ | Controller permits; service semantics apply | Role-dependent |
 
 ### 10.4 Ownership Rules
 
@@ -1042,35 +1012,35 @@ The Checkout and Order pages operate with standard REST API calls. Real-time Web
 
 | Source | Target | Condition |
 |--------|--------|-----------|
-| Cart page (`/cart`) | `/checkout` | Click "Proceed to Checkout" (all items in stock) |
-| Product detail page | `/login` | Guest clicks "Buy Now" (alert modal) |
-| Order detail page | `/checkout/confirmation/:orderId` | After successful order placement |
+| Buyer cart page (`/buyer/cart`) | `/buyer/checkout` | Click "Proceed to Checkout" |
+| Checkout page | `/login?redirect=%2Fcheckout` | Guest selects [Log in] in the checkout dialog |
+| Order detail page | `/buyer/checkout/confirmation/:orderId` | After successful order placement |
 
 ### 12.2 Internal Navigation
 
 | Source | Target | Trigger |
 |--------|--------|---------|
-| `/checkout` | `/checkout/confirmation/:orderId` | Order placed successfully |
-| `/checkout` | `/cart` | Click "← Back to Cart" |
+| `/buyer/checkout` | `/buyer/checkout/confirmation/:orderId` | Order placed successfully; sibling orders are passed in `orderIds` query parameter |
+| `/buyer/checkout` | `/buyer/cart` | Click "Back to Cart" or Cancel |
 | `/orders` | `/orders/:orderId` | Click order ID or "View Detail" |
-| `/orders/:orderId` | `/orders/:orderId/tracking` | Click "Track Order" |
+| `/orders/:orderId` | Tracking endpoint `/api/v1/orders/:orderId/tracking` | Tracking data is API-backed; no buyer tracking page route is mounted |
 | `/orders/:orderId` | `/orders` | Click "← Back to Orders" |
 
 ### 12.3 Outbound Navigation
 
 | Source | Target | Condition |
 |--------|--------|-----------|
-| `/checkout/confirmation/:orderId` | `/products` | Click "Continue Shopping" |
-| `/checkout/confirmation/:orderId` | `/orders/:orderId` | Click "View Order" |
+| `/buyer/checkout/confirmation/:orderId` | `/buyer/search` | Click "Continue Shopping" |
+| `/buyer/checkout/confirmation/:orderId` | `/orders/:orderId` | Click "View Order" |
 | `/orders` | `/login` | Session expired (401) |
-| `/checkout` | `/login` | Session expired (401) |
+| `/buyer/checkout` | `/login` | Session expired (401) |
 
 ### 12.4 Error Navigation
 
 | Source | Target | Condition |
 |--------|--------|-----------|
-| `/checkout` | `/cart` | Cart is empty on page load |
-| `/checkout` | `/login` | 401 Unauthorized |
+| `/buyer/checkout` | — | Empty cart currently remains on checkout with an empty summary (no automatic cart redirect). |
+| `/buyer/checkout` | `/login` | Session expired (401) |
 | `/orders/:orderId` | `/orders` | 404 Order not found |
 | Any checkout/order page | `/login` | Guest user attempts checkout (via alert modal) |
 
@@ -1085,7 +1055,7 @@ The Checkout and Order pages operate with standard REST API calls. Real-time Web
 | Checkout Page Load | ≤ 2 seconds |
 | Order Placement API | ≤ 2 seconds |
 | Coupon Validation API | ≤ 500 milliseconds |
-| Ad Slot Load | ≤ 500 milliseconds (parallel, non-blocking) |
+| Ad Slot Load | Target only; current page fetches ads asynchronously through shared query hook |
 | Order History Page Load | ≤ 2 seconds |
 | Order Detail Page Load | ≤ 1 second |
 | Stock Validation Check | ≤ 100 milliseconds |
@@ -1098,7 +1068,7 @@ The Checkout and Order pages operate with standard REST API calls. Real-time Web
 | Stock quantities | Real-time from DB | — |
 | Coupon validation | No cache (must be current) | — |
 | Order data | No cache (user-specific, real-time) | — |
-| Ad slot (checkout_top) | Redis cache | 5 minutes |
+| Checkout search ads | No response cache or Redis rotation on this route | — |
 
 ### 13.3 Security Considerations
 
@@ -1153,7 +1123,7 @@ Defined via `.env` configuration:
 | B-CHECK-008 | User can view order history | UC-CHECK-005, Sec 5.3, Sec 6.4 |
 | B-CHECK-009 | User can view order details | UC-CHECK-006, Sec 5.4, Sec 6.5 |
 | B-CHECK-010 | Order confirmation notification is sent | Sec 11.2 |
-| B-CHECK-011 | System displays sponsored ads with tier priority | UC-CHECK-008, Sec 5.1 (EL-32~39), Sec 6.2, BR-AD-001~012 |
+| B-CHECK-011 | Checkout displays ads returned by the search ads endpoint | UC-CHECK-008, Sec 5.1 (EL-32~39), Sec 6.2, BR-AD-001~012 |
 
 ### 15.2 Database Design Traceability
 
@@ -1164,12 +1134,12 @@ Defined via `.env` configuration:
 | `carts` | Load authenticated buyer's persistent cart (SELECT); retain an empty cart after successful checkout |
 | `cart_items` | Load and convert to immutable `order_items` (SELECT); delete only after all order writes commit (DELETE) |
 | `order_status_history` | Insert initial `placed` status and every later state transition; read in chronological order for tracking timeline |
-| `inventory_transactions` | Insert append-only stock-decrement records on order creation and compensating restoration records on cancellation |
+| `inventory_transactions` | No rows are written by checkout order placement. |
 | `products` | Stock validation (SELECT), Price lookup (SELECT), Stock decrement (UPDATE) |
-| `advertisements` | Load ad slot for checkout_top placement (SELECT), Click tracking (analytics) |
-| `advertisement_packages` | Determine package tier priority (SELECT) |
+| `advertisements` | Search ads endpoint reads eligible `checkout_page_banner` ads; checkout click analytics callback is not wired. |
+| `advertisement_packages` | Not used by current checkout search ads projection for tier ranking. |
 | `promotions` | Coupon validation (SELECT), Usage increment (UPDATE used_count) |
-| `users` | Shipping address source (from JWT user context) |
+| `users` | Buyer identity from JWT; shipping address is entered in checkout and passed in the order request |
 
 ### 15.3 Related Document References
 

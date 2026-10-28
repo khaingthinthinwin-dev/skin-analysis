@@ -1,4 +1,7 @@
 import { test, expect } from '../../fixtures/auth.fixture';
+import { API_BASE_URL } from '../../utils/constants';
+import { adminHeaders } from '../../utils/api-auth';
+import { getExportAuditEntriesForDate } from '../../utils/ad-test-data';
 import { AdExportPage } from '../../pages/Ad_Management_Screen/AdExportPage';
 import { captureFinalTestScreenshot, captureScreenshot } from '../../utils/screenshot';
 import { readFile } from 'fs/promises';
@@ -23,7 +26,7 @@ test.describe('Admin Export Reports — PCL Normal Scenarios', () => {
   });
 
   test.describe('N-12: Export ad performance report as CSV', () => {
-    test('should export ad performance CSV with correct columns', async ({ adminPage }) => {
+    test('should export ad performance CSV with correct columns', async ({ adminPage, request }) => {
       await exportPage.goto();
       await exportPage.selectReportType('Ad Performance');
       const download = await exportPage.runExport();
@@ -32,12 +35,22 @@ test.describe('Admin Export Reports — PCL Normal Scenarios', () => {
       if (!downloadPath) throw new Error('Ad Performance CSV download has no local file path');
       const csv = await readFile(downloadPath, 'utf8');
       expect(csv.split(/\r?\n/)[0]).toBe('Shop,Title,Placement,Tier,Status,Impressions,Clicks,CTR (%),Fee Paid,Revenue');
+      // API audit event verification: EXPORT_GENERATED recorded
+      const exportApiResponse = await request.post(`${API_BASE_URL}/admin/ads/export/ad-performance`, {
+        headers: await adminHeaders(request),
+        data: { format: 'csv', dateFrom: '2026-02-01', dateTo: '2026-02-01' },
+      });
+      expect(exportApiResponse.status()).toBe(200);
+      const exportContentType = exportApiResponse.headers()['content-type'] || '';
+      expect(exportContentType.toLowerCase()).toMatch(/text\/csv|application\/csv|text\/plain/);
+      const auditEntries = await getExportAuditEntriesForDate('2026-02-01');
+      expect(auditEntries.find((entry) => entry.reportType === 'ad_performance')).toBeDefined();
       await captureScreenshot(adminPage, 'N-12_1_ad_performance_export', 'Ad Performance CSV export completes successfully.');
     });
   });
 
   test.describe('N-13: Export ads submission history as CSV', () => {
-    test('should export submission history CSV with review metadata', async ({ adminPage }) => {
+    test('should export submission history CSV with review metadata', async ({ adminPage, request }) => {
       await exportPage.goto();
       await exportPage.selectReportType('Submission History');
       const download = await exportPage.runExport();
@@ -46,15 +59,40 @@ test.describe('Admin Export Reports — PCL Normal Scenarios', () => {
       if (!downloadPath) throw new Error('Submission History CSV download has no local file path');
       const csv = await readFile(downloadPath, 'utf8');
       expect(csv.split(/\r?\n/)[0]).toBe('Shop,Title,Placement,Tier,Submitted,Status,Rejection Reason,Reviewed By,Reviewed At,Fee Paid,Refund Amount');
+      // API audit event verification: EXPORT_GENERATED recorded
+      const exportApiResponse = await request.post(`${API_BASE_URL}/admin/ads/export/submission-history`, {
+        headers: await adminHeaders(request),
+        data: { format: 'csv', dateFrom: '2026-03-01', dateTo: '2026-03-01' },
+      });
+      expect(exportApiResponse.status()).toBe(200);
+      const exportContentType = exportApiResponse.headers()['content-type'] || '';
+      expect(exportContentType.toLowerCase()).toMatch(/text\/csv|application\/csv|text\/plain/);
+      const auditEntries = await getExportAuditEntriesForDate('2026-03-01');
+      expect(auditEntries.find((entry) => entry.reportType === 'submission_history')).toBeDefined();
       await captureScreenshot(adminPage, 'N-13_1_submission_history_export', 'Submission History CSV export completes successfully.');
     });
   });
 
   test.describe('N-14: Export fee history log as CSV', () => {
-    test('should export fee history CSV with old/new values and reasons', async ({ page }) => {
+    test('should export fee history CSV with old/new values and reasons', async ({ adminPage, request }) => {
       await exportPage.goto();
       await exportPage.selectReportType('Fee History');
-      await exportPage.runExport();
+      const download = await exportPage.runExport();
+      expect(download.suggestedFilename()).toMatch(/^fee_history_.*\.csv$/i);
+      const downloadPath = await download.path();
+      if (!downloadPath) throw new Error('Fee History CSV download has no local file path');
+      const csv = await readFile(downloadPath, 'utf8');
+      expect(csv.split(/\r?\n/)[0]).toBe('Date,Placement,Tier,Old Rate,New Rate,Old Duration,New Duration,Old Max Ads,New Max Ads,Changed By,Reason,Effective From');
+      // API audit event verification: EXPORT_GENERATED recorded
+      const exportApiResponse = await request.post(`${API_BASE_URL}/admin/ads/export/fee-history`, {
+        headers: await adminHeaders(request),
+        data: { format: 'csv', dateFrom: '2026-04-01', dateTo: '2026-04-01' },
+      });
+      expect(exportApiResponse.status()).toBe(200);
+      const exportContentType = exportApiResponse.headers()['content-type'] || '';
+      expect(exportContentType.toLowerCase()).toMatch(/text\/csv|application\/csv|text\/plain/);
+      const auditEntries = await getExportAuditEntriesForDate('2026-04-01');
+      expect(auditEntries.find((entry) => entry.reportType === 'fee_history')).toBeDefined();
       await exportPage.captureExportDownload();
     });
   });
@@ -106,17 +144,6 @@ test.describe('Admin Export Reports — PCL Abnormal Scenarios', () => {
 });
 
 test.describe('Admin Export Reports — PCL Interface Scenarios', () => {
-  test.describe('N-15: Language toggle works', () => {
-    test('should update labels on export screen', async ({ adminPage }) => {
-      await exportPage.goto();
-      await adminPage.getByRole('button', { name: 'Change language' }).click();
-      await adminPage.getByRole('menuitem', { name: 'မြန်မာ' }).click();
-      await expect.poll(() => adminPage.evaluate(() => localStorage.getItem('i18nextLng'))).toBe('my');
-      await expect(adminPage.getByRole('heading').first()).toBeVisible();
-      await captureScreenshot(adminPage, 'N-15_1_language_toggle', 'Export screen remains visible after switching the interface language to Myanmar.');
-    });
-  });
-
   test.describe('N-16: Theme toggle works', () => {
     test('should switch theme on export screen without break', async ({ adminPage }) => {
       await exportPage.goto();

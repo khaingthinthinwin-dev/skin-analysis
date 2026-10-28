@@ -444,6 +444,62 @@ async function markNotificationsRead(page: Page): Promise<void> {
 }
 
 test.describe('Buyer Search & Filter (SKM-PCL-SEARCH-001-B)', () => {
+  test.beforeEach(async ({ buyerPage }) => {
+    await fulfillJson(buyerPage, API_RE.products, 'GET', 200, {
+      data: {
+        data: {
+          items: [
+            {
+              id: '1',
+              name: 'Daily Moisture Cream',
+              images: ['https://example.com/products/daily-moisture-cream.jpg'],
+              isInStock: true,
+              price: 45000,
+              avgRating: 4.5,
+              reviewCount: 128,
+            },
+            {
+              id: '2',
+              name: 'Intensive Repair Serum',
+              images: ['https://example.com/products/intensive-repair-serum.jpg'],
+              isInStock: true,
+              price: 52000,
+              avgRating: 4.2,
+              reviewCount: 87,
+            },
+            {
+              id: '3',
+              name: 'Gentle Cleanser',
+              images: ['https://example.com/products Gentle Cleanser.jpg'],
+              isInStock: true,
+              price: 32000,
+              avgRating: 4.7,
+              reviewCount: 213,
+            },
+            {
+              id: '4',
+              name: 'Brightening Toner',
+              images: ['https://example.com/products/brightening-toner.jpg'],
+              isInStock: true,
+              price: 28000,
+              avgRating: 4.1,
+              reviewCount: 66,
+            },
+            {
+              id: '5',
+              name: 'Nourishing Oil',
+              images: ['https://example.com/products/nourishing-oil.jpg'],
+              isInStock: true,
+              price: 68000,
+              avgRating: 4.8,
+              reviewCount: 34,
+            },
+          ],
+        },
+      },
+    });
+  });
+
   test.describe('Normal (N)', () => {
     test('N-01: should add a product to the wishlist', async ({ buyerPage }) => {
       test.setTimeout(60_000);

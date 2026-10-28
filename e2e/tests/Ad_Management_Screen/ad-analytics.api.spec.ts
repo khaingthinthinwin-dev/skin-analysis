@@ -26,7 +26,7 @@ test.describe('ad-analytics.api — API Contract Tests', () => {
     expect(body.data.trend).toBeDefined();
     await captureApiEvidence(
       page,
-      'I-12',
+      'I-12_1_revenue_analytics',
       'GET',
       '/admin/ads/analytics/revenue?dateFrom=2026-01-01&dateTo=2026-12-31',
       res.status(),
@@ -48,7 +48,7 @@ test.describe('ad-analytics.api — API Contract Tests', () => {
     expect(body.data.summary.totalRevenue).toBeDefined();
     await captureApiEvidence(
       page,
-      'A-10',
+      'A-10_1_month_filter_analytics',
       'GET',
       '/admin/ads/analytics/revenue?dateFrom=2026-01-01&dateTo=2026-01-31',
       res.status(),
@@ -69,7 +69,7 @@ test.describe('ad-analytics.api — API Contract Tests', () => {
     expect(res.status()).toBe(200);
     await captureApiEvidence(
       page,
-      'A-14',
+      'A-14_1_drill_down_analytics',
       'GET',
       '/admin/ads/analytics/revenue?dateFrom=2026-01-01&dateTo=2026-12-31',
       res.status(),

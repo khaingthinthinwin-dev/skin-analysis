@@ -1013,7 +1013,7 @@
       },
       "delete": {
         "title": "商品を削除", "selectedTitle": "選択した商品を削除", "none": "削除する商品はありません。",
-        "noneSelected": "商品が選択されていません。", "confirmSelected": "商品{{count}}件を削除しますか？",
+        "noneSelected": "商品が選択されていません。", "noSelectionTitle": "選択なし", "noSelectionMessage": "削除する商品を少なくとも1つ選択してください", "confirmSelected": "商品{{count}}件を削除しますか？",
         "confirmAll": "商品{{count}}件をすべて削除しますか？", "deactivatedCount": "{{count}}件を無効化します",
         "permanentlyDeletedCount": "論理削除済みの商品{{count}}件を完全に削除します",
         "skippedActiveOrders": "注文処理中の商品{{count}}件をスキップします", "deleting": "削除中..."

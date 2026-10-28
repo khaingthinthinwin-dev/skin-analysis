@@ -1,60 +1,682 @@
 {
   "pclFile": "docs/screen/Product_Management/Product_management_PCL.md",
   "specFiles": [
-    "e2e/tests/Product_Management/Product_Management.spec.ts"
+    "e2e/tests/Product_Management/Product_Management.spec.ts",
+    "e2e/tests/Product_Management/product-management.spec.ts"
   ],
+  "format": "pcl-id-keyed",
   "mappings": {
-    "N-01: should view product list as approved merchant": "N-01",
-    "N-02: should create a new product with valid data": "N-02",
-    "N-03: should edit an existing product": "N-03",
-    "N-04: should delete a product (soft delete)": "N-04",
-    "N-05: should toggle product active status": "N-05",
-    "N-06: should toggle product featured status": "N-06",
-    "N-07: should update stock quantity inline": "N-07",
-    "N-08: should search products by name": "N-08",
-    "N-09: should filter products by status": "N-09",
-    "N-10: should sort products by price": "N-10",
-    "N-11: should bulk select and activate products": "N-11",
-    "N-12: should bulk delete products": "N-12",
-    "N-13: should save product as draft": "N-14",
-    "N-14: should toggle language on screen": "N-15",
-    "N-15: should toggle theme on screen": "N-16",
-    "N-16: should display responsive layout on desktop viewport": "N-17",
-    "N-17: should display responsive layout on mobile viewport": "N-18",
-    "A-01: should show validation errors when submitting empty product form": "A-01",
-    "A-02: should show validation error for price <= 0": "A-02",
-    "A-03: should show validation error for compareAtPrice <= price": "A-03",
-    "A-04: should show error when uploading image exceeding 5MB": "A-04",
-    "A-05: should show error when uploading unsupported image format": "A-05",
-    "A-06: should show error when uploading more than 10 images": "A-06",
-    "A-07: should redirect to login when accessing product management without authentication": "A-07",
-    "A-08: should show pending banner and hide CRUD buttons for pending merchant": "A-08",
-    "A-09: should show rejected banner and hide CRUD buttons for rejected merchant": "A-09",
-    "A-10: should show error when deleting product with active orders": "A-10",
-    "A-11: should show error when updating stock to negative value": "A-12",
-    "B-01: should accept product name at minimum length (1 character)": "B-01",
-    "B-02: should accept product name at maximum length (255 characters)": "B-02",
-    "B-03: should reject product name exceeding maximum length (256 characters)": "B-03",
-    "B-04: should accept SKU at maximum length (100 characters)": "B-04",
-    "B-05: should accept short description at maximum length (500 characters)": "B-05",
-    "B-06: should display empty state when merchant has no products": "B-06",
-    "B-07: should show low stock warning at threshold": "B-07",
-    "B-08: should show out of stock indicator at zero stock": "B-08",
-    "B-09: should accept discount percentage at maximum (100%)": "B-09",
-    "B-10: should show validation error for discount exceeding 100%": "B-10",
-    "B-11: should handle pagination at last page boundary": "B-11",
-    "B-12: should accept exactly 10 images (max allowed)": "B-12",
-    "I-01: GET /api/v1/products should return 200 with product list": "I-01",
-    "I-02: GET /api/v1/products/:slug should return 200 with product detail": "I-02",
-    "I-03: GET /api/v1/products/:slug should return 404 for non-existent slug": "I-03",
-    "I-04: POST /api/v1/products should return 201 with created product": "I-04",
-    "I-05: POST /api/v1/products should return 400 for validation failure": "I-05",
-    "I-06: PATCH /api/v1/products/:id should return 200 with updated product": "I-07",
-    "I-07: DELETE /api/v1/products/:id should return 204 on success": "I-08",
-    "I-08: PATCH /api/v1/products/:id/stock should return 200 with stock update": "I-10",
-    "I-09: GET /api/v1/categories should return 200 with category tree": "I-11",
-    "I-10: error response should follow standard API format": "I-12",
-    "I-11: POST /api/v1/products should return 403 for pending merchant": "I-06",
-    "I-12: DELETE /api/v1/products/:id should return 409 for product with active orders": "I-09"
+    "N-01": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-01: View product list as approved merchant",
+        "evidence": [
+          "N-01_1_product_list.png"
+        ]
+      }
+    ],
+    "N-02": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-02: Create a new product with valid data",
+        "evidence": [
+          "N-02_1_create_form_filled.png",
+          "N-02_2_list_after_create.png",
+          "N-02_3_db_promotion.png",
+          "N-02_3_db_promotion.json"
+        ]
+      }
+    ],
+    "N-03": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-03: Edit an existing product",
+        "evidence": [
+          "N-03_1_edit_form_filled.png",
+          "N-03_2_list_after_edit.png",
+          "N-03_3_db_promotion.png",
+          "N-03_3_db_promotion.json"
+        ]
+      }
+    ],
+    "N-04": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-04: Toggle product active status (Active ⇄ Inactive)",
+        "evidence": [
+          "N-04_1_active_status_toggled.png"
+        ]
+      }
+    ],
+    "N-05": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-05: Toggle product featured status",
+        "evidence": [
+          "N-05_1_featured_status_toggled.png"
+        ]
+      }
+    ],
+    "N-06": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-06: Update stock quantity inline via editor",
+        "evidence": [
+          "N-06_1_stock_updated.png"
+        ]
+      }
+    ],
+    "N-07": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-07: Cancel inline stock update without saving",
+        "evidence": [
+          "N-07_1_stock_update_cancelled.png"
+        ]
+      }
+    ],
+    "N-08": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-08: Search products by keyword",
+        "evidence": [
+          "N-08_1_search_results.png"
+        ]
+      }
+    ],
+    "N-09": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-09: Filter products by status (All / Active / Inactive)",
+        "evidence": [
+          "N-09_1_filtered_by_status.png"
+        ]
+      }
+    ],
+    "N-10": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-10: Sort products by criteria (Newest / Price / Rating / Name)",
+        "evidence": [
+          "N-10_1_sorted_by_price.png"
+        ]
+      }
+    ],
+    "N-11": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-11: Select individual products and select all via checkboxes",
+        "evidence": [
+          "N-11_1_all_products_selected.png"
+        ]
+      }
+    ],
+    "N-12": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-12: Bulk delete selected products with confirmation breakdown",
+        "evidence": [
+          "N-12_1_bulk_delete_dialog.png",
+          "N-12_2_bulk_delete_confirmed.png"
+        ]
+      }
+    ],
+    "N-13": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-13: Delete all products with confirmation breakdown (no selection)",
+        "evidence": [
+          "N-13_1_delete_all_confirmation.png",
+          "N-13_2_delete_all_confirmed.png"
+        ]
+      }
+    ],
+    "N-14": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-14: Highlight product row via URL query parameter (highlightProductId)",
+        "evidence": [
+          "N-14_1_highlighted_product_row.png"
+        ]
+      }
+    ],
+    "N-15": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-15: Display discounted pricing and savings in product table",
+        "evidence": [
+          "N-15_1_discounted_price_display.png"
+        ]
+      }
+    ],
+    "N-16": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-16: Paginate product list with page navigation and limit change",
+        "evidence": [
+          "N-16_1_second_page.png",
+          "N-16_2_limit_changed.png"
+        ]
+      }
+    ],
+    "N-17": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-17: Language toggle updates screen text",
+        "evidence": [
+          "N-17_1_language_toggled.png"
+        ]
+      }
+    ],
+    "N-18": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-18: Theme toggle switches light and dark modes",
+        "evidence": [
+          "N-18_1_theme_toggled.png"
+        ]
+      }
+    ],
+    "N-19": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-19: Responsive layout on desktop and mobile viewports",
+        "evidence": [
+          "N-19_1_desktop_viewport.png",
+          "N-19_2_mobile_viewport.png"
+        ]
+      }
+    ],
+    "N-20": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-20: Create product with full form (name, descriptions, category, pricing, stock, images, tags, skin types, ingredients)",
+        "evidence": [
+          "N-20_1_product_form_filled.png",
+          "N-20_2_images_uploaded.png",
+          "N-20_3_success_redirect.png",
+          "N-20_4_db_promotion.png",
+          "N-20_4_db_promotion.json"
+        ]
+      }
+    ],
+    "N-21": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-21: Edit product with pre-filled form and image retention",
+        "evidence": [
+          "N-21_1_form_modified.png",
+          "N-21_2_list_after_edit.png",
+          "N-21_3_db_promotion.png",
+          "N-21_3_db_promotion.json"
+        ]
+      }
+    ],
+    "N-22": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "N-22: View product image fallback when image fails to load",
+        "evidence": [
+          "N-22_1_image_fallback.png"
+        ]
+      }
+    ],
+    "A-01": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "A-01: Access product management without authentication",
+        "evidence": [
+          "A-01_1_unauthenticated_redirect.png"
+        ]
+      }
+    ],
+    "A-02": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "A-02: Pending merchant access — restricted UI and pending approval banner",
+        "evidence": [
+          "A-02_1_pending_merchant_no_crud.png"
+        ]
+      }
+    ],
+    "A-03": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "A-03: Rejected merchant access — restricted UI and account rejected banner",
+        "evidence": [
+          "A-03_1_rejected_merchant_no_crud.png"
+        ]
+      }
+    ],
+    "A-04": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "A-04: Deactivated merchant access — restricted UI and account deactivated banner",
+        "evidence": [
+          "A-04_1_deactivated_merchant_banner.png"
+        ]
+      }
+    ],
+    "A-05": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "A-05: Delete product with active orders — active order pre-check and skip breakdown",
+        "evidence": [
+          "A-05_1_active_order_delete_breakdown.png"
+        ]
+      }
+    ],
+    "A-06": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "A-06: Inline stock editor rejects negative or non-numeric input",
+        "evidence": [
+          "A-06_1_negative_stock_rejected.png"
+        ]
+      }
+    ],
+    "A-07": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "A-07: Product list API failure displays error state with Retry button",
+        "evidence": [
+          "A-07_1_product_list_error_retry.png"
+        ]
+      }
+    ],
+    "A-08": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "A-08: Stock update API error displays error toast and reverts",
+        "evidence": [
+          "A-08_1_stock_update_error.png"
+        ]
+      }
+    ],
+    "A-09": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "A-09: Status toggle API error displays error toast and reverts",
+        "evidence": [
+          "A-09_1_status_toggle_error.png"
+        ]
+      }
+    ],
+    "A-10": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "A-10: Featured toggle API error displays error toast",
+        "evidence": [
+          "A-10_1_featured_toggle_error.png"
+        ]
+      }
+    ],
+    "A-11": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "A-11: Create product form validation — required fields",
+        "evidence": [
+          "A-11_1_required_fields_validation.png"
+        ]
+      }
+    ],
+    "A-12": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "A-12: Create product form validation — price and stock numeric constraints",
+        "evidence": [
+          "A-12_1_negative_values_rejected.png"
+        ]
+      }
+    ],
+    "A-13": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "A-13: Create product — image upload validation (file type, max files)",
+        "evidence": [
+          "A-13_1_invalid_file_type_rejected.png",
+          "A-13_2_max_images_enforced.png"
+        ]
+      }
+    ],
+    "A-14": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "A-14: Edit product — SKU field is read-only (auto-generated)",
+        "evidence": [
+          "A-14_1_sku_readonly.png"
+        ]
+      }
+    ],
+    "A-15": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "A-15: Empty catalog displays no-products state",
+        "evidence": [
+          "A-15_1_empty_catalog_delete.png"
+        ]
+      }
+    ],
+    "A-16": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "A-16: Rejected merchant — rejection reason display and profile navigation",
+        "evidence": [
+          "A-16_1_rejected_banner_with_reason.png",
+          "A-16_2_navigated_to_profile.png"
+        ]
+      }
+    ],
+    "B-01": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-01: Empty state — catalog or filter returns zero products",
+        "evidence": [
+          "B-01_1_empty_product_state.png"
+        ]
+      }
+    ],
+    "B-02": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-02: Stock quantity at zero (Out of Stock indicator in destructive red)",
+        "evidence": [
+          "B-02_1_zero_stock_indicator.png"
+        ]
+      }
+    ],
+    "B-03": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-03: Stock quantity at low stock threshold (1 to 10 in amber warning)",
+        "evidence": [
+          "B-03_1_low_stock_warning.png"
+        ]
+      }
+    ],
+    "B-04": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-04: Stock quantity above threshold (> 10 in standard neutral)",
+        "evidence": [
+          "B-04_1_stock_above_threshold.png"
+        ]
+      }
+    ],
+    "B-05": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-05: Long product name text truncation with ellipsis",
+        "evidence": [
+          "B-05_1_long_name_truncated.png"
+        ]
+      }
+    ],
+    "B-06": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-06: Pagination boundary — first page (Previous button disabled)",
+        "evidence": [
+          "B-06_1_first_page_boundary.png"
+        ]
+      }
+    ],
+    "B-07": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-07: Pagination boundary — last page (Next button disabled)",
+        "evidence": [
+          "B-07_1_last_page_boundary.png"
+        ]
+      }
+    ],
+    "B-08": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-08: Page limit selection boundary (change items per page)",
+        "evidence": [
+          "B-08_1_page_limit_changed.png"
+        ]
+      }
+    ],
+    "B-09": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-09: Delete confirmation when zero products are selected (triggers Delete All flow)",
+        "evidence": [
+          "B-09_1_delete_all_dialog.png"
+        ]
+      }
+    ],
+    "B-10": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-10: Delete confirmation when exactly 1 product is selected (singular title/text)",
+        "evidence": [
+          "B-10_1_single_product_delete_dialog.png"
+        ]
+      }
+    ],
+    "B-11": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-11: Delete confirmation with all items on current page selected",
+        "evidence": [
+          "B-11_1_all_selected_delete_dialog.png"
+        ]
+      }
+    ],
+    "B-12": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-12: Delete product already inactive (triggers permanent deletion breakdown)",
+        "evidence": [
+          "B-12_1_inactive_permanent_delete.png"
+        ]
+      }
+    ],
+    "B-13": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-13: Stock quantity at maximum integer value",
+        "evidence": [
+          "B-13_1_max_stock_value.png"
+        ]
+      }
+    ],
+    "B-14": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-14: Price and Compare At Price with decimal precision (2 decimal places)",
+        "evidence": [
+          "B-14_1_decimal_prices.png"
+        ]
+      }
+    ],
+    "B-15": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-15: Maximum image upload (10 images)",
+        "evidence": [
+          "B-15_1_max_10_images_accepted.png",
+          "B-15_2_11th_image_rejected.png"
+        ]
+      }
+    ],
+    "B-16": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-16: Product with no category assigned (edge case)",
+        "evidence": [
+          "B-16_1_category_required.png"
+        ]
+      }
+    ],
+    "B-17": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-17: Compare At Price fallback display when compareAtPrice is zero or less than or equal to price",
+        "evidence": [
+          "B-17_1_no_discount_check.png"
+        ]
+      }
+    ],
+    "B-17b": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-17b: Compare At Price fallback display when compareAtPrice is zero",
+        "evidence": [
+          "B-17b_1_zero_compare_price_check.png"
+        ]
+      }
+    ],
+    "B-18": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "B-18: Mixed selection bulk delete — breakdown count and skip exclusion",
+        "evidence": [
+          "B-18_1_bulk_delete_breakdown.png",
+          "B-18_2_mixed_bulk_delete_verified.png"
+        ]
+      }
+    ],
+    "I-01": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "I-01: GET /api/v1/products — fetches paginated product list for merchant",
+        "evidence": [
+          "I-01_1_get_products_list_api_call.png"
+        ]
+      }
+    ],
+    "I-02": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "I-02: GET /api/v1/products with query filters (search, isActive, sortBy, page, limit)",
+        "evidence": [
+          "I-02_1_get_product_filters_api_call.png"
+        ]
+      }
+    ],
+    "I-03": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "I-03: GET /api/v1/products/:slug — returns 404 for non-existent slug",
+        "evidence": [
+          "I-03_1_get_product_404_api_call.png"
+        ]
+      }
+    ],
+    "I-04": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "I-04: POST /api/v1/products — returns 201 with created product",
+        "evidence": [
+          "I-04_1_create_product_api_call.png"
+        ]
+      }
+    ],
+    "I-05": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "I-05: POST /api/v1/products — returns 400 for validation failure",
+        "evidence": [
+          "I-05_1_create_product_400_api_call.png"
+        ]
+      }
+    ],
+    "I-06": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "I-06: PATCH /api/v1/products/:id — returns 200 with updated product",
+        "evidence": [
+          "I-06_1_update_product_api_call.png"
+        ]
+      }
+    ],
+    "I-07": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "I-07: DELETE /api/v1/products/:id — returns 200/204 on success",
+        "evidence": [
+          "I-07_1_delete_product_api_call.png"
+        ]
+      }
+    ],
+    "I-08": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "I-08: PATCH /api/v1/products/:id/stock — returns 200 with stock update",
+        "evidence": [
+          "I-08_1_update_stock_api_call.png"
+        ]
+      }
+    ],
+    "I-09": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "I-09: GET /api/v1/categories — returns 200 with category tree",
+        "evidence": [
+          "I-09_1_get_categories_api_call.png"
+        ]
+      }
+    ],
+    "I-10": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "I-10: Error response follows standard API format",
+        "evidence": [
+          "I-10_1_error_format_api_call.png"
+        ]
+      }
+    ],
+    "I-11": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "I-11: POST /api/v1/products — returns 403 for pending merchant",
+        "evidence": [
+          "I-11_1_create_product_403_pending_api_call.png"
+        ]
+      }
+    ],
+    "I-12": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "I-12: DELETE /api/v1/products/:id — returns 409 Conflict when product has active orders",
+        "evidence": [
+          "I-12_1_delete_active_order_conflict_api_call.png"
+        ]
+      }
+    ],
+    "I-13": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "I-13: POST /api/v1/products — create product with multipart/form-data",
+        "evidence": [
+          "I-13_1_create_product_multipart_api_call.png"
+        ]
+      }
+    ],
+    "I-14": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "I-14: PATCH /api/v1/products/:id — update product with multipart/form-data",
+        "evidence": [
+          "I-14_1_update_product_multipart_api_call.png"
+        ]
+      }
+    ],
+    "I-15": [
+      {
+        "file": "Product_Management.spec.ts",
+        "title": "I-15: Error response follows standard API format on product endpoints",
+        "evidence": [
+          "I-15_1_error_format_get_api_call.png",
+          "I-15_2_error_format_post_api_call.png",
+          "I-15_3_error_format_patch_api_call.png",
+          "I-15_4_error_format_delete_api_call.png"
+        ]
+      }
+    ]
   }
 }

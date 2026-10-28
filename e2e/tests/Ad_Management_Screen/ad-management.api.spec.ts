@@ -105,7 +105,7 @@ test.describe('ad-management.api — API Contract Tests', () => {
     expect(body.data.meta.total).toBeGreaterThanOrEqual(0);
     await captureApiEvidence(
       page,
-      'I-01',
+      'I-01_1_paginated_ads_with_filters',
       'GET',
       '/admin/ads?status=pending&page=1&limit=20',
       res.status(),
@@ -134,7 +134,7 @@ test.describe('ad-management.api — API Contract Tests', () => {
     expect(detail.approvalStatus).toBeDefined();
     await captureApiEvidence(
       page,
-      'I-02',
+      'I-02_1_advertisement_full_detail',
       'GET',
       '/admin/ads/:id',
       res.status(),
@@ -157,7 +157,7 @@ test.describe('ad-management.api — API Contract Tests', () => {
       expect(result.approvedAt).toBeDefined();
       await captureApiEvidence(
         page,
-        'I-03',
+        'I-03_1_approve_pending_ad',
         'POST',
         '/admin/ads/:id/approve',
         res.status(),
@@ -186,7 +186,7 @@ test.describe('ad-management.api — API Contract Tests', () => {
       expect((await detailResponse.json()).data.paymentInfo.paymentStatus).toBe('refunded');
       await captureApiEvidence(
         page,
-        'I-04',
+        'I-04_1_reject_pending_ad_refund',
         'POST',
         '/admin/ads/:id/reject',
         res.status(),
@@ -213,7 +213,7 @@ test.describe('ad-management.api — API Contract Tests', () => {
       expect(result.results).toHaveLength(2);
       await captureApiEvidence(
         page,
-        'I-05',
+        'I-05_1_bulk_approve_ads',
         'POST',
         '/admin/ads/bulk/approve',
         res.status(),
@@ -244,7 +244,7 @@ test.describe('ad-management.api — API Contract Tests', () => {
       expect(result.results).toHaveLength(2);
       await captureApiEvidence(
         page,
-        'I-06',
+        'I-06_1_bulk_reject_ads_refund_summary',
         'POST',
         '/admin/ads/bulk/reject',
         res.status(),

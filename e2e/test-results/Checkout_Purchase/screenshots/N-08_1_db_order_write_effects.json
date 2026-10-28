@@ -1,0 +1,79 @@
+{
+  "capturedAt": "2026-10-22T07:06:04.380Z",
+  "description": "Order, order item, status history, notification and stock rows after order placement",
+  "results": [
+    {
+      "label": "orders row created by the checkout",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "f459dd72-5938-44c6-8cf5-492ec60c87ee",
+          "order_number": "ORD-0000162",
+          "status": "placed",
+          "payment_status": "pending",
+          "total_amount": "5000.00",
+          "discount_amount": "0.00",
+          "payment_method": "cod",
+          "coupon_code": null
+        }
+      ]
+    },
+    {
+      "label": "order_items rows created by the checkout",
+      "rowCount": 1,
+      "rows": [
+        {
+          "order_id": "f459dd72-5938-44c6-8cf5-492ec60c87ee",
+          "product_id": "43c3c72f-2619-45e1-bcc6-4aa0f659c7e5",
+          "quantity": 1,
+          "unit_price": "5000.00",
+          "total_price": "5000.00"
+        }
+      ]
+    },
+    {
+      "label": "order_status_history rows created by the checkout",
+      "rowCount": 1,
+      "rows": [
+        {
+          "order_id": "f459dd72-5938-44c6-8cf5-492ec60c87ee",
+          "status_code": "placed",
+          "note": "Order placed"
+        }
+      ]
+    },
+    {
+      "label": "ORDER_PLACED notification created in the same transaction",
+      "rowCount": 1,
+      "rows": [
+        {
+          "type": "ORDER_PLACED",
+          "title": "New order received",
+          "message": "A buyer placed order ORD-0000162.",
+          "entity_type": "order",
+          "entity_id": "f459dd72-5938-44c6-8cf5-492ec60c87ee"
+        }
+      ]
+    },
+    {
+      "label": "product stock decremented",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "43c3c72f-2619-45e1-bcc6-4aa0f659c7e5",
+          "name": "Hydrating Sheet Mask",
+          "stock_quantity": 197
+        }
+      ]
+    },
+    {
+      "label": "cart items converted (deleted) for the buyer",
+      "rowCount": 1,
+      "rows": [
+        {
+          "cart_item_count": 0
+        }
+      ]
+    }
+  ]
+}

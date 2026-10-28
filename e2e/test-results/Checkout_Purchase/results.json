@@ -1,0 +1,383 @@
+{
+  "module": "Checkout_Purchase",
+  "timestamp": "2026-10-22T07:10:46.240Z",
+  "total": 62,
+  "passed": 62,
+  "failed": 0,
+  "skipped": 0,
+  "durationMs": 320514,
+  "tests": [
+    {
+      "title": "N-01: renders the order summary, shipping form, payment choices, and actions",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5966
+    },
+    {
+      "title": "N-02: starts with empty shipping fields and Japan selected",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5493
+    },
+    {
+      "title": "N-03: defaults to Cash on Delivery and switches between payment radios",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 6049
+    },
+    {
+      "title": "N-04: applies a valid shop coupon and updates the discount and total",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 4490
+    },
+    {
+      "title": "N-05: removes an applied coupon and reverts the total",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5723
+    },
+    {
+      "title": "N-06: submits shipping and payment details and reaches the order confirmation",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5226
+    },
+    {
+      "title": "N-07: renders the placed order details on the confirmation page",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5589
+    },
+    {
+      "title": "N-08: Successful order placement applies all write effects atomically",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 2696
+    },
+    {
+      "title": "N-09: Sponsored ad panel renders eligible Checkout ads",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 4830
+    },
+    {
+      "title": "N-10: Ad carousel auto-advances every 5 seconds and loops",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 19816
+    },
+    {
+      "title": "N-11: Ad carousel pauses on hover/focus and resumes on leave/blur",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 31194
+    },
+    {
+      "title": "N-12: Ad CTA click fires the analytics event",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5146
+    },
+    {
+      "title": "N-13: Order Confirmation action buttons work",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 7634
+    },
+    {
+      "title": "N-14: Language toggle updates checkout and confirmation labels",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 6404
+    },
+    {
+      "title": "N-15: Theme toggle works on checkout and confirmation pages",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 6077
+    },
+    {
+      "title": "N-16: Responsive layout on desktop viewport",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 4492
+    },
+    {
+      "title": "N-17: Responsive layout on mobile viewport",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 4357
+    },
+    {
+      "title": "N-18: Language toggle updates all checkout labels (Japanese)",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5814
+    },
+    {
+      "title": "N-19: Language toggle updates all checkout labels (Myanmar)",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5923
+    },
+    {
+      "title": "N-20: Shipping form validation error messages display in selected language (Japanese / Myanmar)",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 6874
+    },
+    {
+      "title": "N-21: Toast notifications and modals respect selected language",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 6654
+    },
+    {
+      "title": "N-22: Order placement creates an ORDER_PLACED in-app notification for the merchant",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 3377
+    },
+    {
+      "title": "A-01: empty cart renders the empty state without an order summary",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 4396
+    },
+    {
+      "title": "A-02: redirects an unauthenticated visitor to login",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 2121
+    },
+    {
+      "title": "A-03: Guest on a stale checkout view is blocked by the Guest Login dialog",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 1991
+    },
+    {
+      "title": "A-04: Non-buyer roles are blocked from checkout",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 3648
+    },
+    {
+      "title": "A-05: Stock conflict at submission rejects the whole order",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 6330
+    },
+    {
+      "title": "A-06: Invalid or inactive coupon code is rejected",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 6046
+    },
+    {
+      "title": "A-07: Expired coupon is rejected",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5882
+    },
+    {
+      "title": "A-08: Coupon below the minimum order amount is rejected",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5983
+    },
+    {
+      "title": "A-09: Coupon usage limit reached is rejected",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5856
+    },
+    {
+      "title": "A-10: Coupon already used by this buyer is rejected",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5791
+    },
+    {
+      "title": "A-11: Coupon that would zero the order total is rejected at validation",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 4842
+    },
+    {
+      "title": "A-12: Missing required shipping field blocks submission",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5508
+    },
+    {
+      "title": "A-13: Invalid payment method is rejected",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 1507
+    },
+    {
+      "title": "A-14: Another buyer cannot open someone else's confirmation page",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 2738
+    },
+    {
+      "title": "A-15: Order placement rate limit returns 429",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 3919
+    },
+    {
+      "title": "A-16: shows a recoverable checkout load error when the checkout API fails",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5241
+    },
+    {
+      "title": "B-01: flags unavailable cart items and keeps order submission disabled",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5798
+    },
+    {
+      "title": "B-02: accepts a valid coupon code at the exact 8-character minimum length",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 4739
+    },
+    {
+      "title": "B-03: rejects coupon codes outside the 8-12 alphanumeric format without an API request",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 4680
+    },
+    {
+      "title": "B-04: accepts shipping fields at their exact maximum length",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 4656
+    },
+    {
+      "title": "B-05: rejects a shipping field one character over the maximum",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5403
+    },
+    {
+      "title": "B-06: order notes accept 500 characters and reject the 501st",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5417
+    },
+    {
+      "title": "B-07: Coupon discount equal to the subtotal is rejected with full rollback",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 2864
+    },
+    {
+      "title": "B-08: No eligible ads renders no panel at all",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 4476
+    },
+    {
+      "title": "B-09: Ad slider never exceeds 5 slides even with more eligible ads",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 5009
+    },
+    {
+      "title": "B-10: Reduced motion preference disables the ad animation and auto-slide",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 12139
+    },
+    {
+      "title": "B-11: No horizontal overflow at 320px viewport",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 4216
+    },
+    {
+      "title": "I-01: GET /api/v1/checkout — returns 200 with checkout data",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 1480
+    },
+    {
+      "title": "I-02: GET /api/v1/checkout — returns 400 for an empty cart",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 1313
+    },
+    {
+      "title": "I-03: POST /api/v1/checkout/validate-coupon — returns 200 with the discount calculation",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 1473
+    },
+    {
+      "title": "I-04: POST /api/v1/checkout/validate-coupon — returns an error for each coupon rejection reason",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 3171
+    },
+    {
+      "title": "I-05: POST /api/v1/checkout/validate-coupon — returns 400 when the discount would zero the total",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 1823
+    },
+    {
+      "title": "I-06: POST /api/v1/orders — returns 201 with the created orders array",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 2153
+    },
+    {
+      "title": "I-07: POST /api/v1/orders — rejects insufficient stock at submission",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 2250
+    },
+    {
+      "title": "I-08: POST /api/v1/orders — returns 400 for payload validation failures",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 1881
+    },
+    {
+      "title": "I-09: Protected checkout endpoints return 401 without a valid token",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 1152
+    },
+    {
+      "title": "I-10: Protected checkout endpoints return 403 for non-buyer roles",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 1165
+    },
+    {
+      "title": "I-11: Ad contract and graceful degradation",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 6084
+    },
+    {
+      "title": "I-12: Rate limits return 429 per endpoint configuration",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 4269
+    },
+    {
+      "title": "I-13: Error responses follow the standard API error envelope",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Checkout_Purchase\\checkout.spec.ts",
+      "status": "passed",
+      "duration": 1280
+    }
+  ]
+}

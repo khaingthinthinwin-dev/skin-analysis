@@ -1,821 +1,803 @@
 {
   "module": "Ad_Management_Screen",
-  "timestamp": "2026-10-21T06:41:31.525Z",
-  "total": 135,
-  "passed": 135,
+  "timestamp": "2026-10-23T09:27:29.764Z",
+  "total": 132,
+  "passed": 132,
   "failed": 0,
   "skipped": 0,
-  "durationMs": 565032,
+  "durationMs": 829833,
   "tests": [
     {
       "title": "should list fee settings with placement/tier metadata",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
       "status": "passed",
-      "duration": 2492
+      "duration": 2675
     },
     {
       "title": "I-13: should export CSV ad performance report",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
       "status": "passed",
-      "duration": 2098
+      "duration": 2618
     },
     {
       "title": "should return total revenue and breakdown metrics",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.api.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.api.spec.ts",
       "status": "passed",
-      "duration": 2655
-    },
-    {
-      "title": "should create a valid fee setting and log history",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
-      "status": "passed",
-      "duration": 1124
-    },
-    {
-      "title": "should display export reports page",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
-      "status": "passed",
-      "duration": 4619
+      "duration": 3143
     },
     {
       "title": "I-14: should export shop submission history CSV",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
       "status": "passed",
-      "duration": 1815
+      "duration": 1676
+    },
+    {
+      "title": "should create a valid fee setting and log history",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
+      "status": "passed",
+      "duration": 2126
     },
     {
       "title": "A-10: Month filter recalculation (analytics API with month filter)",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.api.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.api.spec.ts",
       "status": "passed",
-      "duration": 1836
-    },
-    {
-      "title": "should display package & fee management page",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
-      "status": "passed",
-      "duration": 5178
-    },
-    {
-      "title": "should display fee change history page",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
-      "status": "passed",
-      "duration": 5189
-    },
-    {
-      "title": "should update fee setting and keep historical snapshot",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
-      "status": "passed",
-      "duration": 1468
+      "duration": 2145
     },
     {
       "title": "should display revenue analytics page",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
       "status": "passed",
-      "duration": 5767
+      "duration": 6006
+    },
+    {
+      "title": "should display export reports page",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "status": "passed",
+      "duration": 6744
+    },
+    {
+      "title": "should display package & fee management page",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 7348
+    },
+    {
+      "title": "should display fee change history page",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 8296
     },
     {
       "title": "I-15: should export fee history log as CSV",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
-      "status": "passed",
-      "duration": 1807
-    },
-    {
-      "title": "A-14: Drill-down into a specific ad via analytics",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.api.spec.ts",
-      "status": "passed",
-      "duration": 1821
-    },
-    {
-      "title": "should deactivate fee setting without affecting existing ads",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
-      "status": "passed",
-      "duration": 1335
-    },
-    {
-      "title": "I-19 + A-16: should export with report-specific filters and audit metadata",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
-      "status": "passed",
-      "duration": 1244
-    },
-    {
-      "title": "should return fee history sorted by created time",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
-      "status": "passed",
-      "duration": 1263
-    },
-    {
-      "title": "should export ad performance CSV with correct columns",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
-      "status": "passed",
-      "duration": 4527
-    },
-    {
-      "title": "A-16: should reject date ranges over 365 days and non-CSV formats",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
-      "status": "passed",
-      "duration": 1486
-    },
-    {
-      "title": "should reactivate a fee setting and log the change",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
-      "status": "passed",
-      "duration": 1297
-    },
-    {
-      "title": "should load fee settings table with placement, tier, daily rate columns",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
       "status": "passed",
       "duration": 4292
     },
     {
-      "title": "should show history table with date, placement, tier, old/new rates",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "title": "A-14: Drill-down into a specific ad via analytics",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.api.spec.ts",
       "status": "passed",
-      "duration": 4296
+      "duration": 3918
     },
     {
-      "title": "should show summary metrics and charts with breakdowns",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "title": "should update fee setting and keep historical snapshot",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
       "status": "passed",
-      "duration": 4187
+      "duration": 4245
     },
     {
-      "title": "A-18: backend service continues after a refund failure",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
+      "title": "I-19 + A-16: should export with report-specific filters and audit metadata",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
       "status": "passed",
-      "duration": 3868
+      "duration": 2550
     },
     {
-      "title": "should reject deleting an actual current-month fee-history record",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
+      "title": "should deactivate fee setting without affecting existing ads",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
       "status": "passed",
-      "duration": 1667
+      "duration": 2589
+    },
+    {
+      "title": "A-16: should reject date ranges over 365 days and non-CSV formats",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
+      "status": "passed",
+      "duration": 3168
+    },
+    {
+      "title": "should return fee history sorted by created time",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
+      "status": "passed",
+      "duration": 3866
+    },
+    {
+      "title": "should load fee settings table with placement, tier, daily rate columns",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 7792
+    },
+    {
+      "title": "should show summary metrics and charts with breakdowns by placement and tier",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "status": "passed",
+      "duration": 9831
+    },
+    {
+      "title": "should export ad performance CSV with correct columns",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "status": "passed",
+      "duration": 10039
     },
     {
       "title": "B-13: submission-history export preserves each review event",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
       "status": "passed",
-      "duration": 1870
+      "duration": 2704
     },
     {
-      "title": "should return paginated ads for admin with filters",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
+      "title": "should show history table with date, placement, tier, old/new rates",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
       "status": "passed",
-      "duration": 1086
+      "duration": 9506
+    },
+    {
+      "title": "should reactivate a fee setting and log the change",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
+      "status": "passed",
+      "duration": 3046
+    },
+    {
+      "title": "should reject deleting an actual current-month fee-history record",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
+      "status": "passed",
+      "duration": 3803
+    },
+    {
+      "title": "A-18: backend service continues after a refund failure",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
+      "status": "passed",
+      "duration": 5903
     },
     {
       "title": "should return fee history with filters by calendar month and pagination",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
       "status": "passed",
-      "duration": 1413
+      "duration": 2932
     },
     {
-      "title": "should return full detail for a single advertisement",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
+      "title": "should return paginated ads for admin with filters",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
       "status": "passed",
-      "duration": 1414
+      "duration": 2569
     },
     {
-      "title": "should export submission history CSV with review metadata",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "title": "should export analytics data with multi-filter aggregation",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
       "status": "passed",
-      "duration": 4390
+      "duration": 12575
     },
     {
       "title": "should delete a single eligible history record with confirmation",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
       "status": "passed",
-      "duration": 4607
+      "duration": 11116
     },
     {
-      "title": "should export analytics data and trigger download",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "title": "should export submission history CSV with review metadata",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
       "status": "passed",
-      "duration": 4348
+      "duration": 12946
+    },
+    {
+      "title": "should return full detail for a single advertisement",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
+      "status": "passed",
+      "duration": 4382
     },
     {
       "title": "should approve a pending ad and set approval metadata",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
       "status": "passed",
-      "duration": 2092
+      "duration": 3838
     },
     {
       "title": "should create a new fee setting and log history",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
       "status": "passed",
-      "duration": 6975
+      "duration": 20144
     },
     {
       "title": "should display ad management page with ad list",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 5351
+      "duration": 10160
+    },
+    {
+      "title": "translates pages, tables, and dialogs in en",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-language.spec.ts",
+      "status": "passed",
+      "duration": 27331
     },
     {
       "title": "should reject a pending ad and trigger refund",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
       "status": "passed",
-      "duration": 1499
-    },
-    {
-      "title": "should export fee history CSV with old/new values and reasons",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
-      "status": "passed",
-      "duration": 4642
-    },
-    {
-      "title": "should bulk approve only pending ads within limit",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
-      "status": "passed",
-      "duration": 1997
-    },
-    {
-      "title": "should bulk delete multiple previous-month history records",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
-      "status": "passed",
-      "duration": 4902
+      "duration": 4391
     },
     {
       "title": "should recalculate revenue when month filter changed",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
       "status": "passed",
-      "duration": 4912
+      "duration": 10102
+    },
+    {
+      "title": "should bulk delete multiple previous-month history records",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 11355
+    },
+    {
+      "title": "should export fee history CSV with old/new values and reasons",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "status": "passed",
+      "duration": 13582
+    },
+    {
+      "title": "should bulk approve only pending ads within limit",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
+      "status": "passed",
+      "duration": 4651
     },
     {
       "title": "should bulk reject ads and include refund summary",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
       "status": "passed",
-      "duration": 2391
-    },
-    {
-      "title": "should navigate to Package & Fee Management",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 6450
-    },
-    {
-      "title": "should block duplicate active fee setting for same placement/tier",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
-      "status": "passed",
-      "duration": 6985
-    },
-    {
-      "title": "should generate fee history report for batch export",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
-      "status": "passed",
-      "duration": 4823
+      "duration": 4525
     },
     {
       "title": "should drill down into ad detail from analytics",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
       "status": "passed",
-      "duration": 4539
+      "duration": 9784
+    },
+    {
+      "title": "should navigate to Package & Fee Management",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 12636
+    },
+    {
+      "title": "should block duplicate active fee setting for same placement/tier",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 13284
+    },
+    {
+      "title": "should generate fee history report for batch export",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 12348
     },
     {
       "title": "should reject date range longer than 365 days",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
       "status": "passed",
-      "duration": 6467
-    },
-    {
-      "title": "should update fee setting and log historical snapshot",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
-      "status": "passed",
-      "duration": 4153
+      "duration": 9883
     },
     {
       "title": "should handle invalid month filter selection",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
       "status": "passed",
-      "duration": 3925
+      "duration": 9236
     },
     {
       "title": "should navigate to Fee Change History",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 5629
-    },
-    {
-      "title": "should limit Fee Change History access to authorized admins",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
-      "status": "passed",
-      "duration": 4797
+      "duration": 10813
     },
     {
       "title": "should reject export with format other than CSV",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
       "status": "passed",
-      "duration": 4715
+      "duration": 7960
     },
     {
-      "title": "should deactivate fee setting with reason",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "title": "should limit Fee Change History access to authorized admins",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
       "status": "passed",
-      "duration": 4194
+      "duration": 11147
+    },
+    {
+      "title": "translates pages, tables, and dialogs in my",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-language.spec.ts",
+      "status": "passed",
+      "duration": 27744
+    },
+    {
+      "title": "should update fee setting and log historical snapshot",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 15079
     },
     {
       "title": "should return consistent revenue values with same filters",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
       "status": "passed",
-      "duration": 4973
-    },
-    {
-      "title": "should not cause duplicates or errors with concurrent deletion",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
-      "status": "passed",
-      "duration": 4703
+      "duration": 7837
     },
     {
       "title": "should complete concurrent export requests without conflicts",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
       "status": "passed",
-      "duration": 6459
+      "duration": 7611
     },
     {
       "title": "should navigate to Revenue Analytics",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 7484
+      "duration": 9161
     },
     {
-      "title": "should reactivate a previously deactivated fee setting",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "title": "should not cause duplicates or errors with concurrent deletion",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
       "status": "passed",
-      "duration": 6241
+      "duration": 7873
+    },
+    {
+      "title": "should deactivate fee setting with reason",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 8152
     },
     {
       "title": "should show same values in list and drill-down with same filters",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
       "status": "passed",
-      "duration": 6317
-    },
-    {
-      "title": "should generate sequential history records concurrently",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
-      "status": "passed",
-      "duration": 6158
+      "duration": 8038
     },
     {
       "title": "should preserve special characters in exported CSV",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
       "status": "passed",
-      "duration": 5041
+      "duration": 7898
     },
     {
       "title": "should navigate to Export Reports",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 6719
+      "duration": 9205
     },
     {
-      "title": "should disable Create Fee Setting when all 12 combos exist",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "title": "should generate sequential history records concurrently",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
       "status": "passed",
-      "duration": 5054
+      "duration": 6944
+    },
+    {
+      "title": "should reactivate a previously deactivated fee setting",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 8422
     },
     {
       "title": "should return stable consistent results under concurrent requests",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
       "status": "passed",
-      "duration": 5477
-    },
-    {
-      "title": "should navigate pages and maintain data consistency",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
-      "status": "passed",
-      "duration": 5480
-    },
-    {
-      "title": "should update labels on export screen",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
-      "status": "passed",
-      "duration": 6067
-    },
-    {
-      "title": "should not affect existing paid ads when fee updated",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
-      "status": "passed",
-      "duration": 6032
-    },
-    {
-      "title": "should reflect exact single-day range without off-by-one",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
-      "status": "passed",
-      "duration": 5634
-    },
-    {
-      "title": "should reject current-month deletion, allow previous-month",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
-      "status": "passed",
-      "duration": 5598
-    },
-    {
-      "title": "should filter ad list by status, placement, tier, and shop",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 8991
+      "duration": 7486
     },
     {
       "title": "should switch theme on export screen without break",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
       "status": "passed",
-      "duration": 5585
+      "duration": 8049
     },
     {
-      "title": "should filter fee settings by placement/tier/status",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "title": "should navigate pages and maintain data consistency",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
       "status": "passed",
-      "duration": 6428
+      "duration": 7863
+    },
+    {
+      "title": "translates pages, tables, and dialogs in ja",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-language.spec.ts",
+      "status": "passed",
+      "duration": 23243
+    },
+    {
+      "title": "should reflect exact single-day range without off-by-one",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "status": "passed",
+      "duration": 7197
+    },
+    {
+      "title": "should disable Create Fee Setting when all 12 combos exist",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 7510
+    },
+    {
+      "title": "should filter ad list by status, placement, tier, and shop",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 12503
+    },
+    {
+      "title": "should be usable at 1280x720",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "status": "passed",
+      "duration": 5963
+    },
+    {
+      "title": "should reject current-month deletion, allow previous-month",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 5894
     },
     {
       "title": "should display zero metrics and \"No data\" state",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
       "status": "passed",
-      "duration": 5912
+      "duration": 5290
     },
     {
-      "title": "should update labels when toggling language on fee history screen",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "title": "should not affect existing paid ads when fee updated",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
       "status": "passed",
-      "duration": 6300
+      "duration": 5579
     },
     {
-      "title": "should be usable at 1280x720",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "title": "should be usable at 375x667",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
       "status": "passed",
-      "duration": 6570
-    },
-    {
-      "title": "should reset all filters and restore default list",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 9463
-    },
-    {
-      "title": "should restrict fee setting management to authorized admins",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
-      "status": "passed",
-      "duration": 7929
+      "duration": 7240
     },
     {
       "title": "should switch theme on fee history screen without break",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
       "status": "passed",
-      "duration": 7331
-    },
-    {
-      "title": "should update labels on analytics screen",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
-      "status": "passed",
-      "duration": 8073
-    },
-    {
-      "title": "should be usable at 375x667",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
-      "status": "passed",
-      "duration": 7903
-    },
-    {
-      "title": "should open review modal and approve a pending ad",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 9233
-    },
-    {
-      "title": "should not change existing ad records when fee setting edited",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
-      "status": "passed",
-      "duration": 7872
-    },
-    {
-      "title": "should be usable at 1280x720",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
-      "status": "passed",
-      "duration": 7561
+      "duration": 6260
     },
     {
       "title": "should switch theme without breaking analytics layout",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
       "status": "passed",
-      "duration": 7917
+      "duration": 5307
     },
     {
-      "title": "should reject a pending ad with a valid reason",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "title": "should reset all filters and restore default list",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 7495
+      "duration": 9519
     },
     {
-      "title": "should be usable at 375x667",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "title": "should filter fee settings by placement/tier/status",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
       "status": "passed",
-      "duration": 6522
+      "duration": 6140
     },
     {
       "title": "should be usable at 1280x720",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
       "status": "passed",
-      "duration": 6185
+      "duration": 5400
     },
     {
-      "title": "should handle concurrent edits without conflict",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "title": "should be usable at 1280x720",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
       "status": "passed",
-      "duration": 7329
+      "duration": 5216
+    },
+    {
+      "title": "should restrict fee setting management to authorized admins",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 5975
     },
     {
       "title": "should be usable at 375x667",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
       "status": "passed",
-      "duration": 5378
+      "duration": 5810
+    },
+    {
+      "title": "should be usable at 375x667",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 6349
+    },
+    {
+      "title": "should open review modal and approve a pending ad",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 11260
+    },
+    {
+      "title": "should not change existing ad records when fee setting edited",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 5229
+    },
+    {
+      "title": "should handle concurrent edits without conflict",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 4631
+    },
+    {
+      "title": "should reject a pending ad with a valid reason",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 7109
     },
     {
       "title": "should resolve to one final state",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
       "status": "passed",
-      "duration": 5701
-    },
-    {
-      "title": "should bulk approve selected pending ads",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 7130
+      "duration": 4219
     },
     {
       "title": "should not break existing ad data when deactivating in-use fee",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
       "status": "passed",
-      "duration": 4100
+      "duration": 3638
+    },
+    {
+      "title": "should bulk approve selected pending ads",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 6028
     },
     {
       "title": "should bulk reject selected pending ads with common reason",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 5657
+      "duration": 5432
     },
     {
-      "title": "should navigate from notification highlight and highlight ad",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "title": "should open a newly submitted ad from an admin notification",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 3183
+      "duration": 6725
     },
     {
       "title": "should navigate to and highlight an ad from a later page opened by notification",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 3338
+      "duration": 3389
     },
     {
       "title": "should select pending ads via header checkbox and clear selection",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 3014
+      "duration": 3129
     },
     {
       "title": "should deny a buyer attempting ad moderation",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 3970
+      "duration": 3802
     },
     {
       "title": "should show empty state when shop search has no match",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 3442
+      "duration": 3298
     },
     {
       "title": "should redirect unauthenticated user from ad management routes",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 2814
+      "duration": 2746
     },
     {
       "title": "should not create duplicate moderation actions on double-click",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 2579
+      "duration": 2780
     },
     {
       "title": "should enforce character boundaries in moderation fields",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 2723
+      "duration": 3209
     },
     {
       "title": "should show validation error when submitting with empty required fields",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 2644
+      "duration": 2706
     },
     {
       "title": "should handle concurrent status change by another admin",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 2684
+      "duration": 2825
     },
     {
       "title": "should record status change in audit log",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 2559
+      "duration": 2692
     },
     {
       "title": "should stay responsive under repeated moderation operations",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 2752
+      "duration": 2941
     },
     {
       "title": "should render and paginate correctly with large dataset",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 2633
+      "duration": 3180
     },
     {
       "title": "should reactivate an inactive fee setting",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 2798
+      "duration": 2636
     },
     {
       "title": "should show Create Fee Setting button disabled when all 12 packages exist",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 2720
+      "duration": 2732
     },
     {
       "title": "should not affect existing paid ads when fee setting updated",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3004
+    },
+    {
+      "title": "should show validation error when rejection reason is blank",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3364
+    },
+    {
+      "title": "should reject a second approval after the ad is no longer pending",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2498
+    },
+    {
+      "title": "should block bulk operation when more than 50 ads are submitted",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2444
+    },
+    {
+      "title": "should allow editing ad fields with proper rights",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3133
+    },
+    {
+      "title": "should not show a draft ad while payment is pending",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3472
+    },
+    {
+      "title": "should reject an unpaid pending ad without changing its payment status",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2591
+    },
+    {
+      "title": "should reject invalid status filter",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2310
+    },
+    {
+      "title": "should reject invalid status, pagination, and long shop filters",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2487
+    },
+    {
+      "title": "should reject dateFrom later than dateTo",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2488
+    },
+    {
+      "title": "should reject the whole request and leave the pending ad unchanged",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2702
+    },
+    {
+      "title": "should create fee setting with minimum valid values",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3781
+    },
+    {
+      "title": "should accept upper-limit fee setting values",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3782
+    },
+    {
+      "title": "should accept exactly 1000 characters in rejection reason",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3348
+    },
+    {
+      "title": "should block rejection reason exceeding 1000 characters",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3418
+    },
+    {
+      "title": "should reflect exact single-day date range in analytics",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2675
+    },
+    {
+      "title": "should accept long shop name and filter correctly",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3553
+    },
+    {
+      "title": "should reactivate once, then block second reactivation",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
       "duration": 2890
     },
     {
-      "title": "should show validation error when rejection reason is blank",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 3405
-    },
-    {
-      "title": "should reject a second approval after the ad is no longer pending",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 2560
-    },
-    {
-      "title": "should block bulk operation when more than 50 ads are submitted",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 2490
-    },
-    {
-      "title": "should allow editing ad fields with proper rights",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 3174
-    },
-    {
-      "title": "should not show a draft ad while payment is pending",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 3359
-    },
-    {
-      "title": "should reject an unpaid pending ad without changing its payment status",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 2808
-    },
-    {
-      "title": "should reject invalid status filter",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 2253
-    },
-    {
-      "title": "should reject invalid status, pagination, and long shop filters",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 2433
-    },
-    {
-      "title": "should reject dateFrom later than dateTo",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 2304
-    },
-    {
-      "title": "should reject the whole request and leave the pending ad unchanged",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 2611
-    },
-    {
-      "title": "should create fee setting with minimum valid values",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 3512
-    },
-    {
-      "title": "should accept upper-limit fee setting values",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 3328
-    },
-    {
-      "title": "should accept exactly 1000 characters in rejection reason",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 2910
-    },
-    {
-      "title": "should block rejection reason exceeding 1000 characters",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 2843
-    },
-    {
-      "title": "should reflect exact single-day date range in analytics",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 2473
-    },
-    {
-      "title": "should accept long shop name and filter correctly",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 3146
-    },
-    {
-      "title": "should reactivate once, then block second reactivation",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 2627
-    },
-    {
       "title": "should reject current-month deletion, allow previous-month",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 2752
+      "duration": 3214
     },
     {
       "title": "should allow deleting exactly 50 records",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 2662
+      "duration": 2793
     },
     {
       "title": "should block 51-record bulk deletion",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 2433
+      "duration": 2692
     },
     {
       "title": "should display zero metrics and \"No data\" when no ads match",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 2808
-    },
-    {
-      "title": "should update all labels when toggling to Japanese",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 2548
-    },
-    {
-      "title": "should update all labels when toggling to Myanmar",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 2733
-    },
-    {
-      "title": "should return to English default",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
-      "status": "passed",
-      "duration": 2640
+      "duration": 2651
     },
     {
       "title": "should switch to dark mode without breaking layout",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 2879
+      "duration": 2682
     },
     {
       "title": "should switch back to light mode",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 2781
+      "duration": 2526
     },
     {
       "title": "should remain usable at 1280x720 viewport",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 3086
+      "duration": 2998
     },
     {
       "title": "should remain usable at 375x667 viewport",
-      "file": "C:\\WYT\\skin-analysis-WYT\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
       "status": "passed",
-      "duration": 2832
+      "duration": 2525
     }
   ]
 }

@@ -10,5 +10,8 @@
   },
   "product_list_state.png": {
     "test": "Product_Management.spec.ts::B-06: should display empty state when merchant has no products"
+  },
+  "B-09_1_delete_all_dialog.png": {
+    "test": "Product_Management.spec.ts::B-09: Delete confirmation when zero products are selected (triggers Delete All flow)"
   }
 }

@@ -1,4 +1,6 @@
 import { test, expect } from '../../fixtures/auth.fixture';
+import { API_BASE_URL } from '../../utils/constants';
+import { adminHeaders } from '../../utils/api-auth';
 import { AdAnalyticsPage } from '../../pages/Ad_Management_Screen/AdAnalyticsPage';
 import { captureFinalTestScreenshot } from '../../utils/screenshot';
 
@@ -22,16 +24,40 @@ test.describe('Admin Revenue Analytics — PCL Normal Scenarios', () => {
   });
 
   test.describe('N-11: View revenue analytics by placement and tier', () => {
-    test('should show summary metrics and charts with breakdowns', async ({ page }) => {
+    test('should show summary metrics and charts with breakdowns by placement and tier', async ({ page, request }) => {
       await analyticsPage.goto();
       await analyticsPage.captureAnalyticsPage();
+      // API verification: revenue analytics returns aggregated data with placement/tier breakdowns
+      const analyticsResponse = await request.get(`${API_BASE_URL}/admin/ads/analytics/revenue?dateFrom=2026-01-01&dateTo=2026-12-31&placement=search_page_banner&placement=recommendation_page_banner&tier=basic&tier=premium`, {
+        headers: await adminHeaders(request),
+      });
+      expect(analyticsResponse.status()).toBe(200);
+      const analyticsBody = await analyticsResponse.json();
+      expect(analyticsBody.data.summary).toBeDefined();
+      expect(analyticsBody.data.summary.totalRevenue).toBeDefined();
+      expect(analyticsBody.data.byPlacement).toBeDefined();
+      expect(analyticsBody.data.byTier).toBeDefined();
+      expect(analyticsBody.data.trend).toBeDefined();
     });
   });
 
   test.describe('N-27: Export analytics data', () => {
-    test('should export analytics data and trigger download', async ({ page }) => {
+    test('should export analytics data with multi-filter aggregation', async ({ page, request }) => {
       await analyticsPage.goto();
       await analyticsPage.captureExportAnalytics();
+      // API verification: revenue analytics with multiple placements and tiers
+      const analyticsResponse = await request.get(`${API_BASE_URL}/admin/ads/analytics/revenue?dateFrom=2026-01-01&dateTo=2026-12-31&placement=search_page_banner&placement=checkout_page_banner&tier=basic&tier=premium`, {
+        headers: await adminHeaders(request),
+      });
+      expect(analyticsResponse.status()).toBe(200);
+      const analyticsBody = await analyticsResponse.json();
+      // Verify summary metrics and breakdowns returned for the selected filters
+      expect(analyticsBody.data.summary).toBeDefined();
+      expect(analyticsBody.data.summary.totalRevenue).toBeDefined();
+      expect(analyticsBody.data.byPlacement).toBeDefined();
+      expect(analyticsBody.data.byTier).toBeDefined();
+      // Chart data series verification (trend series feeds the analytics charts)
+      expect(analyticsBody.data.trend).toBeDefined();
     });
   });
 
@@ -100,12 +126,6 @@ test.describe('Admin Revenue Analytics — PCL Boundary Scenarios', () => {
 });
 
 test.describe('Admin Revenue Analytics — PCL Interface Scenarios', () => {
-  test.describe('N-15: Language toggle works', () => {
-    test('should update labels on analytics screen', async ({ page }) => {
-      await analyticsPage.goto();
-    });
-  });
-
   test.describe('N-16: Theme toggle works', () => {
     test('should switch theme without breaking analytics layout', async ({ page }) => {
       await analyticsPage.goto();
