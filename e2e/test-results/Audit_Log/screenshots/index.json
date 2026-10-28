@@ -1,0 +1,367 @@
+{
+  "audit_log_page_loaded.png": {
+    "test": "audit-log.spec.ts::I-08 and I-14: deletes eligible records, ignores file ids, and reports zero deleted files"
+  },
+  "N-01_1_audit_log_list.png": {
+    "test": "audit-log.spec.ts::N-01: loads the audit log list with the default sort and page size"
+  },
+  "N-01_final_state.png": {
+    "description": "Final UI state for N-01: loads the audit log list with the default sort and page size",
+    "test": "audit-log.spec.ts::N-01: loads the audit log list with the default sort and page size"
+  },
+  "N-02_1_filter_by_action.png": {
+    "test": "audit-log.spec.ts::N-02: filters logs by action type"
+  },
+  "N-02_final_state.png": {
+    "description": "Final UI state for N-02: filters logs by action type",
+    "test": "audit-log.spec.ts::N-02: filters logs by action type"
+  },
+  "N-03_1_filter_by_date_range.png": {
+    "test": "audit-log.spec.ts::N-03: filters logs by date range"
+  },
+  "N-03_final_state.png": {
+    "description": "Final UI state for N-03: filters logs by date range",
+    "test": "audit-log.spec.ts::N-03: filters logs by date range"
+  },
+  "N-04_1_detail_modal.png": {
+    "test": "audit-log.spec.ts::N-04: opens the audit log detail modal"
+  },
+  "N-04_final_state.png": {
+    "description": "Final UI state for N-04: opens the audit log detail modal",
+    "test": "audit-log.spec.ts::N-04: opens the audit log detail modal"
+  },
+  "N-05_1_export_csv.png": {
+    "test": "audit-log.spec.ts::N-05: exports the filtered audit log as CSV"
+  },
+  "N-05_final_state.png": {
+    "description": "Final UI state for N-05: exports the filtered audit log as CSV",
+    "test": "audit-log.spec.ts::N-05: exports the filtered audit log as CSV"
+  },
+  "N-06_1_filters_cleared.png": {
+    "test": "audit-log.spec.ts::N-06 and N-19: combines free-text search with the IP filter and clears the filters"
+  },
+  "N-06_final_state.png": {
+    "description": "Final UI state for N-06 and N-19: combines free-text search with the IP filter and clears the filters",
+    "test": "audit-log.spec.ts::N-06 and N-19: combines free-text search with the IP filter and clears the filters"
+  },
+  "N-19_final_state.png": {
+    "description": "Final UI state for N-06 and N-19: combines free-text search with the IP filter and clears the filters",
+    "test": "audit-log.spec.ts::N-06 and N-19: combines free-text search with the IP filter and clears the filters"
+  },
+  "N-07_1_pagination.png": {
+    "test": "audit-log.spec.ts::N-07: paginates the table and changes the page size"
+  },
+  "N-07_final_state.png": {
+    "description": "Final UI state for N-07: paginates the table and changes the page size",
+    "test": "audit-log.spec.ts::N-07: paginates the table and changes the page size"
+  },
+  "N-08_1_url_driven_filters.png": {
+    "test": "audit-log.spec.ts::N-08 and N-09: filters the list by user and entity through the URL query string"
+  },
+  "N-08_final_state.png": {
+    "description": "Final UI state for N-08 and N-09: filters the list by user and entity through the URL query string",
+    "test": "audit-log.spec.ts::N-08 and N-09: filters the list by user and entity through the URL query string"
+  },
+  "N-09_final_state.png": {
+    "description": "Final UI state for N-08 and N-09: filters the list by user and entity through the URL query string",
+    "test": "audit-log.spec.ts::N-08 and N-09: filters the list by user and entity through the URL query string"
+  },
+  "N-10_1_auto_refresh.png": {
+    "test": "audit-log.spec.ts::N-10: polls the list every 30 seconds while auto-refresh is enabled"
+  },
+  "N-10_final_state.png": {
+    "description": "Final UI state for N-10: polls the list every 30 seconds while auto-refresh is enabled",
+    "test": "audit-log.spec.ts::N-10: polls the list every 30 seconds while auto-refresh is enabled"
+  },
+  "N-11_1_delete_logs.png": {
+    "test": "audit-log.spec.ts::N-11: deletes audit log records at or above the retention threshold"
+  },
+  "N-11_final_state.png": {
+    "description": "Final UI state for N-11: deletes audit log records at or above the retention threshold",
+    "test": "audit-log.spec.ts::N-11: deletes audit log records at or above the retention threshold"
+  },
+  "N-12_1_lang_ja.png": {
+    "test": "audit-log.spec.ts::N-12: language toggle works on screen"
+  },
+  "N-12_2_lang_my.png": {
+    "test": "audit-log.spec.ts::N-12: language toggle works on screen"
+  },
+  "N-12_final_state.png": {
+    "description": "Final UI state for N-12: language toggle works on screen",
+    "test": "audit-log.spec.ts::N-12: language toggle works on screen"
+  },
+  "N-13_1_dark.png": {
+    "test": "audit-log.spec.ts::N-13: theme toggle works on screen"
+  },
+  "N-13_2_light.png": {
+    "test": "audit-log.spec.ts::N-13: theme toggle works on screen"
+  },
+  "N-13_final_state.png": {
+    "description": "Final UI state for N-13: theme toggle works on screen",
+    "test": "audit-log.spec.ts::N-13: theme toggle works on screen"
+  },
+  "N-14_1_desktop_layout.png": {
+    "test": "audit-log.spec.ts::N-14 and N-15: keeps the screen usable at desktop and mobile widths"
+  },
+  "N-15_1_mobile_layout.png": {
+    "test": "audit-log.spec.ts::N-14 and N-15: keeps the screen usable at desktop and mobile widths"
+  },
+  "N-14_final_state.png": {
+    "description": "Final UI state for N-14 and N-15: keeps the screen usable at desktop and mobile widths",
+    "test": "audit-log.spec.ts::N-14 and N-15: keeps the screen usable at desktop and mobile widths"
+  },
+  "N-15_final_state.png": {
+    "description": "Final UI state for N-14 and N-15: keeps the screen usable at desktop and mobile widths",
+    "test": "audit-log.spec.ts::N-14 and N-15: keeps the screen usable at desktop and mobile widths"
+  },
+  "N-16_1_sorted_by_action.png": {
+    "test": "audit-log.spec.ts::N-16: sorts the table by column"
+  },
+  "N-16_final_state.png": {
+    "description": "Final UI state for N-16: sorts the table by column",
+    "test": "audit-log.spec.ts::N-16: sorts the table by column"
+  },
+  "N-17_1_delete_selection.png": {
+    "test": "audit-log.spec.ts::N-17: selects rows and deletes only the selection"
+  },
+  "N-17_final_state.png": {
+    "description": "Final UI state for N-17: selects rows and deletes only the selection",
+    "test": "audit-log.spec.ts::N-17: selects rows and deletes only the selection"
+  },
+  "N-18_1_url_state.png": {
+    "test": "audit-log.spec.ts::N-18: keeps filter, sort, and pagination state in the URL"
+  },
+  "N-18_final_state.png": {
+    "description": "Final UI state for N-18: keeps filter, sort, and pagination state in the URL",
+    "test": "audit-log.spec.ts::N-18: keeps filter, sort, and pagination state in the URL"
+  },
+  "N-20_1_filter_options.png": {
+    "test": "audit-log.spec.ts::N-20: offers every recordable action and entity type in the filters"
+  },
+  "N-20_final_state.png": {
+    "description": "Final UI state for N-20: offers every recordable action and entity type in the filters",
+    "test": "audit-log.spec.ts::N-20: offers every recordable action and entity type in the filters"
+  },
+  "A-01_final_state.png": {
+    "description": "Final UI state for A-01: unauthenticated access redirects to the login page",
+    "test": "audit-log.spec.ts::A-01: unauthenticated access redirects to the login page"
+  },
+  "A-02_final_state.png": {
+    "description": "Final UI state for A-02: buyer and merchant access to the admin route is denied",
+    "test": "audit-log.spec.ts::A-02: buyer and merchant access to the admin route is denied"
+  },
+  "A-03_1_invalid_date_range.png": {
+    "test": "audit-log.spec.ts::A-03: blocks a date range whose end date is before the start date"
+  },
+  "A-03_final_state.png": {
+    "description": "Final UI state for A-03: blocks a date range whose end date is before the start date",
+    "test": "audit-log.spec.ts::A-03: blocks a date range whose end date is before the start date"
+  },
+  "A-04_1_invalid_entity_id.png": {
+    "test": "audit-log.spec.ts::A-04: drops an invalid entity id supplied through the URL"
+  },
+  "A-04_final_state.png": {
+    "description": "Final UI state for A-04: drops an invalid entity id supplied through the URL",
+    "test": "audit-log.spec.ts::A-04: drops an invalid entity id supplied through the URL"
+  },
+  "A-05_1_export_row_limit.png": {
+    "test": "audit-log.spec.ts::A-05: reports the row limit when an export exceeds 10,000 rows"
+  },
+  "A-05_final_state.png": {
+    "description": "Final UI state for A-05: reports the row limit when an export exceeds 10,000 rows",
+    "test": "audit-log.spec.ts::A-05: reports the row limit when an export exceeds 10,000 rows"
+  },
+  "B-06_final_state.png": {
+    "description": "Final UI state for A-05: reports the row limit when an export exceeds 10,000 rows",
+    "test": "audit-log.spec.ts::A-05: reports the row limit when an export exceeds 10,000 rows"
+  },
+  "A-06_1_export_range_too_long.png": {
+    "test": "audit-log.spec.ts::A-06: blocks an export range longer than 365 days before any request is sent"
+  },
+  "A-06_final_state.png": {
+    "description": "Final UI state for A-06: blocks an export range longer than 365 days before any request is sent",
+    "test": "audit-log.spec.ts::A-06: blocks an export range longer than 365 days before any request is sent"
+  },
+  "A-07_1_retention_too_short.png": {
+    "test": "audit-log.spec.ts::A-07 and A-15: blocks an empty or below-minimum retention period"
+  },
+  "A-07_final_state.png": {
+    "description": "Final UI state for A-07 and A-15: blocks an empty or below-minimum retention period",
+    "test": "audit-log.spec.ts::A-07 and A-15: blocks an empty or below-minimum retention period"
+  },
+  "A-15_final_state.png": {
+    "description": "Final UI state for A-07 and A-15: blocks an empty or below-minimum retention period",
+    "test": "audit-log.spec.ts::A-07 and A-15: blocks an empty or below-minimum retention period"
+  },
+  "A-08_1_no_eligible_records.png": {
+    "test": "audit-log.spec.ts::A-08: shows the server error when no eligible record can be deleted"
+  },
+  "A-08_final_state.png": {
+    "description": "Final UI state for A-08: shows the server error when no eligible record can be deleted",
+    "test": "audit-log.spec.ts::A-08: shows the server error when no eligible record can be deleted"
+  },
+  "A-10_1_detail_not_found.png": {
+    "test": "audit-log.spec.ts::A-10: shows an inline error when the detail entry does not exist"
+  },
+  "A-10_final_state.png": {
+    "description": "Final UI state for A-10: shows an inline error when the detail entry does not exist",
+    "test": "audit-log.spec.ts::A-10: shows an inline error when the detail entry does not exist"
+  },
+  "A-11_1_list_error.png": {
+    "test": "audit-log.spec.ts::A-11: keeps the previous rows when a list request fails"
+  },
+  "A-11_final_state.png": {
+    "description": "Final UI state for A-11: keeps the previous rows when a list request fails",
+    "test": "audit-log.spec.ts::A-11: keeps the previous rows when a list request fails"
+  },
+  "A-13_final_state.png": {
+    "description": "Final UI state for A-13: redirects to the unauthorized page when the list request returns 403",
+    "test": "audit-log.spec.ts::A-13: redirects to the unauthorized page when the list request returns 403"
+  },
+  "A-14_1_export_failed.png": {
+    "test": "audit-log.spec.ts::A-14: keeps the export dialog open when the export request fails"
+  },
+  "A-14_final_state.png": {
+    "description": "Final UI state for A-14: keeps the export dialog open when the export request fails",
+    "test": "audit-log.spec.ts::A-14: keeps the export dialog open when the export request fails"
+  },
+  "B-02_1_search_length_cap.png": {
+    "test": "audit-log.spec.ts::B-01 and B-02: caps the search input at 255 characters"
+  },
+  "B-01_final_state.png": {
+    "description": "Final UI state for B-01 and B-02: caps the search input at 255 characters",
+    "test": "audit-log.spec.ts::B-01 and B-02: caps the search input at 255 characters"
+  },
+  "B-02_final_state.png": {
+    "description": "Final UI state for B-01 and B-02: caps the search input at 255 characters",
+    "test": "audit-log.spec.ts::B-01 and B-02: caps the search input at 255 characters"
+  },
+  "B-03_1_ip_length_cap.png": {
+    "test": "audit-log.spec.ts::B-03: caps the IP address filter at 45 characters"
+  },
+  "B-03_final_state.png": {
+    "description": "Final UI state for B-03: caps the IP address filter at 45 characters",
+    "test": "audit-log.spec.ts::B-03: caps the IP address filter at 45 characters"
+  },
+  "B-04_1_retention_boundary.png": {
+    "test": "audit-log.spec.ts::B-04: accepts a retention of exactly 90 days and rejects 89"
+  },
+  "B-04_final_state.png": {
+    "description": "Final UI state for B-04: accepts a retention of exactly 90 days and rejects 89",
+    "test": "audit-log.spec.ts::B-04: accepts a retention of exactly 90 days and rejects 89"
+  },
+  "B-05_1_export_range_boundary.png": {
+    "test": "audit-log.spec.ts::B-05: accepts a 365-day export range and rejects a 366-day range"
+  },
+  "B-05_final_state.png": {
+    "description": "Final UI state for B-05: accepts a 365-day export range and rejects a 366-day range",
+    "test": "audit-log.spec.ts::B-05: accepts a 365-day export range and rejects a 366-day range"
+  },
+  "B-07_1_page_size_options.png": {
+    "test": "audit-log.spec.ts::B-07: offers page sizes 10, 20, 50, and 100 only"
+  },
+  "B-07_final_state.png": {
+    "description": "Final UI state for B-07: offers page sizes 10, 20, 50, and 100 only",
+    "test": "audit-log.spec.ts::B-07: offers page sizes 10, 20, 50, and 100 only"
+  },
+  "B-08_1_empty_state.png": {
+    "test": "audit-log.spec.ts::B-08: shows the empty state and blocks the export when there are no records"
+  },
+  "B-08_final_state.png": {
+    "description": "Final UI state for B-08: shows the empty state and blocks the export when there are no records",
+    "test": "audit-log.spec.ts::B-08: shows the empty state and blocks the export when there are no records"
+  },
+  "B-09_1_parsed_user_agent.png": {
+    "test": "audit-log.spec.ts::B-09: parses the user agent instead of showing it raw"
+  },
+  "B-09_final_state.png": {
+    "description": "Final UI state for B-09: parses the user agent instead of showing it raw",
+    "test": "audit-log.spec.ts::B-09: parses the user agent instead of showing it raw"
+  },
+  "B-11_1_multi_select_values.png": {
+    "test": "audit-log.spec.ts::B-11: matches any value selected in one multi-select and intersects filters"
+  },
+  "B-11_final_state.png": {
+    "description": "Final UI state for B-11: matches any value selected in one multi-select and intersects filters",
+    "test": "audit-log.spec.ts::B-11: matches any value selected in one multi-select and intersects filters"
+  },
+  "B-12_1_single_day_export.png": {
+    "test": "audit-log.spec.ts::B-12: accepts an export range that covers a single day"
+  },
+  "B-12_final_state.png": {
+    "description": "Final UI state for B-12: accepts an export range that covers a single day",
+    "test": "audit-log.spec.ts::B-12: accepts an export range that covers a single day"
+  },
+  "I-01_api_call.png": {
+    "description": "API request and response evidence for I-01: returns a paginated list without an entity id field",
+    "test": "audit-log.spec.ts::I-01: returns a paginated list without an entity id field"
+  },
+  "I-02_api_call.png": {
+    "description": "API request and response evidence for I-02: applies combined filters with AND logic",
+    "test": "audit-log.spec.ts::I-02: applies combined filters with AND logic"
+  },
+  "I-03_api_call.png": {
+    "description": "API request and response evidence for I-03: returns the merged filter options and hides the legacy delete label",
+    "test": "audit-log.spec.ts::I-03: returns the merged filter options and hides the legacy delete label"
+  },
+  "I-04_api_call.png": {
+    "description": "API request and response evidence for I-04: returns the detail DTO with masked values and no entity id",
+    "test": "audit-log.spec.ts::I-04: returns the detail DTO with masked values and no entity id"
+  },
+  "I-05_api_call.png": {
+    "description": "API request and response evidence for I-05: returns 404 for a missing id and 400 for an invalid id",
+    "test": "audit-log.spec.ts::I-05: returns 404 for a missing id and 400 for an invalid id"
+  },
+  "I-06_api_call.png": {
+    "description": "API request and response evidence for I-06: streams the CSV export as a file attachment",
+    "test": "audit-log.spec.ts::I-06: streams the CSV export as a file attachment"
+  },
+  "I-07_api_call.png": {
+    "description": "API request and response evidence for I-07: rejects an invalid format, range, and row limit",
+    "test": "audit-log.spec.ts::I-07: rejects an invalid format, range, and row limit"
+  },
+  "I-08_api_call.png": {
+    "description": "API request and response evidence for I-08 and I-14: deletes eligible records, ignores file ids, and reports zero deleted files",
+    "test": "audit-log.spec.ts::I-08 and I-14: deletes eligible records, ignores file ids, and reports zero deleted files"
+  },
+  "I-14_api_call.png": {
+    "description": "API request and response evidence for I-08 and I-14: deletes eligible records, ignores file ids, and reports zero deleted files",
+    "test": "audit-log.spec.ts::I-08 and I-14: deletes eligible records, ignores file ids, and reports zero deleted files"
+  },
+  "I-09_api_call.png": {
+    "description": "API request and response evidence for I-09: rejects a retention threshold below the minimum",
+    "test": "audit-log.spec.ts::I-09: rejects a retention threshold below the minimum"
+  },
+  "A-09_api_call.png": {
+    "description": "API request and response evidence for I-10: denies every audit endpoint to buyer and merchant accounts",
+    "test": "audit-log.spec.ts::I-10: denies every audit endpoint to buyer and merchant accounts"
+  },
+  "I-10_api_call.png": {
+    "description": "API request and response evidence for I-10: denies every audit endpoint to buyer and merchant accounts",
+    "test": "audit-log.spec.ts::I-10: denies every audit endpoint to buyer and merchant accounts"
+  },
+  "A-12_api_call.png": {
+    "description": "API request and response evidence for A-12: rejects updates to audit log records",
+    "test": "audit-log.spec.ts::A-12: rejects updates to audit log records"
+  },
+  "B-10_api_call.png": {
+    "description": "API request and response evidence for I-11: error responses carry the standard API fields",
+    "test": "audit-log.spec.ts::I-11: error responses carry the standard API fields"
+  },
+  "I-11_api_call.png": {
+    "description": "API request and response evidence for I-11: error responses carry the standard API fields",
+    "test": "audit-log.spec.ts::I-11: error responses carry the standard API fields"
+  },
+  "I-12_api_call.png": {
+    "description": "API request and response evidence for I-12: never exposes sensitive values unmasked",
+    "test": "audit-log.spec.ts::I-12: never exposes sensitive values unmasked"
+  },
+  "I-13_api_call.png": {
+    "description": "API request and response evidence for I-13: accepts the entity id filter but never writes an entity id column",
+    "test": "audit-log.spec.ts::I-13: accepts the entity id filter but never writes an entity id column"
+  },
+  "I-15_api_call.png": {
+    "description": "API request and response evidence for I-15: honours the entity id filter without returning the field",
+    "test": "audit-log.spec.ts::I-15: honours the entity id filter without returning the field"
+  }
+}

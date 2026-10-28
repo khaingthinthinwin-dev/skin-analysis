@@ -1,0 +1,335 @@
+{
+  "module": "Audit_Log",
+  "timestamp": "2026-10-28T02:18:58.563Z",
+  "total": 54,
+  "passed": 54,
+  "failed": 0,
+  "skipped": 0,
+  "durationMs": 254859,
+  "tests": [
+    {
+      "title": "N-01: loads the audit log list with the default sort and page size",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 9103
+    },
+    {
+      "title": "N-02: filters logs by action type",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 5604
+    },
+    {
+      "title": "audit log responsive check",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\responsive-shot.spec.ts",
+      "status": "passed",
+      "duration": 18575
+    },
+    {
+      "title": "N-03: filters logs by date range",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 6247
+    },
+    {
+      "title": "N-04: opens the audit log detail modal",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 5121
+    },
+    {
+      "title": "N-05: exports the filtered audit log as CSV",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 5759
+    },
+    {
+      "title": "N-06 and N-19: combines free-text search with the IP filter and clears the filters",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 9382
+    },
+    {
+      "title": "N-07: paginates the table and changes the page size",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 6069
+    },
+    {
+      "title": "N-08 and N-09: filters the list by user and entity through the URL query string",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 6726
+    },
+    {
+      "title": "N-10: polls the list every 30 seconds while auto-refresh is enabled",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 4949
+    },
+    {
+      "title": "N-11: deletes audit log records at or above the retention threshold",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 4784
+    },
+    {
+      "title": "N-12: language toggle works on screen",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 6428
+    },
+    {
+      "title": "N-13: theme toggle works on screen",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 5405
+    },
+    {
+      "title": "N-14 and N-15: keeps the screen usable at desktop and mobile widths",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 5030
+    },
+    {
+      "title": "N-16: sorts the table by column",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 6197
+    },
+    {
+      "title": "N-17: selects rows and deletes only the selection",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 6014
+    },
+    {
+      "title": "N-18: keeps filter, sort, and pagination state in the URL",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 5155
+    },
+    {
+      "title": "N-20: offers every recordable action and entity type in the filters",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 4696
+    },
+    {
+      "title": "A-01: unauthenticated access redirects to the login page",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 2381
+    },
+    {
+      "title": "A-02: buyer and merchant access to the admin route is denied",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 12263
+    },
+    {
+      "title": "A-03: blocks a date range whose end date is before the start date",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 5327
+    },
+    {
+      "title": "A-04: drops an invalid entity id supplied through the URL",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 3793
+    },
+    {
+      "title": "A-05: reports the row limit when an export exceeds 10,000 rows",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 6298
+    },
+    {
+      "title": "A-06: blocks an export range longer than 365 days before any request is sent",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 4526
+    },
+    {
+      "title": "A-07 and A-15: blocks an empty or below-minimum retention period",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 4779
+    },
+    {
+      "title": "A-08: shows the server error when no eligible record can be deleted",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 5960
+    },
+    {
+      "title": "A-10: shows an inline error when the detail entry does not exist",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 7608
+    },
+    {
+      "title": "A-11: keeps the previous rows when a list request fails",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 4848
+    },
+    {
+      "title": "A-13: redirects to the unauthorized page when the list request returns 403",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 5425
+    },
+    {
+      "title": "A-14: keeps the export dialog open when the export request fails",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 7437
+    },
+    {
+      "title": "B-01 and B-02: caps the search input at 255 characters",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 6826
+    },
+    {
+      "title": "B-03: caps the IP address filter at 45 characters",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 4320
+    },
+    {
+      "title": "B-04: accepts a retention of exactly 90 days and rejects 89",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 4362
+    },
+    {
+      "title": "B-05: accepts a 365-day export range and rejects a 366-day range",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 5080
+    },
+    {
+      "title": "B-07: offers page sizes 10, 20, 50, and 100 only",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 4532
+    },
+    {
+      "title": "B-08: shows the empty state and blocks the export when there are no records",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 5036
+    },
+    {
+      "title": "B-09: parses the user agent instead of showing it raw",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 4322
+    },
+    {
+      "title": "B-11: matches any value selected in one multi-select and intersects filters",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 5196
+    },
+    {
+      "title": "B-12: accepts an export range that covers a single day",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 4916
+    },
+    {
+      "title": "I-01: returns a paginated list without an entity id field",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 971
+    },
+    {
+      "title": "I-02: applies combined filters with AND logic",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 1307
+    },
+    {
+      "title": "I-03: returns the merged filter options and hides the legacy delete label",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 796
+    },
+    {
+      "title": "I-04: returns the detail DTO with masked values and no entity id",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 878
+    },
+    {
+      "title": "I-05: returns 404 for a missing id and 400 for an invalid id",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 758
+    },
+    {
+      "title": "I-06: streams the CSV export as a file attachment",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 1184
+    },
+    {
+      "title": "I-07: rejects an invalid format, range, and row limit",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 773
+    },
+    {
+      "title": "I-08 and I-14: deletes eligible records, ignores file ids, and reports zero deleted files",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 4363
+    },
+    {
+      "title": "I-09: rejects a retention threshold below the minimum",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 736
+    },
+    {
+      "title": "I-10: denies every audit endpoint to buyer and merchant accounts",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 2234
+    },
+    {
+      "title": "A-12: rejects updates to audit log records",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 801
+    },
+    {
+      "title": "I-11: error responses carry the standard API fields",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 880
+    },
+    {
+      "title": "I-12: never exposes sensitive values unmasked",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 1269
+    },
+    {
+      "title": "I-13: accepts the entity id filter but never writes an entity id column",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 729
+    },
+    {
+      "title": "I-15: honours the entity id filter without returning the field",
+      "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Audit_Log\\audit-log.spec.ts",
+      "status": "passed",
+      "duration": 701
+    }
+  ]
+}
