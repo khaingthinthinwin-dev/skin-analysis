@@ -1,0 +1,32 @@
+{
+  "capturedAt": "2026-10-27T02:14:18.969Z",
+  "description": "Product rows after successful delete-all (filtered by search)",
+  "results": [
+    {
+      "label": "products by name prefix after delete-all",
+      "rowCount": 2,
+      "rows": [
+        {
+          "id": "ce892f34-f94c-4ab3-a8b1-2e1f12db139b",
+          "merchant_id": "35c44c85-a7f0-4000-b5bd-f377a1077bd0",
+          "name": "N13 Delete All 1793067255371 A",
+          "slug": "n13-delete-all-1793067255371-a",
+          "sku": "SKU_229",
+          "stock_quantity": 25,
+          "is_active": false,
+          "created_at": "2026-10-26T19:44:15.494Z"
+        },
+        {
+          "id": "2096db71-3ba1-47e6-96e4-3bb3246b8c65",
+          "merchant_id": "35c44c85-a7f0-4000-b5bd-f377a1077bd0",
+          "name": "N13 Delete All 1793067255371 B",
+          "slug": "n13-delete-all-1793067255371-b",
+          "sku": "SKU_230",
+          "stock_quantity": 25,
+          "is_active": false,
+          "created_at": "2026-10-26T19:44:15.583Z"
+        }
+      ]
+    }
+  ]
+}

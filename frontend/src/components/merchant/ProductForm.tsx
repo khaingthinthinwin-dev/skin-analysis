@@ -43,6 +43,11 @@ export function ProductForm({ product, mode }: ProductFormProps) {
     watch,
     formState: { errors },
   } = form
+  const imageErrorMessage =
+    errors.images?.message ??
+    (Array.isArray(errors.images)
+      ? errors.images.find((error) => error?.message)?.message
+      : undefined);
 
   const onSubmit = async (data: ProductFormData) => {
     try {
@@ -170,8 +175,8 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                 onFilesChange={(files) => setValue('images', files)}
                 maxFiles={10}
               />
-              {errors.images && (
-                <p className="text-sm text-destructive">{errors.images.message}</p>
+              {imageErrorMessage && (
+                <p className="text-sm text-destructive">{imageErrorMessage}</p>
               )}
             </CardContent>
           </Card>
