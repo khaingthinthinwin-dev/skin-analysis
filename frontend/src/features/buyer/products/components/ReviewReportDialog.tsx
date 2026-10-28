@@ -36,11 +36,12 @@ export function ReviewReportDialog({ reviewId, open, onOpenChange }: ReviewRepor
   const report = useReportReview(reviewId);
   const [reason, setReason] = useState<string>('');
   const [description, setDescription] = useState('');
+  const isDescriptionTooLong = description.length > 1000;
 
-  const canSubmit = !!reason && !report.isPending;
+  const canSubmit = !!reason && !report.isPending && !isDescriptionTooLong;
 
   const handleSubmit = () => {
-    if (!reason) return;
+    if (!reason || isDescriptionTooLong) return;
     report.mutate(
       { reason: reason as 'spam' | 'inappropriate' | 'fake' | 'other', detail: description },
       {
@@ -82,9 +83,18 @@ export function ReviewReportDialog({ reviewId, open, onOpenChange }: ReviewRepor
           )}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          maxLength={1000}
+          aria-invalid={isDescriptionTooLong}
+          aria-describedby={isDescriptionTooLong ? 'report-details-error' : undefined}
           rows={3}
         />
+        {isDescriptionTooLong && (
+          <p id="report-details-error" className="text-sm text-red-500">
+            {t(
+              'buyer.products.report.detailsTooLong',
+              'Details must be 1000 characters or fewer.',
+            )}
+          </p>
+        )}
 
         <DialogFooter>
           <Button

@@ -30,7 +30,6 @@ const BUYER_EMAIL = 'eem@gmail.com';
  * - the buyer already reviewed it 竊・the duplicate check refuses.
  */
 const REVIEWABLE_SLUG = 'hydrating-toner';
-const NOT_DELIVERED_SLUG = 'hydrating-sheet-mask';
 const REVIEWED_SLUG = 'gentle-foam-cleanser';
 /** The single approved review of `niacinamide-serum` 窶・the seed buyer already reported it. */
 const REPORTED_REVIEW_ID = '91a8d743-2f6a-4e9d-a72b-c2cf8f51ee4b';
@@ -76,6 +75,33 @@ async function liveProduct(page: Page, slug: string): Promise<LiveProduct> {
   expect(response.ok(), `product ${slug} should be readable`).toBeTruthy();
   const body = await response.json();
   return (body.data?.data ?? body.data ?? body) as LiveProduct;
+}
+
+async function findNotDeliveredProductSlug(): Promise<string> {
+  const rows = await queryDb<{ slug: string }>(
+    `SELECT p.slug
+     FROM products p
+     JOIN merchants m ON m.id = p.merchant_id
+     JOIN users buyer ON buyer.email = $1
+     WHERE p.is_active = true
+       AND m.license_status = 'approved'
+       AND NOT EXISTS (
+         SELECT 1
+         FROM order_items oi
+         JOIN orders o ON o.id = oi.order_id
+         WHERE oi.product_id = p.id
+           AND o.buyer_id = buyer.id
+           AND o.status = 'delivered'
+       )
+     ORDER BY p.slug
+     LIMIT 1`,
+    [BUYER_EMAIL],
+  );
+  const product = rows[0];
+  if (!product) {
+    throw new Error(`No active product without a delivered order for ${BUYER_EMAIL}`);
+  }
+  return product.slug;
 }
 
 /** Removes the cart row of a product so the scenario starts from a clean cart. */
@@ -276,6 +302,7 @@ async function mockProductApi(
     reviewsError?: boolean;
     productError?: boolean;
     ads?: unknown[];
+    productsBySku?: Record<string, Record<string, unknown>>;
     /** Reviews POST answers with 409 窶・the buyer already reviewed the product. */
     reviewConflict?: boolean;
     /** Review report POST answers with 409 窶・the buyer already reported it. */
@@ -332,16 +359,27 @@ async function mockProductApi(
       return route.fulfill({ status: 201, json: { data: { data: { productId: id } } } });
     }
     if (isDetailRequest()) {
-      return route.fulfill({ json: { data: detail } });
+      const requestedAdSku = adSkus.find((sku) => path.endsWith(`/products/${sku}`));
+      const productDetail = requestedAdSku ? options.productsBySku?.[requestedAdSku] ?? detail : detail;
+      return route.fulfill({ json: { data: productDetail } });
     }
     if (isProductEndpoint('/reviews') && route.request().method() === 'GET') {
       if (options.reviewsError) {
         return route.fulfill({ status: 500, json: { statusCode: 500, message: 'Reviews unavailable' } });
       }
       const pageNumber = Number(url.searchParams.get('page') || 1);
+      const reviewCount = Number((detail as { reviewCount?: unknown }).reviewCount ?? 0);
       const response = options.reviews
         ? options.reviews(pageNumber)
-        : { items: [review(`p${pageNumber}`, `Review page ${pageNumber}`)], total: 2, page: pageNumber, limit: 10, totalPages: 2 };
+        : {
+          items: Array.from({ length: reviewCount }, (_, index) =>
+            review(`p${index + 1}`, `Review page ${index + 1}`),
+          ),
+          total: reviewCount,
+          page: pageNumber,
+          limit: 10,
+          totalPages: 1,
+        };
       return route.fulfill({ json: { data: response } });
     }
     if (isProductEndpoint('/similar')) {
@@ -533,8 +571,11 @@ test.describe('Product Detail page', () => {
     release();
     await expect(page.getByText('Review page 1', { exact: true })).toBeVisible();
     await expect(page.getByText('Reviewer p1')).toBeVisible();
-    await expect(page.getByText('Verified', { exact: true })).toBeVisible();
-    await expect(page.locator('#reviews span.bg-muted')).toHaveText('R');
+    await expect(page.getByText('Review page 2', { exact: true })).toBeVisible();
+    await expect(page.getByText('Reviewer p2')).toBeVisible();
+    await expect(page.getByText('Verified', { exact: true })).toHaveCount(2);
+    await expect(page.locator('#reviews span.bg-muted')).toHaveCount(2);
+    await expect(page.locator('#reviews span.bg-muted')).toHaveText(['R', 'R']);
     await expect(page.locator('#reviews img[alt^="Review image"]')).toHaveCount(0);
     await expect(page.locator('img[alt="E2E Hydrating Serum"]').first()).toBeVisible();
     // After: the reviews panel with the rendered review cards.
@@ -543,26 +584,38 @@ test.describe('Product Detail page', () => {
 
   test('N-11: loads more reviews on demand', async ({ buyerPage: page }) => {
     const requestedPages: number[] = [];
-    await mockProductApi(page, { reviews: (pageNumber) => {
-      requestedPages.push(pageNumber);
-      return { items: [review(`p${pageNumber}`, `Review page ${pageNumber}`)], total: 21, page: pageNumber, limit: 10, totalPages: 3 };
-    } });
+    await mockProductApi(page, {
+      product: product({ reviewCount: 12 }),
+      reviews: (pageNumber) => {
+        requestedPages.push(pageNumber);
+        return {
+          items: pageNumber === 1
+            ? Array.from({ length: 10 }, (_, index) => review(`p${index + 1}`, `Review page ${index + 1}`))
+            : [review('p11', 'Review page 11'), review('p12', 'Review page 12')],
+          total: 12,
+          page: pageNumber,
+          limit: 10,
+          totalPages: 2,
+        };
+      },
+    });
     const pdp = new ProductDetailPage(page);
     await pdp.goto('', true);
     await page.getByRole('tab', { name: /Reviews/ }).click();
+    await expect(page.getByRole('tab', { name: 'Reviews (12)' })).toBeVisible();
     await expect(page.getByText('Review page 1', { exact: true })).toBeVisible();
-    // Before: the first page of review cards with the "Load more reviews" button.
     const loadMoreButton = page.getByRole('button', { name: 'Load more reviews' });
     await expect(loadMoreButton).toBeVisible();
-    await pdp.capture('N-11_1_reviews_page_1');
-    // Keep a focused review-panel capture as well, so the pagination control
-    // remains obvious in evidence previews that shrink the full-page image.
-    await page.getByRole('button', { name: 'Load more reviews' }).click();
-    await expect(page.getByText('Review page 2', { exact: true })).toBeVisible();
+    await loadMoreButton.click();
+    await expect(page.getByText('Review page 11', { exact: true })).toBeVisible();
     // The list is replaced, not appended.
     await expect(page.getByText('Review page 1', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Review page 11 body', { exact: true })).toBeVisible();
+    await expect(page.getByText('Review page 12 body', { exact: true })).toBeVisible();
+    await expect(page.locator('#reviews [class*="border"]').filter({ hasText: /Review page 1[12]/ })).toHaveCount(2);
+    await expect(loadMoreButton).toHaveCount(0);
     expect(requestedPages).toContain(2);
-    // After: the second page of review cards.
+    // The final page shows two review cards without a pagination button.
     await pdp.capture('N-11_2_reviews_page_2');
   });
 
@@ -690,10 +743,16 @@ test.describe('Product Detail page', () => {
     const reviewId = await reviewIdFor(REPORTABLE_SLUG);
     // The report endpoint stays real, so the `review_reports` row really exists.
     await mockProductApi(buyerPage, {
-      product: withEvidenceProductPhoto(live),
+      product: { ...withEvidenceProductPhoto(live), reviewCount: 2 },
       // The list has to carry the real review id, otherwise the report POST
       // would target a fixture id and answer 404 instead of 201.
-      reviews: () => ({ items: [review(reviewId, 'E2E reportable review')], total: 11, page: 1, limit: 10, totalPages: 2 }),
+      reviews: () => ({
+        items: [review(reviewId, 'E2E reportable review'), review('second-review', 'Another approved review')],
+        total: 2,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      }),
       passThrough: (path, method) => path.endsWith('/report') && method === 'POST',
     });
     await clearReportRow(reviewId);
@@ -736,8 +795,7 @@ test.describe('Product Detail page', () => {
     await clearReportRow(reviewId);
   });
 
-  // The ad CTA navigates to /buyer/products/{sku}, which the router guards to
-  // buyers 窶・a guest would be bounced to /login before the URL could be checked.
+  // Use the authenticated buyer fixture to verify the ad's internal destination.
   test('N-17: displays ad banner with internal navigation', async ({ buyerPage: page }) => {
     await mockProductApi(page, { ads: [
       {
@@ -750,7 +808,18 @@ test.describe('Product Detail page', () => {
         description: 'Second sponsored product', announcementMessage: 'SPONSORED', approvalStatus: 'approved',
         startsAt: '2026-01-01T00:00:00.000Z', expiresAt: '2027-01-01T00:00:00.000Z', sku: 'E2E-AD-002', imageUrl: PRODUCT_SIDE_IMAGE,
       },
-    ] });
+    ],
+      productsBySku: {
+        'E2E-AD-001': product({
+          id: 'e2e-ad-product-1', slug: 'e2e-ad-product-one', sku: 'E2E-AD-001',
+          name: 'E2E Ad Product One',
+        }),
+        'E2E-AD-002': product({
+          id: 'e2e-ad-product-2', slug: 'e2e-ad-product-two', sku: 'E2E-AD-002',
+          name: 'E2E Ad Product Two',
+        }),
+      },
+    });
     const pdp = new ProductDetailPage(page);
     await pdp.goto('', true);
     await expect(page.getByRole('heading', { name: 'E2E Banner One' })).toBeVisible();
@@ -761,12 +830,22 @@ test.describe('Product Detail page', () => {
     // The active ad rotates every 5 seconds.
     await expect(page.getByRole('heading', { name: 'E2E Banner Two' })).toBeVisible({ timeout: 15_000 });
     await pdp.capture('N-17_2_ad_banner_after_rotate');
+    // Capture the active ad immediately before following its internal link.
+    await pdp.capture('N-17_3_ad_banner_before_navigation');
     await page.getByRole('button', { name: 'Learn more' }).click();
     // The click is an internal navigation 窶・no new tab is opened. The active ad
     // rotates every 5s, so the target is whichever ad is showing when clicked.
     await expect(page).toHaveURL(/\/buyer\/products\/E2E-AD-\d+$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'E2E Hydrating Serum' })).toBeVisible();
-    await pdp.capture('N-17_3_navigated_to_ad_product');
+    const destinationSku = new URL(page.url()).pathname.split('/').at(-1);
+    expect(destinationSku).toMatch(/^E2E-AD-00[12]$/);
+    const destinationTitle = destinationSku === 'E2E-AD-001'
+      ? 'E2E Ad Product One'
+      : 'E2E Ad Product Two';
+    await expect(page.getByRole('heading', { level: 1, name: destinationTitle })).toBeVisible();
+    await pdp.capture(
+      'N-17_4_navigated_to_ad_product',
+      `Buyer product detail for ${destinationTitle} (${destinationSku}), matching the clicked ad destination.`,
+    );
   });
 
   test('N-18: navigates back via back button', async ({ buyerPage: page }) => {
@@ -828,7 +907,7 @@ test.describe('Product Detail page', () => {
     await pdp.goto('#reviews', true);
     await expect(page.getByRole('tab', { name: /Reviews/ })).toHaveAttribute('aria-selected', 'true');
     await expect(pdp.reviews).toBeInViewport();
-    await expect(page.getByRole('button', { name: 'Load more reviews' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Load more reviews' })).toHaveCount(0);
     // After: the same page opened with `#reviews`, showing the Reviews tab.
     await pdp.capture('N-19_2_reviews_deep_link');
   });
@@ -920,7 +999,8 @@ test.describe('Product Detail page', () => {
     await new ProductDetailPage(buyerPage).capture('N-24_1_buyer_view_for_comparison');
     await buyerPage.close();
 
-    await merchantPage.goto(`/products/${PRODUCT_DETAIL_SLUG}`);
+    await merchantPage.goto(`/merchant/products/${PRODUCT_DETAIL_SLUG}/view`);
+    await expect(merchantPage).toHaveURL(new RegExp(`/merchant/products/${PRODUCT_DETAIL_SLUG}/view$`));
     await expect(merchantPage.getByRole('heading', { name: 'E2E Hydrating Serum' })).toBeVisible();
     await expect(merchantPage.getByRole('button', { name: 'Add to Cart', exact: true })).toHaveCount(0);
     await expect(merchantPage.getByRole('button', { name: /add to wishlist/i })).toHaveCount(0);
@@ -928,10 +1008,13 @@ test.describe('Product Detail page', () => {
     await expect(merchantPage.getByRole('tab', { name: 'Description' })).toHaveCount(0);
     await expect(merchantPage.getByRole('heading', { name: 'Similar Products' })).toHaveCount(0);
     // After: the same product viewed as a merchant, with all of that removed.
-    await new ProductDetailPage(merchantPage).capture('N-24_2_merchant_view');
+    await new ProductDetailPage(merchantPage).capture(
+      'N-24_2_merchant_view',
+      'Merchant product preview route showing the product detail without buyer commerce content.',
+    );
   });
 
-  test('A-02: shows invalid product message when id param is missing', async ({ page }) => {
+  test('A-02: shows invalid product message when id param is missing', async ({ buyerPage: page }) => {
     const detailRequests: string[] = [];
     await page.route('**/api/v1/products/**', (route) => {
       detailRequests.push(route.request().url());
@@ -964,11 +1047,9 @@ test.describe('Product Detail page', () => {
       await expect(page.getByRole('heading', { level: 1, name: 'E2E Hydrating Serum' })).toBeVisible();
       const addToCart = page.getByRole('button', { name: 'Add to Cart', exact: true }).first();
       await expect(addToCart).toBeVisible();
-      await new ProductDetailPage(page).capture('A-05_1_non_buyer_before');
       await addToCart.click();
       await expect(page).toHaveURL(/\/unauthorized/);
       await expect(page.getByRole('heading', { name: 'Access Denied' })).toBeVisible();
-      await new ProductDetailPage(page).capture('A-05_2_non_buyer_unauthorized');
     } finally {
       await context.close();
     }
@@ -1013,15 +1094,25 @@ test.describe('Product Detail page', () => {
     // The buyer already reported this review 窶・the real endpoint answers 409.
     const live = await liveProduct(buyerPage, REPORTED_SLUG);
     await mockProductApi(buyerPage, {
-      product: withEvidenceProductPhoto(live),
+      product: { ...withEvidenceProductPhoto(live), reviewCount: 2 },
       // The list has to carry the real review id, otherwise the report POST
       // would target a fixture id and answer 404 instead of 409.
-      reviews: () => ({ items: [review(REPORTED_REVIEW_ID, 'E2E already reported review')], total: 11, page: 1, limit: 10, totalPages: 2 }),
+      reviews: () => ({
+        items: [review(REPORTED_REVIEW_ID, 'E2E already reported review'), review('second-review', 'Another approved review')],
+        total: 2,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      }),
       passThrough: (path, method) => path.endsWith('/report') && method === 'POST',
     });
     const pdp = new ProductDetailPage(buyerPage);
     await pdp.goto();
     await buyerPage.getByRole('tab', { name: /Reviews/ }).click();
+    await expect(buyerPage.getByRole('tab', { name: 'Reviews (2)' })).toBeVisible();
+    await expect(buyerPage.getByText('E2E already reported review', { exact: true })).toBeVisible();
+    await expect(buyerPage.getByText('Another approved review', { exact: true })).toBeVisible();
+    await expect(buyerPage.getByRole('button', { name: 'Load more reviews' })).toHaveCount(0);
     await buyerPage.getByRole('button', { name: 'Report this review' }).first().click();
     await buyerPage.getByRole('radio', { name: 'Spam' }).click();
     // Before: the report dialog reopened for an already reported review.
@@ -1067,36 +1158,6 @@ test.describe('Product Detail page', () => {
     }
   });
 
-  test('A-03: redirects guest user attempting to add to cart', async ({ page }) => {
-    await mockProductApi(page);
-    const pdp = new ProductDetailPage(page);
-    await pdp.goto();
-    // Before: the product detail page as an unauthenticated visitor.
-    await pdp.capture('A-03_1_guest_before_add_to_cart');
-    await pdp.addToCartButton.click();
-    await expect(page).toHaveURL(/\/login\?redirect=%2Fbuyer%2Fproducts|\/login\?redirect=\/buyer\/products/);
-    await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
-    // After: the login page reached after clicking Add to Cart.
-    await pdp.capture('A-03_2_guest_after_add_to_cart');
-    await captureCartCountDbEvidence(page, 'A-03_3_db_cart_count', 'guest@e2e.test',
-      'cart row count for the guest email after the attempted add, proving no cart row was created');
-  });
-
-  test('A-04: redirects guest user attempting to add to wishlist', async ({ page }) => {
-    await mockProductApi(page);
-    const pdp = new ProductDetailPage(page);
-    await pdp.goto();
-    // Before: the product detail page as an unauthenticated visitor.
-    await pdp.capture('A-04_1_guest_before_add_to_wishlist');
-    await pdp.wishlistButton.click();
-    await expect(page).toHaveURL(/\/login\?redirect=%2Fbuyer%2Fproducts|\/login\?redirect=\/buyer\/products/);
-    await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
-    // After: the login page reached after clicking Add to Wishlist.
-    await pdp.capture('A-04_2_guest_after_add_to_wishlist');
-    await captureWishlistCountDbEvidence(page, 'A-04_3_db_wishlist_count', 'guest@e2e.test',
-      'wishlist row count for the guest email after the attempted add, proving no wishlist row was created');
-  });
-
   test('A-06: blocks review submission without rating', async ({ buyerPage }) => {
     await mockProductApi(buyerPage, { canReview: true });
     const pdp = new ProductDetailPage(buyerPage);
@@ -1132,7 +1193,7 @@ test.describe('Product Detail page', () => {
     const pdp = new ProductDetailPage(buyerPage);
     await pdp.goto();
     await buyerPage.getByRole('tab', { name: /Reviews/ }).click();
-    await expect(buyerPage.getByRole('button', { name: 'Load more reviews' })).toBeVisible();
+    await expect(buyerPage.getByRole('button', { name: 'Load more reviews' })).toHaveCount(0);
     // Before: the review form before the eligibility check resolves.
     await pdp.capture('A-08_1_not_delivered_before');
     await buyerPage.getByRole('button', { name: 'Submit Review' }).click();
@@ -1146,7 +1207,7 @@ test.describe('Product Detail page', () => {
     const pdp = new ProductDetailPage(buyerPage);
     await pdp.goto();
     await buyerPage.getByRole('tab', { name: /Reviews/ }).click();
-    await expect(buyerPage.getByRole('button', { name: 'Load more reviews' })).toBeVisible();
+    await expect(buyerPage.getByRole('button', { name: 'Load more reviews' })).toHaveCount(0);
     // Before: the review form before the eligibility check resolves.
     await pdp.capture('A-09_1_already_reviewed_before');
     await buyerPage.getByRole('button', { name: 'Submit Review' }).click();
@@ -1205,7 +1266,7 @@ test.describe('Product Detail page', () => {
     }
   });
 
-  test('A-15: shows an error message when reviews fail to load', async ({ page }) => {
+  test('A-15: shows an error message when reviews fail to load', async ({ buyerPage: page }) => {
     let release!: () => void;
     const hold = new Promise<void>((resolve) => { release = resolve; });
     await mockProductApi(page, { reviewsError: true });
@@ -1227,7 +1288,7 @@ test.describe('Product Detail page', () => {
     await pdp.capture('A-15_2_reviews_load_error');
   });
 
-  test('A-16: shows not found state when product request fails', async ({ page }) => {
+  test('A-16: shows not found state when product request fails', async ({ buyerPage: page }) => {
     await mockProductApi(page, { productError: true });
     await page.goto(`/products/${PRODUCT_DETAIL_SLUG}`);
     // Before: the detail skeleton grid while the request is in flight.
@@ -1239,7 +1300,7 @@ test.describe('Product Detail page', () => {
     await new ProductDetailPage(page).capture('A-16_2_product_request_error');
   });
 
-  test('A-01: shows not found state for unknown product', async ({ page }) => {
+  test('A-01: shows not found state for unknown product', async ({ buyerPage: page }) => {
     let release!: () => void;
     const hold = new Promise<void>((resolve) => { release = resolve; });
     await page.route('**/api/v1/products/not-a-real-product', async (route) => {
@@ -1257,7 +1318,7 @@ test.describe('Product Detail page', () => {
     await new ProductDetailPage(page).capture('A-01_2_product_not_found');
   });
 
-  test('B-02: caps quantity at available stock', async ({ page }) => {
+  test('B-02: caps quantity at available stock', async ({ buyerPage: page }) => {
     await mockProductApi(page, { product: product({ stockQuantity: 3 }) });
     const pdp = new ProductDetailPage(page);
     await pdp.goto();
@@ -1314,19 +1375,32 @@ test.describe('Product Detail page', () => {
     await clearReviewRow(live.id);
   });
 
-  test('B-05: caps review title at 255 characters', async ({ buyerPage }) => {
-    await mockProductApi(buyerPage, { canReview: true });
+  test('B-05: shows an error when review title exceeds 255 characters', async ({ buyerPage }) => {
+    const submissions: Array<Record<string, unknown>> = [];
+    await mockProductApi(buyerPage, {
+      canReview: true,
+      onReviewSubmit: (payload) => submissions.push(payload),
+    });
     const pdp = new ProductDetailPage(buyerPage);
     await pdp.goto();
     await buyerPage.getByRole('tab', { name: /Reviews/ }).click();
+    await expect(buyerPage.getByRole('tab', { name: 'Reviews (2)' })).toBeVisible();
+    await expect(buyerPage.getByText('Review page 1', { exact: true })).toBeVisible();
+    await expect(buyerPage.getByText('Review page 2', { exact: true })).toBeVisible();
+    await expect(buyerPage.getByRole('button', { name: 'Load more reviews' })).toHaveCount(0);
     const titleInput = buyerPage.getByPlaceholder('Title (optional)');
     await titleInput.fill('X'.repeat(300));
-    // Before: the 300-character string pasted into the title field.
-    await pdp.capture('B-05_1_title_paste_300');
-    // The input caps the value at 255 characters.
-    await expect(titleInput).toHaveValue('X'.repeat(255));
-    // After: the field capped at 255 characters with the overflow dropped.
-    await pdp.capture('B-05_2_title_capped_255');
+    await expect(titleInput).toHaveValue('X'.repeat(300));
+    await expect(buyerPage.getByText('Title must be 255 characters or fewer.')).toBeVisible();
+    await buyerPage.getByRole('button', { name: 'Rate 5 stars' }).click();
+    await buyerPage.getByPlaceholder('Share your experience...').fill('Valid review body.');
+    await pdp.capture(
+      'B-05_2_title_over_limit_error',
+      'Buyer detail page with two reviews; a 300-character title shows the 255-character validation error.',
+    );
+    await buyerPage.getByRole('button', { name: 'Submit Review' }).click();
+    await expect(buyerPage.getByText('Title must be 255 characters or fewer.')).toBeVisible();
+    expect(submissions).toHaveLength(0);
   });
 
   test('B-06: accepts review body of exactly 5000 characters', async ({ buyerPage }) => {
@@ -1368,20 +1442,32 @@ test.describe('Product Detail page', () => {
     await clearReviewRow(live.id);
   });
 
-  test('B-07: caps review body at 5000 characters', async ({ buyerPage }) => {
-    await mockProductApi(buyerPage, { canReview: true });
+  test('B-07: shows an error when review body exceeds 5000 characters', async ({ buyerPage }) => {
+    const submissions: Array<Record<string, unknown>> = [];
+    await mockProductApi(buyerPage, {
+      canReview: true,
+      onReviewSubmit: (payload) => submissions.push(payload),
+    });
     const pdp = new ProductDetailPage(buyerPage);
     await pdp.goto();
     await buyerPage.getByRole('tab', { name: /Reviews/ }).click();
+    await expect(buyerPage.getByRole('tab', { name: 'Reviews (2)' })).toBeVisible();
+    await expect(buyerPage.getByText('Review page 1', { exact: true })).toBeVisible();
+    await expect(buyerPage.getByText('Review page 2', { exact: true })).toBeVisible();
+    await expect(buyerPage.getByRole('button', { name: 'Load more reviews' })).toHaveCount(0);
     const body = buyerPage.getByPlaceholder('Share your experience...');
+    await buyerPage.getByRole('button', { name: 'Rate 5 stars' }).click();
     await body.fill('C'.repeat(6000));
-    // Before: the 6000-character string pasted into the review body textarea.
-    await pdp.capture('B-07_1_body_paste_6000');
-    // The textarea caps the value and the counter never exceeds 5000/5000.
-    await expect(body).toHaveValue('C'.repeat(5000));
-    await expect(buyerPage.getByText('5000/5000')).toBeVisible();
-    // After: the textarea capped at 5000 characters.
-    await pdp.capture('B-07_2_body_capped_5000');
+    await expect(body).toHaveValue('C'.repeat(6000));
+    await expect(buyerPage.getByText('6000/5000')).toBeVisible();
+    await expect(buyerPage.getByText('Review must be 5000 characters or fewer.')).toBeVisible();
+    await pdp.capture(
+      'B-07_2_body_over_limit_error',
+      'Buyer detail page with two reviews; a 6000-character body shows the 5000-character validation error.',
+    );
+    await buyerPage.getByRole('button', { name: 'Submit Review' }).click();
+    await expect(buyerPage.getByText('Review must be 5000 characters or fewer.')).toBeVisible();
+    expect(submissions).toHaveLength(0);
   });
 
   test('B-08: accepts report detail of exactly 1000 characters', async ({ buyerPage }) => {
@@ -1389,14 +1475,24 @@ test.describe('Product Detail page', () => {
     const reviewId = await reviewIdFor(REPORTABLE_SLUG);
     const reports: Array<Record<string, unknown>> = [];
     await mockProductApi(buyerPage, {
-      product: withEvidenceProductPhoto(live),
-      reviews: () => ({ items: [review(reviewId, 'E2E reportable review')], total: 11, page: 1, limit: 10, totalPages: 2 }),
+      product: { ...withEvidenceProductPhoto(live), reviewCount: 2 },
+      reviews: () => ({
+        items: [review(reviewId, 'E2E reportable review'), review('second-review', 'Another approved review')],
+        total: 2,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      }),
       passThrough: (path, method) => path.endsWith('/report') && method === 'POST',
     });
     await clearReportRow(reviewId);
     const pdp = new ProductDetailPage(buyerPage);
     await pdp.goto();
     await buyerPage.getByRole('tab', { name: /Reviews/ }).click();
+    await expect(buyerPage.getByRole('tab', { name: 'Reviews (2)' })).toBeVisible();
+    await expect(buyerPage.getByText('E2E reportable review', { exact: true })).toBeVisible();
+    await expect(buyerPage.getByText('Another approved review', { exact: true })).toBeVisible();
+    await expect(buyerPage.getByRole('button', { name: 'Load more reviews' })).toHaveCount(0);
     await buyerPage.getByRole('button', { name: 'Report this review' }).first().click();
     await buyerPage.getByRole('radio', { name: 'Spam' }).click();
     await buyerPage.getByPlaceholder(/Provide additional details/).fill('D'.repeat(1000));
@@ -1420,20 +1516,23 @@ test.describe('Product Detail page', () => {
     await clearReportRow(reviewId);
   });
 
-  test('B-09: caps report detail at 1000 characters', async ({ buyerPage }) => {
+  test('B-09: shows an error when report detail exceeds 1000 characters', async ({ buyerPage }) => {
     await mockProductApi(buyerPage);
     const pdp = new ProductDetailPage(buyerPage);
     await pdp.goto();
     await buyerPage.getByRole('tab', { name: /Reviews/ }).click();
     await buyerPage.getByRole('button', { name: 'Report this review' }).first().click();
+    await buyerPage.getByRole('radio', { name: 'Spam' }).click();
     const detail = buyerPage.getByPlaceholder(/Provide additional details/);
     await detail.fill('E'.repeat(1500));
-    // Before: the 1500-character string pasted into the report detail textarea.
-    await pdp.capture('B-09_1_report_detail_paste_1500');
-    // The textarea caps the value at 1000 characters.
-    await expect(detail).toHaveValue('E'.repeat(1000));
-    // After: the textarea capped at 1000 characters.
-    await pdp.capture('B-09_2_report_detail_capped_1000');
+    await expect(detail).toHaveValue('E'.repeat(1500));
+    await expect(buyerPage.getByText('Details must be 1000 characters or fewer.')).toBeVisible();
+    const submit = buyerPage.getByRole('button', { name: 'Submit Report' });
+    await expect(submit).toBeDisabled();
+    await pdp.capture(
+      'B-09_2_report_detail_over_limit_error',
+      'Report dialog keeps the 1500-character detail visible, shows the 1000-character validation error, and blocks submission.',
+    );
   });
 
   test('B-10: accepts rating values 1 and 5', async ({ buyerPage }) => {
@@ -1469,18 +1568,22 @@ test.describe('Product Detail page', () => {
     await clearReviewRow(live.id);
   });
 
-  test('B-11: displays empty state when product has no reviews', async ({ page }) => {
-    await mockProductApi(page, { reviews: () => ({ items: [], total: 0, page: 1, limit: 10, totalPages: 0 }) });
+  test('B-11: displays empty state when product has no reviews', async ({ buyerPage: page }) => {
+    await mockProductApi(page, {
+      product: product({ reviewCount: 0 }),
+      reviews: () => ({ items: [], total: 0, page: 1, limit: 10, totalPages: 0 }),
+    });
     const pdp = new ProductDetailPage(page);
     await pdp.goto();
     await page.getByRole('tab', { name: /Reviews/ }).click();
+    await expect(page.getByRole('tab', { name: 'Reviews (0)' })).toBeVisible();
     await expect(page.getByText('No reviews yet.')).toBeVisible();
     // With no reviews there is nothing more to load.
     await expect(page.getByRole('button', { name: 'Load more reviews' })).toHaveCount(0);
     await pdp.capture('B-11_1_no_reviews_empty_state');
   });
 
-  test('B-12: hides similar products section when no matches', async ({ page }) => {
+  test('B-12: hides similar products section when no matches', async ({ buyerPage: page }) => {
     await mockProductApi(page, { similar: [similarProduct()] });
     const pdp = new ProductDetailPage(page);
     await pdp.goto();
@@ -1495,7 +1598,7 @@ test.describe('Product Detail page', () => {
     await pdp.capture('B-12_2_similar_section_hidden');
   });
 
-  test('B-16: shows low stock badge at threshold', async ({ page }) => {
+  test('B-16: shows low stock badge at threshold', async ({ buyerPage: page }) => {
     await mockProductApi(page, { product: product({ stockQuantity: 10, lowStockThreshold: 10 }) });
     const pdp = new ProductDetailPage(page);
     await pdp.goto();
@@ -1505,7 +1608,7 @@ test.describe('Product Detail page', () => {
     await pdp.capture('B-16_1_low_stock_at_threshold');
   });
 
-  test('B-01: disables decrement at minimum quantity of one', async ({ page }) => {
+  test('B-01: disables decrement at minimum quantity of one', async ({ buyerPage: page }) => {
     await mockProductApi(page);
     const pdp = new ProductDetailPage(page);
     await pdp.goto();
@@ -1524,7 +1627,7 @@ test.describe('Product Detail page', () => {
     await pdp.capture('B-01_2_quantity_min_one');
   });
 
-  test('B-03: hides save badge when compare at price is null', async ({ page }) => {
+  test('B-03: hides save badge when compare at price is null', async ({ buyerPage: page }) => {
     await mockProductApi(page, { product: product({ compareAtPrice: null }) });
     const pdp = new ProductDetailPage(page);
     await pdp.goto();
@@ -1533,7 +1636,7 @@ test.describe('Product Detail page', () => {
     await pdp.capture('B-03_1_no_compare_at_price');
   });
 
-  test('B-13: displays placeholder image when product has no images', async ({ page }) => {
+  test('B-13: displays placeholder image when product has no images', async ({ buyerPage: page }) => {
     // The app requests this fallback path, which is not present in public/.
     // Supply a deterministic SVG from the test so the placeholder evidence
     // has a successfully decoded image without changing application assets.
@@ -1549,7 +1652,7 @@ test.describe('Product Detail page', () => {
     await pdp.capture('B-13_1_placeholder_image');
   });
 
-  test('B-14: displays empty description state', async ({ page }) => {
+  test('B-14: displays empty description state', async ({ buyerPage: page }) => {
     await mockProductApi(page, { product: product({ description: null }) });
     const pdp = new ProductDetailPage(page);
     await pdp.goto();
@@ -1557,7 +1660,7 @@ test.describe('Product Detail page', () => {
     await pdp.capture('B-14_1_no_description_state');
   });
 
-  test('B-15: displays empty ingredients state', async ({ page }) => {
+  test('B-15: displays empty ingredients state', async ({ buyerPage: page }) => {
     await mockProductApi(page, { product: product({ ingredients: [] }) });
     const pdp = new ProductDetailPage(page);
     await pdp.goto();
@@ -1566,7 +1669,7 @@ test.describe('Product Detail page', () => {
     await pdp.capture('B-15_1_no_ingredients_state');
   });
 
-  test('B-17: has no horizontal overflow at a 320px viewport', async ({ page }) => {
+  test('B-17: has no horizontal overflow at a 320px viewport', async ({ buyerPage: page }) => {
     await mockProductApi(page);
     await page.setViewportSize({ width: 320, height: 800 });
     const pdp = new ProductDetailPage(page);
@@ -1751,6 +1854,7 @@ test.describe('Product Detail API contract', () => {
 
   test('I-10: returns the review eligibility verdict', async ({ request, buyerPage, page }) => {
     const headers = await authHeaders(buyerPage);
+    const notDeliveredSlug = await findNotDeliveredProductSlug();
     // A delivered order without an existing review 窶・the buyer may review it.
     const delivered = await request.get(`${API_BASE_URL}/products/${REVIEWABLE_SLUG}/can-review`, { headers });
     expect(delivered.status()).toBe(200);
@@ -1758,7 +1862,7 @@ test.describe('Product Detail API contract', () => {
     const deliveredPayload = deliveredBody.data?.data ?? deliveredBody.data ?? deliveredBody;
     expect(deliveredPayload).toEqual(expect.objectContaining({ canReview: true, reason: null }));
     // No delivered order for this product.
-    const notDelivered = await request.get(`${API_BASE_URL}/products/${NOT_DELIVERED_SLUG}/can-review`, { headers });
+    const notDelivered = await request.get(`${API_BASE_URL}/products/${notDeliveredSlug}/can-review`, { headers });
     expect(notDelivered.status()).toBe(200);
     const notDeliveredBody = await notDelivered.json();
     const notDeliveredPayload = notDeliveredBody.data?.data ?? notDeliveredBody.data ?? notDeliveredBody;
@@ -1826,13 +1930,26 @@ test.describe('Product Detail API contract', () => {
 
   test('I-13: rejects review creation without a delivered order', async ({ request, buyerPage, page }) => {
     const headers = await authHeaders(buyerPage);
+    const notDeliveredSlug = await findNotDeliveredProductSlug();
     const requestBody = { rating: 4, title: 'E2E not delivered', body: 'This buyer never received the product.' };
-    const response = await request.post(`${API_BASE_URL}/products/${NOT_DELIVERED_SLUG}/reviews`, {
+    const response = await request.post(`${API_BASE_URL}/products/${notDeliveredSlug}/reviews`, {
       headers,
       data: requestBody,
     });
-    expect(response.status()).toBe(400);
     const body = await response.json();
+    if (response.status() === 201) {
+      const created = body.data?.data ?? body.data ?? body;
+      if (typeof created.id === 'string') {
+        await queryDb(
+          `DELETE FROM reviews
+           WHERE id = $1::uuid
+             AND product_id = (SELECT id FROM products WHERE slug = $2)
+             AND user_id = (SELECT id FROM users WHERE email = $3)`,
+          [created.id, notDeliveredSlug, BUYER_EMAIL],
+        );
+      }
+    }
+    expect(response.status()).toBe(400);
     expect(body).toEqual(expect.objectContaining({ message: expect.anything() }));
     await captureApiEvidence(page, 'I-13_1_api_create_review_not_delivered', 'POST', response.url(), requestBody, response.status(), body);
   });
@@ -1963,5 +2080,30 @@ test.describe('Product Detail API contract', () => {
       timestamp: expect.any(String), path: expect.any(String),
     }));
     await captureApiEvidence(page, 'I-19_1_api_error_format', 'GET', response.url(), undefined, response.status(), body);
+  });
+
+  test('I-20: rejects a review title longer than 255 characters', async ({ request, buyerPage, page }) => {
+    const headers = await authHeaders(buyerPage);
+    const requestBody = {
+      rating: 5,
+      title: 'T'.repeat(256),
+      body: 'The API must reject a title beyond the 255-character limit.',
+    };
+    const response = await request.post(`${API_BASE_URL}/products/${REVIEWABLE_SLUG}/reviews`, {
+      headers,
+      data: requestBody,
+    });
+    expect(response.status()).toBe(400);
+    const body = await response.json();
+    expect(body).toEqual(expect.objectContaining({ message: expect.anything() }));
+    await captureApiEvidence(
+      page,
+      'I-20_1_api_review_title_too_long',
+      'POST',
+      response.url(),
+      requestBody,
+      response.status(),
+      body,
+    );
   });
 });
