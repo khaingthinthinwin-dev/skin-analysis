@@ -1090,7 +1090,7 @@
       },
       "delete": {
         "title": "Delete Products", "selectedTitle": "Delete Selected Products", "none": "No products to delete.",
-        "noneSelected": "No products selected.", "confirmSelected": "Are you sure you want to delete {{count}} product(s)?",
+        "noneSelected": "No products selected.", "noSelectionTitle": "No Selection", "noSelectionMessage": "Please select at least one product to delete", "confirmSelected": "Are you sure you want to delete {{count}} product(s)?",
         "confirmAll": "Are you sure you want to delete all {{count}} products?", "deactivatedCount": "{{count}} will be deactivated",
         "permanentlyDeletedCount": "{{count}} soft-deleted product(s) will be permanently deleted",
         "skippedActiveOrders": "{{count}} product(s) with active orders will be skipped", "deleting": "Deleting..."
