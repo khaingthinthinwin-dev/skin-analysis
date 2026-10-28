@@ -1,8 +1,9 @@
-import { expect, type Page, type Locator } from '@playwright/test';
+import { expect, test, type Page, type Locator } from '@playwright/test';
 import { captureScreenshot } from '../../utils/screenshot';
 
 export class ProductManagementPage {
   readonly page: Page;
+  private screenshotSequence = 0;
 
   // Navigation & Actions
   readonly createProductButton: Locator;
@@ -44,9 +45,7 @@ export class ProductManagementPage {
 
   // Bulk Actions
   readonly selectAllCheckbox: Locator;
-  readonly bulkActivateButton: Locator;
   readonly bulkDeleteButton: Locator;
-  readonly bulkBar: Locator;
 
   // Delete Confirmation Dialog
   readonly deleteConfirmDialog: Locator;
@@ -100,6 +99,23 @@ export class ProductManagementPage {
   readonly statusBadge: Locator;
   readonly featuredBadge: Locator;
 
+  // Rejected Merchant Banner
+  readonly rejectedReasonText: Locator;
+  readonly goToProfileLink: Locator;
+
+  // Price Display (for B-17)
+  readonly priceCell: Locator;
+  readonly compareAtPriceCell: Locator;
+  readonly strikethroughPrice: Locator;
+  readonly savingsBadge: Locator;
+
+  // Bulk Delete Dialog Breakdown (for B-18)
+  readonly bulkDeleteDialog: Locator;
+  readonly deactivatedCount: Locator;
+  readonly permanentlyDeletedCount: Locator;
+  readonly skippedCount: Locator;
+  readonly bulkDeleteConfirmButton: Locator;
+
   constructor(page: Page) {
     this.page = page;
 
@@ -110,7 +126,7 @@ export class ProductManagementPage {
     this.cancelButton = page.getByRole('button', { name: /cancel/i });
 
     // Product List
-    this.productList = page.locator('table, [role="table"], .product-list');
+    this.productList = page.locator('table:visible, [role="table"]:visible, .product-list:visible');
     this.productRows = page.locator('table tbody tr, [role="row"]:not([role="columnheader"])');
     this.productTable = page.locator('table');
     this.emptyState = page.locator('[data-testid="empty-state"], .empty-state, [class*="empty"]');
@@ -143,9 +159,7 @@ export class ProductManagementPage {
 
     // Bulk Actions
     this.selectAllCheckbox = page.getByRole('checkbox', { name: 'Select all' });
-    this.bulkActivateButton = page.getByRole('button', { name: 'Activate', exact: true });
     this.bulkDeleteButton = page.getByRole('button', { name: 'Delete', exact: true }).last();
-    this.bulkBar = page.getByText(/^\d+\s+products?\s+selected/i);
 
     // Delete Confirmation Dialog
     this.deleteConfirmDialog = page.getByRole('dialog').filter({ hasText: /delete/i });
@@ -196,7 +210,7 @@ export class ProductManagementPage {
     this.toastContainer = page.locator('[data-sonner-toast]');
 
     // Banner (Pending/Rejected)
-    this.pendingBanner = page.getByText('Pending Approval').first();
+    this.pendingBanner = page.getByText('Account Pending').first();
     this.rejectedBanner = page.getByText('Account Rejected').first();
 
     // Pagination
@@ -206,86 +220,115 @@ export class ProductManagementPage {
     this.pageInfo = page.getByText(/page \d+ of \d+|showing/i);
 
     // Theme & Language (on /dashboard/settings, not product list)
-    this.themeToggle = page.getByRole('button', { name: /toggle theme/i });
-    this.languageToggle = page.getByRole('button', { name: /change language/i });
+    this.themeToggle = page.locator('header').getByRole('button', { name: /toggle theme/i }).or(page.getByRole('button', { name: /toggle theme/i }).first());
+    this.languageToggle = page.locator('header').getByRole('button', { name: /change language/i }).or(page.getByRole('button', { name: /change language/i }).first());
 
     // Low Stock & Status Indicators
     this.lowStockWarning = page.locator('[data-testid="low-stock"], .low-stock, [class*="low-stock"]');
     this.outOfStockIndicator = page.locator('[data-testid="out-of-stock"], .out-of-stock, [class*="out-of-stock"]');
     this.statusBadge = page.locator('[data-testid="status-badge"], .status-badge').first();
     this.featuredBadge = page.locator('[data-testid="featured-badge"], .featured-badge').first();
+
+    // Rejected Merchant Banner
+    this.rejectedReasonText = page.getByText(/rejection reason|rejected because|reason:/i).or(page.locator('[data-testid="rejection-reason"]'));
+    this.goToProfileLink = this.rejectedBanner.locator('a[href="/merchant/profile"]').or(page.getByRole('link', { name: /go to profile/i }));
+
+    // Price Display (for B-17)
+    this.priceCell = page.locator('tbody td').filter({ hasText: /\$\d/ }).first();
+    this.compareAtPriceCell = page.locator('tbody td').filter({ hasText: /compare/i }).first();
+    this.strikethroughPrice = page.locator('tbody td s, tbody td del, tbody td [style*="line-through"], tbody td .line-through');
+    this.savingsBadge = page.locator('[data-testid="savings-badge"], .savings-badge, .text-emerald-600').filter({ hasText: /saved/i });
+
+    // Bulk Delete Dialog Breakdown (for B-18)
+    this.bulkDeleteDialog = page.getByRole('dialog').filter({ hasText: /delete selected products|delete products/i });
+    this.deactivatedCount = this.bulkDeleteDialog.locator('text=/will be deactivated/i');
+    this.permanentlyDeletedCount = this.bulkDeleteDialog.locator('text=/will be permanently deleted/i');
+    this.skippedCount = this.bulkDeleteDialog.locator('text=/will be skipped/i');
+    this.bulkDeleteConfirmButton = this.bulkDeleteDialog.getByRole('button', { name: /^(delete|confirm|yes)$/i });
+  }
+
+  private captureEvidence(stepName: string) {
+    const explicitMatch = stepName.match(/^([NABI]-\d{2})_(\d+)_(.+)$/);
+    if (explicitMatch) {
+      this.screenshotSequence += 1;
+      return captureScreenshot(
+        this.page,
+        `${explicitMatch[1]}_${this.screenshotSequence}_${explicitMatch[3]}`
+      );
+    }
+
+    const scenarioMatch = test.info().title.match(/\b([NABI]-\d{2})\b/);
+    const scenarioId = scenarioMatch ? scenarioMatch[1] : undefined;
+
+    if (!scenarioId) {
+      return captureScreenshot(this.page, stepName);
+    }
+
+    this.screenshotSequence += 1;
+    return captureScreenshot(
+      this.page,
+      `${scenarioId}_${this.screenshotSequence}_${stepName}`
+    );
   }
 
   // Navigation Methods
   async goto() {
-    await this.page.goto('/merchant/products');
-    await this.page.waitForLoadState('networkidle');
-    await captureScreenshot(this.page, 'product_management_page_loaded');
+    await this.page.goto('/merchant/products', { waitUntil: 'domcontentloaded' });
+    await this.productList.first().waitFor({ state: 'visible' });
   }
 
   async gotoNewProduct() {
-    await this.page.goto('/merchant/products/new');
-    await this.page.waitForLoadState('networkidle');
-    await captureScreenshot(this.page, 'new_product_page_loaded');
+    await this.page.goto('/merchant/products/new', { waitUntil: 'domcontentloaded' });
+    await this.productNameInput.first().waitFor({ state: 'visible' });
   }
 
   async gotoSettings() {
-    await this.page.goto('/dashboard/settings');
-    await this.page.waitForLoadState('networkidle');
-    await captureScreenshot(this.page, 'settings_page_loaded');
+    await this.page.goto('/dashboard/settings', { waitUntil: 'domcontentloaded' });
+    await this.languageToggle.first().waitFor({ state: 'visible' });
   }
 
   async gotoEditProduct(id: string) {
-    await this.page.goto(`/merchant/products/${id}/edit`);
-    await this.page.waitForLoadState('networkidle');
-    await captureScreenshot(this.page, 'edit_product_page_loaded');
+    await this.page.goto(`/merchant/products/${id}/edit`, { waitUntil: 'domcontentloaded' });
+    await this.productNameInput.first().waitFor({ state: 'visible' });
   }
 
   // Action Methods
   async searchProducts(query: string) {
     await this.searchInput.fill(query);
     await this.page.waitForTimeout(500);
-    await captureScreenshot(this.page, `search_results_${query}`);
   }
 
   async selectStatusFilter(status: string) {
     await this.statusFilter.click();
     await this.page.getByRole('option', { name: status, exact: true }).click();
     await this.page.waitForTimeout(500);
-    await captureScreenshot(this.page, `filtered_by_status_${status}`);
   }
 
   async selectSortOption(option: string) {
     await this.sortDropdown.click();
     await this.page.getByRole('option', { name: option, exact: true }).click();
     await this.page.waitForTimeout(500);
-    await captureScreenshot(this.page, `sorted_by_${option}`);
   }
 
   async clickEditOnFirstProduct() {
     await this.editButton.click();
-    await this.page.waitForLoadState('networkidle');
-    await captureScreenshot(this.page, 'edit_product_clicked');
+    await this.productNameInput.first().waitFor({ state: 'visible' });
   }
 
   async clickDeleteOnFirstProduct() {
     await this.deleteButton.click();
-    await captureScreenshot(this.page, 'delete_dialog_opened');
   }
 
   async confirmDelete() {
     await this.deleteConfirmButton.click();
-    await captureScreenshot(this.page, 'delete_confirmed');
   }
 
   async toggleActiveStatus() {
     await this.activeToggle.click();
-    await captureScreenshot(this.page, 'active_toggle_clicked');
   }
 
   async toggleFeaturedStatus() {
     await this.featuredToggle.click();
-    await captureScreenshot(this.page, 'featured_toggle_clicked');
   }
 
   async updateStockInline(newValue: string) {
@@ -310,7 +353,6 @@ export class ProductManagementPage {
     await input.waitFor({ state: 'visible', timeout: 5_000 });
     await input.fill(newValue);
     await input.press('Enter');
-    await captureScreenshot(this.page, `stock_updated_${newValue}`);
   }
 
   async fillProductForm(data: {
@@ -348,7 +390,7 @@ export class ProductManagementPage {
         await threshold.fill('0');
       }
     }
-    await captureScreenshot(this.page, 'product_form_filled');
+
   }
 
   async uploadImages(count: number) {
@@ -358,7 +400,7 @@ export class ProductManagementPage {
       return { name: `product-${i}.png`, mimeType: 'image/png', buffer };
     });
     await this.imageUploadInput.setInputFiles(files);
-    await captureScreenshot(this.page, `uploaded_${count}_images`);
+
   }
 
   async fillValidCreateForm(overrides: {
@@ -387,12 +429,10 @@ export class ProductManagementPage {
 
   async uploadImageFile(filePath: string) {
     await this.imageUploadInput.setInputFiles(filePath);
-    await captureScreenshot(this.page, 'image_uploaded');
   }
 
   async clickSave() {
     await this.saveButton.click();
-    await captureScreenshot(this.page, 'save_clicked');
   }
 
   async clickSaveAsDraft() {
@@ -402,36 +442,25 @@ export class ProductManagementPage {
     } else {
       await this.saveButton.click();
     }
-    await captureScreenshot(this.page, 'save_as_draft_clicked');
   }
 
   async selectAllProducts() {
     await this.selectAllCheckbox.click();
-    await expect(this.bulkBar).toBeVisible({ timeout: 5_000 });
-    await captureScreenshot(this.page, 'all_products_selected');
-  }
-
-  async clickBulkActivate() {
-    await this.bulkActivateButton.click();
-    await captureScreenshot(this.page, 'bulk_activate_clicked');
   }
 
   async clickBulkDelete() {
     await this.bulkDeleteButton.click();
-    await captureScreenshot(this.page, 'bulk_delete_clicked');
   }
 
   // Assertion Helpers
   async expectToastVisible(type: 'success' | 'error') {
     const toast = type === 'success' ? this.successToast : this.errorToast;
     await toast.first().waitFor({ state: 'visible', timeout: 10_000 });
-    await captureScreenshot(this.page, `${type}_toast_visible`);
   }
 
   async expectValidationError(field: string) {
     const error = this.validationErrors.filter({ hasText: new RegExp(field, 'i') });
     await expect(error.first()).toBeVisible();
-    await captureScreenshot(this.page, `validation_error_${field}`);
   }
 
   async expectRedirectTo(path: string) {
@@ -444,17 +473,14 @@ export class ProductManagementPage {
 
   async expectEmptyState() {
     await expect(this.emptyStateMessage).toBeVisible();
-    await captureScreenshot(this.page, 'empty_state_visible');
   }
 
   async expectPendingBanner() {
     await expect(this.pendingBanner).toBeVisible();
-    await captureScreenshot(this.page, 'pending_banner_visible');
   }
 
   async expectRejectedBanner() {
     await expect(this.rejectedBanner).toBeVisible();
-    await captureScreenshot(this.page, 'rejected_banner_visible');
   }
 
   async expectTableColumns() {
@@ -466,12 +492,10 @@ export class ProductManagementPage {
     await expect(this.statusColumn).toBeVisible();
     await expect(this.featuredColumn).toBeVisible();
     await expect(this.actionsColumn).toBeVisible();
-    await captureScreenshot(this.page, 'table_columns_visible');
   }
 
   async expectPaginationVisible() {
     await expect(this.pagination).toBeVisible();
-    await captureScreenshot(this.page, 'pagination_visible');
   }
 
   async expectPageInfo(text: string) {
@@ -479,6 +503,52 @@ export class ProductManagementPage {
   }
 
   async capture(step: string) {
-    await captureScreenshot(this.page, step);
+    await this.captureEvidence(step);
+  }
+
+  // Rejected Merchant Assertions
+  async expectRejectedReasonVisible() {
+    await expect(this.rejectedReasonText).toBeVisible();
+  }
+
+  async expectGoToProfileLinkVisible() {
+    await expect(this.goToProfileLink).toBeVisible();
+  }
+
+  async clickGoToProfile() {
+    await this.goToProfileLink.click();
+    await this.page.waitForURL(/\/merchant\/profile/);
+  }
+
+  // Price Display Assertions (B-17)
+  async expectNoStrikethroughPrice() {
+    await expect(this.strikethroughPrice).not.toBeVisible();
+  }
+
+  async expectNoSavingsBadge() {
+    await expect(this.savingsBadge).not.toBeVisible();
+  }
+
+  async expectCompareAtPriceShowsRegularPrice() {
+    await expect(this.compareAtPriceCell).toBeVisible();
+  }
+
+  async expectPriceColumnShowsDash() {
+    await expect(this.priceCell).toHaveText(/^[-–—]$/);
+  }
+
+  // Bulk Delete Dialog Assertions (B-18)
+  async expectBulkDeleteBreakdown(deactivated: number, permanentlyDeleted: number, skipped: number) {
+    await expect(this.deactivatedCount).toContainText(`${deactivated} will be deactivated`);
+    await expect(this.permanentlyDeletedCount).toContainText(`${permanentlyDeleted} soft-deleted product`);
+    await expect(this.skippedCount).toContainText(`${skipped} product`);
+  }
+
+  async confirmBulkDelete() {
+    await this.bulkDeleteConfirmButton.click();
+  }
+
+  async expectProductRemainsInList(productName: string) {
+    await expect(this.page.getByRole('row', { name: new RegExp(productName, 'i') })).toBeVisible();
   }
 }
