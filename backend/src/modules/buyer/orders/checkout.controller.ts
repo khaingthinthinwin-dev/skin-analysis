@@ -47,7 +47,10 @@ export class CheckoutController {
     @CurrentUser() user: AuthUser,
     @Param('merchantId') merchantId: string,
   ) {
-    const data = await this.checkoutService.getMerchantPromotions(merchantId);
+    const data = await this.checkoutService.getMerchantPromotions(
+      merchantId,
+      user.id,
+    );
     return { data };
   }
 

@@ -1,0 +1,16 @@
+{
+  "capturedAt": "2026-10-21T03:12:04.559Z",
+  "description": "DB cart_items count remains 1 after the 409 duplicate response",
+  "results": [
+    {
+      "label": "cart count by buyer and product",
+      "rowCount": 1,
+      "rows": [
+        {
+          "cart_item_count": 1,
+          "total_quantity": 1
+        }
+      ]
+    }
+  ]
+}

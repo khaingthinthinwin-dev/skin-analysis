@@ -2,12 +2,9 @@ import { test, type Page } from '@playwright/test';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Client } from 'pg';
-import { getScreenFromFilePath } from './screenshot';
+import { getScreenFromFilePath, updateScreenshotIndex } from './screenshot';
 
 const TEST_RESULTS_ROOT = path.resolve(__dirname, '../test-results');
-
-type IndexEntry = { description?: string; test?: string };
-type ScreenshotIndex = Record<string, string | IndexEntry>;
 
 type QueryResult = {
   label: string;
@@ -27,21 +24,7 @@ function ensureDir(dir: string) {
   }
 }
 
-function loadIndex(dir: string): ScreenshotIndex {
-  const indexPath = path.join(dir, 'index.json');
-  if (!fs.existsSync(indexPath)) return {};
-  try {
-    return JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
-  } catch {
-    return {};
-  }
-}
-
-function saveIndex(dir: string, index: ScreenshotIndex): void {
-  fs.writeFileSync(path.join(dir, 'index.json'), JSON.stringify(index, null, 2), 'utf-8');
-}
-
-function loadDatabaseUrl(): string {
+export function loadDatabaseUrl(): string {
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
   const envPath = path.resolve(__dirname, '../../backend/.env');
   const content = fs.readFileSync(envPath, 'utf-8');
@@ -102,7 +85,7 @@ function formatCell(value: unknown): string {
   return String(value);
 }
 
-function renderDbHtml(results: QueryResult[], description?: string): string {
+function renderDbHtml(results: QueryResult[], description?: string, productImageUrl?: string): string {
   const queryBlocks = results
     .map((r) => {
       const lines = r.displaySql
@@ -148,6 +131,8 @@ function renderDbHtml(results: QueryResult[], description?: string): string {
   .header { background: #fff; border-bottom: 1px solid #ccc; padding: 8px 14px; font-size: 13px; }
   .header strong { font-weight: 600; }
   .desc { color: #555; margin-top: 2px; }
+  .product-photo { display: flex; align-items: center; gap: 10px; margin-top: 8px; color: #555; font-size: 11px; }
+  .product-photo img { width: 64px; height: 64px; object-fit: cover; border: 1px solid #ccc; border-radius: 4px; }
   .tabs { display: flex; background: #e9e9e9; border-bottom: 1px solid #ccc; padding: 0 10px; gap: 4px; }
   .tab { padding: 8px 16px; font-size: 13px; color: #333; }
   .tab.active { background: #fff; border: 1px solid #ccc; border-bottom: none; font-weight: 600; margin-bottom: -1px; }
@@ -172,6 +157,7 @@ function renderDbHtml(results: QueryResult[], description?: string): string {
   <div class="header">
     <strong>Database Query Result</strong>
     <div class="desc">${escapeHtml(description || 'PostgreSQL — live SELECT evidence')}</div>
+    ${productImageUrl ? `<div class="product-photo"><img src="${escapeHtml(productImageUrl)}" alt="Product photo" /><span>Product photo</span></div>` : ''}
   </div>
   <div class="tabs">
     <div class="tab active">Query</div>
@@ -180,27 +166,9 @@ function renderDbHtml(results: QueryResult[], description?: string): string {
   ${queryBlocks}
   <div class="panel">Data Output</div>
   ${tables}
-  <div class="footer">Source: real Postgres (DATABASE_URL) · captured ${new Date().toISOString()}</div>
+  <div class="footer">Source: real Postgres | captured ${new Date().toISOString()}</div>
 </body>
 </html>`;
-}
-
-function upsertIndex(
-  evidenceDir: string,
-  filename: string,
-  description: string | undefined,
-  testKey: string | undefined
-): void {
-  const index = loadIndex(evidenceDir);
-  const existing = index[filename];
-  const prev: IndexEntry =
-    typeof existing === 'string' ? { description: existing } : existing || {};
-  index[filename] = {
-    ...prev,
-    ...(description ? { description } : {}),
-    ...(testKey ? { test: testKey } : {}),
-  };
-  saveIndex(evidenceDir, index);
 }
 
 async function captureHtmlPng(page: Page, html: string, filePath: string): Promise<void> {
@@ -208,6 +176,15 @@ async function captureHtmlPng(page: Page, html: string, filePath: string): Promi
   try {
     await dbPage.setViewportSize({ width: 1600, height: 1000 });
     await dbPage.setContent(html, { waitUntil: 'load' });
+    const productPhoto = dbPage.locator('.product-photo img');
+    if (await productPhoto.count()) {
+      await productPhoto.evaluate((image) => new Promise<void>((resolve) => {
+        const img = image as HTMLImageElement;
+        if (img.complete) return resolve();
+        img.addEventListener('load', () => resolve(), { once: true });
+        img.addEventListener('error', () => resolve(), { once: true });
+      }));
+    }
     await dbPage.waitForTimeout(150);
     const height = await dbPage.evaluate(() => {
       const footer = document.querySelector('.footer');
@@ -233,6 +210,7 @@ export type DbQuery = {
 
 export type DbEvidenceOptions = {
   description?: string;
+  productImageUrl?: string;
   queries: DbQuery[];
 };
 
@@ -293,11 +271,14 @@ export async function captureDbEvidence(
     };
     fs.writeFileSync(jsonPath, JSON.stringify(payload, null, 2), 'utf-8');
 
-    const html = renderDbHtml(results, opts.description);
+    const productImageUrl = opts.productImageUrl
+      ? new URL(opts.productImageUrl, page.url()).toString()
+      : undefined;
+    const html = renderDbHtml(results, opts.description, productImageUrl);
     await captureHtmlPng(page, html, pngPath);
 
-    upsertIndex(evidenceDir, `${base}.png`, opts.description, testKey);
-    upsertIndex(evidenceDir, `${base}.json`, opts.description, testKey);
+    await updateScreenshotIndex(evidenceDir, `${base}.png`, opts.description, testKey);
+    await updateScreenshotIndex(evidenceDir, `${base}.json`, opts.description, testKey);
 
     return { pngPath, jsonPath };
   } finally {
@@ -366,3 +347,543 @@ export async function captureUserCountDbEvidence(
     ],
   });
 }
+
+const WISHLIST_SELECT = `SELECT w.id, w.user_id, w.product_id,
+       p.name AS product_name, p.stock_quantity, w.created_at
+FROM wishlists w
+JOIN users u ON u.id = w.user_id
+JOIN products p ON p.id = w.product_id
+WHERE u.email = $1`;
+
+const CART_SELECT = `SELECT ci.id, ci.cart_id, c.user_id, ci.product_id,
+       p.name AS product_name, ci.quantity, p.stock_quantity,
+       ci.created_at, ci.updated_at
+FROM cart_items ci
+JOIN carts c ON c.id = ci.cart_id
+JOIN users u ON u.id = c.user_id
+JOIN products p ON p.id = ci.product_id
+WHERE u.email = $1`;
+
+const PRODUCT_STOCK_QUERY = `SELECT id, name, stock_quantity, is_active
+FROM products WHERE id = $1`;
+
+/** Wishlist rows for a buyer, optionally scoped to one product. */
+export async function captureWishlistDbEvidence(
+  page: Page,
+  stepName: string,
+  email: string,
+  description?: string,
+  productId?: string,
+  productImageUrl?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  const values: string[] = [email];
+  const filter = productId ? ' AND w.product_id = $2' : '';
+  if (productId) values.push(productId);
+
+  return captureDbEvidence(page, stepName, {
+    description,
+    productImageUrl,
+    queries: [
+      {
+        label: productId ? 'wishlist row by buyer and product' : 'wishlists by buyer email',
+        text: `${WISHLIST_SELECT}${filter}\nORDER BY w.created_at`,
+        values,
+      },
+    ],
+  });
+}
+
+/** Wishlist row count, optionally scoped to one product. */
+export async function captureWishlistCountDbEvidence(
+  page: Page,
+  stepName: string,
+  email: string,
+  description?: string,
+  productId?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  const values: string[] = [email];
+  const filter = productId ? ' AND w.product_id = $2' : '';
+  if (productId) values.push(productId);
+
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: productId ? 'wishlist count by buyer and product' : 'wishlist count by buyer',
+        text: `SELECT COUNT(*)::int AS wishlist_count
+FROM wishlists w
+JOIN users u ON u.id = w.user_id
+WHERE u.email = $1${filter}`,
+        values,
+      },
+    ],
+  });
+}
+
+/** Wishlist row count for a buyer and product slug. */
+export async function captureWishlistCountByProductSlugDbEvidence(
+  page: Page,
+  stepName: string,
+  email: string,
+  productSlug: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'wishlist count by buyer and product slug',
+        text: `SELECT COUNT(*)::int AS wishlist_count
+FROM wishlists w
+JOIN users u ON u.id = w.user_id
+JOIN products p ON p.id = w.product_id
+WHERE u.email = $1 AND p.slug = $2`,
+        values: [email, productSlug],
+      },
+    ],
+  });
+}
+
+/** Cart items for a buyer, optionally scoped to one product. */
+export async function captureCartDbEvidence(
+  page: Page,
+  stepName: string,
+  email: string,
+  description?: string,
+  productId?: string,
+  productImageUrl?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  const values: string[] = [email];
+  const filter = productId ? ' AND ci.product_id = $2' : '';
+  if (productId) values.push(productId);
+
+  return captureDbEvidence(page, stepName, {
+    description,
+    productImageUrl,
+    queries: [
+      {
+        label: productId ? 'cart row by buyer and product' : 'cart_items by buyer email',
+        text: `${CART_SELECT}${filter}\nORDER BY ci.created_at`,
+        values,
+      },
+    ],
+  });
+}
+
+/** A single cart item by its primary key, including the buyer's user_id. */
+export async function captureCartItemDbEvidence(
+  page: Page,
+  stepName: string,
+  email: string,
+  itemId: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'cart item by id',
+        text: `${CART_SELECT} AND ci.id = $2`,
+        values: [email, itemId],
+      },
+    ],
+  });
+}
+
+/** Cart row count and quantity sum, optionally scoped to one product. */
+export async function captureCartCountDbEvidence(
+  page: Page,
+  stepName: string,
+  email: string,
+  description?: string,
+  productId?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  const values: string[] = [email];
+  const filter = productId ? ' AND ci.product_id = $2' : '';
+  if (productId) values.push(productId);
+
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: productId ? 'cart count by buyer and product' : 'cart count by buyer',
+        text: `SELECT COUNT(*)::int AS cart_item_count,
+       COALESCE(SUM(ci.quantity), 0)::int AS total_quantity
+FROM cart_items ci
+JOIN carts c ON c.id = ci.cart_id
+JOIN users u ON u.id = c.user_id
+WHERE u.email = $1${filter}`,
+        values,
+      },
+    ],
+  });
+}
+
+/** Wishlist row + cart row + product stock for one product. */
+export async function captureWishlistCartStateDbEvidence(
+  page: Page,
+  stepName: string,
+  email: string,
+  productId: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'wishlist row by buyer and product',
+        text: `${WISHLIST_SELECT} AND w.product_id = $2`,
+        values: [email, productId],
+      },
+      {
+        label: 'cart row by buyer and product',
+        text: `${CART_SELECT} AND ci.product_id = $2`,
+        values: [email, productId],
+      },
+      {
+        label: 'product stock by id',
+        text: PRODUCT_STOCK_QUERY,
+        values: [productId],
+      },
+    ],
+  });
+}
+
+/** Cart row + product stock for one product. */
+export async function captureCartProductDbEvidence(
+  page: Page,
+  stepName: string,
+  email: string,
+  productId: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'cart row by buyer and product',
+        text: `${CART_SELECT} AND ci.product_id = $2`,
+        values: [email, productId],
+      },
+      {
+        label: 'product stock by id',
+        text: PRODUCT_STOCK_QUERY,
+        values: [productId],
+      },
+    ],
+  });
+}
+
+/* ------------------------------------------------------------------------- *
+ * Commission & Revenue (Admin → Commission / Revenue)
+ * ------------------------------------------------------------------------- */
+
+export const COMMISSION_SETTINGS_SQL = `SELECT id, commission_rate, updated_by, updated_at, created_at
+FROM commission_settings
+ORDER BY updated_at DESC`;
+
+export const COMMISSION_RATE_HISTORY_SQL = `SELECT id, commission_rate, effective_from, created_by, created_at
+FROM commission_rate_history
+ORDER BY effective_from DESC
+LIMIT 5`;
+
+export const REVENUE_TARGETS_SQL = `SELECT id, target_amount, period, is_active, created_by, updated_at, created_at
+FROM revenue_targets
+ORDER BY period`;
+
+export const PAYOUTS_SQL = `SELECT p.id, m.shop_name, p.period_start, p.order_count, p.total_amount,
+       p.commission_amount, p.net_payout, p.status, p.processed_by, p.processed_at,
+       p.idempotency_key, p.created_at, p.updated_at
+FROM payouts p
+LEFT JOIN merchants m ON m.id = p.merchant_id
+ORDER BY p.period_start DESC, p.created_at DESC`;
+
+export const PAYOUT_ITEMS_SQL = `SELECT pi.id, pi.payout_id, pi.order_id, pi.order_amount,
+       pi.commission_amount, pi.created_at
+FROM payout_items pi
+ORDER BY pi.created_at DESC`;
+
+export const RATE_AUDIT_SQL = `SELECT id, user_id, action, entity_type, entity_id,
+       old_value, new_value, ip_address, created_at
+FROM audit_logs
+WHERE action = 'COMMISSION_RATE_UPDATED'
+  AND created_at >= $1
+ORDER BY created_at DESC
+LIMIT 5`;
+
+export const TARGET_AUDIT_SQL = `SELECT id, user_id, action, entity_type, entity_id,
+       old_value, new_value, ip_address, created_at
+FROM audit_logs
+WHERE action = 'TARGET_UPDATED'
+  AND created_at >= $1
+ORDER BY created_at DESC
+LIMIT 5`;
+
+export const PAYOUT_AUDIT_SQL = `SELECT id, user_id, action, entity_type, entity_id,
+       old_value, new_value, ip_address, created_at
+FROM audit_logs
+WHERE action IN ('PAYOUT_PROCESSED', 'PAYOUT_REVIEWED', 'PAYOUT_DELETED')
+  AND created_at >= $1
+ORDER BY created_at DESC
+LIMIT 5`;
+
+export const EXPORT_AUDIT_SQL = `SELECT id, user_id, action, entity_type, entity_id,
+       old_value, new_value, ip_address, created_at
+FROM audit_logs
+WHERE action = 'EXPORT_GENERATED'
+  AND created_at >= $1
+ORDER BY created_at DESC
+LIMIT 8`;
+
+/**
+ * Per-table fingerprint (row count + MD5 of the row payload).
+ * Two snapshots with the same fingerprint prove the table was NOT modified.
+ */
+export const DB_FINGERPRINT_SQL = `SELECT 'commission_settings' AS table_name,
+       COUNT(*)::int AS row_count,
+       MD5(COALESCE(STRING_AGG(id::text || '|' || commission_rate::text || '|' || updated_at::text, ',' ORDER BY id), '')) AS fingerprint
+FROM commission_settings
+UNION ALL
+SELECT 'commission_rate_history', COUNT(*)::int,
+       MD5(COALESCE(STRING_AGG(id::text || '|' || commission_rate::text || '|' || effective_from::text, ',' ORDER BY id), ''))
+FROM commission_rate_history
+UNION ALL
+SELECT 'revenue_targets', COUNT(*)::int,
+       MD5(COALESCE(STRING_AGG(id::text || '|' || target_amount::text || '|' || period || '|' || is_active::text || '|' || updated_at::text, ',' ORDER BY id), ''))
+FROM revenue_targets
+UNION ALL
+SELECT 'payouts', COUNT(*)::int,
+       MD5(COALESCE(STRING_AGG(id::text || '|' || status || '|' || total_amount::text || '|' || commission_amount::text || '|' || COALESCE(processed_at::text, '') || '|' || COALESCE(idempotency_key, ''), ',' ORDER BY id), ''))
+FROM payouts
+UNION ALL
+SELECT 'payout_items', COUNT(*)::int,
+       MD5(COALESCE(STRING_AGG(id::text || '|' || payout_id::text || '|' || order_amount::text, ',' ORDER BY id), ''))
+FROM payout_items
+UNION ALL
+SELECT 'audit_logs', COUNT(*)::int,
+       MD5(COALESCE(STRING_AGG(id::text || '|' || action, ',' ORDER BY id), ''))
+FROM audit_logs`;
+
+/** Commission settings + rate history + the matching audit trail. */
+export async function captureDbEvidenceCommissionRate(
+  page: Page,
+  stepName: string,
+  description?: string,
+  since?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      { label: 'commission_settings (current rate)', text: COMMISSION_SETTINGS_SQL },
+      { label: 'commission_rate_history (newest first)', text: COMMISSION_RATE_HISTORY_SQL },
+      {
+        label: 'audit_logs — COMMISSION_RATE_UPDATED (this run only)',
+        text: RATE_AUDIT_SQL,
+        values: [since ?? '1970-01-01 00:00:00'],
+      },
+    ],
+  });
+}
+
+/** Revenue targets (all periods) + the matching audit trail. */
+export async function captureDbEvidenceRevenueTarget(
+  page: Page,
+  stepName: string,
+  description?: string,
+  since?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      { label: 'revenue_targets (all periods)', text: REVENUE_TARGETS_SQL },
+      {
+        label: 'audit_logs — TARGET_UPDATED (this run only)',
+        text: TARGET_AUDIT_SQL,
+        values: [since ?? '1970-01-01 00:00:00'],
+      },
+    ],
+  });
+}
+
+/** Payout rows + their line items + the payout audit trail. */
+export async function captureDbEvidencePayout(
+  page: Page,
+  stepName: string,
+  description?: string,
+  since?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      { label: 'payouts (newest period first)', text: PAYOUTS_SQL },
+      { label: 'payout_items', text: PAYOUT_ITEMS_SQL },
+      {
+        label: 'audit_logs — payout events (this run only)',
+        text: PAYOUT_AUDIT_SQL,
+        values: [since ?? '1970-01-01 00:00:00'],
+      },
+    ],
+  });
+}
+
+/** Export audit trail — exports must not touch any business table. */
+export async function captureDbEvidenceExportAudit(
+  page: Page,
+  stepName: string,
+  description?: string,
+  since?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'audit_logs — EXPORT_GENERATED (this run only)',
+        text: EXPORT_AUDIT_SQL,
+        values: [since ?? '1970-01-01 00:00:00'],
+      },
+      { label: 'commission_settings (unchanged?)', text: COMMISSION_SETTINGS_SQL },
+      { label: 'revenue_targets (unchanged?)', text: REVENUE_TARGETS_SQL },
+    ],
+  });
+}
+
+/** Per-table fingerprint — the "did the database change?" proof. */
+export async function captureDbEvidenceFingerprint(
+  page: Page,
+  stepName: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'table fingerprints (row count + MD5)',
+        text: DB_FINGERPRINT_SQL,
+      },
+    ],
+  });
+}
+
+/** Everything the Commission & Revenue screen owns, in one snapshot. */
+export async function captureDbEvidenceCommissionAndRevenue(
+  page: Page,
+  stepName: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      { label: 'commission_settings', text: COMMISSION_SETTINGS_SQL },
+      { label: 'commission_rate_history', text: COMMISSION_RATE_HISTORY_SQL },
+      { label: 'revenue_targets', text: REVENUE_TARGETS_SQL },
+      { label: 'payouts', text: PAYOUTS_SQL },
+      { label: 'payout_items', text: PAYOUT_ITEMS_SQL },
+      { label: 'table fingerprints (row count + MD5)', text: DB_FINGERPRINT_SQL },
+    ],
+  });
+}
+
+/**
+ * Runs arbitrary SQL against the live database.
+ * Used to seed / clean up test fixtures for the database-evidence scenarios.
+ */
+export async function runDb<T>(fn: (client: Client) => Promise<T>): Promise<T> {
+  const client = new Client({ connectionString: loadDatabaseUrl() });
+  await client.connect();
+  try {
+    return await fn(client);
+  } finally {
+    await client.end();
+  }
+}
+
+/* ------------------------------------------------------------------------- *
+ * Ad Management (Admin → Advertisement Management & Fees)
+ * ------------------------------------------------------------------------- */
+
+export async function captureAdDbEvidence(
+  page: Page,
+  stepName: string,
+  adId: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'advertisements row by id',
+        text: `SELECT a.id, a.shop_id, s.name AS shop_name, a.title, a.approval_status, a.payment_status,
+                      a.approved_by, a.approved_at, a.rejection_reason, a.created_at
+               FROM advertisements a
+               LEFT JOIN shops s ON s.id = a.shop_id
+               WHERE a.id = $1`,
+        values: [adId],
+      },
+    ],
+  });
+}
+
+export async function captureBulkAdsDbEvidence(
+  page: Page,
+  stepName: string,
+  adIds: string[],
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'advertisements rows by ids',
+        text: `SELECT a.id, a.shop_id, s.name AS shop_name, a.title, a.approval_status, a.payment_status,
+                      a.approved_by, a.approved_at, a.rejection_reason, a.created_at
+               FROM advertisements a
+               LEFT JOIN shops s ON s.id = a.shop_id
+               WHERE a.id = ANY($1::uuid[])
+               ORDER BY a.created_at DESC`,
+        values: [adIds],
+      },
+    ],
+  });
+}
+
+export async function captureAdListDbEvidence(
+  page: Page,
+  stepName: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'pending advertisements queue',
+        text: `SELECT a.id, a.title, a.approval_status, a.payment_status, s.name AS shop_name, a.created_at
+               FROM advertisements a
+               LEFT JOIN shops s ON s.id = a.shop_id
+               WHERE a.approval_status = 'pending'
+               ORDER BY a.created_at DESC
+               LIMIT 10`,
+      },
+    ],
+  });
+}
+
+export async function captureFeeSettingDbEvidence(
+  page: Page,
+  stepName: string,
+  feeId: string,
+  description?: string
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description,
+    queries: [
+      {
+        label: 'ad_fee_settings row by id',
+        text: `SELECT id, placement, tier, daily_rate, duration_days, max_ads, is_active, created_at
+               FROM ad_fee_settings
+               WHERE id = $1`,
+        values: [feeId],
+      },
+    ],
+  });
+}
+

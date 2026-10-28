@@ -1,0 +1,144 @@
+{
+  "module": "Order_Insights",
+  "timestamp": "2026-10-21T04:22:49.891Z",
+  "total": 22,
+  "passed": 21,
+  "failed": 1,
+  "skipped": 0,
+  "durationMs": 338710,
+  "tests": [
+    {
+      "title": "N-01: buyer sees their order history",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 13073
+    },
+    {
+      "title": "N-02: buyer opens an order detail from history",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 24403
+    },
+    {
+      "title": "N-06: buyer returns from detail to the order list",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 17139
+    },
+    {
+      "title": "N-08: buyer language preference persists between order list and detail",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 19124
+    },
+    {
+      "title": "N-07: buyer order history and detail are translated in English, Japanese, and Myanmar",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 33313
+    },
+    {
+      "title": "N-09: buyer opens an order status notification and it is marked read",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "timedOut",
+      "duration": 32472,
+      "error": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+    },
+    {
+      "title": "A-01: buyer cannot open an order outside their scope",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 11142
+    },
+    {
+      "title": "N-03: buyer filters, sorts, and changes page size",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 13310
+    },
+    {
+      "title": "N-04: buyer resets filters and exports matching orders",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 15622
+    },
+    {
+      "title": "N-05: buyer downloads an invoice from order detail",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 11940
+    },
+    {
+      "title": "A-02: unauthenticated visitor is denied buyer orders and API data",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 7950
+    },
+    {
+      "title": "A-03: reversed order date range is rejected",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 21210
+    },
+    {
+      "title": "A-04: buyer order list shows a retryable error on request failure",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 14299
+    },
+    {
+      "title": "A-04: buyer order detail shows a retryable error on request failure",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 12495
+    },
+    {
+      "title": "B-01: buyer sees an empty state when no orders match",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 14120
+    },
+    {
+      "title": "B-02: buyer can select the first and last supported page sizes",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 14234
+    },
+    {
+      "title": "B-03: buyer can reach order list and detail controls on a narrow viewport",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 10538
+    },
+    {
+      "title": "B-04: buyer KPI tiles respond when a status filter is applied",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 11628
+    },
+    {
+      "title": "I-01: buyer orders API returns scoped rows, metadata, and summary",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 9525
+    },
+    {
+      "title": "I-02: buyer detail API returns their own order projection",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 9349
+    },
+    {
+      "title": "I-03: missing buyer order detail returns 404",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 11702
+    },
+    {
+      "title": "I-04: buyer cannot request an admin-selected merchant scope",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights\\order-insights.spec.ts",
+      "status": "passed",
+      "duration": 10122
+    }
+  ]
+}

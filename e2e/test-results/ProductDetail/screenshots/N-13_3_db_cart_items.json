@@ -1,0 +1,23 @@
+{
+  "capturedAt": "2026-10-28T08:36:58.103Z",
+  "description": "cart_items row for the buyer after adding the product from the product detail page",
+  "results": [
+    {
+      "label": "cart row by buyer and product",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "1991d712-8c39-4442-9c13-80f50ed25d82",
+          "cart_id": "a0e147c7-dbbb-4390-b2e1-6bacd302274d",
+          "user_id": "6c8800c3-4a53-46dd-888f-b305c14fa9b9",
+          "product_id": "0eabe625-0f04-4f79-9933-a5f20caf3c88",
+          "product_name": "Hydrating Toner",
+          "quantity": 2,
+          "stock_quantity": 80,
+          "created_at": "2026-10-28T02:06:57.651Z",
+          "updated_at": "2026-10-28T02:06:57.651Z"
+        }
+      ]
+    }
+  ]
+}

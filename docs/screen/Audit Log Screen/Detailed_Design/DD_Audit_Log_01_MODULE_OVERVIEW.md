@@ -1,25 +1,24 @@
 # DD_AUDIT_01 — Module Overview
 
-> **Doc ID:** SKM-DD-AUDIT-01 | **Version:** 1.1 | **Status:** Draft  
-> **Last Updated:** 2026-09-09
+> **Doc ID:** SKM-DD-AUDIT-01 | **Version:** 1.2 | **Status:** Draft  
+> **Last Updated:** 2026-10-21
 
 ---
 
 ## 1. Module Overview
 
-The **Audit Log module** provides the administrator-only audit trail for Cosmetics Finder. It supports read-only viewing, combined filtering, full-detail inspection, CSV export, and carefully constrained manual deletion of old audit records and generated export files. The module records platform activity; it does not modify audit events during viewing, filtering, refreshing, or exporting.
+The **Audit Log module** provides the administrator-only audit trail for Cosmetics Finder. It supports read-only viewing, combined filtering, full-detail inspection, streamed CSV export, and carefully constrained manual deletion of old audit records. The module records platform activity; it does not modify audit events during viewing, filtering, refreshing, or exporting.
 
 ## 2. Supported Use Cases
 
 | ID | Use Case | Description |
 |---|---|---|
-| UC-AUDIT-001 | View audit logs | Show newest-first, paginated audit events. |
-| UC-AUDIT-002 | Filter and search | Combine user, action, entity, date, IP, entity ID, and text criteria using AND logic. |
-| UC-AUDIT-003 | Inspect detail | Show actor, entity, JSON before/after values, IP, and user agent. |
-| UC-AUDIT-004 | Export CSV | Create a CSV for the current filters, with a 365-day range and 10,000-row maximum. |
-| UC-AUDIT-005 | Monitor activity | Refresh the current query every 30 seconds when enabled. |
-| UC-AUDIT-006 | View related history | Reopen the list filtered by an actor or entity. |
-| UC-AUDIT-007 | Manually delete retained data | Permanently remove eligible audit records and CSV export files aged at least 90 days. |
+| UC-AUDIT-001 | View audit logs | Show newest-first, paginated audit events (10 per page on first load). |
+| UC-AUDIT-002 | Filter and search | Combine action, entity type, date, IP, and text criteria using AND logic. `userId` / `entityId` remain URL-only parameters. |
+| UC-AUDIT-003 | Inspect detail | Show actor, entity type, humanized before/after values, IP, and parsed client information. |
+| UC-AUDIT-004 | Export CSV | Pick a date range in a dialog, then stream a CSV for the current filters (365-day range and 10,000-row maximum). |
+| UC-AUDIT-005 | Monitor activity | Refresh the current query every 30 seconds when enabled (paused while the tab is hidden). |
+| UC-AUDIT-006 | Manually delete retained data | Permanently remove eligible audit records aged at least 90 days, either retention-wide or for explicitly selected rows. |
 
 ## 3. Lifecycle and Integrity Rules
 
@@ -32,26 +31,26 @@ stateDiagram-v2
   DELETABLE: append-only until delete
 ```
 
-`ACTIVE` records remain protected until the configured minimum age. No scheduled purge exists. Export jobs are `NOT_STARTED → QUEUED → PROCESSING → COMPLETED|FAILED`; a completed file remains until eligible manual deletion. Export queries are read-only.
+`ACTIVE` records remain protected until the configured minimum age. No scheduled purge exists. An export request runs synchronously: `IDLE → VALIDATING → STREAMING → COMPLETED|FAILED`; the CSV is streamed to the browser and never stored. Export queries are read-only.
 
 ## 4. Architecture and Components
 
 | Layer | Files / responsibilities |
 |---|---|
-| Frontend page | `AuditLogPage.tsx`, route `/admin/audit-logs` |
-| Frontend components | `AuditLogFilters`, `AuditLogTable`, `AuditLogDetailModal`, `DeleteAuditLogsDialog`, `Pagination` |
-| Frontend API/hooks | `audit-log.service.ts`, `useAuditLogs.ts`, `useAuditLogDetail.ts`, `useAuditFilters.ts`; existing admin-user search API for the actor autocomplete |
+| Frontend page | `AuditLog.tsx` (under `src/pages/admin/`), route `/admin/audit-logs` |
+| Frontend components | `AuditLogHeader`, `AuditLogFilters`, `AuditLogTable`, `AuditLogPagination`, `AuditLogDetailModal`, `AuditLogExportDialog`, `DeleteAuditLogsDialog`, plus the `MultiSelect`, `DatePicker`, and `UserSearchSelect` helpers |
+| Frontend API/hooks | `services/auditLog.service.ts`, `hooks/useAuditLogs.ts`, `hooks/useAuditLogQuery.ts`, `schemas/auditLog.schema.ts`, `utils/datetime.ts`, `utils/userAgent.ts` |
 | Backend controller | `src/modules/admin/audit-logs/audit-logs.controller.ts` |
-| Backend service | `src/modules/admin/audit-logs/audit-logs.service.ts`, export/deletion orchestration |
-| DTOs | list, export, delete, response DTOs under `src/modules/admin/audit-logs/dto/` |
-| Persistence | `audit_logs`, joined `users`, and `audit_export_files` metadata with private object storage |
+| Backend service | `src/modules/admin/audit-logs/audit-logs.service.ts`, `audit-filter-catalog.ts`, export/deletion orchestration |
+| DTOs | `list-audit-logs.dto.ts`, `export-audit-logs.dto.ts`, `delete-audit-logs.dto.ts` under `src/modules/admin/audit-logs/dto/` |
+| Persistence | `audit_logs` joined with `users` — no export-file metadata table exists |
 
 ## 5. Security and Permissions
 
 - Every endpoint requires `JwtAuthGuard` and `RolesGuard` with `admin`.
 - Sensitive fields (passwords, access tokens, refresh tokens, secrets) must never appear in stored or exported old/new JSON.
 - Manual deletion: `olderThanDays` is always validated server-side against `AUDIT_LOG_MIN_RETENTION_DAYS` (default 90). An explicit-ID request is atomic: every target must be eligible before any target is deleted. Client validation is advisory only.
-- Export objects are private. The returned download URL is a short-lived, storage-scoped signed URL; it is never a permanent public object URL.
+- CSV exports are streamed straight to the requesting admin as an attachment; no file is persisted and no signed/public object URL exists.
 - Deletion, export, and viewing may themselves be audited without changing the source records.
 
 ## 6. API Surface
@@ -60,13 +59,13 @@ stateDiagram-v2
 |---|---|---|
 | GET | `/api/v1/admin/audit-logs` | List current query |
 | GET | `/api/v1/admin/audit-logs/:id` | Detail |
-| GET | `/api/v1/admin/audit-logs/filters` | Distinct actions/entity types |
-| POST | `/api/v1/admin/audit-logs/export` | CSV export |
-| DELETE | `/api/v1/admin/audit-logs/files` | Delete eligible records/files |
+| GET | `/api/v1/admin/audit-logs/filters` | Action/entity-type catalog merged with recorded values |
+| POST | `/api/v1/admin/audit-logs/export` | Stream the CSV attachment |
+| DELETE | `/api/v1/admin/audit-logs/files` | Delete eligible records |
 
 ## 7. Configuration
 
-`AUDIT_LOG_PAGE_SIZE=50`, `AUDIT_LOG_MAX_PAGE_SIZE=200`, `AUDIT_LOG_EXPORT_MAX_ROWS=10000`, `AUDIT_LOG_AUTO_REFRESH_INTERVAL=30000`, and `AUDIT_LOG_MIN_RETENTION_DAYS=90` are external configuration defaults.
+`AUDIT_LOG_PAGE_SIZE=50` (server default; the screen requests 10), `AUDIT_LOG_MAX_PAGE_SIZE=200` (the client schema caps at 100), `AUDIT_LOG_EXPORT_MAX_ROWS=10000`, `AUDIT_LOG_EXPORT_MAX_RANGE_DAYS=365`, `AUDIT_LOG_AUTO_REFRESH_INTERVAL=30000`, and `AUDIT_LOG_MIN_RETENTION_DAYS=90` are external configuration defaults. The client page-size choices are `10 / 20 / 50 / 100`.
 
 ## 8. Cross-References
 

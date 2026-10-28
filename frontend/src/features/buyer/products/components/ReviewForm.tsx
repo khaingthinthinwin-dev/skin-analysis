@@ -23,7 +23,12 @@ export function ReviewForm({ idOrSlug }: ReviewFormProps) {
   const [draftRating, setDraftRating] = useState(0);
   const [draftTitle, setDraftTitle] = useState('');
   const [draftBody, setDraftBody] = useState('');
-  const [errors, setErrors] = useState<{ rating?: string; body?: string; submit?: string }>({});
+  const [errors, setErrors] = useState<{
+    rating?: string;
+    title?: string;
+    body?: string;
+    submit?: string;
+  }>({});
   const [deactivatedAlertOpen, setDeactivatedAlertOpen] = useState(false);
 
   const isBuyer = user?.role === 'buyer';
@@ -35,7 +40,12 @@ export function ReviewForm({ idOrSlug }: ReviewFormProps) {
   const canReview = canReviewData?.canReview ?? false;
 
   const validate = (): boolean => {
-    const newErrors: { rating?: string; body?: string; submit?: string } = {};
+    const newErrors: {
+      rating?: string;
+      title?: string;
+      body?: string;
+      submit?: string;
+    } = {};
     if (!user) {
       newErrors.submit = t(
         'buyer.products.reviewForm.signInRequired',
@@ -71,8 +81,19 @@ export function ReviewForm({ idOrSlug }: ReviewFormProps) {
       if (draftRating === 0) {
         newErrors.rating = t('buyer.products.reviewForm.ratingRequired', 'Please select a rating.');
       }
+      if (draftTitle.length > 255) {
+        newErrors.title = t(
+          'buyer.products.reviewForm.titleTooLong',
+          'Title must be 255 characters or fewer.',
+        );
+      }
       if (!draftBody.trim()) {
         newErrors.body = t('buyer.products.reviewForm.reviewRequired', 'Please write your review.');
+      } else if (draftBody.length > 5000) {
+        newErrors.body = t(
+          'buyer.products.reviewForm.bodyTooLong',
+          'Review must be 5000 characters or fewer.',
+        );
       }
     }
     setErrors(newErrors);
@@ -113,9 +134,22 @@ export function ReviewForm({ idOrSlug }: ReviewFormProps) {
       <Input
         placeholder={t('buyer.products.reviewForm.titlePlaceholder', 'Title (optional)')}
         value={draftTitle}
-        onChange={(e) => setDraftTitle(e.target.value)}
-        maxLength={255}
+        aria-invalid={Boolean(errors.title)}
+        aria-describedby={errors.title ? 'review-title-error' : undefined}
+        onChange={(e) => {
+          const value = e.target.value;
+          setDraftTitle(value);
+          setErrors((current) => ({
+            ...current,
+            title: value.length > 255
+              ? t('buyer.products.reviewForm.titleTooLong', 'Title must be 255 characters or fewer.')
+              : undefined,
+          }));
+        }}
       />
+      {errors.title && (
+        <p id="review-title-error" className="text-sm text-red-500">{errors.title}</p>
+      )}
       <div className="relative">
         <Textarea
           placeholder={t(
@@ -123,15 +157,32 @@ export function ReviewForm({ idOrSlug }: ReviewFormProps) {
             'Share your experience...',
           )}
           value={draftBody}
-          onChange={(e) => { setDraftBody(e.target.value); setErrors((e2) => ({ ...e2, body: undefined })); }}
-          maxLength={5000}
+          aria-invalid={Boolean(errors.body)}
+          aria-describedby={errors.body ? 'review-body-error' : undefined}
+          onChange={(e) => {
+            const value = e.target.value;
+            setDraftBody(value);
+            setErrors((current) => ({
+              ...current,
+              body: value.length > 5000
+                ? t('buyer.products.reviewForm.bodyTooLong', 'Review must be 5000 characters or fewer.')
+                : undefined,
+            }));
+          }}
           rows={4}
         />
-        <span className="absolute bottom-2 right-2 text-xs text-muted-foreground">
+        <span
+          aria-live="polite"
+          className={`absolute bottom-2 right-2 text-xs ${
+            draftBody.length > 5000 ? 'text-red-500' : 'text-muted-foreground'
+          }`}
+        >
           {draftBody.length}/5000
         </span>
       </div>
-      {errors.body && <p className="text-sm text-red-500">{errors.body}</p>}
+      {errors.body && (
+        <p id="review-body-error" className="text-sm text-red-500">{errors.body}</p>
+      )}
       {errors.submit && <p className="text-sm text-red-500">{errors.submit}</p>}
       <Button onClick={handleReviewSubmit} disabled={isSubmitting || isCheckingEligibility}>
         {isSubmitting

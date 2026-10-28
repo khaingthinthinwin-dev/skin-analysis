@@ -18,6 +18,14 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ProductTable } from '@/components/merchant/ProductTable'
 import { DeleteConfirmDialog } from '@/components/merchant/DeleteConfirmDialog'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   useProducts,
   useUpdateStock,
   useToggleFeatured,
@@ -65,6 +73,7 @@ export default function ProductManagement() {
   const [limit, setLimit] = useState(10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [deleteAllOpen, setDeleteAllOpen] = useState(false)
+  const [noSelectionOpen, setNoSelectionOpen] = useState(false)
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [skippedIds, setSkippedIds] = useState<string[]>([])
   const [deleteAllSkippedIds, setDeleteAllSkippedIds] = useState<string[]>([])
@@ -389,7 +398,13 @@ export default function ProductManagement() {
               variant="outline"
               size="sm"
               className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground w-full sm:w-auto"
-              onClick={() => setDeleteAllOpen(true)}
+              onClick={() => {
+                if (selectedIds.length === 0) {
+                  setNoSelectionOpen(true)
+                } else {
+                  setDeleteAllOpen(true)
+                }
+              }}
             >
               <Trash2 className="mr-2 h-4 w-4" /> {t('merchant.products.deleteButton')}
             </Button>
@@ -476,6 +491,23 @@ export default function ProductManagement() {
           return parts.join(' ')
         })()}
       />
+
+      {/* No Selection Dialog */}
+      <Dialog open={noSelectionOpen} onOpenChange={setNoSelectionOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('merchant.products.delete.noSelectionTitle', 'No Selection')}</DialogTitle>
+            <DialogDescription>
+              {t('merchant.products.delete.noSelectionMessage', 'Please select at least one product to delete')}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" onClick={() => setNoSelectionOpen(false)}>
+              {t('common.ok', 'OK')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Bulk Delete Confirmation Dialog */}
       <DeleteConfirmDialog

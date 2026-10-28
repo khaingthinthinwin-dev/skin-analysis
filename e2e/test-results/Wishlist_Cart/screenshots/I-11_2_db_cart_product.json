@@ -1,0 +1,23 @@
+{
+  "capturedAt": "2026-10-21T03:12:02.376Z",
+  "description": "DB cart_items has no row and product stock is 0 for the rejected add",
+  "results": [
+    {
+      "label": "cart row by buyer and product",
+      "rowCount": 0,
+      "rows": []
+    },
+    {
+      "label": "product stock by id",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "c0227505-5540-42d2-96b9-76a765b94297",
+          "name": "Honey Lip Balm",
+          "stock_quantity": 0,
+          "is_active": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "capturedAt": "2026-10-28T08:41:02.566Z",
+  "description": "reviews row for the buyer and product after submitting, showing the 5000-character body",
+  "results": [
+    {
+      "label": "reviews row by buyer and product",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "75534fa7-03f7-4b28-9b9a-52871e75a71f",
+          "rating": 4,
+          "status": "pending",
+          "body_length": 5000
+        }
+      ]
+    }
+  ]
+}

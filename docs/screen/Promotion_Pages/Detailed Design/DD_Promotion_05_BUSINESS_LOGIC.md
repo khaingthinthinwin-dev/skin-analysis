@@ -1,7 +1,7 @@
 # DD_PROMO_05 — Business Logic
 
-> **Doc ID:** SKM-DD-PROMO-05 | **Version:** 2.0 | **Status:** Updated  
-> **Last Updated:** 2026-10-15
+> **Doc ID:** SKM-DD-PROMO-05 | **Version:** 2.1 | **Status:** Updated  
+> **Last Updated:** 2026-10-21
 
 ---
 
@@ -81,17 +81,13 @@ Ordering logic:
 
 ### 3.2 findOne(userId, id)
 
-The method loads a specific promotion only when it belongs to the current merchant and then computes `usedCount` from order records using the coupon code:
+The method loads a specific promotion only when it belongs to the current merchant and returns the persisted `usedCount`. Successful order creation increments this counter in the order service, so list, detail, and mutation restrictions use the same value:
 
 ```ts
-const usageResult = await this.prisma.order.groupBy({
-  by: ['couponCode'],
-  where: { couponCode: promotion.code },
-  _count: { id: true },
-});
+usedCount: promotion.usedCount
 ```
 
-This is an important implementation detail: the actual usage value is derived from order data rather than a persisted field on the promotion record.
+`usedCount` is maintained by the server and is not accepted from promotion create or update requests.
 
 ---
 
@@ -139,8 +135,8 @@ The update flow:
 
 - resolves merchant by user
 - fetches the promotion by `id` and `merchantId`
-- checks actual usage count from order records
-- throws `ConflictException` if `realUsedCount > 0`
+- checks the promotion's persisted `usedCount`
+- throws `ConflictException` with `error: "PROMO_EDIT_RESTRICTED"` if `usedCount > 0`
 - validates `discountTypeCode` if provided
 - validates percentage range and fixed discount rule against the effective values
 - validates date range if both datetimes are supplied in the request
@@ -154,13 +150,14 @@ The service serializes the return object to strings before sending it to the cli
 
 ### 6.1 remove(userId, id)
 
-Delete is a hard delete and checks usage first:
+Delete is a hard delete and checks the persisted usage counter first:
 
 ```ts
-if (realUsedCount > 0) {
-  throw new ConflictException(
-    'Cannot delete a promotion that has already been used',
-  );
+if (existing.usedCount > 0) {
+  throw new ConflictException({
+    error: 'PROMO_DELETE_RESTRICTED',
+    message: 'Cannot delete a promotion that has already been used',
+  });
 }
 ```
 

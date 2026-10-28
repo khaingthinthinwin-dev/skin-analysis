@@ -23,6 +23,7 @@
     "update-pcl:Moderation": "node ../scripts/update-pcl.cjs Review_ContentModeration",
     "update-pcl:Commission": "node ../scripts/update-pcl.cjs Commission_Revenue",
     "update-pcl:OrderInsights": "node ../scripts/update-pcl.cjs Order_Insights",
+    "update-pcl:OrderInsightsMerchant": "node ../scripts/update-pcl.cjs Order_Insights_Merchant",
     "update-pcl:AuditLog": "node ../scripts/update-pcl.cjs Audit_Log"
   },
   "devDependencies": {

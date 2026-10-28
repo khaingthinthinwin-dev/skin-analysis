@@ -10,12 +10,14 @@
 | **対象画面** | 商品詳細ページ |
 | **サブシステム** | 商品カタログ — 商品詳細、レビュー、お気に入り＆カート追加 |
 | **機能ID** | FN-PROD-001 |
-| **バージョン** | 7.1 |
+| **バージョン** | 8.0 |
 | **作成日** | 2026-08-05 |
-| **最終更新日** | 2026-08-24 |
+| **最終更新日** | 2026-10-21 |
 | **作成者** | ソフトウェアアーキテクト |
 | **ステータス** | ドラフト（審査中） |
 | **分類** | 社内 — 技術部門 |
+
+> **整合メモ（v8.0）:** TMOソースコード（`backend/src/modules/catalog/products/buyer-products.controller.ts`、`public-reviews.controller.ts`、`products.service.ts`、`reviews.service.ts`；`frontend/src/pages/buyer/ProductDetail.tsx`、`frontend/src/features/buyer/products/**`）と突合。エンドポイント所有権とパス、組み込みプロモーション、レビュー管理（`pending`）、`can-review`資格エンドポイント、レビュー/報告エラーコード、広告配置`productDetail_page_banner`、販売者-viewゲーティングを修正。§1.1参照。
 
 ---
 
@@ -32,6 +34,7 @@
 | 6.0 | 2026-08-20 | ソフトウェアアーキテクト | DB設計書v2.4 / 要件定義書v2.10 / 開発ルールv2.1に整合。すべてのバージョン参照を最新版に更新（DB設計書v2.2→v2.4、要件定義書v1.7→v2.10）。プロモーション割引型バリデーション用に`discount_types`ルックアップテーブル参照を追加（BR-PROD-018）。DB設計書v2.4の`password_reset_tokens`、`order_status_history`、`inventory_transactions`テーブルをデータベーストレーサビリティに追加。設定項目キーを`VITE_API_URL`から`VITE_API_BASE_URL`に修正。文書メタデータを更新。 |
 | 7.0 | 2026-08-21 | ソフトウェアアーキテクト | サイドバー広告表示機能を要件定義書v2.10 §5.3/§5.7（「商品詳細サイドバー」配置）に基づき追加：UC-PROD-008、ビジネスルールBR-PROD-020~023（承認済み/支払済み/アクティブのみ表示、配置ターゲティング、ローテーションルール、拒否処理）、UI要素EL-19、動作§6.8（`GET /api/v1/products/:slug/advertisements`）、出力仕様§7.8、設定項目（`ADVERTISEMENT_SLIDER_ROTATION_MS`、`AD_SIDEBAR_MAX_PER_ROTATION`）、および`advertisements`、`ad_fee_settings`、`ad_payments`テーブルのデータベーストレーサビリティ。オープン項目をフラグ：`advertisements`テーブルに`placement`/`tier`列が存在しない — 購入レコード経由のリンクをDBチームに確認する必要あり（SKM-DEV-001 §13）。広告の購入/承認ワークフローはAdsモジュールの管轄のまま。 |
 | 7.1 | 2026-08-24 | ソフトウェアアーキテクト | サインアップ/ログイン仕様書（`SKM-SIS-SCR-001`）の形式および画面項目設計書v1.10に合わせるため、パンくずリストUI要素（EL-01）を削除：§5.1.1のEL-01行、§12.2のパンくずナビゲーション行、データベーストレーサビリティ（§15.2）のパンくず表記、実装チェックリストのパンくず項目を削除。相互参照の安定性のため、残りの要素IDは維持。 |
+| **8.0** | **2026-10-21** | **ソフトウェアアーキテクト** | **ソースコードと突合。** ルートは`/products/:id`（UUID\|slug\|SKU、`ProductsService.resolveProduct`で解決）。レビュー・類似・広告・`can-review`はすべて`BuyerProductsController`（`/products/:idOrSlug/...`）に所在。存在しない`/recommendations/similar/:productId`、`/products/:slug/promotions`、`/products/:slug/advertisements`（独立コントローラ）を削除。プロモーションは**商品詳細レスポンスに組み込み**（`balance`フィルタ/フィールドなし）。新規レビューは`status='pending'`で作成（管理）、集計は`approved`のみ。未配送購入は**400**（422ではない）。`can-review`（§6.2、UC-PROD-009）を追加。レビュー報告はJWTのみ（buyerロール不要）、`detail`フィールド、重複は409。広告配置は`ad_fee_settings`経由の`productDetail_page_banner`（オープン項目解消）。コンポーネントパスを`features/buyer/products/**`に修正。 |
 
 ---
 
@@ -76,7 +79,7 @@
 6. **カートに追加** — 数量指定で商品をカートに追加（在庫のアトミック検証対象）。
 7. **お気に入り管理** — 楽観的UI更新によるお気に入りへの商品追加（お気に入りからの削除/削除処理は専用のお気に入り画面/モジュールで行われ、本画面のスコープ外）。
 8. **有効プロモーション表示** — 商品の販売者の有効プロモーション（クーポンコード、割引、有効期間）、残数（`max_uses - used_count`）を含む表示（ルールBR-PROD-018対象）。
-9. **サイドバー広告表示** — `product_sidebar`配置（REQUIREMENT_SPEC §5.3/§5.7）向けに購入された、承認済みかつ支払済みの広告を表示（ルールBR-PROD-020~023対象）。広告の購入、支払い、承認ワークフローはAdsモジュール（販売者/管理者）で処理され、本画面のスコープ外。本画面は適格な広告のみを表示。
+9. **広告バナー表示** — `productDetail_page_banner`配置（REQUIREMENT_SPEC §5.3/§5.7）向けに購入された、承認済み・支払済み・アクティブ・有効期間内の広告を表示（ルールBR-PROD-020~023対象）。配置/tierは`ad_fee_settings.placement`経由で解決。CTAは内部ナビゲーション（`/buyer/products/{sku}`）。広告の購入・支払い・承認ワークフローはAdsモジュール（販売者/管理者）で処理され、本画面のスコープ外。本画面は適格な広告のみを表示。
 
 ### 1.3 対象ユーザー
 
@@ -95,10 +98,10 @@
 └────────────┬─────────────┘      └──────────────┬──────────────────────┘
              │                                   │ Reads
              ▼                                   ▼
-  ┌───────────────────────┐          ┌────────────────────────┐
-  │  Product Detail Page  │          │  Redis (Product Cache) │
-  │  (React Frontend)     │◄─────────┤  cache:product:<id>    │
-  └───────────┬───────────┘          └────────────────────────┘
+  ┌───────────────────────┐
+  │  Product Detail Page  │
+  │  (React Frontend)     │  TanStack Query (staleTime: 0, refetch on mount)
+  └───────────┬───────────┘
               │
      ┌────────┼──────────────────────┬──────────────────────┐
      ▼        ▼                      ▼                      ▼
@@ -113,21 +116,23 @@
 
 | 入力情報 | データカテゴリ | ソース/説明 |
 |-------------------|---------------|----------------------|
-| `slug` | URLパスパラメータ | 商品詳細を解決するために使用される商品スラッグ |
-| `productId` | URLパスパラメータ | レビュー/お気に入り/カートで使用されるUUID商品識別子 |
-| `page`, `limit` | クエリパラメータ | レビューリストのページネーション |
-| `rating`, `title`, `body`, `images` | ユーザー入力 | レビューフォームから送信されるレビューコンテンツ |
+| `:idOrSlug` | URLパスパラメータ | 商品詳細を解決するために使用（UUID、slug、またはSKU — `resolveProduct`） |
+| `page`, `limit`, `sortBy` | クエリパラメータ | レビューリストのページネーション + 並び替え |
+| `limit` | クエリパラメータ | 類似商品の件数（デフォルト4、UIは8送信） |
+| `rating`, `title`, `body`, `images` | ユーザー入力 | レビューフォームから送信されるレビューコンテンツ（`images`はDTOのみ、UIにアップロードなし） |
+| `reason`, `detail` | ユーザー入力 | レビュー報告ペイロード |
 | `quantity` | ユーザー入力 | 「カートに追加」ステッパーで選択された数量 |
 
 | 出力情報 | データカテゴリ | 宛先/説明 |
 |--------------------|---------------|---------------------------|
-| `product` | 商品DTO | カテゴリー、販売者、ショップを含む完全な商品詳細 |
-| `reviews` | レビューDTO配列 | ユーザー情報とページネーションメタ付きの承認済みレビューのページネーション |
-| `similarProducts` | 商品カードDTO配列 | 「類似商品」セクション用の関連商品 |
-| `wishlist` | お気に入りDTO | お気に入りメンバーシップステータス/追加結果 |
-| `cart` | カートDTO | カートへの商品追加結果 |
-| `promotions` | プロモーションDTO配列 | 割引詳細と残数付きの有効プロモーション |
-| `advertisements` | 広告DTO配列 | `product_sidebar`配置のサイドバー広告（ローテーションあたり最大5件） |
+| `product` | 商品詳細DTO | カテゴリー、販売者、組み込み`promotions[]`、`ratingBreakdown[]`を含む完全な商品詳細 |
+| `reviews` | `{items,total,page,limit,totalPages}` | 承認済みレビューのフラットページネーション |
+| `canReview` | 資格DTO | `{ canReview, reason }` |
+| `similarProducts` | 類似商品DTO配列（bare） | 「類似商品」セクション用の関連商品 |
+| `advertisement` | 広告DTO配列（bare） | `productDetail_page_banner`配置の適格広告（最大5件、tier順） |
+| `review` / `report` | DTO | 作成レビュー（`pending`）/ 報告 |
+| `cart` | カートDTO | カートへの商品追加結果 ⚠️ Cartチーム |
+| `wishlist` | お気に入りDTO | お気に入り追加結果 ⚠️ Wishlistチーム |
 
 ### 1.6 関連文書
 
@@ -145,41 +150,46 @@
 
 | UC-ID | ユースケース名 | 前提条件 | 結果条件 | 発行アクター |
 |-------|---------------|--------------|---------------|------------------|
-| UC-PROD-001 | 商品詳細を表示 | 商品がアクティブかつ存在する。 | ギャラリー、価格、成分、販売者、ショップ付きの完全な商品詳細が表示される。 | 訪問者 / 購入者 |
+| UC-PROD-001 | 商品詳細を表示 | 商品がアクティブで、販売者の`license_status = 'approved'`。 | ギャラリー、価格、成分、販売者、組み込みプロモーション、`ratingBreakdown`付きの完全な商品詳細が表示される。 | 訪問者 / 購入者 |
 | UC-PROD-002 | レビューを表示 | 商品が存在する。 | レーティングサマリー付きの承認済みレビューがページネーションで表示される。 | 訪問者 / 購入者 |
-| UC-PROD-003 | レビューを投稿 | ユーザーが`buyer`として認証済みで、購入済み（verified purchase）である。 | レビューが作成され、`avg_rating` / `review_count`が再計算され、キャッシュが無効化される。 | 購入者 |
-| UC-PROD-004 | 関連商品を表示 | 商品が存在する。 | 「類似商品」セクションに類似商品が表示される。 | 訪問者 / 購入者 |
-| UC-PROD-005 | お気に入りに追加 | ユーザーが`buyer`として認証済み。商品がお気に入りに未登録。 | お気に入りアイテムが作成される（ユニーク`user_id + product_id`）。 | 購入者 |
+| UC-PROD-003 | レビューを投稿 | ユーザーが`buyer`として認証済みで、配送済み（delivered）注文に商品を含む。既存レビューなし。 | レビューが`status='pending'`で作成され、`avg_rating` / `review_count`（`approved`のみ）が再計算され、管理者に通知される。 | 購入者 |
+| UC-PROD-004 | 類似商品を表示 | 商品が存在する。 | 「類似商品」セクションに類似商品が表示される（limit=8）。 | 訪問者 / 購入者 |
+| UC-PROD-005 | お気に入りに追加 | ユーザーが`buyer`として認証済み。商品がお気に入りに未登録。 | お気に入りアイテムが作成される（ユニーク`userId + productId`）。 | 購入者 |
 | UC-PROD-006 | 商品をカートに追加 | ユーザーが`buyer`として認証済み。商品が在庫あり。 | カートアイテムが在庫の再検証付きで挿入またはマージされる。 | 購入者 |
-| UC-PROD-007 | 有効プロモーションを表示 | 商品が存在し、その販売者に有効プロモーションがある。 | 有効プロモーション（コード、割引、有効期間、残数）が表示される。 | 訪問者 / 購入者 |
-| UC-PROD-008 | サイドバー広告を表示 | 商品が存在。`product_sidebar`配置向けに承認済みかつ支払済みの広告が配信中。 | スポンサー広告がサイドバースライダーに表示される（ローテーションあたり最大5件、5秒で自動ローテーション）。 | 訪問者 / 購入者 |
+| UC-PROD-007 | プロモーションを表示 | 商品詳細に組み込み`promotions[]`にアクティブ&有効期間内のプロモーションがある。 | `promotions[0]`の割引バッジが表示される（コード+割引）。 | 訪問者 / 購入者 |
+| UC-PROD-008 | 広告バナーを表示 | 商品が存在。`productDetail_page_banner`配置向けに承認済み・支払済み・アクティブ・有効期間内の広告が配信中。 | スポンサーバーカルーセルが表示される（ローテーションあたり最大5件、5秒で自動ローテーション、内部ナビゲーション）。 | 訪問者 / 購入者 |
+| UC-PROD-009 | レビュー資格を確認 | 認証済みbuyer。 | `{ canReview, reason }`が送信ボタンをゲート。 | 購入者 |
+| UC-PROD-010 | レビューを報告 | 認証済み（merchantはUIで非表示）。 | 報告が作成（`pending`）。重複は409。管理者通知。 | 購入者 |
 
 ### 2.2 主要ビジネスワークフロー
 
 ```
-                          ┌─────────────────────┐
-                          │  Buyer Navigates    │
-                          │  to /products/:slug │
-                          └─────────┬───────────┘
-                                    │
-                                    ▼
-                    ┌──────────────────────────────┐
-                    │  Load Product Detail         │
-                    │  (GET /api/v1/products/:slug)│
-                    └──────────────┬───────────────┘
+                          ┌──────────────────────┐
+                          │  Buyer Navigates     │
+                          │  to /products/:id    │
+                          └──────────┬───────────┘
+                                     │
+                                     ▼
+                    ┌───────────────────────────────┐
+                    │  Load Product Detail          │
+                    │  (GET /api/v1/products/       │
+                    │   :idOrSlug — UUID|slug|SKU)  │
+                    └──────────────┬────────────────┘
                        ┌──────────┴───────────┐
                        ▼                      ▼
                  ┌────────────┐        ┌──────────────────┐
-                 │  200 OK    │        │  404 / 400       │
+                 │  200 OK    │        │  404             │
                  │ Product    │        │ (Not Found /     │
-                 │ Detail DTO │        │  Invalid slug)   │
+                 │ Detail DTO │        │  Inactive /      │
+                 │ (promotions│        │  Unapproved      │
+                 │  + breakdown│       │  merchant)       │
                  └─────┬──────┘        └──────────────────┘
                        │
                        ▼
-        ┌───────────────────────────────┐
-        │ Load Reviews + Similar +      │
-        │ Wishlist Status (if logged in)│
-        └───────────────┬───────────────┘
+        ┌────────────────────────────────────┐
+        │ Load Reviews + Similar + Ads +     │
+        │ can-review (if buyer logged in)    │
+        └───────────────┬────────────────────┘
                         │
            ┌────────────┼──────────────────┐
            ▼            ▼                  ▼
@@ -199,6 +209,8 @@
     ┌─────────────┐  │ 201 Cart    │    │ 201 Added /      │
     │ 201 Review  │  │ Item Added  │    │ 409 Already In   │
     │ Created     │  └─────────────┘    └──────────────────┘
+    │ (pending —  │
+    │  moderation)│
     └─────────────┘
 ```
 
@@ -206,13 +218,14 @@
 
 | ステップ | アクション | ステータス（前） | ステータス（後） | 担当 |
 |:--------:|--------|---------------|--------------|-------------|
-| 1 | 購入者が`/products/:slug`に遷移 | 未認証 | — | システム |
-| 2 | リレーション付きで商品詳細をロード | — | 商品表示 | システム |
-| 3 | レビュー、類似商品、お気に入りステータスをロード | — | 全セクションロード完了 | システム |
+| 1 | 購入者が`/products/:id`（UUID\|slug\|SKU）に遷移 | 未認証 | — | システム |
+| 2 | 商品詳細をロード（組み込みpromotions/ratingBreakdown、ライセンスゲート） | — | 商品表示 | システム |
+| 3 | レビュー、類似商品、広告、`can-review`資格をロード | — | 全セクションロード完了 | システム |
 | 4 | 購入者が数量を選択 | — | — | 購入者 |
 | 5 | 購入者がカートに追加 | 在庫あり | カートアイテム作成 | システム |
-| 6 | 購入者がレビューを投稿（認証済み、購入済み） | — | レビュー作成、レーティング更新 | システム |
+| 6 | 購入者がレビューを投稿（認証済み、配送済み購入） | 資格あり | レビュー作成（`pending`）、レーティング更新 | システム |
 | 7 | 購入者がお気に入りに追加 | — | お気に入り更新 | システム |
+| 8 | 購入者がレビューを報告 | — | 報告作成（`pending`） | システム |
 
 ### 2.4 カバーされる関連要件
 
@@ -258,14 +271,14 @@
 | `NEW_ITEM` | 商品が初めてカートに追加される | ✓ |
 | `QUANTITY_MERGED` | 既存ラインナンバーが増加 | ✓ |
 | `STOCK_EXCEEDED` | 要求数量が`stock_quantity`を超過 | ✗（400） |
-| `OUT_OF_STOCK` | `stock_quantity = 0` | ✗（422） |
+| `OUT_OF_STOCK` | `stock_quantity = 0` | ✗ |
 
 ### 3.4 レビューの状態
 
 | 状態 | 説明 | 購入者に表示 |
 |-------|-------------|:---------------:|
-| `PENDING` | 送信済み、モデレーション待ち | ✗ |
-| `APPROVED` | `is_approved = true`（作成時のデフォルト） | ✓ |
+| `PENDING` | 送信済み、モデレーション待ち（作成時のデフォルト） | ✗（一覧エンドポイントは`approved`のみを返し、`@Public()`でユーザー単位の絞り込みもないため、作者本人にも非表示） |
+| `APPROVED` | 管理者モデレーション（`POST /admin/reviews/:id/moderate`）により承認。**作成時のデフォルトは`pending`** | ✓ |
 | `REJECTED` | 管理者モデレーションにより削除 | ✗ |
 
 | 遷移ID | 遷移元状態 | 遷移先状態 | トリガーアクション | ガード条件 |
@@ -273,7 +286,7 @@
 | TR-PROD-01 | `NOT_IN_WISHLIST` | `IN_WISHLIST` | お気に入りに追加 | 認証済み購入者、商品が存在 |
 | TR-PROD-02 | `IN_STOCK` / `LOW_STOCK` | `STOCK_EXCEEDED` | カートに追加 | `requested > stock_quantity` |
 | TR-PROD-03 | `IN_STOCK` | `OUT_OF_STOCK` | 在庫が0に | ルール4.2.2 |
-| TR-PROD-04 | `APPROVED` | `REJECTED` | 管理者モデレーション | 管理者アクション |
+| TR-PROD-04 | `PENDING` | `APPROVED` / `REJECTED` | 管理者モデレーション | 管理者アクション（`POST /admin/reviews/:id/moderate`） |
 
 ---
 
@@ -285,18 +298,19 @@
 |---------|-----------|-------------|-------------------|
 | BR-PROD-001 | アクティブのみ | `is_active = true`の商品のみ詳細エンドポイントから返却。 | バックエンド（クエリフィルター） |
 | BR-PROD-002 | カバー画像 | `images`の最初の画像がメイン/カバー画像（ルール4.2.3）。 | バックエンド（データモデル）+ フロントエンド（ギャラリー順序） |
-| BR-PROD-003 | 価格表示 | 比較価格は存在時、取り消し線+割引%で表示。 | フロントエンド |
+| BR-PROD-003 | 価格表示 | 比較価格は存在時、取り消し線+絶対額の「Save {diff} MMK」バッジで表示（%ではない）。通貨はMMK。 | フロントエンド（`ProductInfo`） |
 | BR-PROD-004 | 在庫表示 | 在庫状態を表示。在庫切れまたは数量が在庫超過時は「カートに追加」を無効化。 | フロントエンド + バックエンド |
 
 ### 4.2 レビュールール
 
 | ルールID | ルール名 | 説明 | 強制レイヤー |
 |---------|-----------|-------------|-------------------|
-| BR-PROD-005 | 購入済みユーザーのみ | 商品を含む完了済み注文を持つ購入者のみレビュー可能（ルール4.4.1）。 | バックエンド（サービスチェック） |
+| BR-PROD-005 | 購入済みユーザーのみ | 配送済み（`statusCode = 'delivered'`）注文に商品を含む購入者のみレビュー可能（ルール4.4.1）。`canReview`と`createReview`の両方でチェック。 | バックエンド（`findDeliveredOrderItem`） |
 | BR-PROD-006 | 商品あたりレビュー1件 | `(user_id, product_id)`のユニーク制約`uq_reviews_user_product`。 | バックエンド（DB制約+ConflictException） |
 | BR-PROD-007 | レーティング範囲 | レーティングは1〜5（ルール4.4.2、`chk_reviews_rating`）。 | バックエンド（DTO+DBチェック） |
-| BR-PROD-008 | モデレーション | `is_approved`はデフォルト`true`。管理者は`/admin/reviews/:id/moderate`でモデレーション可能。 | バックエンド（管理者モジュール） |
-| BR-PROD-009 | 集計 | 承認済みレビューごとに`avg_rating` / `review_count`をトランザクション内で再計算。 | バックエンド（トランザクション） |
+| BR-PROD-008 | モデレーション | 新規レビューは`status='pending'`で作成され、管理者アクション（`/admin/reviews/:id/moderate`）でのみ公開（`approved`）される。公開一覧は`status='approved'`でフィルター。 | バックエンド + 管理者モジュール |
+| BR-PROD-009 | 集計 | `status='approved'`のレビューのみで`avg_rating` / `review_count`を再計算。 | バックエンド（aggregate） |
+| BR-PROD-009a | 管理者通知 | レビュー作成時に全管理者に`REVIEW_CREATED`通知を作成（失敗しても非致命）。 | バックエンド（`notifyAdminsOfReviewCreated`） |
 
 ### 4.3 カート＆在庫ルール
 
@@ -318,32 +332,32 @@
 | ルールID | ルール名 | 説明 | 強制レイヤー |
 |---------|-----------|-------------|-------------------|
 | BR-PROD-015 | 更新時のRBAC | レビュー、お気に入り、カートの更新には`buyer`ロールが必要。 | バックエンド（JwtAuthGuard + RolesGuard） |
-| BR-PROD-016 | キャッシュ無効化 | レビュー/商品更新時に商品キャッシュを無効化。 | バックエンド（Redis） |
-| BR-PROD-017 | XSS防止 | レビューコンテンツはReactにより自動エスケープ。CSPヘッダーを強制。 | フロントエンド + バックエンド（ヘッダー） |
+| BR-PROD-016 | キャッシュ | `getDetail`にRedis read-throughキャッシュは実装されていない。フロントエンドはTanStack Queryを使用（`staleTime: 0`、マウント時に再取得）。 | バックエンド + フロントエンド |
+| BR-PROD-017 | XSS / HTML説明 | 商品`description`は`dangerouslySetInnerHTML`でHTMLとしてレンダリングされる。コンテンツは販売者/管理者作成・上流で管理済み。サニタイズ/CSPの期待値はSKM-DEV-001に従い追跡（BR-PROD-017 follow-up）。レビュー本文はReactにより自動エスケープ。 | フロントエンド（追跡項目） |
 
 ### 4.6 有効プロモーションルール
 
 | ルールID | ルール名 | 説明 | 強制レイヤー |
 |---------|-----------|-------------|-------------------|
-| BR-PROD-018 | 有効プロモーション表示 | `is_active = true`、`starts_at` / `expires_at`の有効期間内（ルール4.5.1）、かつ残数あり（`max_uses - used_count > 0`、または`max_uses`がNULLの場合は無制限）のプロモーションのみ、商品の販売者について表示。`discount_type`は`discount_types`ルックアップテーブルの値（`percentage`または`fixed`）のみで、`promotions`テーブルのCHECK制約`promotions_discount_type_check`で保証。 | バックエンド（クエリフィルター＋DB制約） |
-| BR-PROD-019 | プロモーション残数表示 | 残りのプロモーション残数を`max_uses - used_count`として表示。`max_uses`がNULLの場合、残数は「無制限」と表示。残数`0`はプロモーションが使い果たされたことを意味し、表示されない。 | バックエンド（計算フィールド）+ フロントエンド（表示） |
+| BR-PROD-018 | 有効プロモーション表示 | 商品詳細レスポンスに`merchant_id = product.merchantId`、`is_active = true`、`starts_at <= now()`、`expires_at >= now()`のプロモーションを組み込み（ルール4.5.1）。**サーバー側の残数（`balance > 0`）フィルタは適用しない。** `discount_type_code`は`discount_types`ルックアップテーブルの値（`percentage`または`fixed`）のみ。 | バックエンド（`getDetail`） |
+| BR-PROD-019 | プロモーション残数表示 | `max_uses` / `usedCount`は返却されるが、計算済み`balance`フィールドは**存在しない**。マウントされたUIは`promotions[0]`の割引バッジのみ表示する。リッチな`ActivePromotionCard`（残数/有効期限/コードコピー）は実装されているが現在は未マウント。 | フロントエンド（部分実装） |
 
 ### 4.7 サイドバー広告ルール
 
 | ルールID | ルール名 | 説明 | 強制レイヤー |
 |---------|-----------|-------------|-------------------|
 | BR-PROD-020 | 承認済み＆支払済み＆アクティブのみ | `approval_status = 'approved'`、`payment_status = 'completed'`、`is_active = true`、かつ`starts_at` / `expires_at`の有効期間内の広告のみ表示（REQ §5.3「承認必須」、§7.6「投稿前に支払い必須」）。拒否された広告はすべてのローテーションから除外。期限切れまたは非アクティブな広告も除外。 | バックエンド（クエリフィルター） |
-| BR-PROD-021 | 配置ターゲティング | `product_sidebar`配置（`ad_fee_settings.placement`。デフォルトレート$2.00/$3.50/$6.00/日、15日、最大3件）向けに購入された広告のみ商品詳細サイドバーに表示。⚠️ **オープン項目：** `advertisements`テーブルには現在`placement`/`tier`列がない — 配置フィルタリングとtier解決は購入/パッケージ連携に依存し、SKM-DEV-001 §13（データベース変更ガバナンス）に従いDBチームと確認が必要。 | バックエンド（クエリフィルター） |
+| BR-PROD-021 | 配置ターゲティング | `productDetail_page_banner`配置（`advertisements.fee_setting` → `ad_fee_settings.placement`、有効なフィースタッティング）向けに購入された広告のみ商品詳細に表示。**オープン項目解消：** 配置/tierは`advertisements`列ではなく`ad_fee_settings.placement`/`tier`の関連（`feeSetting`include）経由で解決。 | バックエンド（`feeSetting`include） |
 | BR-PROD-022 | ローテーションルール | スライダーローテーションで表示される広告は最大5件。優先順位はPremium＞Standard＞Basic。同じtier内の広告はラウンドロビンでローテーション。スライダーは5秒ごとに自動ローテーション（REQ §5.3）。 | バックエンド（並び順）+ フロントエンド（スライダー） |
-| BR-PROD-023 | スポンサー表示とリンク安全性 | すべての広告カードに「スポンサー」ラベルを表示。外部広告リンクは新しいタブで開き、`rel="noopener noreferrer nofollow sponsored"`を付与。 | フロントエンド |
+| BR-PROD-023 | スポンサー表示とリンク安全性 | 広告カードはデフォルトの「SPONSORED」バッジ（announcementMessageがあれば上書き）を表示。CTAは**内部ナビゲーション**（`/buyer/products/{sku}`→`fallbackProductId`→`linkUrl`）で、絶対`http(s)` URLは`window.location.assign`。この画面に外部`sponsored` new-tabリンクは存在しない。 | フロントエンド（`AdBannerSlider`） |
 
 ---
 
 ## 5. 画面仕様
 
-### 5.1 画面：商品詳細ページ（`/products/:slug`）
+### 5.1 画面：商品詳細ページ（`/products/:id` — UUID|slug|SKU）
 
-**目的：** アクティブな単一商品を完全な情報とコンバージョンアクション付きで表示する。
+**目的：** アクティブな単一商品を完全な情報とコンバージョンアクション付きで表示する。`/buyer/products/:id`、`/wishlist/products/:id`、`/merchant/products/:id/view`にもマウント。
 
 #### 5.1.1 UI要素
 
@@ -354,26 +368,29 @@
 | EL-04 | 商品名 | テキスト | — | はい | 商品名 |
 | EL-05 | レーティングサマリー | レーティングウィジェット | `product.rating` | はい | `★ 4.5（32件のレビュー）` — 平均レーティング+件数 |
 | EL-06 | 価格 | テキスト | — | はい | 現在価格 |
-| EL-07 | 比較価格 | テキスト（取り消し線） | — | いいえ | 割引%バッジ付きの元の価格 |
+| EL-07 | 比較価格 + Saveバッジ | テキスト（取り消し線）+ バッジ | — | いいえ | 取り消し線の元価格+絶対額「Save {diff} MMK」バッジ（%ではない） |
 | EL-08 | 在庫状態 | テキスト / バッジ | `product.stock` | はい | 「在庫あり（45）」「在庫切れ」/ 在庫少警告 |
 | EL-09 | SKU | テキスト | — | いいえ | ストックキーピングユニット |
 | EL-10 | 肌タイプ適合性 | バッジグループ | `product.skinType` | はい | 例：[乾燥肌] [敏感肌] [普通肌] |
 | EL-11 | 数量ステッパー | 数値入力 | — | いいえ | `[ - ] 数量 [ 1 ] [+]` |
 | EL-12 | カートに追加ボタン | ボタン（プライマリ） | `product.addToCart` | はい | 在庫切れ / 数量が在庫超過時は無効 |
-| EL-13 | お気に入りに追加ボタン | ボタン（アイコン） | `product.wishlist` | いいえ | 楽観的更新付き♡ボタン（追加のみ。削除はお気に入り画面/モジュールで処理） |
-| EL-14 | 販売者 | テキスト+リンク | `product.soldBy` | いいえ | ショップ名と「ショップを見る →」 |
-| EL-15 | 商品タブ | タブ | — | いいえ | 説明 / 成分 / レビュー（件数） |
-| EL-16 | レビューフォーム | フォーム | — | いいえ | レーティングスター、タイトル、本文。ログインゲーティング |
-| EL-17 | 関連商品 | カードグリッド | `product.related` | いいえ | 「類似商品」セクション |
-| EL-18 | 有効プロモーション | バナー / カード | `product.promotions` | いいえ | 有効な販売者プロモーション：クーポンコード、割引（パーセンテージ/固定）、最低注文金額、有効期間、残数（`max_uses - used_count`） |
-| EL-19 | サイドバー広告 | 広告スライダー / カルーセル | `product.ads` | いいえ | `product_sidebar`配置のスポンサー広告：ローテーションあたり最大5件、5秒ごとに自動ローテーション、優先順位Premium＞Standard＞Basic（REQ §5.3）。適格な広告がない場合は非表示 |
+| EL-13 | お気に入りに追加ボタン | ボタン（アイコン+ラベル） | `product.wishlist` | いいえ | 全幅ラベル付きボタン。追加済みはピンク「Added to Wishlist」表示。状態はお気に入りリストから導出（追加のみ。削除はお気に入り画面/モジュールで処理） |
+| EL-14 | 販売者 | テキスト | `product.soldBy` | いいえ | 「Sold by {shopName}」のプレーンテキスト（ショップへのリンクなし） |
+| EL-15 | 商品タブ | タブ | — | いいえ | 説明 / 成分 / レビュー（件数）。`#reviews`ディープリンク |
+| EL-16 | レビューフォーム | フォーム | — | いいえ | レーティングスター、タイトル、本文。`can-review`ゲーティング+ログインゲーティング |
+| EL-17 | 類似商品 | カードグリッド | `product.related` | いいえ | 「類似商品」セクション（limit=8） |
+| EL-18 | プロモーション割引バッジ | バッジ | `product.promotions` | いいえ | 組み込み`promotions[0]`からの割引バッジ（「{code}: {value}% off」/「{code}: {amount} off」）。merchant-viewでは非表示 |
+| EL-19 | 広告バナースライダー | 広告カルーセル（共有`AdBannerSlider`） | `product.ads` | いいえ | `productDetail_page_banner`配置のスポンサー広告：ローテーションあたり最大5件、5秒ごとに自動ローテーション、優先順位Premium＞Standard＞Basic（REQ §5.3）。適格な広告がない場合は非表示 |
+| EL-20 | 戻るボタン | アイコンボタン | — | はい | `navigate(-1)` |
+| EL-21 | モバイル固定CTAバー | 固定コンテナ | — | いいえ | `md:hidden`。数量+カート+お気に入り。訪問者/購入者のみ表示 |
 
 **デフォルト状態：**
-- メイン画像は`images[0]`を表示。すべての非同期セクションにスケルトンローダー。
+- メイン画像は`images[0]`を表示。すべての非同期セクションにスケルトンローダー。`images`が空の場合はプレースホルダー`/placeholder-product.png`。
 - 商品ロード完了まで「カートに追加」は無効。`stockQuantity <= 0`の場合も無効。
 - 未認証時はレビューフォーム非表示（代わりにログインプロンプト表示）。
-- 商品の販売者に有効プロモーションがない場合、有効プロモーションセクションは非表示。
-- `product_sidebar`配置向けに承認済み、支払済み、アクティブな広告がない場合、サイドバー広告セクションは非表示。スライダーはホバー/フォーカス時に一時停止。
+- merchant-view（`user.role === 'merchant'`）では、広告バナー、購入アクション、プロモーションバッジ、販売者表示、説明/成分タブ、類似商品を非表示（プレビューモード）。
+- 商品の販売者にアクティブプロモーションがない場合、割引バッジは非表示。
+- `productDetail_page_banner`配置向けに承認済み、支払済み、アクティブな広告がない場合、広告バナースライダーは非表示。スライダーはホバー/フォーカス/`prefers-reduced-motion`時に一時停止。
 
 ---
 
@@ -383,50 +400,54 @@
 
 | 属性 | 仕様 |
 |-----------|---------------|
-| **トリガー** | 購入者が`/products/:slug`に遷移 |
-| **APIエンドポイント** | `GET /api/v1/products/:slug` |
+| **トリガー** | 訪問者/購入者が`/products/:id`に遷移 |
+| **APIエンドポイント** | `GET /api/v1/products/:idOrSlug` |
 | **リクエストContent-Type** | `application/json`（レスポンス） |
-| **送信前バリデーション** | `slug`パスパラメータ形式（URLスラッグ、最大255文字） |
-| **処理ステップ** | 1. slug形式を検証。2. slugで商品を検索（`idx_products_slug`）。3. `is_active = true`をフィルター（ルール4.2.1）。4. カテゴリー（親含む）、販売者（ショップ含む）を含める。5. 商品詳細DTOを返却（内部フィールドを除外）。 |
-| **成功レスポンス** | 商品詳細付き200 OK（§7.4参照） |
-| **エラーレスポンス** | 400 slug無効。404 商品が見つからない/非アクティブ |
-| **後続アクション** | レビュー、類似商品、お気に入りステータスを並行ロード |
+| **パスパラメータ** | `:idOrSlug` — UUID、slug、またはSKU（`ProductsService.resolveProduct`で解決） |
+| **処理ステップ** | 1. `resolveProduct`：UUID → `{ id, isActive:true }`、それ以外 → `{ isActive:true, OR:[{slug},{sku}] }`。2. `category {id,name,slug}`、`merchant {id,shopName,licenseStatus}`を含める。3. 見つからなければ404。4. `merchant.licenseStatus !== 'approved'`なら404。5. 並行して、アクティブ&有効期間内の`promotions[]`（merchantId基準）と`ratingBreakdown`（`status='approved'`のgroupBy rating、星5→1にマップ）をロード。6. `{...product, promotions, ratingBreakdown}`を返却。 |
+| **成功レスポンス** | 商品詳細（組み込みpromotions/ratingBreakdown）付き200 OK（§7.3参照） |
+| **エラーレスポンス** | 404 商品が見つからない/非アクティブ/販売者未承認 |
+| **後続アクション** | レビュー、類似商品、広告バナー、`can-review`資格を並行ロード |
 
 **バックエンド処理フロー：**
 
 ```
-Slug validated as URL slug format (max 255 chars)
-  → ProductsService.findOneBySlug()
-    → Lookup product by slug (idx_products_slug index)
-    → Filter where is_active = true
-    → Include category (with parent), merchant (with shop)
-    → If product not found → NotFoundException
-    → Return product detail DTO (exclude internal fields)
+resolveProduct(idOrSlug)
+  → isUuid ? { id, isActive:true } : { isActive:true, OR:[{slug},{sku}] }
+  → Include category {id,name,slug}, merchant {select: id, shopName, licenseStatus}
+  → If product not found → NotFoundException
+  → If merchant.licenseStatus !== 'approved' → NotFoundException
+  → Promise.all([
+      promotions: where merchant_id = product.merchantId AND is_active = true
+                  AND starts_at <= now() AND expires_at >= now()   (no balance filter)
+      ratingBreakdown: review.groupBy(rating) where status = 'approved' → stars 5→1
+    ])
+  → Return { ...product, promotions, ratingBreakdown }
 ```
 
 ### 6.2 動作：レビュー一覧表示
 
 | 属性 | 仕様 |
 |-----------|---------------|
-| **トリガー** | 商品詳細ページがレビュータブをロード |
-| **APIエンドポイント** | `GET /api/v1/products/:productId/reviews` |
+| **トリガー** | レビュータブがロード / ページ変更 |
+| **APIエンドポイント** | `GET /api/v1/products/:idOrSlug/reviews` |
 | **リクエストContent-Type** | `application/json`（レスポンス） |
-| **送信前バリデーション** | `productId`（UUID）。クエリ`page`（最小1）、`limit`（1〜50） |
-| **処理ステップ** | 1. 商品の存在を確認。2. `product_id`かつ`is_approved = true`のレビューをクエリ（`idx_reviews_product_id`）。3. ユーザー（名前、avatarUrl）を含める。4. `created_at DESC`で並び替え。5. ページネーションして返却。 |
-| **成功レスポンス** | レビューリスト+ページネーションメタ付き200 OK（§7.5参照） |
-| **エラーレスポンス** | 404 商品が見つからない |
-| **後続アクション** | 集計からレーティングサマリーを描画 |
+| **クエリ** | `page`（最小1、デフォルト1）、`limit`（1〜50、デフォルト20・UIは10送信）、`sortBy`（`newest\|oldest\|highest\|lowest`、デフォルト`newest`） |
+| **処理ステップ** | 1. `resolveProduct`。2. `status = 'approved'`のレビューを`productId`でクエリ。3. `user {id, name}`を含める（`avatarUrl`は不含）。4. `sortBy`で並び替え。5. ページネーション。6. `{items, total, page, limit, totalPages}`（フラット形状）を返却。 |
+| **成功レスポンス** | フラット形状のページネーション付き200 OK（§7.2参照） |
+| **エラーレスポンス** | 404 商品が見つからない。400 `page`/`limit`/`sortBy`無効 |
+| **後続アクション** | レーティングサマリーとレビュー一覧を描画 |
 
 **バックエンド処理フロー：**
 
 ```
-productId validated (UUID format)
-  → ReviewsService.findByProduct()
-    → Verify product exists
-    → Query reviews where product_id = productId AND is_approved = true (idx_reviews_product_id index)
-    → Include user (name, avatarUrl)
-    → Order by created_at DESC
-    → Paginate and return
+resolveProduct(idOrSlug)
+  → BuyerProductsController.findReviews (@Public)
+    → Query reviews where productId = ... AND status = 'approved'
+    → Include user { id, name }   (no avatarUrl in select)
+    → Order by sortBy (newest default)
+    → Paginate (limit default 20, max 50)
+    → Flatten meta → return { items, total, page, limit, totalPages }
 ```
 
 ### 6.3 動作：レビューを投稿
@@ -434,54 +455,56 @@ productId validated (UUID format)
 | 属性 | 仕様 |
 |-----------|---------------|
 | **トリガー** | レビューフォームの「レビューを投稿」 |
-| **APIエンドポイント** | `POST /api/v1/products/:productId/reviews` |
+| **APIエンドポイント** | `POST /api/v1/products/:idOrSlug/reviews` |
 | **リクエストContent-Type** | `application/json` |
-| **送信前バリデーション** | Zodレビュースキーマ（レーティング1〜5、タイトル≤255、本文≤5000、画像≤5枚） |
-| **処理ステップ** | 1. JWT + `buyer`ロールを検証。2. 商品の存在を確認。3. 検証済み購入（`delivered`ステータスの注文に商品を含む、ルール4.4.1）を確認。4. ユニーク`(user_id, product_id)`制約をチェック（ルール4.4.1）。5. `is_verified_purchase = true`でレビューを作成。6. `avg_rating` / `review_count`をトランザクション内で再計算。7. Redis商品キャッシュを無効化。8. `REVIEW_CREATED`をログ。 |
-| **成功レスポンス** | レビューDTO付き201 Created |
-| **エラーレスポンス** | 401 未認証。403 購入者でない。404 商品が見つからない。409 重複レビュー。422 購入済みでない |
-| **後続アクション** | レビュー+商品詳細クエリを無効化。レーティングサマリーを更新 |
+| **送信前バリデーション** | `CreateReviewDto`（rating 整数1〜5、title ≤255、body ≤5000、images ≤5 URL、class-validator）。UIはrating/body必須、画像アップロードUIなし |
+| **処理ステップ** | 1. JWT + `buyer`ロールを検証。2. `resolveProduct`。3. 配送済み購入（`statusCode = 'delivered'`の注文に商品を含む、ルール4.4.1）を確認、なければ400。4. 既存レビュー（`userId_productId`）をチェック、あれば409。5. `status='pending'` + `is_verified_purchase = true`でレビューを作成。6. `approved`レビューのみで`avg_rating` / `review_count`を再計算。7. 管理者に`REVIEW_CREATED`通知（失敗しても非致命）。8. 作成レビュー（`status`含む）を返却。 |
+| **成功レスポンス** | レビューDTO（`status='pending'`）付き201 Created |
+| **エラーレスポンス** | 400 配送済みでない/バリデーション。401 未認証。403 購入者でない。404 商品が見つからない。409 重複レビュー |
+| **後続アクション** | レビュー/can-review/商品詳細クエリを無効化。成功トースト「レビューは承認待ちです」 |
 
 **バックエンド処理フロー：**
 
 ```
 JwtAuthGuard + RolesGuard(buyer) validate access token
-  → ReviewsService.create()
-    → Verify product exists
-    → Verify user has a delivered order (status = 'delivered') containing the product (Rule 4.4.1)
-      → If not → UnprocessableEntityException
-    → Check unique constraint (user_id, product_id) for existing review
-      → If exists → ConflictException
-    → Create review with is_verified_purchase = true
-    → Recalculate product avg_rating and review_count in a transaction
-    → Invalidate Redis product cache: DEL cache:product:<id>, DEL cache:products:list:*
-    → Return review DTO
-    → Log: REVIEW_CREATED audit event
+  → BuyerProductsController.createReview → ProductsService.createReview()
+    → resolveProduct(idOrSlug)
+    → Verify user has a delivered order (statusCode = 'delivered') containing the product (Rule 4.4.1)
+      → If not → BadRequestException (HTTP 400, not 422)
+    → Check unique userId_productId for existing review
+      → If exists → ConflictException (409)
+    → Create review with status = 'pending', is_verified_purchase = true
+    → Aggregate avg_rating / review_count over status = 'approved' only
+    → Product.update({ avgRating, reviewCount })
+    → notifyAdminsOfReviewCreated()  // REVIEW_CREATED, non-fatal
+    → Return review DTO (with status)
 ```
 
 ### 6.4 動作：関連商品を表示
 
 | 属性 | 仕様 |
 |-----------|---------------|
-| **トリガー** | 商品詳細ページが「関連商品」セクションをロード |
-| **APIエンドポイント** | `GET /api/v1/recommendations/similar/:productId` |
+| **トリガー** | 商品詳細ページが「類似商品」セクションをロード（非merchant） |
+| **APIエンドポイント** | `GET /api/v1/products/:idOrSlug/similar` |
 | **リクエストContent-Type** | `application/json`（レスポンス） |
-| **送信前バリデーション** | `productId`（UUID） |
-| **処理ステップ** | 1. 対象商品をロード（categoryId、skinTypes、tags）。2. カテゴリーまたはskinTypes/tagsの重複に一致するアクティブ商品をクエリ。3. 対象商品を除外。4. 8件に制限。5. 商品カードDTOを返却。 |
-| **成功レスポンス** | 類似商品カードリスト付き200 OK（§7.6参照） |
+| **クエリ** | `limit`（デフォルト4、UIは8送信） |
+| **処理ステップ** | 1. `resolveProduct`。2. `id != 対象`、`isActive=true`、`merchant.licenseStatus='approved'`、同一`categoryId`、`skinTypes`が重複（hasSome）の商品をクエリ。3. `avgRating desc`で並び替え。4. `limit`件に制限。5. bare配列（id, name, slug, price, compareAtPrice, images, skinTypes, avgRating, reviewCount, category）を返却。 |
+| **成功レスポンス** | bare配列の類似商品カード200 OK（§7.5参照） |
 | **エラーレスポンス** | 404 商品が見つからない |
-| **後続アクション** | なし |
+| **後続アクション** | なし（空/エラー時はセクション非表示） |
 
 **バックエンド処理フロー：**
 
 ```
-productId validated (UUID format)
-  → MatchingService.findSimilar()
-    → Load target product (categoryId, skinTypes, tags)
-    → Query active products matching category or overlapping skinTypes/tags
-    → Exclude the target product itself
-    → Limit to 8 results
-    → Return product card DTOs
+resolveProduct(idOrSlug)
+  → BuyerProductsController.findSimilar (@Public)
+    → Query products where id != target AND isActive = true
+        AND merchant.licenseStatus = 'approved'
+        AND categoryId = target.categoryId
+        AND skinTypes hasSome target.skinTypes
+    → Order by avgRating desc
+    → Take limit (default 4)
+    → Return bare product card array
 ```
 
 ### 6.5 動作：お気に入りに追加
@@ -512,72 +535,87 @@ productId validated (UUID format)
 | **エラーレスポンス** | 400 在庫不足。401 未認証。422 在庫切れ |
 | **後続アクション** | カートバッジカウントを無効化して更新 |
 
-### 6.7 動作：有効プロモーションを表示
+### 6.6a 動作：レビュー資格を確認（`can-review`）
 
 | 属性 | 仕様 |
 |-----------|---------------|
-| **トリガー** | 商品詳細ページが「有効プロモーション」セクションをロード |
-| **APIエンドポイント** | `GET /api/v1/products/:slug/promotions` |
+| **トリガー** | 認証済みbuyerのレビューフォームがマウント |
+| **APIエンドポイント** | `GET /api/v1/products/:idOrSlug/can-review` |
+| **ガード** | `JwtAuthGuard + RolesGuard('buyer')` |
+| **処理ステップ** | 1. `resolveProduct`。2. `findDeliveredOrderItem(productId, userId)` → なければ `{ canReview:false, reason:'not_delivered' }`。3. 既存レビュー（`userId_productId`）→ `{ canReview:false, reason:'already_reviewed' }`。4. それ以外 → `{ canReview:true, reason:null }`。 |
+| **成功レスポンス** | `{ canReview, reason }` 200 OK（§7.2a参照）。`reason`: `'not_delivered' \| 'already_reviewed' \| null` |
+| **エラーレスポンス** | 401 未認証。403 購入者でない。404 商品が見つからない |
+| **後続アクション** | `canReview`が真の場合のみ送信ボタンを有効化 |
+
+### 6.6b 動作：レビューを報告
+
+| 属性 | 仕様 |
+|-----------|---------------|
+| **トリガー** | レビューカードのフラグアイコン → ダイアログ送信 |
+| **APIエンドポイント** | `POST /api/v1/reviews/:id/report` |
+| **ガード** | `JwtAuthGuard`（任意の認証済みロール、`@HttpCode(201)`。buyerロールは不要、merchantはUIで非表示） |
+| **送信前バリデーション** | `ReportReviewDto`：`reason`（enum `spam\|inappropriate\|fake\|other`）、`detail?`（≤1000）。リクエストのフィールド名は**`detail`**（保存時は`description`にマップ） |
+| **処理ステップ** | 1. レビューが存在することを確認（`findUnique`）、なければ404。2. `(reviewId, reportedBy)`の既存報告をチェック、あれば409。3. `{ status:'pending', description: dto.detail }`で報告を作成。4. 管理者に`REVIEW_REPORTED`通知（失敗しても非致命）。5. 報告を返却。 |
+| **成功レスポンス** | 報告DTO 201 Created |
+| **エラーレスポンス** | 401 未認証。404 レビューが見つからない。409 既に報告済み（UIは情報トースト「既に報告済み」） |
+
+### 6.7 動作：有効プロモーション表示（商品詳細に組み込み）
+
+> ⚠️ **独立した`GET /products/:slug/promotions`エンドポイントは存在しません。** フロントエンドの`product.service.ts`に`getPromotions`（`/products/:idOrSlug/promotions`）が定義されていますが、バックエンドの`BuyerProductsController`に該当ルートはなく、呼ぶと404になります。プロモーションは**商品詳細レスポンスに`promotions[]`として組み込まれます**（§6.1）。
+
+| 属性 | 仕様 |
+|-----------|---------------|
+| **トリガー** | 商品詳細取得（§6.1）と同時にロード |
+| **APIエンドポイント** | `GET /api/v1/products/:idOrSlug`（`promotions[]`を埋め込み） |
+| **データロード** | `merchant_id = product.merchantId AND is_active = true AND starts_at <= now() AND expires_at >= now()`（ルールBR-PROD-018）。**サーバー側の`balance > 0`フィルタはなし。** |
+| **出力フィールド** | `id, code, description, discountTypeCode`（`percentage`/`fixed`）、`discountValue, minOrderAmount, startsAt, expiresAt, maxUses, usedCount`。計算済み`balance`フィールドは**なし**。 |
+| **UI描画** | `promotions[0]`から商品情報の割引バッジを描画（「{code}: {value}% off」/「{code}: {amount} off」）。`discountTypeCode`により分岐。リッチな`ActivePromotionCard`（残数/有効期限/コードコピー）は存在するが現在はマウントされていない。 |
+| **成功レスポンス** | 組み込み`promotions[]`付き商品詳細200 OK（§7.3参照） |
+| **エラーレスポンス** | 404 商品が見つからない/非アクティブ/販売者未承認 |
+
+**バックエンド処理フロー（§6.1内）：**
+
+```
+getDetail(idOrSlug)
+  → resolveProduct, license gate
+  → promotion.findMany({
+      where: { merchant_id: product.merchantId, is_active: true,
+               starts_at: { lte: now }, expires_at: { gte: now } }
+    })                    // no balance > 0 filter
+  → return { ...product, promotions }
+```
+
+### 6.8 動作：広告バナーを表示（`productDetail_page_banner`）
+
+| 属性 | 仕様 |
+|-----------|---------------|
+| **トリガー** | 商品詳細ページが広告バナースライダーをロード（非merchant） |
+| **APIエンドポイント** | `GET /api/v1/products/:idOrSlug/advertisements` |
 | **リクエストContent-Type** | `application/json`（レスポンス） |
-| **送信前バリデーション** | `slug`（URLスラッグ形式、最大255文字） |
-| **処理ステップ** | 1. slug形式を検証。2. slugで商品を検索。3. 商品の販売者をロード。4. `merchant_id` = 商品の販売者、`is_active = true`、`starts_at <= now()`、`now() < expires_at`の`promotions`をクエリ（ルール4.5.1）。5. 残数`> 0`のプロモーションをフィルター（ルールBR-PROD-019）。6. `starts_at DESC`で並び替え。7. 計算済み`balance`を含むプロモーションDTOを返却。 |
-| **成功レスポンス** | 有効プロモーションリスト付き200 OK（§7.7参照） |
-| **エラーレスポンス** | 400 slug無効。404 商品が見つからない/非アクティブ |
-| **後続アクション** | 有効プロモーションセクションを割引と残数付きで描画 |
+| **パスパラメータ** | `:idOrSlug` — UUID、slug、またはSKU |
+| **処理ステップ** | 1. `resolveProduct` + ライセンスゲート。2. `is_active = true`、`approval_status = 'approved'`、`payment_status = 'completed'`、`starts_at <= now <= expires_at`、かつ`feeSetting.placement = 'productDetail_page_banner'`（有効なフィー設定）の`advertisements`をクエリ（ルールBR-PROD-020/021）。3. `feeSetting {placement, tier}`、`shop {id,name,slug,logoUrl,userId}`を含める。4. フィー設定を持つ広告に絞り、tier優先順位Premium＞Standard＞Basic（`TIER_PRIORITY`）で並び替え、`.slice(0,5)`（ルールBR-PROD-022）。5. 広告ごとにターゲット商品を解決（`sku`→画像ファイル名の順、販売者カタログ照合）→ `{productId, productSlug}`。6. DTO（フラット+ネスト`shop`）を返却。 |
+| **成功レスポンス** | bare配列の広告リスト200 OK（§7.6参照）。適格な広告がない場合は空配列（UIはセクション非表示） |
+| **エラーレスポンス** | 404 商品が見つからない/販売者未承認 |
+| **後続アクション** | 共有`AdBannerSlider`（`placement='productDetail_page_banner'`）を5秒自動ローテーション・ホバー/フォーカス/`prefers-reduced-motion`で一時停止・内部ナビゲーション付きで描画 |
+
+> 注記：広告の購入、支払い、投稿、承認はAdsモジュール（`advertisements`モジュール、販売者/管理者）で処理され、本画面のスコープ外です。ローカルの`SidebarAdvertisements`コンポーネントは存在しますが現在はマウントされておらず、ページは共有`AdBannerSlider`を使用します。
 
 **バックエンド処理フロー：**
 
 ```
-slug validated (URL slug format, max 255 chars)
-  → ProductsService.findOneBySlug()
-    → Lookup product by slug (idx_products_slug index)
-    → Filter where is_active = true
-    → Load product's merchant_id
-    → PromotionsService.findActiveByMerchant()
-      → Query promotions where merchant_id = ... AND is_active = true
-        AND starts_at <= now() AND expires_at > now()
-        (idx_promotions_merchant_id, idx_promotions_is_active, idx_promotions_expires_at)
-      → Filter where balance > 0 (max_uses IS NULL OR max_uses - used_count > 0)
-      → Order by starts_at DESC
-      → Compute balance = max_uses - used_count (NULL = unlimited)
-    → Return active promotion DTOs
-```
-
-### 6.8 動作：サイドバー広告を表示
-
-| 属性 | 仕様 |
-|-----------|---------------|
-| **トリガー** | 商品詳細ページが「サイドバー広告」セクションをロード |
-| **APIエンドポイント** | `GET /api/v1/products/:slug/advertisements` |
-| **リクエストContent-Type** | `application/json`（レスポンス） |
-| **送信前バリデーション** | `slug`（URLスラッグ形式、最大255文字） |
-| **処理ステップ** | 1. slug形式を検証。2. slugで商品を検索（`is_active = true`）。3. `is_active = true`、`approval_status = 'approved'`、`payment_status = 'completed'`、かつ`starts_at <= now() < expires_at`の`advertisements`をクエリ（ルールBR-PROD-020）。4. `product_sidebar`配置にフィルター（ルールBR-PROD-021）。5. tier優先順位Premium＞Standard＞Basicで並び替え、tier内はラウンドロビン。ローテーションあたり5件に制限（ルールBR-PROD-022）。6. 広告主ショップ（名前、slug、logoUrl）を含める。7. 広告DTOを返却。 |
-| **成功レスポンス** | サイドバー広告リスト付き200 OK（§7.8参照）。適格な広告がない場合は空配列 |
-| **エラーレスポンス** | 400 slug無効。404 商品が見つからない/非アクティブ |
-| **後続アクション** | サイドバー広告スライダーを5秒ごとの自動ローテーション付きで描画 |
-
-> 注記：広告の購入、支払い、投稿、承認はAdsモジュール（`advertisements`モジュール、販売者/管理者）で処理され、本画面のスコープ外です。
-
-**バックエンド処理フロー：**
-
-```
-slug validated (URL slug format, max 255 chars)
-  → ProductsService.findOneBySlug()
-    → Lookup product by slug (idx_products_slug index)
-    → Filter where is_active = true
-  → AdvertisementsService.findActiveByPlacement('product_sidebar')
-    → Query advertisements where is_active = true
-        AND approval_status = 'approved'
-        AND payment_status = 'completed'
-        AND starts_at <= now() AND expires_at > now()
-        (idx_advertisements_is_active, idx_advertisements_approval_status,
-         idx_advertisements_expires_at, chk_advertisements_dates)
-    → Filter to product_sidebar placement via purchase/package linkage
-      (⚠️ open item BR-PROD-021: placement/tier columns not on advertisements table)
-    → Order by tier priority (Premium > Standard > Basic), round-robin within tier (REQ §5.3)
-    → Limit to AD_SIDEBAR_MAX_PER_ROTATION (5) results
-    → Include shop (name, slug, logoUrl) via advertisements.shop_id
-    → Return advertisement DTOs
+resolveProduct(idOrSlug) + license gate
+  → BuyerProductsController.getAdvertisements (@Public)
+    → ProductsService.getSidebarAds()
+      → Query advertisements where is_active = true
+          AND approval_status = 'approved'
+          AND payment_status = 'completed'
+          AND starts_at <= now AND expires_at >= now
+          AND feeSetting.placement = 'productDetail_page_banner' (active fee setting)
+      → Include feeSetting { placement, tier }, shop { id, name, slug, logoUrl, userId }
+      → Filter ads having a feeSetting; order by TIER_PRIORITY (premium 3 > standard 2 > basic 1)
+      → .slice(0, 5)
+      → Resolve target product per ad (by sku, else by image filename) → { productId, productSlug }
+      → Return advertisement DTOs (flat + nested shop)
 ```
 
 ---
@@ -620,76 +658,92 @@ slug validated (URL slug format, max 255 chars)
 | `ingredients` | `products.ingredients` | 文字列配列 |
 | `avgRating` | `products.avg_rating` | 10進文字列（小数1桁） |
 | `reviewCount` | `products.review_count` | 整数 |
-| `category` | `categories` | 親付きネストオブジェクト |
-| `merchant` | `merchants` | ネストオブジェクト：`id`、`shopName`（`merchants.shop_name`から）、`licenseStatus`、`shop`（`shops` via `user_id`） |
+| `category` | `categories` | ネストオブジェクト：`id`、`name`、`slug`（親なし） |
+| `merchant` | `merchants` | ネストオブジェクト：`id`、`shopName`（`merchants.shop_name`から）、`licenseStatus`（`shop`なし） |
+| `promotions[]` | `promotions` | アクティブ&有効期間内の組み込みプロモーション配列（§7.3a参照） |
+| `ratingBreakdown[]` | `reviews`（`status='approved'`） | `{ star: 5..1, count }`のレーティング内訳 |
 
 **レスポンス例（200）：**
 
 ```json
 {
-  "data": {
-    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "name": "Hydrating Facial Serum",
-    "slug": "hydrating-facial-serum",
-    "description": "Lightweight daily serum with hyaluronic acid...",
-    "shortDescription": "24-hour hydration for dry skin",
-    "price": "25.00",
-    "compareAtPrice": "32.00",
-    "sku": "SKU-0001",
-    "stockQuantity": 45,
-    "lowStockThreshold": 10,
-    "images": [
-      "https://cdn.example.com/products/uuid/1-full.webp",
-      "https://cdn.example.com/products/uuid/2-full.webp"
-    ],
-    "tags": ["serum", "hydrating"],
-    "skinTypes": ["dry", "sensitive"],
-    "ingredients": ["Hyaluronic Acid", "Vitamin E", "Glycerin"],
-    "isActive": true,
-    "isFeatured": true,
-    "avgRating": "4.50",
-    "reviewCount": 32,
-    "createdAt": "2026-07-01T08:00:00.000Z",
-    "category": {
-      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-      "name": "Serums",
-      "slug": "serums",
-      "parent": { "name": "Skincare", "slug": "skincare" }
-    },
-    "merchant": {
-      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
-      "shopName": "Glow Lab",
-      "licenseStatus": "approved",
-      "shop": {
-        "name": "Glow Lab Official Store",
-        "slug": "glow-lab-official-store",
-        "logoUrl": "https://cdn.example.com/shops/glow-logo.webp",
-        "isApproved": true
-      }
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "name": "Hydrating Facial Serum",
+  "slug": "hydrating-facial-serum",
+  "description": "<p>Lightweight daily serum with hyaluronic acid...</p>",
+  "shortDescription": "24-hour hydration for dry skin",
+  "price": 25,
+  "compareAtPrice": 32,
+  "sku": "SKU-0001",
+  "stockQuantity": 45,
+  "lowStockThreshold": 10,
+  "images": [
+    "/uploads/products/uuid/1-full.webp",
+    "/uploads/products/uuid/2-full.webp"
+  ],
+  "tags": ["serum", "hydrating"],
+  "skinTypes": ["dry", "sensitive"],
+  "ingredients": ["Hyaluronic Acid", "Vitamin E", "Glycerin"],
+  "isActive": true,
+  "isFeatured": true,
+  "avgRating": 4.5,
+  "reviewCount": 32,
+  "createdAt": "2026-07-01T08:00:00.000Z",
+  "category": {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "name": "Serums",
+    "slug": "serums"
+  },
+  "merchant": {
+    "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    "shopName": "Glow Lab",
+    "licenseStatus": "approved"
+  },
+  "promotions": [
+    {
+      "id": "a7b8c9d0-...",
+      "code": "GLOW10",
+      "description": "10% off",
+      "discountTypeCode": "percentage",
+      "discountValue": 10,
+      "minOrderAmount": 20,
+      "startsAt": "2026-08-01T00:00:00.000Z",
+      "expiresAt": "2026-09-30T23:59:59.000Z",
+      "maxUses": 100,
+      "usedCount": 35
     }
-  }
+  ],
+  "ratingBreakdown": [
+    { "star": 5, "count": 20 },
+    { "star": 4, "count": 8 },
+    { "star": 3, "count": 3 },
+    { "star": 2, "count": 1 },
+    { "star": 1, "count": 0 }
+  ]
 }
 ```
 
-### 7.4 出力定義 — レビュー一覧
+### 7.4 出力定義 — レビュー一覧（フラット形状）
 
 | フィールド | データソース | 表示形式 |
 |-------|-------------|----------------|
-| `data[].id` | `reviews.id` | UUID文字列 |
-| `data[].rating` | `reviews.rating` | 整数1〜5 |
-| `data[].title` | `reviews.title` | 文字列またはnull |
-| `data[].body` | `reviews.body` | 文字列またはnull |
-| `data[].images` | `reviews.images` | 文字列配列 |
-| `data[].isVerifiedPurchase` | `reviews.is_verified_purchase` | ブール値 |
-| `data[].createdAt` | `reviews.created_at` | ISO 8601タイムスタンプ |
-| `data[].user` | `users` | ネストユーザー（id、name、avatarUrl） |
-| `meta` | PaginationDto | page、limit、total、totalPages |
+| `items[].id` | `reviews.id` | UUID文字列 |
+| `items[].rating` | `reviews.rating` | 整数1〜5 |
+| `items[].title` | `reviews.title` | 文字列またはnull |
+| `items[].body` | `reviews.body` | 文字列またはnull |
+| `items[].images` | `reviews.images` | 文字列配列 |
+| `items[].isVerifiedPurchase` | `reviews.is_verified_purchase` | ブール値 |
+| `items[].createdAt` | `reviews.created_at` | ISO 8601タイムスタンプ |
+| `items[].user` | `users` | ネストユーザー（id、name のみ — `avatarUrl`は不含） |
+| `total`, `page`, `limit`, `totalPages` | PaginationDto | フラットなページネーションフィールド |
+
+> `status = 'approved'`のレビューのみ返却。エンドポイントは`@Public()`でユーザー単位の絞り込みがないため、pendingレビューは作者本人にも提示されない。
 
 **レスポンス例（200）：**
 
 ```json
 {
-  "data": [
+  "items": [
     {
       "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
       "rating": 5,
@@ -700,33 +754,38 @@ slug validated (URL slug format, max 255 chars)
       "createdAt": "2026-08-01T10:00:00.000Z",
       "user": {
         "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
-        "name": "Jane Doe",
-        "avatarUrl": null
+        "name": "Jane Doe"
       }
     }
   ],
-  "meta": {
-    "page": 1,
-    "limit": 10,
-    "total": 32,
-    "totalPages": 4
-  }
+  "total": 32,
+  "page": 1,
+  "limit": 10,
+  "totalPages": 4
 }
 ```
 
-### 7.5 出力定義 — レビュー作成
+### 7.4a 出力定義 — レビュー資格（`can-review`）
+
+```json
+{ "canReview": false, "reason": "not_delivered" }
+```
+
+`reason`：`'not_delivered' | 'already_reviewed' | null`。
+
+### 7.5 出力定義 — レビュー作成（承認待ち）
 
 **レスポンス例（201）：**
 
 ```json
 {
-  "data": {
-    "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
-    "rating": 5,
-    "title": "Amazing for dry skin",
-    "body": "My skin feels hydrated all day.",
-    "images": [],
-    "isVerifiedPurchase": true,
+  "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
+  "rating": 5,
+  "title": "Amazing for dry skin",
+  "body": "My skin feels hydrated all day.",
+  "images": [],
+  "status": "pending",
+  "isVerifiedPurchase": true,
     "isApproved": true,
     "createdAt": "2026-08-05T12:00:00.000Z"
   }
@@ -747,114 +806,138 @@ slug validated (URL slug format, max 255 chars)
 | `reviewCount` | `products.review_count` | 整数 |
 | `stockQuantity` | `products.stock_quantity` | 整数 |
 
-**レスポンス例（200）：**
+**レスポンス例（200・bare配列）：**
 
 ```json
-{
-  "data": [
-    {
-      "id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
-      "name": "Vitamin C Brightening Serum",
-      "slug": "vitamin-c-brightening-serum",
-      "price": "28.00",
-      "compareAtPrice": null,
-      "images": ["https://cdn.example.com/products/uuid/1-thumb.webp"],
-      "avgRating": "4.30",
-      "reviewCount": 18,
-      "stockQuantity": 20
-    }
-  ]
-}
+[
+  {
+    "id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
+    "name": "Vitamin C Brightening Serum",
+    "slug": "vitamin-c-brightening-serum",
+    "price": 28,
+    "compareAtPrice": null,
+    "images": ["/uploads/products/uuid/1-thumb.webp"],
+    "skinTypes": ["dry", "oily"],
+    "avgRating": 4.3,
+    "reviewCount": 18,
+    "category": { "id": "b2c3d4e5-...", "name": "Serums", "slug": "serums" }
+  }
+]
 ```
 
-### 7.7 出力定義 — 有効プロモーション
+### 7.7 出力定義 — プロモーション（商品詳細に組み込み）
+
+> 独立したプロモーションエンドポイントは存在しません（§6.7参照）。以下は商品詳細レスポンスの`promotions[]`のフィールドです。
 
 | フィールド | データソース | 表示形式 |
 |-------|-------------|----------------|
-| `data[].id` | `promotions.id` | UUID文字列 |
-| `data[].code` | `promotions.code` | 文字列（クーポンコード） |
-| `data[].description` | `promotions.description` | 文字列またはnull |
-| `data[].discountType` | `promotions.discount_type` | `percentage` / `fixed`（`discount_types`ルックアップに存在する値のみ） |
-| `data[].discountValue` | `promotions.discount_value` | 10進文字列 |
-| `data[].minOrderAmount` | `promotions.min_order_amount` | 10進文字列またはnull |
-| `data[].usedCount` | `promotions.used_count` | 整数 |
-| `data[].maxUses` | `promotions.max_uses` | 整数またはnull（無制限） |
-| `data[].balance` | 計算値 | `max_uses - used_count`。`max_uses`がnullの場合はnull（無制限） |
-| `data[].startsAt` | `promotions.starts_at` | ISO 8601タイムスタンプ |
-| `data[].expiresAt` | `promotions.expires_at` | ISO 8601タイムスタンプ |
+| `promotions[].id` | `promotions.id` | UUID文字列 |
+| `promotions[].code` | `promotions.code` | 文字列（クーポンコード） |
+| `promotions[].description` | `promotions.description` | 文字列またはnull |
+| `promotions[].discountTypeCode` | `promotions.discount_type_code` | `percentage` / `fixed`（`discount_types`ルックアップに存在する値のみ） |
+| `promotions[].discountValue` | `promotions.discount_value` | 数値 |
+| `promotions[].minOrderAmount` | `promotions.min_order_amount` | 数値またはnull |
+| `promotions[].usedCount` | `promotions.used_count` | 整数 |
+| `promotions[].maxUses` | `promotions.max_uses` | 整数またはnull（無制限） |
+| `promotions[].startsAt` | `promotions.starts_at` | ISO 8601タイムスタンプ |
+| `promotions[].expiresAt` | `promotions.expires_at` | ISO 8601タイムスタンプ |
 
-**レスポンス例（200）：**
+> **計算済み`balance`フィールドは存在しません。** サーバー側の残数フィルタもありません（§6.7参照）。
+
+**レスポンス例（200・商品詳細の`promotions[]`）：**
 
 ```json
-{
-  "data": [
-    {
-      "id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
-      "code": "GLOW10",
-      "description": "10% off from Glow Lab",
-      "discountType": "percentage",
-      "discountValue": "10.00",
-      "minOrderAmount": "20.00",
-      "usedCount": 35,
-      "maxUses": 100,
-      "balance": 65,
-      "startsAt": "2026-08-01T00:00:00.000Z",
-      "expiresAt": "2026-09-30T23:59:59.000Z"
-    }
-  ]
-}
+[
+  {
+    "id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
+    "code": "GLOW10",
+    "description": "10% off from Glow Lab",
+    "discountTypeCode": "percentage",
+    "discountValue": 10,
+    "minOrderAmount": 20,
+    "usedCount": 35,
+    "maxUses": 100,
+    "startsAt": "2026-08-01T00:00:00.000Z",
+    "expiresAt": "2026-09-30T23:59:59.000Z"
+  }
+]
 ```
 
-### 7.8 出力定義 — サイドバー広告
+### 7.8 出力定義 — 広告バナー（`productDetail_page_banner`）
 
 | フィールド | データソース | 表示形式 |
 |-------|-------------|----------------|
-| `data[].id` | `advertisements.id` | UUID文字列 |
-| `data[].title` | `advertisements.title` | 文字列 |
-| `data[].announcementMessage` | `advertisements.announcement_message` | 文字列（最大500文字） |
-| `data[].imageUrl` | `advertisements.image_url` | URL文字列またはnull（ショップロゴにフォールバック） |
-| `data[].linkUrl` | `advertisements.link_url` | URL文字列またはnull（nullの場合はカードをクリック不可） |
-| `data[].startsAt` | `advertisements.starts_at` | ISO 8601タイムスタンプ |
-| `data[].expiresAt` | `advertisements.expires_at` | ISO 8601タイムスタンプ |
-| `data[].shop` | `shops` via `advertisements.shop_id` | ネストオブジェクト：`name`、`slug`、`logoUrl` |
+| `id` | `advertisements.id` | UUID文字列 |
+| `title` | `advertisements.title` | 文字列 |
+| `description` | `advertisements.content` | 文字列またはnull（`content`からマップ） |
+| `announcementMessage` | `advertisements.announcement_message` | 文字列（最大500文字） |
+| `imageUrl` | `advertisements.image_url` | URL文字列またはnull（製品画像→サンプルにフォールバック） |
+| `sku` | `advertisements.sku` | 文字列またはnull（ターゲット商品解決に使用） |
+| `placement` / `planTier` | `ad_fee_settings.placement` / `.tier`（`feeSetting`経由） | `productDetail_page_banner` / `premium`・`standard`・`basic` |
+| `startsAt` / `expiresAt` | `advertisements.starts_at` / `.expires_at` | ISO 8601タイムスタンプ |
+| `shopId` / `shopName` / `shopSlug` | `advertisements.shop_id` → `shops` | フラットフィールド |
+| `productId` / `productSlug` | 解決済み（sku→画像ファイル名） | ターゲット商品、nullの場合あり |
+| `shop` | `shops` via `advertisements.shop_id` | ネストオブジェクト：`name`、`slug`、`logoUrl` |
 
-**レスポンス例（200）：**
+**レスポンス例（200・bare配列）：**
+
+```json
+[
+  {
+    "id": "c9d0e1f2-a3b4-5c6d-8e9f-0a1b2c3d4e5f",
+    "title": "Autumn Glow Sale",
+    "description": "20% off all serums this week",
+    "announcementMessage": "20% off all serums this week",
+    "imageUrl": "/uploads/ads/autumn-glow.webp",
+    "sku": "SKU-0001",
+    "placement": "productDetail_page_banner",
+    "startsAt": "2026-08-15T00:00:00.000Z",
+    "expiresAt": "2026-08-30T23:59:59.000Z",
+    "planTier": "premium",
+    "shopId": "d0e1f2a3-...",
+    "shopName": "Glow Lab Official Store",
+    "shopSlug": "glow-lab-official-store",
+    "productId": "a1b2c3d4-...",
+    "productSlug": "hydrating-facial-serum",
+    "shop": {
+      "name": "Glow Lab Official Store",
+      "slug": "glow-lab-official-store",
+      "logoUrl": "/uploads/shops/glow-logo.webp"
+    }
+  }
+]
+```
+
+> 注記：内部フィールド（`approval_status`、`payment_status`、`payment_amount`、`payment_reference`、`approved_by`、`rejection_reason`）は購入者に公開されません。DTOに`link_url`フィールドは存在しません。
+
+### 7.8a 出力定義 — レビュー報告（201）
 
 ```json
 {
-  "data": [
-    {
-      "id": "c9d0e1f2-a3b4-5c6d-8e9f-0a1b2c3d4e5f",
-      "title": "Autumn Glow Sale",
-      "announcementMessage": "20% off all serums this week",
-      "imageUrl": "https://cdn.example.com/ads/autumn-glow.webp",
-      "linkUrl": "https://example.com/campaign/autumn-glow",
-      "startsAt": "2026-08-15T00:00:00.000Z",
-      "expiresAt": "2026-08-30T23:59:59.000Z",
-      "shop": {
-        "name": "Glow Lab Official Store",
-        "slug": "glow-lab-official-store",
-        "logoUrl": "https://cdn.example.com/shops/glow-logo.webp"
-      }
-    }
-  ]
+  "id": "b8c9d0e1-...",
+  "reviewId": "d4e5f6a7-...",
+  "reportedBy": "e5f6a7b8-...",
+  "reason": "spam",
+  "description": "This review contains promotional content",
+  "status": "pending"
 }
 ```
 
-> 注記：内部フィールド（`approval_status`、`payment_status`、`payment_amount`、`payment_reference`、`approved_by`、`rejection_reason`、`week_number`）は購入者に公開されません。
+> リクエストは`detail`フィールドを使用し、`description`として保存。報告者は`reportedBy`（`user_id`ではない）。
 
 ---
 
 ## 8. 入力バリデーションルール
 
-### 8.1 パスパラメータバリデーション（ストリクトモード）
+### 8.1 パスパラメータバリデーション
 
 | パラメータ | バリデーションルール | エラーメッセージ（EN） | エラーメッセージ（JA） |
 |-----------|-----------------|--------------------|--------------------|
-| `slug` | 必須、URLスラッグ形式、最大255文字 | "slug must be a string" | "スラッグは文字列である必要があります" |
-| `productId` | 必須、UUID形式 | "productId must be a valid UUID" | "productId が無効です" |
+| `:idOrSlug` | UUID、slug、またはSKU。非UUIDでslug/SKUに一致しなければ404 | "Product not found" | "商品が見つかりません" |
 
-### 8.2 レビューバリデーション（ストリクトモード）
+> `resolveProduct`は`:idOrSlug`をUUID、slug、SKUの順で解決します。slug形式の個別400エラーパスはありません。
+
+### 8.2 レビューバリデーション（`CreateReviewDto`）
 
 | フィールド | バリデーションルール | エラーメッセージ（EN） | エラーメッセージ（JA） |
 |-------|-----------------|--------------------|--------------------|
@@ -868,7 +951,8 @@ slug validated (URL slug format, max 255 chars)
 | フィールド | バリデーションルール | エラーメッセージ（EN） | エラーメッセージ（JA） |
 |-------|-----------------|--------------------|--------------------|
 | `page` | 任意、`@Min(1)`、デフォルト1 | "page must not be less than 1" | "ページ番号は1以上である必要があります" |
-| `limit` | 任意、`@Min(1)`、`@Max(50)`、デフォルト10 | "limit must not be greater than 50" | "件数は1〜50の範囲です" |
+| `limit` | 任意、`@Min(1)`、`@Max(50)`、バックエンドデフォルト20（UIは10送信） | "limit must not be greater than 50" | "件数は1〜50の範囲です" |
+| `sortBy` | 任意、`newest\|oldest\|highest\|lowest`、デフォルト`newest` | "sortBy is invalid" | "sortBy が無効です" |
 
 ### 8.4 カート追加バリデーション（ストリクトモード）
 
@@ -902,13 +986,12 @@ slug validated (URL slug format, max 255 chars)
 
 | HTTPステータス | エラーコード | シナリオ | ユーザー向け動作 |
 |-------------|------------|----------|---------------------|
-| `400` | `BAD_REQUEST` | slug無効 / バリデーション失敗 | フィールド単位のインラインエラー+上部バナー |
-| `401` | `UNAUTHORIZED` | JWT欠落または無効 | ログインモーダルを開く / `/login`へリダイレクト |
+| `400` | `BAD_REQUEST` | 配送済みでない（レビュー作成）/ バリデーション失敗 | レビューフォーム送信部にインラインエラー |
+| `401` | `UNAUTHORIZED` | JWT欠落または無効 | ログインプロンプト / `/login?redirect=/buyer/products`へリダイレクト |
 | `403` | `FORBIDDEN` | ユーザーロールが販売者/管理者（購入者でない） | `/unauthorized`へリダイレクト |
-| `404` | `NOT_FOUND` | 商品が見つからないまたは非アクティブ | 「商品一覧へ戻る」リンク付きEmptyState |
-| `409` | `CONFLICT` | 重複レビュー（ユニーク`user_id + product_id`） | レビューフォームを無効化 |
-| `422` | `UNPROCESSABLE_ENTITY` | 購入済みでない（ルール4.4.1） | 説明テキストを表示 |
-| `429` | `TOO_MANY_REQUESTS` | レート制限超過 | リトライカウントダウンを表示 |
+| `404` | `NOT_FOUND` | 商品が見つからない/非アクティブ/販売者未承認。レビューが見つからない（報告時） | 「商品一覧へ戻る」リンク付きEmptyState / エラートースト |
+| `409` | `CONFLICT` | 重複レビュー。重複報告（`reviewId + reportedBy`） | インラインエラー / 情報トースト「既に報告済み」 |
+| `429` | `TOO_MANY_REQUESTS` | レート制限超過（報告） | エラートースト「リクエストが多すぎます」 |
 | `500` | `INTERNAL_SERVER_ERROR` | サーバーエラー | 「問題が発生しました」+リトライボタン（再取得） |
 
 ### 9.3 エラー分類表 — お気に入り＆カート
@@ -918,7 +1001,7 @@ slug validated (URL slug format, max 255 chars)
 | `400` | `BAD_REQUEST` | 在庫不足（`stock_quantity < requested`） | インラインエラー、CTAを無効化 |
 | `401` | `UNAUTHORIZED` | 未認証 | ログインモーダルを開く / `/login`へリダイレクト |
 | `404` | `NOT_FOUND` | 商品が見つからない | EmptyState |
-| `409` | `CONFLICT` | 商品が既にお気に入りに登録済み | トースト「既にお気に入りにあります」、♡は塗りつぶしのまま |
+| `409` | `CONFLICT` | 商品が既にカート/お気に入りに登録済み | 「既に追加済み」ダイアログ（Cart:「Already in Cart」/ Wishlist:「Already in Wishlist」） |
 | `422` | `UNPROCESSABLE_ENTITY` | 在庫切れ（`stock_quantity = 0`、ルール4.2.2） | 「カートに追加」無効化+「在庫切れ」バッジ |
 
 ### 9.4 フロントエンドのエラー表示動作
@@ -941,47 +1024,48 @@ slug validated (URL slug format, max 255 chars)
 
 | エンドポイント | アクセスレベル | 説明 |
 |----------|-------------|-------------|
-| `GET /products/:slug` | 公開 | 商品詳細表示 |
-| `GET /products/:productId/reviews` | 公開 | レビュー一覧表示 |
-| `GET /products/:slug/promotions` | 公開 | 有効プロモーション表示 |
-| `GET /products/:slug/advertisements` | 公開 | サイドバー広告表示 |
-| `GET /recommendations/similar/:productId` | 公開 | 関連商品 |
-| `POST /products/:productId/reviews` | 保護 | `buyer`ロール必須 |
-| `POST /wishlist/:productId` | 保護 | `buyer`+ロール必須 |
-| `POST /cart/items` | 保護 | `buyer`+ロール必須 |
+| `GET /products/:idOrSlug` | 公開 | 商品詳細表示（UUID\|slug\|SKU） |
+| `GET /products/:idOrSlug/reviews` | 公開 | 承認済みレビュー一覧表示 |
+| `GET /products/:idOrSlug/similar` | 公開 | 類似商品 |
+| `GET /products/:idOrSlug/advertisements` | 公開 | 広告バナー表示 |
+| `GET /products/:idOrSlug/can-review` | 保護（buyer） | レビュー資格確認 |
+| `POST /products/:idOrSlug/reviews` | 保護（buyer） | レビュー作成 |
+| `POST /reviews/:id/report` | 保護（任意の認証済みロール） | レビュー報告 |
+| `POST /wishlist/:productId` ⚠️ | 保護（buyer） | お気に入りに追加 |
+| `POST /cart/items` ⚠️ | 保護（buyer） | カートに追加 |
 
 ### 10.3 RBAC強制
 
 | エンドポイント | ガード | ロール |
 |----------|-------|------|
-| `GET /products/:slug` | `@Public()` | なし |
-| `GET /products/:productId/reviews` | `@Public()` | なし |
-| `GET /products/:slug/promotions` | `@Public()` | なし |
-| `GET /products/:slug/advertisements` | `@Public()` | なし |
-| `POST /products/:productId/reviews` | `JwtAuthGuard + RolesGuard` | `buyer` |
-| `POST /wishlist/:productId` | `JwtAuthGuard + RolesGuard` | `buyer`+ |
-| `POST /cart/items` | `JwtAuthGuard + RolesGuard` | `buyer`+ |
+| 公開読み取り（§10.2） | `@Public()` | なし |
+| `GET /products/:idOrSlug/can-review` | `JwtAuthGuard + RolesGuard` | `buyer` |
+| `POST /products/:idOrSlug/reviews` | `JwtAuthGuard + RolesGuard` | `buyer` |
+| `POST /reviews/:id/report` | `JwtAuthGuard` | 任意の認証済みロール |
+| `POST /wishlist/:productId` ⚠️ | `JwtAuthGuard + RolesGuard` | `buyer` |
+| `POST /cart/items` ⚠️ | `JwtAuthGuard + RolesGuard` | `buyer` |
 
-**ルール：** バックエンドは常にRBACを強制する。フロントエンドのガードはUX上の便宜のみ。
+**ルール：** バックエンドは常にRBACを強制する。フロントエンドのガード（例：merchant-viewのCTA非表示）はUX上の便宜のみ。
 
 ### 10.4 レビュー悪用防止
 
 | ルール | 実装 |
 |------|----------------|
-| ユーザーごと・商品ごとにレビュー1件 | DBユニーク制約`uq_reviews_user_product`（user_id, product_id）+ ConflictException |
-| 購入済みユーザーのみ | レビュー許可前に商品を含む完了済み注文をチェック（ルール4.4.1） |
-| レーティング範囲 | DBチェック`chk_reviews_rating`（1〜5）+ DTOバリデーション |
-| レビューモデレーション | `is_approved`はデフォルトtrue。管理者は`/admin/reviews/:id/moderate`でモデレーション可能 |
-| XSS防止 | 全レビューコンテンツのReact自動エスケープ。CSPヘッダー |
+| ユーザーごと・商品ごとにレビュー1件 | DBユニーク制約`uq_reviews_user_product`（userId_productId）+ ConflictException（409） |
+| 配送済み購入のみ | `findDeliveredOrderItem`（注文`statusCode='delivered'`）→ 400 |
+| レーティング範囲 | DTO `@Min(1) @Max(5)` + DBチェック`chk_reviews_rating`（1〜5） |
+| レビューモデレーション | 新規レビューは`status='pending'`。公開一覧は`approved`でフィルター。管理者は`/admin/reviews/:id/moderate`で承認/却下 |
+| 報告重複防止 | `(reviewId, reportedBy)`で重複 → 409 |
+| 管理者通知 | `REVIEW_CREATED` / `REVIEW_REPORTED`通知（非致命） |
 
-### 10.5 セキュリティ監査ログ
+### 10.5 セキュリティ監査 / 通知
 
-| イベント | 記録データ | 保持期間 |
+| イベント | 記録データ / 通知 | 保持期間 |
 |-------|-------------|-----------|
-| `REVIEW_CREATED` | userId、productId、rating、ip、タイムスタンプ | 90日 |
-| `WISHLIST_ADDED` | userId、productId、タイムスタンプ | 90日 |
-| `CART_ITEM_ADDED` | userId、productId、quantity、タイムスタンプ | 90日 |
-| `PRODUCT_VIEW` | userId（任意）、productId、ip、タイムスタンプ | 30日 |
+| `REVIEW_CREATED` | 管理者へのアプリ内通知 | 通知ポリシーに準拠 |
+| `REVIEW_REPORTED` | 管理者へのアプリ内通知 | 通知ポリシーに準拠 |
+
+> 現行の`createReview` / `getDetail`実装に明示的なRedisキャッシュ無効化や`PRODUCT_VIEW`監査ログはありません（BR-PROD-016/017追跡項目）。
 
 ---
 
@@ -1008,17 +1092,23 @@ slug validated (URL slug format, max 255 chars)
 
 | 遷移元 | 遷移先 | 条件 |
 |--------|--------|-----------|
-| ホーム / 検索 / カテゴリーページ | `/products/:slug` | 商品カードのクリック |
-| お気に入りページ | `/products/:slug` | お気に入り商品のクリック |
-| 関連商品セクション | `/products/:slug` | 類似商品カードのクリック |
+| ホーム / 検索 / カテゴリーページ | `/products/:id` | 商品カードのクリック |
+| お気に入りページ | `/wishlist/products/:id` | お気に入り商品のクリック |
+| 類似商品セクション | `/products/:id` | 類似商品カードのクリック |
+| マーチャント商品管理 | `/merchant/products/:id/view` | マーチャントプレビュー |
+| 広告バナー（他画面） | `/buyer/products/:sku` | 広告クリック |
 
 ### 12.2 内部ナビゲーション
 
 | 遷移元 | 遷移先 | トリガー |
 |--------|--------|---------|
-| 商品詳細 | `/shops/:shopSlug` | 「ショップを見る →」リンク |
-| 商品詳細 | `/wishlist` | お気に入りアイコン（ヘッダー） |
-| 商品詳細 | `/cart` | カートアイコン（ヘッダー） |
+| 商品詳細 | `history.back()` | 戻るボタン |
+| 商品詳細 | `/products` | 「商品一覧へ」（Not Found状態） |
+| レーティングサマリー | `#reviews` | スムーススクロール |
+| 類似商品カード | `/products/:id` | カードクリック |
+| 広告カード / 「Learn more」 | `/buyer/products/{sku\|fallbackId}` | 広告クリック |
+| レビューフォーム（未認証） | `/login` | ログインプロンプト |
+| カート/お気に入りCTA（未認証） | `/login?redirect=/buyer/products` | CTAクリック |
 
 ### 12.3 遷移先（アクション後）
 
@@ -1041,32 +1131,30 @@ slug validated (URL slug format, max 255 chars)
 
 ### 13.1 パフォーマンス要件
 
-| メトリクス | 目標 |
+| メトリクス | 目標 / 動作 |
 |--------|--------|
 | ページロード（初期レンダリング） | ≤ 2秒 |
-| 商品詳細APIレスポンス | ≤ 300ミリ秒（Redisキャッシュ） |
-| レビュー一覧APIレスポンス | ≤ 500ミリ秒 |
-| 類似商品APIレスポンス | ≤ 500ミリ秒 |
-| キャッシュ無効化伝播 | ≤ 1秒 |
-| 画像遅延ロード | 折り返し以下の全画像は遅延ロード |
+| 商品詳細クエリ鮮度 | `staleTime: 0`、`refetchOnMount: 'always'`（鮮度優先、Redisキャッシュなし） |
+| レビューキャッシュ | `staleTime: 60_000` |
+| 類似商品/プロモーション/広告キャッシュ | `staleTime: 300_000` |
+| 画像遅延ロード | ギャラリー画像＋広告画像は遅延ロード |
 
 ### 13.2 セキュリティ考慮事項
 
 | 懸念事項 | 緩和策 |
 |---------|------------|
-| 不正アクセス | 全更新エンドポイントでRBAC（JwtAuthGuard + RolesGuard） |
-| レビュー悪用 | 購入済みチェック+ユニーク制約+モデレーション |
-| 在庫レース | カート挿入時のアトミック在庫再検証（ルール4.2.2） |
-| XSS | React自動エスケープ+ CSPヘッダー |
-| キャッシュポイズニング | レビュー/商品更新時にRedisキャッシュを無効化 |
+| 不正アクセス | レビュー/can-review/報告エンドポイントのRBAC（JwtAuthGuard + RolesGuard） |
+| レビュー悪用 | 配送済み購入チェック+ユニーク制約+モデレーションキュー |
+| 在庫レース | カート挿入時のアトミック在庫再検証（ルール4.2.2）⚠️ Cartチーム |
+| XSS / HTML説明 | 商品`description`は`dangerouslySetInnerHTML`でHTMLレンダリング。上流コンテンツ管理済み。サニタイズ/CSP追跡（BR-PROD-017）。レビュー本文はReact自動エスケープ |
+| 広告リンク安全性 | 内部ナビゲーション（外部`window.open`なし） |
 
 ### 13.3 レスポンシブデザイン要件
 
 | ブレークポイント | レイアウト |
 |------------|--------|
-| デスクトップ（≥ 1024px） | 2カラム：左にギャラリー、右に情報。下部にタブ |
-| タブレット（768px – 1023px） | ギャラリー+情報をスタック、スティッキーCTAバー |
-| モバイル（< 768px） | 全幅スタックレイアウト、スティッキー「カートに追加」バー |
+| ≥ 768px（`md:`） | 2カラム：左にギャラリー、右に情報。購入アクションはインライン（Product Info内） |
+| < 768px | 全幅スタックレイアウト、モバイル固定CTAバー（`md:hidden`） |
 
 ### 13.4 テスト戦略
 
@@ -1074,25 +1162,25 @@ slug validated (URL slug format, max 255 chars)
 
 | コンポーネント | テストケース |
 |-----------|------------|
-| `product.service.ts` | getBySlug成功、404処理、レビュー作成 |
+| `product.service.ts` | getByIdOrSlug成功、404処理、レビュー作成 |
 | `useProductDetail.ts` | クエリキー構成、ミューテーション無効化 |
-| `product.schema.ts` | 有効/無効レーティング、title/body最大長 |
 | `ProductGallery.tsx` | サムネイルクリックでメイン画像切替、画像なしフォールバック |
 
 **統合テスト：**
 
 | シナリオ | 期待結果 |
 |----------|-----------------|
-| 有効なslugでのGET商品 | カテゴリー、販売者、ショップ付きの完全詳細 |
-| 非アクティブslugでのGET商品 | 404 |
-| 商品のレビューGET | ユーザー情報付きの承認済みレビューのページネーション |
-| 購入なしでのレビューPOST | 422（購入済みルール） |
+| UUID/slug/SKUでのGET商品 | カテゴリー、販売者、組み込み`promotions[]`/`ratingBreakdown[]`付きの完全詳細 |
+| 非アクティブ商品/未承認販売者でのGET商品 | 404 |
+| 商品のレビューGET | 承認済みレビューのフラットページネーション（`{items,total,page,limit,totalPages}`） |
+| 配送済みでないレビューPOST | 400（BadRequest、422ではない） |
 | 重複レビューPOST | 409（ユニーク制約） |
-| レビューPOSTでavgRating/reviewCount更新 | 集計が新しいレーティングを反映 |
-| 在庫切れ商品のカート追加 | 422 / バリデーションエラー |
+| レビューPOSTでavgRating/reviewCount更新 | `approved`レビューのみで集計を再計算 |
+| 在庫切れ商品のカート追加 | 422 / バリデーションエラー（Cartモジュール） |
 | お気に入り追加（新規/重複） | 201 / 409 |
-| 商品の有効プロモーションGET | アクティブ、有効期間内、残数>0のみの200 |
-| 商品のサイドバー広告GET | 承認済み、支払済み、アクティブ、有効期間内の`product_sidebar`広告のみの200（最大5件）。該当なしの場合は空配列 |
+| 商品の広告バナーGET | 承認済み、支払済み、アクティブ、有効期間内、`feeSetting.placement='productDetail_page_banner'`の200（tier順・最大5件）。該当なしの場合は空配列 |
+| `can-review` GET | `not_delivered` / `already_reviewed` / `canReview:true`の適切な返却 |
+| レビュー報告POST（重複） | 409 |
 
 **セキュリティテスト：**
 
@@ -1112,18 +1200,16 @@ slug validated (URL slug format, max 255 chars)
 
 | 定義キー | デフォルト値 | 説明 |
 |----------------|---------------|-------------|
-| `VITE_API_BASE_URL` | `http://localhost:8080/api/v1` | バックエンドAPIベースURL（CORSプロキシ用の完全URL） |
-| `PAGINATION_DEFAULT_LIMIT` | `10` | レビュー一覧のデフォルトページサイズ |
-| `PAGINATION_MAX_LIMIT` | `50` | レビュー一覧の最大ページサイズ |
-| `REVIEW_MAX_IMAGES` | `5` | レビューあたりの最大画像数 |
+| `VITE_API_BASE_URL` | `http://localhost:8080/api/v1` | バックエンドAPIベースURL（相対画像URL解決に使用） |
+| レビューデフォルトlimit | `20` | バックエンドの`DefaultValuePipe`（UIは10送信） |
+| `PAGINATION_MAX_LIMIT` | `50` | レビュー一覧の最大ページサイズ（`@Max(50)`） |
+| `REVIEW_MAX_IMAGES` | `5` | レビューあたりの最大画像数（DTOのみ、UIにアップロードなし） |
 | `REVIEW_BODY_MAX_LENGTH` | `5000` | レビュー本文の最大長 |
-| `PRODUCT_CACHE_TTL` | `300` | Redis商品キャッシュTTL（秒） |
-| `SIMILAR_PRODUCT_LIMIT` | `8` | 返却される最大類似商品数 |
-| `PROMOTION_MAX_LIMIT` | `10` | 返却される最大有効プロモーション数 |
-| `ADVERTISEMENT_SLIDER_ROTATION_MS` | `5000` | サイドバー広告スライダーの自動ローテーション間隔（REQ §5.3） |
-| `AD_SIDEBAR_MAX_PER_ROTATION` | `5` | スライダーローテーションあたりに表示される最大広告数（REQ §5.3） |
-| `PRODUCT_CACHE_KEY` | `cache:product:<id>` | Redisキャッシュキープレフィックス |
-| `PRODUCT_LIST_CACHE_KEY` | `cache:products:list:*` | Redisリストキャッシュキープレフィックス |
+| 類似商品デフォルトlimit | `4` | バックエンドの`DefaultValuePipe`（UIは8送信） |
+| `AUTO_SLIDE_MS` | `5000` | 広告スライダーの自動ローテーション間隔（`AdBannerSlider`の定数） |
+| 広告cap | `5` | `getSidebarAds`の`.slice(0, 5)` |
+| プレースホルダー画像 | `/placeholder-product.png` | `images`が空の場合のギャラリーフォールバック |
+| `SAMPLE_AD_IMAGE` | `/uploads/products/cd8048d7-….png` | 広告画像の最終フォールバック |
 
 ---
 
@@ -1153,100 +1239,91 @@ slug validated (URL slug format, max 255 chars)
 
 | データベーステーブル | 関連する機能動作 | 使用するインデックス/制約 |
 |----------------|-------------------------------|-------------------------|
-| `products` | slugでの商品詳細ロード（SELECT）、レーティング再計算（UPDATE） | `idx_products_slug`、`idx_products_is_active`、`idx_products_category_id`、`uq_products_slug`、`chk_products_stock` |
-| `categories` | 商品詳細レスポンスに含まれるカテゴリー情報 | `idx_categories_parent_id` |
-| `merchants` | マーチャント表示名（`shop_name`）、「販売者」セクションのライセンスステータス | `idx_merchants_user_id`、`idx_merchants_license_status` |
-| `users` | レビュー投稿者情報（名前、avatarUrl） | `pk_users` |
-| `shops` | 「販売者」のショッププロフィール — `shops.user_id`でリンク | `idx_shops_user_id`、`uq_shops_slug`、`idx_shops_is_approved` |
-| `reviews` | レビュー一覧（SELECT）、レビュー作成（INSERT） | `idx_reviews_product_id`、`uq_reviews_user_product`、`chk_reviews_rating` |
-| `review_reports` | レビュー管理（SELECT / INSERT） — 不適切レビューの報告用 | `idx_review_reports_review_id`、`idx_review_reports_status`、`chk_review_reports_reason`、`chk_review_reports_status` |
+| `products` | id/slug/SKUでの商品詳細ロード（SELECT）、レーティング再計算（UPDATE） | `idx_products_slug`、`idx_products_is_active`、`idx_products_category_id`、`uq_products_sku`、`chk_products_stock` |
+| `categories` | 商品詳細レスポンスに含まれるカテゴリー情報（`{id,name,slug}`、親なし） | `idx_categories_parent_id` |
+| `merchants` | マーチャント表示名（`shop_name`）、ライセンスステータス（`license_status`）、ライセンスゲート | `idx_merchants_user_id`、`idx_merchants_license_status` |
+| `users` | レビュー投稿者情報（名前。`avatarUrl`はselectに含まれない — UIはイニシャルにフォールバック） | `pk_users` |
+| `shops` | 広告のネスト`shop {name,slug,logoUrl}` — `shops.user_id`でリンク | `idx_shops_user_id`、`uq_shops_slug`、`idx_shops_is_approved` |
+| `reviews` | レビュー一覧（SELECT、`status='approved'`のみ）、レビュー作成（INSERT、`status='pending'`）、`ratingBreakdown`（groupBy） | `idx_reviews_product_id`、`uq_reviews_user_product`、`chk_reviews_rating` |
+| `review_reports` | レビュー報告（INSERT）、`(reviewId, reportedBy)`重複チェック | `idx_review_reports_review_id`、`idx_review_reports_status`、`chk_review_reports_reason`、`chk_review_reports_status` |
 | `wishlist` | お気に入り追加（SELECT / INSERT） — テーブル名は単数形 | `idx_wishlist_user_id`、`uq_wishlist_user_product` |
-| `promotions` | 有効プロモーション表示（SELECT）、`max_uses` / `used_count`から残数計算 | `idx_promotions_merchant_id`、`idx_promotions_is_active`、`idx_promotions_expires_at`、`uq_promotions_code`、`chk_promotions_discount_value`、`chk_promotions_dates` |
+| `promotions` | 商品詳細への組み込み（SELECT — アクティブ&有効期間内、残数フィルタなし） | `idx_promotions_merchant_id`、`idx_promotions_is_active`、`idx_promotions_expires_at`、`uq_promotions_code`、`chk_promotions_discount_value`、`chk_promotions_dates` |
 | `carts` | ユーザーカート管理（SELECT / INSERT） — DB設計書v2.4：カート永続化用テーブル | `idx_carts_user_id`、`uq_carts_user_id` |
 | `cart_items` | カート商品行（SELECT / INSERT / UPDATE / DELETE） — DB設計書v2.4：カート商品用テーブル | `idx_cart_items_cart_id`、`uq_cart_items_cart_product`、`chk_cart_items_quantity` |
-| `order_items` | レビュー検証用の検証済み購入チェック（SELECT）。注：カート操作は`carts`/`cart_items`テーブルを使用（DB設計書v2.4）。 | `idx_order_items_product_id`、`idx_order_items_merchant_id`、`fk_order_items_product`、`fk_order_items_merchant`、`chk_order_items_quantity`、`chk_order_items_total` |
-| `discount_types` | プロモーション割引型バリデーション用ルックアップテーブル — `promotions.discount_type` CHECK制約で参照（DB設計書v2.4） | `uq_discount_types_code` |
-| `order_status_history` | 注文ステータス監査証跡 — Orderモジュールがステータス遷移時に書き込み（DB設計書v2.4） | `idx_oh_order_id`、`idx_oh_status`、`uq_oh_order_status` |
-| `inventory_transactions` | 在庫監査証跡 — Product/Orderモジュールが在庫変更時に書き込み（DB設計書v2.4） | `idx_it_product_id`、`idx_it_merchant_id`、`idx_it_reference_type` |
-| `password_reset_tokens` | パスワードリセット — ProductDetail直接使用なし、認証フロー用にDB設計書v2.4に存在 | （なし — 認証モジュール専用） |
-| `advertisements` | サイドバー広告表示（SELECT） — `product_sidebar`配置向けの承認済み、支払済み、アクティブ、有効期間内の広告（DB設計書v2.4 §3.13） | `idx_advertisements_is_active`、`idx_advertisements_approval_status`、`idx_advertisements_payment_status`、`idx_advertisements_expires_at`、`chk_advertisements_dates`、`chk_advertisements_approval_status`、`chk_advertisements_payment_status`、`fk_advertisements_shop` |
-| `ad_fee_settings` | `product_sidebar`配置の配置/tier設定ルックアップ（SELECT） — デフォルトレート$2.00/$3.50/$6.00/日、15日、最大3件（DB設計書v2.4 §3.14） | `uq_ad_fee_settings_placement_tier` |
-| `ad_payments` | 表示される広告の支払い完了チェック（SELECT） — `ad_payments.ad_id`経由（DB設計書v2.4 §3.15） | `fk_ad_payments_ad` |
+| `order_items` | 配送済み購入チェック（SELECT）— `findDeliveredOrderItem`。注：カート操作は`carts`/`cart_items`テーブルを使用（DB設計書v2.4）。 | `idx_order_items_product_id`、`idx_order_items_merchant_id`、`fk_order_items_product`、`fk_order_items_merchant`、`chk_order_items_quantity`、`chk_order_items_total` |
+| `discount_types` | プロモーション割引型バリデーション用ルックアップテーブル — `promotions.discount_type_code`が参照（DB設計書v2.4） | `uq_discount_types_code` |
+| `advertisements` | 広告バナー表示（SELECT） — `productDetail_page_banner`配置向けの承認済み、支払済み、アクティブ、有効期間内の広告（DB設計書v2.4 §3.13） | `idx_advertisements_is_active`、`idx_advertisements_approval_status`、`idx_advertisements_payment_status`、`idx_advertisements_expires_at`、`chk_advertisements_dates`、`chk_advertisements_approval_status`、`chk_advertisements_payment_status`、`fk_advertisements_shop` |
+| `ad_fee_settings` | 配置/tier解決ルックアップ（SELECT） — `feeSetting`関連経由で`placement`/`tier`を解決（DB設計書v2.4 §3.14） | `uq_ad_fee_settings_placement_tier` |
+| `ad_payments` | 表示される広告の支払い完了チェック（`payment_status='completed'`） — `ad_payments.ad_id`経由（DB設計書v2.4 §3.15） | `fk_ad_payments_ad` |
 
 **参照Prismaクエリ：**
 
-*リレーション付き商品詳細：*
+*商品解決 + ライセンスゲート：*
 
 ```typescript
-// NOTE: products.merchant_id → references merchants(id) (DATABASE_SPEC v2.4)
-// merchants.shop_name is the display name; shops links via shops.user_id (not merchant_id)
-const product = await prisma.product.findUnique({
-  where: { slug: dto.slug, isActive: true },
+// resolveProduct(idOrSlug) — UUID か slug|SKU
+const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-…/i.test(idOrSlug);
+const product = await prisma.product.findFirst({
+  where: isUuid
+    ? { id: idOrSlug, isActive: true }
+    : { isActive: true, OR: [{ slug: idOrSlug }, { sku: idOrSlug }] },
   include: {
-    category: { include: { parent: true } },
-    merchant: {
-      select: {
-        id: true,
-        shopName: true,       // merchants.shop_name (display name)
-        licenseStatus: true,  // merchants.license_status
-        user: {
-          select: {
-            shop: { select: { name: true, slug: true, logoUrl: true, isApproved: true } },
-          },
-        },
-      },
-    },
+    category: { select: { id: true, name: true, slug: true } },   // parent 不要
+    merchant: { select: { id: true, shopName: true, licenseStatus: true } },
   },
 });
+if (!product || product.merchant?.licenseStatus !== 'approved') throw new NotFoundException();
 ```
 
-*レビュー一覧（ページネーション付き）：*
+*レビュー一覧（フラットページネーション）：*
 
 ```typescript
-const [reviews, total] = await prisma.$transaction([
+const [items, total] = await prisma.$transaction([
   prisma.review.findMany({
-    where: { productId, isApproved: true },
-    include: { user: { select: { id: true, name: true, avatarUrl: true } } },
-    orderBy: { createdAt: 'desc' },
+    where: { productId, status: 'approved' },
+    include: { user: { select: { id: true, name: true } } },  // avatarUrl なし
+    orderBy: sortByOrder,   // newest: { createdAt: 'desc' } ほか
     skip: (page - 1) * limit,
     take: limit,
   }),
-  prisma.review.count({ where: { productId, isApproved: true } }),
+  prisma.review.count({ where: { productId, status: 'approved' } }),
 ]);
+return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
 ```
 
-*レビュー作成 + レーティング再計算（トランザクション）：*
+*レビュー作成（承認待ち）+ レーティング再計算：*
 
 ```typescript
-await prisma.$transaction(async (tx) => {
-  const review = await tx.review.create({
-    data: {
-      userId: currentUser.id,
-      productId,
-      rating: dto.rating,
-      title: dto.title,
-      body: dto.body,
-      images: dto.images ?? [],
-      isVerifiedPurchase: true,
-    },
-  });
-
-  const aggregate = await tx.review.aggregate({
-    where: { productId, isApproved: true },
-    _avg: { rating: true },
-    _count: { rating: true },
-  });
-
-  await tx.product.update({
-    where: { id: productId },
-    data: {
-      avgRating: aggregate._avg.rating ?? 0,
-      reviewCount: aggregate._count.rating,
-    },
-  });
-
-  return review;
+const review = await prisma.review.create({
+  data: {
+    userId: currentUser.id,
+    productId,
+    rating: dto.rating,
+    title: dto.title,
+    body: dto.body,
+    images: dto.images ?? [],
+    status: 'pending',              // モデレーションキュー
+    isVerifiedPurchase: true,
+  },
 });
+
+// 集計は status = 'approved' のみ
+const aggregate = await prisma.review.aggregate({
+  where: { productId, status: 'approved' },
+  _avg: { rating: true },
+  _count: { rating: true },
+});
+
+await prisma.product.update({
+  where: { id: productId },
+  data: {
+    avgRating: aggregate._avg.rating ?? 0,
+    reviewCount: aggregate._count.rating,
+  },
+});
+
+await notifyAdminsOfReviewCreated(...);  // REVIEW_CREATED（非致命）
+return review;
 ```
 
 ### 15.3 関連文書参照
@@ -1261,44 +1338,23 @@ await prisma.$transaction(async (tx) => {
 
 ## 16. 付録A: 実装チェックリスト
 
-### バックエンド（NestJS）
+### バックエンド（NestJS）— 実装済み
 
-- [ ] `products.controller.ts` - `@Public()`付き`GET /:slug`エンドポイント
-- [ ] `products.service.ts` - リレーション+キャッシュ付き`findOneBySlug()`
-- [ ] `reviews.controller.ts` - `GET/POST /products/:productId/reviews`
-- [ ] `reviews.service.ts` - 購入済みチェック+トランザクションレーティング再計算
-- [ ] `matching.service.ts` - `getSimilar()`エンドポイント
-- [ ] `promotions.service.ts` - `findActiveByMerchant()`エンドポイント（`GET /products/:slug/promotions`）
-- [ ] `advertisements.controller.ts` - `@Public()`付き`GET /products/:slug/advertisements`エンドポイント
-- [ ] `advertisements.service.ts` - 承認済み/支払済み/アクティブフィルタリング+tier優先順位の並び順付き`findActiveByPlacement('product_sidebar')`
-- [ ] `dto/create-review.dto.ts`（class-validator付き）
-- [ ] Redisキャッシュ：`cache:product:{id}`（TTL 5分）、レビュー/商品更新時に無効化
-- [ ] ユニットテストの作成（サービスレベル、新規コードはカバレッジ≥90%）
+- [x] `buyer-products.controller.ts` — `GET /:idOrSlug`、`/reviews`、`/similar`、`/advertisements`、`/can-review`、`POST /reviews`（`@Public()` / buyerガード）
+- [x] `products.service.ts` — `resolveProduct`、`getDetail`（promotions + ratingBreakdown埋め込み）、`findReviews`、`findSimilar`、`getSidebarAds`、`canReview`、`createReview`
+- [x] `public-reviews.controller.ts` — `POST /reviews/:id/report`（JwtAuthGuard、201）
+- [x] `reviews.service.ts` — `reportReview` + 管理者通知
+- [x] DTO: `CreateReviewDto`、`ReportReviewDto`、`ReviewQueryDto`（class-validator）
 
-### フロントエンド（React）
+### フロントエンド（React）— 実装済み
 
-- [ ] `pages/products/ProductDetail.tsx`
-- [ ] `features/products/components/ProductGallery.tsx`
-- [ ] `features/products/components/ProductInfo.tsx`
-- [ ] `features/products/components/ProductTabs.tsx`
-- [ ] `features/products/components/SkinTypeCompatibility.tsx`
-- [ ] `features/products/components/RelatedProducts.tsx`
-- [ ] `features/products/components/ProductReviews.tsx`
-- [ ] `features/products/components/ActivePromotion.tsx`
-- [ ] `features/products/components/SidebarAdvertisements.tsx`
-- [ ] `features/products/hooks/useProductDetail.ts`
-- [ ] `features/products/schemas/product.schema.ts`
-- [ ] `features/products/services/product.service.ts`
-- [ ] 在庫バリデーション+数量ステッパー付きカートに追加
-- [ ] 楽観的更新付きお気に入り追加（削除はお気に入りモジュールで処理）
-- [ ] 割引+残数表示付き有効プロモーションセクション
-- [ ] サイドバー広告セクション（`product_sidebar`配置、ローテーションあたり最大5件、5秒ごとの自動ローテーション、スポンサーラベル、外部リンク安全属性）
-- [ ] レビューフォーム（レーティングスター、バリデーション、ログインゲーティング）
-- [ ] 関連商品セクション（遅延ロード）
-- [ ] 全非同期セクションのスケルトンローダー
-- [ ] 全文字列のi18nキー（`products.json`のen / my / ja）
-- [ ] コンポーネントテストの作成
-- [ ] 閲覧 → 詳細 → カートフローの完全なE2Eテスト
+- [x] `pages/buyer/ProductDetail.tsx` — 戻るボタン、広告バナー、ギャラリー+情報グリッド、タブ、類似商品、モバイル固定CTA、merchant-viewゲーティング
+- [x] `features/buyer/products/components/**` — Gallery, Info, Tabs, PurchaseActions, QuantityStepper, StarRating, Reviews, ReviewForm, ReviewReportDialog, SimilarProducts, ProductCard
+- [x] `features/buyer/products/hooks/useProductDetail.ts` — クエリ + 作成/報告ミューテーション
+- [x] `features/buyer/products/services/product.service.ts` — 型付きクライアント + エンドポイント
+- [x] `components/shared/AdBannerSlider.tsx` — スポンサーダカルーセル
+- [ ] `ActivePromotionCard` — 実装済みだが未マウント（プロモーションは`promotions[0]`のバッジで表示）
+- [ ] `SidebarAdvertisements` — 実装済みだが未マウント（ページは`AdBannerSlider`を使用）
 
 ---
 

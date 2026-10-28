@@ -1,0 +1,36 @@
+{
+  "capturedAt": "2026-10-23T09:25:17.378Z",
+  "description": "DB query shows both ads moved to approved status",
+  "results": [
+    {
+      "label": "advertisements rows by ids",
+      "rowCount": 2,
+      "rows": [
+        {
+          "id": "ec2f0d75-fe32-4398-8ff4-ffba9c97fa64",
+          "shop_id": "00e3e559-1edf-4b67-b88c-0a2f13817e6e",
+          "shop_name": "Glow Beauty Shop",
+          "title": "E2E pending ad ec2f0d75-fe32-4398-8ff4-ffba9c97fa64",
+          "approval_status": "approved",
+          "payment_status": "completed",
+          "approved_by": "a2960258-8a74-47a6-817f-af88f00d763b",
+          "approved_at": "2026-10-23T02:55:16.892Z",
+          "rejection_reason": null,
+          "created_at": "2026-10-23T10:25:15.464Z"
+        },
+        {
+          "id": "260590ee-4cab-458c-8aed-77bead29d26c",
+          "shop_id": "00e3e559-1edf-4b67-b88c-0a2f13817e6e",
+          "shop_name": "Glow Beauty Shop",
+          "title": "E2E pending ad 260590ee-4cab-458c-8aed-77bead29d26c",
+          "approval_status": "approved",
+          "payment_status": "completed",
+          "approved_by": "a2960258-8a74-47a6-817f-af88f00d763b",
+          "approved_at": "2026-10-23T02:55:16.892Z",
+          "rejection_reason": null,
+          "created_at": "2026-10-23T10:25:15.452Z"
+        }
+      ]
+    }
+  ]
+}

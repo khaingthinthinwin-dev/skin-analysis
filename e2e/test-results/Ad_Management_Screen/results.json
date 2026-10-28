@@ -1,0 +1,803 @@
+{
+  "module": "Ad_Management_Screen",
+  "timestamp": "2026-10-23T09:27:29.764Z",
+  "total": 132,
+  "passed": 132,
+  "failed": 0,
+  "skipped": 0,
+  "durationMs": 829833,
+  "tests": [
+    {
+      "title": "should list fee settings with placement/tier metadata",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
+      "status": "passed",
+      "duration": 2675
+    },
+    {
+      "title": "I-13: should export CSV ad performance report",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
+      "status": "passed",
+      "duration": 2618
+    },
+    {
+      "title": "should return total revenue and breakdown metrics",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.api.spec.ts",
+      "status": "passed",
+      "duration": 3143
+    },
+    {
+      "title": "I-14: should export shop submission history CSV",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
+      "status": "passed",
+      "duration": 1676
+    },
+    {
+      "title": "should create a valid fee setting and log history",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
+      "status": "passed",
+      "duration": 2126
+    },
+    {
+      "title": "A-10: Month filter recalculation (analytics API with month filter)",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.api.spec.ts",
+      "status": "passed",
+      "duration": 2145
+    },
+    {
+      "title": "should display revenue analytics page",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "status": "passed",
+      "duration": 6006
+    },
+    {
+      "title": "should display export reports page",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "status": "passed",
+      "duration": 6744
+    },
+    {
+      "title": "should display package & fee management page",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 7348
+    },
+    {
+      "title": "should display fee change history page",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 8296
+    },
+    {
+      "title": "I-15: should export fee history log as CSV",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
+      "status": "passed",
+      "duration": 4292
+    },
+    {
+      "title": "A-14: Drill-down into a specific ad via analytics",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.api.spec.ts",
+      "status": "passed",
+      "duration": 3918
+    },
+    {
+      "title": "should update fee setting and keep historical snapshot",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
+      "status": "passed",
+      "duration": 4245
+    },
+    {
+      "title": "I-19 + A-16: should export with report-specific filters and audit metadata",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
+      "status": "passed",
+      "duration": 2550
+    },
+    {
+      "title": "should deactivate fee setting without affecting existing ads",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
+      "status": "passed",
+      "duration": 2589
+    },
+    {
+      "title": "A-16: should reject date ranges over 365 days and non-CSV formats",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
+      "status": "passed",
+      "duration": 3168
+    },
+    {
+      "title": "should return fee history sorted by created time",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
+      "status": "passed",
+      "duration": 3866
+    },
+    {
+      "title": "should load fee settings table with placement, tier, daily rate columns",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 7792
+    },
+    {
+      "title": "should show summary metrics and charts with breakdowns by placement and tier",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "status": "passed",
+      "duration": 9831
+    },
+    {
+      "title": "should export ad performance CSV with correct columns",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "status": "passed",
+      "duration": 10039
+    },
+    {
+      "title": "B-13: submission-history export preserves each review event",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.api.spec.ts",
+      "status": "passed",
+      "duration": 2704
+    },
+    {
+      "title": "should show history table with date, placement, tier, old/new rates",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 9506
+    },
+    {
+      "title": "should reactivate a fee setting and log the change",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
+      "status": "passed",
+      "duration": 3046
+    },
+    {
+      "title": "should reject deleting an actual current-month fee-history record",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
+      "status": "passed",
+      "duration": 3803
+    },
+    {
+      "title": "A-18: backend service continues after a refund failure",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
+      "status": "passed",
+      "duration": 5903
+    },
+    {
+      "title": "should return fee history with filters by calendar month and pagination",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee.api.spec.ts",
+      "status": "passed",
+      "duration": 2932
+    },
+    {
+      "title": "should return paginated ads for admin with filters",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
+      "status": "passed",
+      "duration": 2569
+    },
+    {
+      "title": "should export analytics data with multi-filter aggregation",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "status": "passed",
+      "duration": 12575
+    },
+    {
+      "title": "should delete a single eligible history record with confirmation",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 11116
+    },
+    {
+      "title": "should export submission history CSV with review metadata",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "status": "passed",
+      "duration": 12946
+    },
+    {
+      "title": "should return full detail for a single advertisement",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
+      "status": "passed",
+      "duration": 4382
+    },
+    {
+      "title": "should approve a pending ad and set approval metadata",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
+      "status": "passed",
+      "duration": 3838
+    },
+    {
+      "title": "should create a new fee setting and log history",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 20144
+    },
+    {
+      "title": "should display ad management page with ad list",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 10160
+    },
+    {
+      "title": "translates pages, tables, and dialogs in en",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-language.spec.ts",
+      "status": "passed",
+      "duration": 27331
+    },
+    {
+      "title": "should reject a pending ad and trigger refund",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
+      "status": "passed",
+      "duration": 4391
+    },
+    {
+      "title": "should recalculate revenue when month filter changed",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "status": "passed",
+      "duration": 10102
+    },
+    {
+      "title": "should bulk delete multiple previous-month history records",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 11355
+    },
+    {
+      "title": "should export fee history CSV with old/new values and reasons",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "status": "passed",
+      "duration": 13582
+    },
+    {
+      "title": "should bulk approve only pending ads within limit",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
+      "status": "passed",
+      "duration": 4651
+    },
+    {
+      "title": "should bulk reject ads and include refund summary",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.api.spec.ts",
+      "status": "passed",
+      "duration": 4525
+    },
+    {
+      "title": "should drill down into ad detail from analytics",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "status": "passed",
+      "duration": 9784
+    },
+    {
+      "title": "should navigate to Package & Fee Management",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 12636
+    },
+    {
+      "title": "should block duplicate active fee setting for same placement/tier",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 13284
+    },
+    {
+      "title": "should generate fee history report for batch export",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 12348
+    },
+    {
+      "title": "should reject date range longer than 365 days",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "status": "passed",
+      "duration": 9883
+    },
+    {
+      "title": "should handle invalid month filter selection",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "status": "passed",
+      "duration": 9236
+    },
+    {
+      "title": "should navigate to Fee Change History",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 10813
+    },
+    {
+      "title": "should reject export with format other than CSV",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "status": "passed",
+      "duration": 7960
+    },
+    {
+      "title": "should limit Fee Change History access to authorized admins",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 11147
+    },
+    {
+      "title": "translates pages, tables, and dialogs in my",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-language.spec.ts",
+      "status": "passed",
+      "duration": 27744
+    },
+    {
+      "title": "should update fee setting and log historical snapshot",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 15079
+    },
+    {
+      "title": "should return consistent revenue values with same filters",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "status": "passed",
+      "duration": 7837
+    },
+    {
+      "title": "should complete concurrent export requests without conflicts",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "status": "passed",
+      "duration": 7611
+    },
+    {
+      "title": "should navigate to Revenue Analytics",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 9161
+    },
+    {
+      "title": "should not cause duplicates or errors with concurrent deletion",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 7873
+    },
+    {
+      "title": "should deactivate fee setting with reason",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 8152
+    },
+    {
+      "title": "should show same values in list and drill-down with same filters",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "status": "passed",
+      "duration": 8038
+    },
+    {
+      "title": "should preserve special characters in exported CSV",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "status": "passed",
+      "duration": 7898
+    },
+    {
+      "title": "should navigate to Export Reports",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 9205
+    },
+    {
+      "title": "should generate sequential history records concurrently",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 6944
+    },
+    {
+      "title": "should reactivate a previously deactivated fee setting",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 8422
+    },
+    {
+      "title": "should return stable consistent results under concurrent requests",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "status": "passed",
+      "duration": 7486
+    },
+    {
+      "title": "should switch theme on export screen without break",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "status": "passed",
+      "duration": 8049
+    },
+    {
+      "title": "should navigate pages and maintain data consistency",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 7863
+    },
+    {
+      "title": "translates pages, tables, and dialogs in ja",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-language.spec.ts",
+      "status": "passed",
+      "duration": 23243
+    },
+    {
+      "title": "should reflect exact single-day range without off-by-one",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "status": "passed",
+      "duration": 7197
+    },
+    {
+      "title": "should disable Create Fee Setting when all 12 combos exist",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 7510
+    },
+    {
+      "title": "should filter ad list by status, placement, tier, and shop",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 12503
+    },
+    {
+      "title": "should be usable at 1280x720",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "status": "passed",
+      "duration": 5963
+    },
+    {
+      "title": "should reject current-month deletion, allow previous-month",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 5894
+    },
+    {
+      "title": "should display zero metrics and \"No data\" state",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "status": "passed",
+      "duration": 5290
+    },
+    {
+      "title": "should not affect existing paid ads when fee updated",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 5579
+    },
+    {
+      "title": "should be usable at 375x667",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-export.spec.ts",
+      "status": "passed",
+      "duration": 7240
+    },
+    {
+      "title": "should switch theme on fee history screen without break",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 6260
+    },
+    {
+      "title": "should switch theme without breaking analytics layout",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "status": "passed",
+      "duration": 5307
+    },
+    {
+      "title": "should reset all filters and restore default list",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 9519
+    },
+    {
+      "title": "should filter fee settings by placement/tier/status",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 6140
+    },
+    {
+      "title": "should be usable at 1280x720",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 5400
+    },
+    {
+      "title": "should be usable at 1280x720",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "status": "passed",
+      "duration": 5216
+    },
+    {
+      "title": "should restrict fee setting management to authorized admins",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 5975
+    },
+    {
+      "title": "should be usable at 375x667",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-analytics.spec.ts",
+      "status": "passed",
+      "duration": 5810
+    },
+    {
+      "title": "should be usable at 375x667",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-history.spec.ts",
+      "status": "passed",
+      "duration": 6349
+    },
+    {
+      "title": "should open review modal and approve a pending ad",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 11260
+    },
+    {
+      "title": "should not change existing ad records when fee setting edited",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 5229
+    },
+    {
+      "title": "should handle concurrent edits without conflict",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 4631
+    },
+    {
+      "title": "should reject a pending ad with a valid reason",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 7109
+    },
+    {
+      "title": "should resolve to one final state",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 4219
+    },
+    {
+      "title": "should not break existing ad data when deactivating in-use fee",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-fee-packages.spec.ts",
+      "status": "passed",
+      "duration": 3638
+    },
+    {
+      "title": "should bulk approve selected pending ads",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 6028
+    },
+    {
+      "title": "should bulk reject selected pending ads with common reason",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 5432
+    },
+    {
+      "title": "should open a newly submitted ad from an admin notification",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 6725
+    },
+    {
+      "title": "should navigate to and highlight an ad from a later page opened by notification",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3389
+    },
+    {
+      "title": "should select pending ads via header checkbox and clear selection",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3129
+    },
+    {
+      "title": "should deny a buyer attempting ad moderation",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3802
+    },
+    {
+      "title": "should show empty state when shop search has no match",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3298
+    },
+    {
+      "title": "should redirect unauthenticated user from ad management routes",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2746
+    },
+    {
+      "title": "should not create duplicate moderation actions on double-click",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2780
+    },
+    {
+      "title": "should enforce character boundaries in moderation fields",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3209
+    },
+    {
+      "title": "should show validation error when submitting with empty required fields",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2706
+    },
+    {
+      "title": "should handle concurrent status change by another admin",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2825
+    },
+    {
+      "title": "should record status change in audit log",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2692
+    },
+    {
+      "title": "should stay responsive under repeated moderation operations",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2941
+    },
+    {
+      "title": "should render and paginate correctly with large dataset",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3180
+    },
+    {
+      "title": "should reactivate an inactive fee setting",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2636
+    },
+    {
+      "title": "should show Create Fee Setting button disabled when all 12 packages exist",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2732
+    },
+    {
+      "title": "should not affect existing paid ads when fee setting updated",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3004
+    },
+    {
+      "title": "should show validation error when rejection reason is blank",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3364
+    },
+    {
+      "title": "should reject a second approval after the ad is no longer pending",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2498
+    },
+    {
+      "title": "should block bulk operation when more than 50 ads are submitted",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2444
+    },
+    {
+      "title": "should allow editing ad fields with proper rights",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3133
+    },
+    {
+      "title": "should not show a draft ad while payment is pending",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3472
+    },
+    {
+      "title": "should reject an unpaid pending ad without changing its payment status",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2591
+    },
+    {
+      "title": "should reject invalid status filter",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2310
+    },
+    {
+      "title": "should reject invalid status, pagination, and long shop filters",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2487
+    },
+    {
+      "title": "should reject dateFrom later than dateTo",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2488
+    },
+    {
+      "title": "should reject the whole request and leave the pending ad unchanged",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2702
+    },
+    {
+      "title": "should create fee setting with minimum valid values",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3781
+    },
+    {
+      "title": "should accept upper-limit fee setting values",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3782
+    },
+    {
+      "title": "should accept exactly 1000 characters in rejection reason",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3348
+    },
+    {
+      "title": "should block rejection reason exceeding 1000 characters",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3418
+    },
+    {
+      "title": "should reflect exact single-day date range in analytics",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2675
+    },
+    {
+      "title": "should accept long shop name and filter correctly",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3553
+    },
+    {
+      "title": "should reactivate once, then block second reactivation",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2890
+    },
+    {
+      "title": "should reject current-month deletion, allow previous-month",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 3214
+    },
+    {
+      "title": "should allow deleting exactly 50 records",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2793
+    },
+    {
+      "title": "should block 51-record bulk deletion",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2692
+    },
+    {
+      "title": "should display zero metrics and \"No data\" when no ads match",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2651
+    },
+    {
+      "title": "should switch to dark mode without breaking layout",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2682
+    },
+    {
+      "title": "should switch back to light mode",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2526
+    },
+    {
+      "title": "should remain usable at 1280x720 viewport",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2998
+    },
+    {
+      "title": "should remain usable at 375x667 viewport",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\Ad_Management_Screen\\ad-management.spec.ts",
+      "status": "passed",
+      "duration": 2525
+    }
+  ]
+}

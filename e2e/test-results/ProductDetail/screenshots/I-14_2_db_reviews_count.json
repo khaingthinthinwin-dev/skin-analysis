@@ -1,0 +1,15 @@
+{
+  "capturedAt": "2026-10-28T08:42:14.181Z",
+  "description": "reviews row count for the buyer and product after the duplicate call 窶・still 1",
+  "results": [
+    {
+      "label": "reviews count by buyer and product",
+      "rowCount": 1,
+      "rows": [
+        {
+          "review_count": 1
+        }
+      ]
+    }
+  ]
+}

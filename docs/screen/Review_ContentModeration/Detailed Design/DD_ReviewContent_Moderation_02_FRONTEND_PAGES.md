@@ -1,7 +1,7 @@
 # DD_MOD_02 — Frontend Pages (Review & Content Moderation)
 
-> **Doc ID:** SKM-DD-MOD-02 | **Version:** 1.3 | **Status:** Released  
-> **Last Updated:** 2026-08-24
+> **Doc ID:** SKM-DD-MOD-02 | **Version:** 1.4 | **Status:** Released  
+> **Last Updated:** 2026-10-21
 
 ---
 
@@ -13,6 +13,7 @@
 | 1.1 | 2026-08-18 | Senior System Engineer | Added Review Reports Management page (`/admin/reports`): reports list layout, report detail modal, report status schema, report-related sub-components, action handlers, lookup data, and i18n keys. |
 | 1.2 | 2026-08-22 | Senior System Engineer | Removed admin sidebar from individual page layouts (shared component). Renumbered all layout section labels to start from [A] per page/modal. Added Pending and Reported status to Reviews page (stats bar + filter tabs). Added Report button to Review Detail Modal action buttons. Added Report Review Modal layout (section 2.3). |
 | 1.3 | 2026-08-24 | Senior System Engineer | Combined Reviews and Reports into single screen with tab navigation (`/admin/reviews`). Removed separate Reports page (`/admin/reports`). Added Screen Tabs element. Removed "Report" action from Reviews tab. |
+| 1.4 | 2026-10-21 | Senior System Engineer | Aligned with FDS v2.3 (2026-10-21): (1) Review status changed from boolean `isApproved` to 3-value string enum `status` (`pending`/`approved`/`rejected`). Updated all lookup data, status badges, filter tabs, and Zod schemas. (2) Product content moderation base path confirmed as `/admin/content`. (3) Removed "Report" action from Review Detail Modal (buyer-initiated only). (4) Updated Zod schemas: `moderateReviewSchema` uses `status` field, `moderateUserSchema` adds optional `reason` field. (5) Updated Report Detail Modal: report actions use `rejected`/`resolved` (not `completed`), `adminNote` field (camelCase). (6) Updated lookup data enums to match backend. |
 
 ---
 
@@ -107,7 +108,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 │              │                             │            │
 │              │   [F] ACTION BUTTONS        │            │
 │              │   [Approve] [Reject]        │            │
-│              │   [Report] [Delete]         │            │
+│              │   [Delete]                  │            │
 │              └─────────────────────────────┘            │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -421,7 +422,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 │              │   [Approve] [Reject] [Delete]│           │
 │              │                             │            │
 │              │   [F] REPORT ACTIONS        │            │
-│              │   [Reject] [Complete] [Delete]│          │
+│              │   [Reject] [Resolve] [Delete]│          │
 │              │                             │            │
 │              │   [G] CLOSE BUTTON          │            │
 │              │   [Close]                   │            │
@@ -471,12 +472,17 @@ export const moderateProductSchema = z.object({
 
 export const moderateUserSchema = z.object({
   isActive: z.boolean(),
-});
+  reason: z.string().max(500, 'Reason must not exceed 500 characters').optional(),
+}).refine(
+  (data) => data.isActive !== false || (data.reason && data.reason.trim().length > 0),
+  { message: 'Deactivation reason is required', path: ['reason'] }
+);
 
 export const updateReportStatusSchema = z.object({
-  status: z.enum(['rejected', 'completed'], {
-    required_error: 'Status must be rejected or completed',
+  status: z.enum(['reviewed', 'resolved', 'rejected'], {
+    required_error: 'Status must be reviewed, resolved, or rejected',
   }),
+  adminNote: z.string().max(1000, 'Admin note must not exceed 1000 characters').optional(),
 });
 
 export type ModerateReviewFormData = z.infer<typeof moderateReviewSchema>;
@@ -565,7 +571,7 @@ export function useModerateProduct() {
 - **File Path:** `frontend/src/features/admin/components/ReviewsTable.tsx`
 - Renders DataTable with columns: checkbox, avatar, user name, product name, rating stars, title, status badge, created date, actions dropdown
 - Select-all checkbox toggles all row checkboxes
-- Actions dropdown: View Detail, Approve, Reject, Report, Delete
+- Actions dropdown: View Detail, Approve, Reject, Delete
 - Bulk action buttons enable when selections are made
 
 ### 4.2 ReviewDetailModal Component
@@ -576,22 +582,10 @@ export function useModerateProduct() {
 - Displays Product Info Card (image, name, price, link to `/products/:slug`)
 - Displays Review Content (rating, title, body, images gallery, verified purchase badge)
 - Shows Moderation Reason textarea (conditional on reject action)
-- Action buttons: Approve, Reject, Report, Delete
+- Action buttons: Approve, Reject, Delete
 - Delete requires confirmation dialog
 
-### 4.3 ReportReviewModal Component
-
-- **File Path:** `frontend/src/features/admin/components/ReportReviewModal.tsx`
-- Modal for reporting a review
-- Displays Review Preview (user, product, rating, truncated review body)
-- Radio group for Report Reason: Spam, Inappropriate, Fake, Other
-- Textarea for optional Report Detail (required when "Other" is selected)
-- Action buttons: Cancel, Submit Report
-- Submit calls `adminService.reportReview(reviewId, { reason, detail })`
-- Success toast: "Review reported successfully"
-- Close button and Escape key close modal
-
-### 4.4 MerchantsTable Component
+### 4.3 MerchantsTable Component
 
 - **File Path:** `frontend/src/features/admin/components/MerchantsTable.tsx`
 - Renders DataTable with columns: checkbox, shop logo, shop name, user name, registration date, status badge, actions dropdown
@@ -665,10 +659,10 @@ export function useModerateProduct() {
 
 - **File Path:** `frontend/src/features/admin/components/ReportsTable.tsx`
 - Renders DataTable with columns: checkbox, reporter name + email, review body excerpt (100 chars), reason badge, status badge, created date, actions dropdown
-- Actions dropdown: View Detail, Reject Report, Complete Report, Delete Report
-- Bulk action buttons: Reject Selected, Complete Selected
-- Reason badge colors: Spam (orange), Harassment (red), False Info (yellow), Policy Violation (purple)
-- Status badge colors: Pending (amber), Rejected (red), Completed (green)
+- Actions dropdown: View Detail, Reject Report, Resolve Report, Delete Report
+- Bulk action buttons: Reject Selected, Resolve Selected
+- Reason badge colors: Spam (orange), Inappropriate (red), Fake (yellow), Other (purple)
+- Status badge colors: Pending (amber), Reviewed (blue), Resolved (green), Rejected (red)
 
 ### 4.14 ReportDetailModal Component
 
@@ -676,12 +670,12 @@ export function useModerateProduct() {
 - Fetches full report data on open
 - Displays Reporter Info Card (avatar, name, email)
 - Displays Review Info Card (rating stars, body, product link)
-- Displays Report Info (reason badge, detail text, status badge, resolved by, resolved at)
+- Displays Report Info (reason badge, detail text, status badge, resolved by, resolved at, admin note)
 - Displays Target Review Actions: Approve Review, Reject Review, Delete Review buttons
-- Displays Report Actions: Reject Report, Complete Report, Delete Report buttons
-- Reject Report and Complete Report require confirmation dialog
+- Displays Report Actions: Reject Report, Resolve Report, Delete Report buttons
+- Reject Report and Resolve Report require confirmation dialog
 - Delete Report requires confirmation dialog
-- When report is completed, target review is auto-rejected
+- When report is resolved, target review is auto-rejected (`status = 'rejected'`)
 - Report actions do NOT notify the reporter (per BR-MOD-054)
 - Close button and Escape key close modal
 
@@ -713,21 +707,7 @@ export function useModerateProduct() {
   6. Refresh reviews list
 - **Error Handling:** 400 → "Rejection reason is required"; 409 → "Review is already rejected"
 
-### 5.3 Report Review
-
-- **Button Type:** `button`
-- **Action:**
-  1. Open Report Review Modal (section 2.3)
-  2. Admin selects report reason (Spam, Inappropriate, Fake, Other)
-  3. Optionally enter report detail text
-  4. Validate: report reason is required; detail required when "Other" selected
-  5. Call `adminService.reportReview(reviewId, { reason, detail })`
-  6. Close modal
-  7. Show success toast "Review reported successfully"
-  8. Refresh reviews list
-- **Error Handling:** 409 → "Review has already been reported"; 404 → "Review not found"
-
-### 5.4 Delete Review
+### 5.3 Delete Review
 
 - **Button Type:** `button`
 - **Action:**
@@ -866,17 +846,17 @@ export function useModerateProduct() {
   2. On confirm: Call `adminService.updateReportStatus(reportId, { status: 'rejected' })`
   3. Show success toast "Report rejected"
   4. Refresh reports list
-- **Error Handling:** 409 → "This report has already been completed"; 404 → "Report not found"
+- **Error Handling:** 409 → "This report has already been resolved"; 404 → "Report not found"
 
-### 5.17 Complete Report
+### 5.17 Resolve Report
 
 - **Button Type:** `button`
 - **Action:**
-  1. Show confirmation dialog "Are you sure you want to mark this report as completed? The target review will be rejected."
-  2. On confirm: Call `adminService.updateReportStatus(reportId, { status: 'completed' })`
-  3. Show success toast "Report completed"
+  1. Show confirmation dialog "Are you sure you want to resolve this report? The target review will be rejected."
+  2. On confirm: Call `adminService.updateReportStatus(reportId, { status: 'resolved' })`
+  3. Show success toast "Report resolved"
   4. Refresh reports list
-- **Error Handling:** 409 → "This report has already been completed"; 404 → "Report not found"
+- **Error Handling:** 409 → "This report has already been resolved"; 404 → "Report not found"
 
 ### 5.18 Delete Report
 
@@ -923,10 +903,9 @@ export function useModerateProduct() {
 
 | Value | Label (EN) | Label (JA) | Badge Color |
 |-------|------------|------------|-------------|
-| `pending` | Pending | 保留中 | `bg-amber-100 text-amber-800` |
+| `pending` | Pending | 承認待ち | `bg-amber-100 text-amber-800` |
 | `approved` | Approved | 承認済み | `bg-green-100 text-green-800` |
 | `rejected` | Rejected | 却下済み | `bg-red-100 text-red-800` |
-| `reported` | Reported | 通報済み | `bg-orange-100 text-orange-800` |
 
 ### 6.2 Merchant Status Options
 
@@ -963,25 +942,27 @@ export function useModerateProduct() {
 | Value | Label (EN) | Label (JA) | Badge Color |
 |-------|------------|------------|-------------|
 | `pending` | Pending | 保留中 | `bg-amber-100 text-amber-800` |
+| `reviewed` | Reviewed | 確認済み | `bg-blue-100 text-blue-800` |
+| `resolved` | Resolved | 解決済み | `bg-green-100 text-green-800` |
 | `rejected` | Rejected | 却下済み | `bg-red-100 text-red-800` |
-| `completed` | Completed | 完了済み | `bg-green-100 text-green-800` |
 
 ### 6.7 Report Reason Options
 
 | Value | Label (EN) | Label (JA) | Badge Color |
 |-------|------------|------------|-------------|
 | `spam` | Spam | スパム | `bg-orange-100 text-orange-800` |
-| `harassment` | Harassment | ハラスメント | `bg-red-100 text-red-800` |
-| `false_info` | False Info | 虚偽情報 | `bg-yellow-100 text-yellow-800` |
-| `policy_violation` | Policy Violation | ポリシー違反 | `bg-purple-100 text-purple-800` |
+| `inappropriate` | Inappropriate | 不適切 | `bg-red-100 text-red-800` |
+| `fake` | Fake | 虚偽 | `bg-yellow-100 text-yellow-800` |
+| `other` | Other | その他 | `bg-purple-100 text-purple-800` |
 
 ### 6.8 Report Status Actions
 
 | Current Status | Available Actions | Next Status | Notes |
 |----------------|-------------------|-------------|-------|
-| `pending` | Reject, Complete, Delete | `rejected`, `completed` | Default status for new reports |
+| `pending` | Reject, Resolve, Delete | `rejected`, `resolved` | Default status for new reports |
+| `reviewed` | Reject, Resolve, Delete | `rejected`, `resolved` | Report has been reviewed |
+| `resolved` | — | — | Resolved reports cannot be changed |
 | `rejected` | Delete | — | Reports can be deleted |
-| `completed` | — | — | Completed reports cannot be changed |
 
 ### 6.9 Sort Options — Reviews
 

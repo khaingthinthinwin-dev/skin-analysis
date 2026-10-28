@@ -1,0 +1,470 @@
+{
+  "N-01_1_ui_commission_tab_loaded.png": {
+    "test": "commission-revenue.spec.ts::N-01: navigates from the admin dashboard to the Commission tab"
+  },
+  "commission_revenue_page_loaded.png": {
+    "test": "commission-revenue.spec.ts::I-23: delete endpoint returns success, conflict, not-found, and validation responses"
+  },
+  "N-02_1_ui_before_rate_card.png": {
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate successfully (live stack evidence)"
+  },
+  "N-02_2_ui_doing_rate_input_filled.png": {
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate successfully (live stack evidence)"
+  },
+  "N-02_3_ui_after_rate_changed.png": {
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate successfully (live stack evidence)"
+  },
+  "N-02_4_db_after_rate_update.png": {
+    "description": "DB CHANGES — commission_settings updated in place, one new rate-history row, one new audit row",
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate successfully (live stack evidence)"
+  },
+  "N-02_4_db_after_rate_update.json": {
+    "description": "DB CHANGES — commission_settings updated in place, one new rate-history row, one new audit row",
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate successfully (live stack evidence)"
+  },
+  "N-08_1_ui_doing_process_dialog.png": {
+    "test": "commission-revenue.spec.ts::N-08: processes a pending payout after confirmation (live stack evidence)"
+  },
+  "N-08_2_db_after_payout_process.png": {
+    "description": "DB CHANGES — the payout row is completed and the PAYOUT_PROCESSED audit row was written",
+    "test": "commission-revenue.spec.ts::N-08: processes a pending payout after confirmation (live stack evidence)"
+  },
+  "N-08_2_db_after_payout_process.json": {
+    "description": "DB CHANGES — the payout row is completed and the PAYOUT_PROCESSED audit row was written",
+    "test": "commission-revenue.spec.ts::N-08: processes a pending payout after confirmation (live stack evidence)"
+  },
+  "N-09_1_ui_doing_target_filled.png": {
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and changes its period (live stack evidence)"
+  },
+  "N-09_2_db_after_target_save.png": {
+    "description": "DB CHANGES — the monthly row is updated in place and a TARGET_UPDATED audit row was written",
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and changes its period (live stack evidence)"
+  },
+  "N-09_2_db_after_target_save.json": {
+    "description": "DB CHANGES — the monthly row is updated in place and a TARGET_UPDATED audit row was written",
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and changes its period (live stack evidence)"
+  },
+  "N-11_1_ui_quarterly_gauge.png": {
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and changes its period (live stack evidence)"
+  },
+  "N-13_1_ui_doing_export_commission.png": {
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-14_1_ui_doing_export_revenue.png": {
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-15_1_ui_doing_export_payout.png": {
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-15_2_db_after_exports.png": {
+    "description": "DB CHANGES — one EXPORT_GENERATED audit row per export; no business table was modified",
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-15_2_db_after_exports.json": {
+    "description": "DB CHANGES — one EXPORT_GENERATED audit row per export; no business table was modified",
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-28_1_ui_doing_delete_dialog.png": {
+    "test": "commission-revenue.spec.ts::N-28: selects and deletes an eligible payout row (live stack evidence)"
+  },
+  "N-28_2_db_after_payout_deleted.png": {
+    "description": "DB CHANGES — the payout row is gone from payouts and a PAYOUT_DELETED audit row remains",
+    "test": "commission-revenue.spec.ts::N-28: selects and deletes an eligible payout row (live stack evidence)"
+  },
+  "N-28_2_db_after_payout_deleted.json": {
+    "description": "DB CHANGES — the payout row is gone from payouts and a PAYOUT_DELETED audit row remains",
+    "test": "commission-revenue.spec.ts::N-28: selects and deletes an eligible payout row (live stack evidence)"
+  },
+  "N-31_1_ui_before_report_rows.png": {
+    "test": "commission-revenue.spec.ts::N-31: historical rate locking for existing report rows after a rate change (live stack evidence)"
+  },
+  "N-31_2_db_after_rate_lock.png": {
+    "description": "DB CHANGES — exactly one new rate-history row; the existing orders keep their historical rate",
+    "test": "commission-revenue.spec.ts::N-31: historical rate locking for existing report rows after a rate change (live stack evidence)"
+  },
+  "N-31_2_db_after_rate_lock.json": {
+    "description": "DB CHANGES — exactly one new rate-history row; the existing orders keep their historical rate",
+    "test": "commission-revenue.spec.ts::N-31: historical rate locking for existing report rows after a rate change (live stack evidence)"
+  },
+  "N-03_1_filtered_reports.png": {
+    "test": "commission-revenue.spec.ts::N-03 and N-04: applies and resets commission report date filters"
+  },
+  "N-04_1_filters_reset.png": {
+    "test": "commission-revenue.spec.ts::N-03 and N-04: applies and resets commission report date filters"
+  },
+  "N-03_final_state.png": {
+    "description": "Final UI state for N-03 and N-04: applies and resets commission report date filters",
+    "test": "commission-revenue.spec.ts::N-03 and N-04: applies and resets commission report date filters"
+  },
+  "N-04_final_state.png": {
+    "description": "Final UI state for N-03 and N-04: applies and resets commission report date filters",
+    "test": "commission-revenue.spec.ts::N-03 and N-04: applies and resets commission report date filters"
+  },
+  "N-05_1_report_paged.png": {
+    "test": "commission-revenue.spec.ts::N-05: changes report page size and advances pagination when another page exists"
+  },
+  "N-05_final_state.png": {
+    "description": "Final UI state for N-05: changes report page size and advances pagination when another page exists",
+    "test": "commission-revenue.spec.ts::N-05: changes report page size and advances pagination when another page exists"
+  },
+  "N-21_final_state.png": {
+    "description": "Final UI state for N-21: switches report grouping by merchant, day, and order",
+    "test": "commission-revenue.spec.ts::N-21: switches report grouping by merchant, day, and order"
+  },
+  "N-22_final_state.png": {
+    "description": "Final UI state for N-22: canceling rate edits preserves the saved value",
+    "test": "commission-revenue.spec.ts::N-22: canceling rate edits preserves the saved value"
+  },
+  "N-06_1_revenue_tab.png": {
+    "test": "commission-revenue.spec.ts::N-06 and N-20: loads revenue KPIs, chart, target, panels, and payout columns"
+  },
+  "N-06_final_state.png": {
+    "description": "Final UI state for N-06 and N-20: loads revenue KPIs, chart, target, panels, and payout columns",
+    "test": "commission-revenue.spec.ts::N-06 and N-20: loads revenue KPIs, chart, target, panels, and payout columns"
+  },
+  "N-20_final_state.png": {
+    "description": "Final UI state for N-06 and N-20: loads revenue KPIs, chart, target, panels, and payout columns",
+    "test": "commission-revenue.spec.ts::N-06 and N-20: loads revenue KPIs, chart, target, panels, and payout columns"
+  },
+  "N-07_1_range_changed.png": {
+    "test": "commission-revenue.spec.ts::N-07: changes the revenue trend range"
+  },
+  "N-07_final_state.png": {
+    "description": "Final UI state for N-07: changes the revenue trend range",
+    "test": "commission-revenue.spec.ts::N-07: changes the revenue trend range"
+  },
+  "N-10_1_forecast_line.png": {
+    "test": "commission-revenue.spec.ts::N-10: displays the AI forecast legend when forecast data is available"
+  },
+  "N-10_final_state.png": {
+    "description": "Final UI state for N-10: displays the AI forecast legend when forecast data is available",
+    "test": "commission-revenue.spec.ts::N-10: displays the AI forecast legend when forecast data is available"
+  },
+  "N-12_1_ad_fee_display.png": {
+    "test": "commission-revenue.spec.ts::N-12: displays ad fee revenue and payment status panels"
+  },
+  "N-12_final_state.png": {
+    "description": "Final UI state for N-12: displays ad fee revenue and payment status panels",
+    "test": "commission-revenue.spec.ts::N-12: displays ad fee revenue and payment status panels"
+  },
+  "N-23_final_state.png": {
+    "description": "Final UI state for N-23 to N-25: filters, searches, and resets payout rows",
+    "test": "commission-revenue.spec.ts::N-23 to N-25: filters, searches, and resets payout rows"
+  },
+  "N-24_final_state.png": {
+    "description": "Final UI state for N-23 to N-25: filters, searches, and resets payout rows",
+    "test": "commission-revenue.spec.ts::N-23 to N-25: filters, searches, and resets payout rows"
+  },
+  "N-25_final_state.png": {
+    "description": "Final UI state for N-23 to N-25: filters, searches, and resets payout rows",
+    "test": "commission-revenue.spec.ts::N-23 to N-25: filters, searches, and resets payout rows"
+  },
+  "N-30_1_combined_filters.png": {
+    "test": "commission-revenue.spec.ts::N-30: applies and removes multiple payout filters simultaneously"
+  },
+  "N-30_2_merchant_filter_removed.png": {
+    "test": "commission-revenue.spec.ts::N-30: applies and removes multiple payout filters simultaneously"
+  },
+  "N-30_final_state.png": {
+    "description": "Final UI state for N-30: applies and removes multiple payout filters simultaneously",
+    "test": "commission-revenue.spec.ts::N-30: applies and removes multiple payout filters simultaneously"
+  },
+  "N-27_final_state.png": {
+    "description": "Final UI state for N-27: opens payout details for a listed payout",
+    "test": "commission-revenue.spec.ts::N-27: opens payout details for a listed payout"
+  },
+  "N-29_final_state.png": {
+    "description": "Final UI state for N-29: payout processing dialog shows payout amounts",
+    "test": "commission-revenue.spec.ts::N-29: payout processing dialog shows payout amounts"
+  },
+  "N-26_final_state.png": {
+    "description": "Final UI state for N-26: paginates the payout table",
+    "test": "commission-revenue.spec.ts::N-26: paginates the payout table"
+  },
+  "N-18_1_desktop_layout.png": {
+    "test": "commission-revenue.spec.ts::N-18 and N-19: keeps the dashboard usable at desktop and mobile widths"
+  },
+  "N-19_1_mobile_layout.png": {
+    "test": "commission-revenue.spec.ts::N-18 and N-19: keeps the dashboard usable at desktop and mobile widths"
+  },
+  "N-18_final_state.png": {
+    "description": "Final UI state for N-18 and N-19: keeps the dashboard usable at desktop and mobile widths",
+    "test": "commission-revenue.spec.ts::N-18 and N-19: keeps the dashboard usable at desktop and mobile widths"
+  },
+  "N-19_final_state.png": {
+    "description": "Final UI state for N-18 and N-19: keeps the dashboard usable at desktop and mobile widths",
+    "test": "commission-revenue.spec.ts::N-18 and N-19: keeps the dashboard usable at desktop and mobile widths"
+  },
+  "N-16_1_lang_ja.png": {
+    "test": "commission-revenue.spec.ts::N-16: language toggle works on screen"
+  },
+  "N-16_2_lang_my.png": {
+    "test": "commission-revenue.spec.ts::N-16: language toggle works on screen"
+  },
+  "N-16_final_state.png": {
+    "description": "Final UI state for N-16: language toggle works on screen",
+    "test": "commission-revenue.spec.ts::N-16: language toggle works on screen"
+  },
+  "N-17_1_dark.png": {
+    "test": "commission-revenue.spec.ts::N-17: theme toggle works on screen"
+  },
+  "N-17_2_light.png": {
+    "test": "commission-revenue.spec.ts::N-17: theme toggle works on screen"
+  },
+  "N-17_final_state.png": {
+    "description": "Final UI state for N-17: theme toggle works on screen",
+    "test": "commission-revenue.spec.ts::N-17: theme toggle works on screen"
+  },
+  "A-01_final_state.png": {
+    "description": "Final UI state for A-01 to A-03 and B-14: blocks empty, invalid, above-limit, and zero commission rates",
+    "test": "commission-revenue.spec.ts::A-01 to A-03 and B-14: blocks empty, invalid, above-limit, and zero commission rates"
+  },
+  "A-02_final_state.png": {
+    "description": "Final UI state for A-01 to A-03 and B-14: blocks empty, invalid, above-limit, and zero commission rates",
+    "test": "commission-revenue.spec.ts::A-01 to A-03 and B-14: blocks empty, invalid, above-limit, and zero commission rates"
+  },
+  "A-03_final_state.png": {
+    "description": "Final UI state for A-01 to A-03 and B-14: blocks empty, invalid, above-limit, and zero commission rates",
+    "test": "commission-revenue.spec.ts::A-01 to A-03 and B-14: blocks empty, invalid, above-limit, and zero commission rates"
+  },
+  "B-14_final_state.png": {
+    "description": "Final UI state for A-01 to A-03 and B-14: blocks empty, invalid, above-limit, and zero commission rates",
+    "test": "commission-revenue.spec.ts::A-01 to A-03 and B-14: blocks empty, invalid, above-limit, and zero commission rates"
+  },
+  "A-04_final_state.png": {
+    "description": "Final UI state for A-04: rejects a commission report range where From is after To",
+    "test": "commission-revenue.spec.ts::A-04: rejects a commission report range where From is after To"
+  },
+  "A-07_final_state.png": {
+    "description": "Final UI state for A-07 and A-08: blocks empty and non-positive revenue targets",
+    "test": "commission-revenue.spec.ts::A-07 and A-08: blocks empty and non-positive revenue targets"
+  },
+  "A-08_final_state.png": {
+    "description": "Final UI state for A-07 and A-08: blocks empty and non-positive revenue targets",
+    "test": "commission-revenue.spec.ts::A-07 and A-08: blocks empty and non-positive revenue targets"
+  },
+  "A-09_final_state.png": {
+    "description": "Final UI state for A-09 to A-11: validates export date ranges before generating",
+    "test": "commission-revenue.spec.ts::A-09 to A-11: validates export date ranges before generating"
+  },
+  "A-10_final_state.png": {
+    "description": "Final UI state for A-09 to A-11: validates export date ranges before generating",
+    "test": "commission-revenue.spec.ts::A-09 to A-11: validates export date ranges before generating"
+  },
+  "A-11_final_state.png": {
+    "description": "Final UI state for A-09 to A-11: validates export date ranges before generating",
+    "test": "commission-revenue.spec.ts::A-09 to A-11: validates export date ranges before generating"
+  },
+  "B-11_final_state.png": {
+    "description": "Final UI state for B-11: accepts an export date range at the 365-day limit",
+    "test": "commission-revenue.spec.ts::B-11: accepts an export date range at the 365-day limit"
+  },
+  "B-06_final_state.png": {
+    "description": "Final UI state for B-06: shows a way to set a target when none exists",
+    "test": "commission-revenue.spec.ts::B-06: shows a way to set a target when none exists"
+  },
+  "B-09_final_state.png": {
+    "description": "Final UI state for B-09 and B-10: renders forecast and ad fee empty or zero data without breaking the dashboard",
+    "test": "commission-revenue.spec.ts::B-09 and B-10: renders forecast and ad fee empty or zero data without breaking the dashboard"
+  },
+  "B-10_final_state.png": {
+    "description": "Final UI state for B-09 and B-10: renders forecast and ad fee empty or zero data without breaking the dashboard",
+    "test": "commission-revenue.spec.ts::B-09 and B-10: renders forecast and ad fee empty or zero data without breaking the dashboard"
+  },
+  "A-05_final_state.png": {
+    "description": "Final UI state for A-05: processing an already-processed payout is blocked",
+    "test": "commission-revenue.spec.ts::A-05: processing an already-processed payout is blocked"
+  },
+  "A-06_api_call.png": {
+    "description": "API request and response evidence for A-06: returns 404 when processing a non-existent payout",
+    "test": "commission-revenue.spec.ts::A-06: returns 404 when processing a non-existent payout"
+  },
+  "A-12_final_state.png": {
+    "description": "Final UI state for A-12: buyer access denied to admin route",
+    "test": "commission-revenue.spec.ts::A-12: buyer access denied to admin route"
+  },
+  "A-13_final_state.png": {
+    "description": "Final UI state for A-13: merchant access denied to admin route",
+    "test": "commission-revenue.spec.ts::A-13: merchant access denied to admin route"
+  },
+  "A-14_final_state.png": {
+    "description": "Final UI state for A-14: server error on revenue dashboard load falls back to empty states",
+    "test": "commission-revenue.spec.ts::A-14: server error on revenue dashboard load falls back to empty states"
+  },
+  "A-15_final_state.png": {
+    "description": "Final UI state for A-15: network error during a commission rate update",
+    "test": "commission-revenue.spec.ts::A-15: network error during a commission rate update"
+  },
+  "A-16_final_state.png": {
+    "description": "Final UI state for A-16: delete action is disabled when no payout row is selected",
+    "test": "commission-revenue.spec.ts::A-16: delete action is disabled when no payout row is selected"
+  },
+  "A-17_final_state.png": {
+    "description": "Final UI state for A-17: ineligible payout deletion displays the 409 error and keeps rows",
+    "test": "commission-revenue.spec.ts::A-17: ineligible payout deletion displays the 409 error and keeps rows"
+  },
+  "A-18_final_state.png": {
+    "description": "Final UI state for A-18: non-409 payout deletion failure keeps the list unchanged",
+    "test": "commission-revenue.spec.ts::A-18: non-409 payout deletion failure keeps the list unchanged"
+  },
+  "A-19_final_state.png": {
+    "description": "Final UI state for A-19: grouped payout processing reports partial success and refreshes data",
+    "test": "commission-revenue.spec.ts::A-19: grouped payout processing reports partial success and refreshes data"
+  },
+  "A-20_final_state.png": {
+    "description": "Final UI state for A-20: commission export failure leaves the dialog open and resets progress",
+    "test": "commission-revenue.spec.ts::A-20: commission export failure leaves the dialog open and resets progress"
+  },
+  "A-21_final_state.png": {
+    "description": "Final UI state for A-21: failed target save keeps the existing target unchanged",
+    "test": "commission-revenue.spec.ts::A-21: failed target save keeps the existing target unchanged"
+  },
+  "A-22_final_state.png": {
+    "description": "Final UI state for A-22: failed commission update keeps the saved rate unchanged",
+    "test": "commission-revenue.spec.ts::A-22: failed commission update keeps the saved rate unchanged"
+  },
+  "B-01_final_state.png": {
+    "description": "Final UI state for B-01: accepts the minimum commission rate of 0.01",
+    "test": "commission-revenue.spec.ts::B-01: accepts the minimum commission rate of 0.01"
+  },
+  "B-02_final_state.png": {
+    "description": "Final UI state for B-02: accepts the maximum commission rate of 100",
+    "test": "commission-revenue.spec.ts::B-02: accepts the maximum commission rate of 100"
+  },
+  "B-03_final_state.png": {
+    "description": "Final UI state for B-03: accepts and renders a commission rate with two decimals",
+    "test": "commission-revenue.spec.ts::B-03: accepts and renders a commission rate with two decimals"
+  },
+  "B-04_final_state.png": {
+    "description": "Final UI state for B-04: saves a revenue target with two decimal places",
+    "test": "commission-revenue.spec.ts::B-04: saves a revenue target with two decimal places"
+  },
+  "B-05_final_state.png": {
+    "description": "Final UI state for B-05: clamps target progress above 100 percent",
+    "test": "commission-revenue.spec.ts::B-05: clamps target progress above 100 percent"
+  },
+  "B-07_final_state.png": {
+    "description": "Final UI state for B-07: shows the commission report empty state for an empty response",
+    "test": "commission-revenue.spec.ts::B-07: shows the commission report empty state for an empty response"
+  },
+  "B-08_final_state.png": {
+    "description": "Final UI state for B-08: shows the payout empty state without row actions",
+    "test": "commission-revenue.spec.ts::B-08: shows the payout empty state without row actions"
+  },
+  "B-12_final_state.png": {
+    "description": "Final UI state for B-12: shows the rate placeholder and default edit value while settings are loading",
+    "test": "commission-revenue.spec.ts::B-12: shows the rate placeholder and default edit value while settings are loading"
+  },
+  "B-13_final_state.png": {
+    "description": "Final UI state for B-13: keeps commission export disabled when reports are empty",
+    "test": "commission-revenue.spec.ts::B-13: keeps commission export disabled when reports are empty"
+  },
+  "B-15_final_state.png": {
+    "description": "Final UI state for B-15: rejects a target amount with more than two decimal places",
+    "test": "commission-revenue.spec.ts::B-15: rejects a target amount with more than two decimal places"
+  },
+  "B-16_final_state.png": {
+    "description": "Final UI state for B-16: select-all retains only selections made on each visible payout page",
+    "test": "commission-revenue.spec.ts::B-16: select-all retains only selections made on each visible payout page"
+  },
+  "B-17_final_state.png": {
+    "description": "Final UI state for B-17: shows the export progress state until the response settles",
+    "test": "commission-revenue.spec.ts::B-17: shows the export progress state until the response settles"
+  },
+  "B-18_api_call.png": {
+    "description": "API request and response evidence for B-18: payout search at the 100 / 101 character boundary",
+    "test": "commission-revenue.spec.ts::B-18: payout search at the 100 / 101 character boundary"
+  },
+  "I-01_api_call.png": {
+    "description": "API request and response evidence for I-01 and I-03: returns commission settings and paginated reports for an admin",
+    "test": "commission-revenue.spec.ts::I-01 and I-03: returns commission settings and paginated reports for an admin"
+  },
+  "I-03_api_call.png": {
+    "description": "API request and response evidence for I-01 and I-03: returns commission settings and paginated reports for an admin",
+    "test": "commission-revenue.spec.ts::I-01 and I-03: returns commission settings and paginated reports for an admin"
+  },
+  "I-05_api_call.png": {
+    "description": "API request and response evidence for I-05 to I-10 and I-12: returns revenue dashboard payloads for an admin",
+    "test": "commission-revenue.spec.ts::I-05 to I-10 and I-12: returns revenue dashboard payloads for an admin"
+  },
+  "I-06_api_call.png": {
+    "description": "API request and response evidence for I-05 to I-10 and I-12: returns revenue dashboard payloads for an admin",
+    "test": "commission-revenue.spec.ts::I-05 to I-10 and I-12: returns revenue dashboard payloads for an admin"
+  },
+  "I-07_api_call.png": {
+    "description": "API request and response evidence for I-05 to I-10 and I-12: returns revenue dashboard payloads for an admin",
+    "test": "commission-revenue.spec.ts::I-05 to I-10 and I-12: returns revenue dashboard payloads for an admin"
+  },
+  "I-08_api_call.png": {
+    "description": "API request and response evidence for I-05 to I-10 and I-12: returns revenue dashboard payloads for an admin",
+    "test": "commission-revenue.spec.ts::I-05 to I-10 and I-12: returns revenue dashboard payloads for an admin"
+  },
+  "I-09_api_call.png": {
+    "description": "API request and response evidence for I-05 to I-10 and I-12: returns revenue dashboard payloads for an admin",
+    "test": "commission-revenue.spec.ts::I-05 to I-10 and I-12: returns revenue dashboard payloads for an admin"
+  },
+  "I-10_api_call.png": {
+    "description": "API request and response evidence for I-05 to I-10 and I-12: returns revenue dashboard payloads for an admin",
+    "test": "commission-revenue.spec.ts::I-05 to I-10 and I-12: returns revenue dashboard payloads for an admin"
+  },
+  "I-12_api_call.png": {
+    "description": "API request and response evidence for I-05 to I-10 and I-12: returns revenue dashboard payloads for an admin",
+    "test": "commission-revenue.spec.ts::I-05 to I-10 and I-12: returns revenue dashboard payloads for an admin"
+  },
+  "I-02_api_call.png": {
+    "description": "API request and response evidence for I-02: PATCH commission returns the updated rate",
+    "test": "commission-revenue.spec.ts::I-02: PATCH commission returns the updated rate"
+  },
+  "I-11_api_call.png": {
+    "description": "API request and response evidence for I-11: payment status endpoint returns payout status counts",
+    "test": "commission-revenue.spec.ts::I-11: payment status endpoint returns payout status counts"
+  },
+  "I-13_api_call.png": {
+    "description": "API request and response evidence for I-13: process endpoint returns the completed payout contract",
+    "test": "commission-revenue.spec.ts::I-13: process endpoint returns the completed payout contract"
+  },
+  "I-14_api_call.png": {
+    "description": "API request and response evidence for I-14: processing an already-processed payout returns the standard 409 contract",
+    "test": "commission-revenue.spec.ts::I-14: processing an already-processed payout returns the standard 409 contract"
+  },
+  "I-15_api_call.png": {
+    "description": "API request and response evidence for I-15: commission export responds with a CSV file stream",
+    "test": "commission-revenue.spec.ts::I-15: commission export responds with a CSV file stream"
+  },
+  "I-16_api_call.png": {
+    "description": "API request and response evidence for I-16: revenue export responds with an XLSX file stream",
+    "test": "commission-revenue.spec.ts::I-16: revenue export responds with an XLSX file stream"
+  },
+  "I-17_api_call.png": {
+    "description": "API request and response evidence for I-17: payout export responds with a file stream",
+    "test": "commission-revenue.spec.ts::I-17: payout export responds with a file stream"
+  },
+  "I-18_api_call.png": {
+    "description": "API request and response evidence for I-18: error responses include the standard API fields",
+    "test": "commission-revenue.spec.ts::I-18: error responses include the standard API fields"
+  },
+  "I-21_api_call.png": {
+    "description": "API request and response evidence for I-21: payout merchant endpoint returns merchant options",
+    "test": "commission-revenue.spec.ts::I-21: payout merchant endpoint returns merchant options"
+  },
+  "I-22_api_call.png": {
+    "description": "API request and response evidence for I-22: review endpoint transitions pending status and leaves processing unchanged",
+    "test": "commission-revenue.spec.ts::I-22: review endpoint transitions pending status and leaves processing unchanged"
+  },
+  "I-23_api_call.png": {
+    "description": "API request and response evidence for I-23: delete endpoint returns success, conflict, not-found, and validation responses",
+    "test": "commission-revenue.spec.ts::I-23: delete endpoint returns success, conflict, not-found, and validation responses"
+  },
+  "I-20_api_call.png": {
+    "description": "API request and response evidence for I-20: rejects an admin endpoint request without an authorization token",
+    "test": "commission-revenue.spec.ts::I-20: rejects an admin endpoint request without an authorization token"
+  },
+  "I-04_api_call.png": {
+    "description": "API request and response evidence for I-04: rejects a commission report range where the start is after the end",
+    "test": "commission-revenue.spec.ts::I-04: rejects a commission report range where the start is after the end"
+  },
+  "I-19_api_call.png": {
+    "description": "API request and response evidence for I-19: denies commission access to buyer and merchant accounts",
+    "test": "commission-revenue.spec.ts::I-19: denies commission access to buyer and merchant accounts"
+  }
+}

@@ -61,6 +61,7 @@ export interface MerchantPromotion {
   maxUses?: number | null;
   usedCount?: number;
   expiresAt: string;
+  userAlreadyUsed?: boolean;
 }
 
 export interface CreateOrderPayload {

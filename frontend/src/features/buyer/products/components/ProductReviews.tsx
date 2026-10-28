@@ -101,20 +101,6 @@ export function ProductReviews({ idOrSlug }: ProductReviewsProps) {
           </div>
           {review.title && <p className="mb-1 font-medium">{review.title}</p>}
           {review.body && <p className="text-sm text-muted-foreground">{review.body}</p>}
-          {review.images && review.images.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {review.images.map((img, i) => (
-                <img
-                  key={i}
-                  src={img}
-                  alt={t('buyer.products.reviews.imageAlt', 'Review image {{index}}', {
-                    index: i + 1,
-                  })}
-                  className="h-20 w-20 rounded-md object-cover"
-                />
-              ))}
-            </div>
-          )}
         </div>
       ))}
 

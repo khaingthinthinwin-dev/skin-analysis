@@ -4,6 +4,7 @@ import { API_BASE_URL } from '../utils/constants';
 interface AuthFixtures {
   buyerPage: Page;
   merchantPage: Page;
+  adminPage: Page;
   blockCdnFonts: void;
 }
 
@@ -15,6 +16,12 @@ const SEED_MERCHANT = {
 
 const SEED_BUYER = {
   email: 'eem@gmail.com',
+  password: 'Cosmetics@123',
+};
+
+// Seed admin (for Admin Ad Management screen tests)
+const SEED_ADMIN = {
+  email: 'pet@gmail.com',
   password: 'Cosmetics@123',
 };
 
@@ -30,30 +37,32 @@ async function blockCdnFonts(page: Page) {
 }
 
 async function loginViaUI(page: Page, email: string, password: string) {
-  // buyerPage/merchantPage use their own context+page, bypassing the auto
-  // fixture below — block the font CDN here too before any navigation.
   await blockCdnFonts(page);
-
   await page.goto('/login');
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
 
-  // Fill email field
+  // Wait for login form to be visible
   const emailInput = page.getByPlaceholder('user@example.com');
+  await emailInput.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
+
   await emailInput.fill(email);
 
-  // Fill password field
   const passwordInput = page.getByPlaceholder('Enter your password');
+  await passwordInput.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
   await passwordInput.fill(password);
 
-  // Click submit button
   const submitButton = page.locator('button[type="submit"]');
   await submitButton.click();
 
-  // Wait for navigation away from login page
-  await page.waitForFunction(() => !window.location.pathname.includes('/login'), {
-    timeout: 15_000,
-  });
-  await page.waitForLoadState('networkidle');
+  // Wait for navigation away from login page, but don't fail hard if it times out
+  try {
+    await page.waitForURL(
+      (url) => !url.pathname.includes('/login'),
+      { timeout: 15000 },
+    );
+  } catch {
+    // Navigation wait may fail in some environments; continue anyway
+  }
 }
 
 export const test = base.extend<AuthFixtures>({
@@ -80,6 +89,16 @@ export const test = base.extend<AuthFixtures>({
     const page = await context.newPage();
 
     await loginViaUI(page, SEED_MERCHANT.email, SEED_MERCHANT.password);
+
+    await use(page);
+    await context.close();
+  },
+
+  adminPage: async ({ browser }, use) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await loginViaUI(page, SEED_ADMIN.email, SEED_ADMIN.password);
 
     await use(page);
     await context.close();

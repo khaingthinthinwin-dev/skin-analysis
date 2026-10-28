@@ -54,19 +54,15 @@ export default function Checkout() {
 
   const handleApplyCoupon = useCallback(
     async (merchantId: string, code: string, shopSubtotal: number) => {
-      try {
-        const result = await validateCouponMutation.mutateAsync({
-          couponCode: code,
-          subtotal: shopSubtotal,
-        });
-        setAppliedByMerchant((prev) => ({
-          ...prev,
-          [merchantId]: { coupon: result, code },
-        }));
-        toast.success(t('buyer.checkout.toasts.couponApplied', 'Coupon applied successfully'));
-      } catch {
-        toast.error(t('buyer.checkout.toasts.invalidCoupon', 'Invalid coupon code'));
-      }
+      const result = await validateCouponMutation.mutateAsync({
+        couponCode: code,
+        subtotal: shopSubtotal,
+      });
+      setAppliedByMerchant((prev) => ({
+        ...prev,
+        [merchantId]: { coupon: result, code },
+      }));
+      toast.success(t('buyer.checkout.toasts.couponApplied', 'Coupon applied successfully'));
     },
     [t, validateCouponMutation],
   );

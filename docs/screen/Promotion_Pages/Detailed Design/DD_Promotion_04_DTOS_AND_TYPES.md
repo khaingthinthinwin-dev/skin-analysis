@@ -1,7 +1,7 @@
 # DD_PROMO_04 — DTOs and Types
 
-> **Doc ID:** SKM-DD-PROMO-04 | **Version:** 2.0 | **Status:** Updated  
-> **Last Updated:** 2026-10-15
+> **Doc ID:** SKM-DD-PROMO-04 | **Version:** 2.1 | **Status:** Updated  
+> **Last Updated:** 2026-10-21
 
 ---
 

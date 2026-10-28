@@ -1,0 +1,11 @@
+{
+  "capturedAt": "2026-10-21T03:08:52.891Z",
+  "description": "DB cart item is gone after removing it from the UI",
+  "results": [
+    {
+      "label": "cart item by id",
+      "rowCount": 0,
+      "rows": []
+    }
+  ]
+}

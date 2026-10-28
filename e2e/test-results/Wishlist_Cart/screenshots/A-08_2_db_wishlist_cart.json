@@ -1,0 +1,37 @@
+{
+  "capturedAt": "2026-10-21T03:10:58.399Z",
+  "description": "DB wishlist row and zero stock confirm the disabled add-to-cart button",
+  "results": [
+    {
+      "label": "wishlist row by buyer and product",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "f0e01f39-c23c-43b2-ad65-21532385351e",
+          "user_id": "79e97868-37f3-4c5b-975c-f1360b2925bf",
+          "product_id": "c0227505-5540-42d2-96b9-76a765b94297",
+          "product_name": "Honey Lip Balm",
+          "stock_quantity": 0,
+          "created_at": "2026-10-20T20:39:45.935Z"
+        }
+      ]
+    },
+    {
+      "label": "cart row by buyer and product",
+      "rowCount": 0,
+      "rows": []
+    },
+    {
+      "label": "product stock by id",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "c0227505-5540-42d2-96b9-76a765b94297",
+          "name": "Honey Lip Balm",
+          "stock_quantity": 0,
+          "is_active": true
+        }
+      ]
+    }
+  ]
+}

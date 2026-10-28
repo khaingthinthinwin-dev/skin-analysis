@@ -1,7 +1,7 @@
 # DD_MOD_05  EBusiness Logic (Review & Content Moderation)
 
-> **Doc ID:** SKM-DD-MOD-05 | **Version:** 1.2 | **Status:** Released  
-> **Last Updated:** 2026-08-22
+> **Doc ID:** SKM-DD-MOD-05 | **Version:** 1.3 | **Status:** Released  
+> **Last Updated:** 2026-10-21
 
 ---
 
@@ -13,6 +13,7 @@
 | 1.1 | 2026-08-18 | Software Architect | Added Review Reports business logic (UC-MOD-007): report status update, report deletion, report state machine, validation rules, audit logging, and cache invalidation. |
 | 1.2 | 2026-08-22 | Software Architect | Aligned with FDS v2.0 and screen items v6.0: updated report status from COMPLETED to RESOLVED, added REVIEWED state, added report review method. |
 | 1.3 | 2026-08-24 | Software Architect | Changed review display approach from hybrid to admin-moderated: ALL reviews now require admin approval before being shown to buyers. Updated review creation logic. |
+| 1.4 | 2026-10-21 | Software Architect | Aligned with FDS v2.3 (2026-10-21): (1) Review status changed from boolean `is_approved` to 3-value string enum `status` (`pending`/`approved`/`rejected`) stored in `reviews.status`. Updated all service methods, state machines, and validation. (2) Added missing detail GET endpoints (`/admin/reviews/:id`, `/admin/merchants/:id`, `/admin/content/:id`, `/admin/users/:id`, `/admin/reports/:id`). (3) Corrected merchant rejection flow: products are not auto-deactivated, only cache is cleared. (4) Corrected audit log `entityType` casing to lowercase. (5) Updated notification type strings to match code. (6) Report status update uses `adminNote` (camelCase). (7) Added `reason` optional field to `ModerateUserDto`. |
 
 ---
 
@@ -32,16 +33,16 @@ This document specifies the core business logic, state transition rules, cache i
 2. **Logic:**
    - Find review by `id` in `reviews` table. If not found, return 404.
    - **Review approval approach:**
-      - When a review is created, set `is_approved = false` (hidden from buyers until admin approval).
+      - When a review is created, set `status = 'pending'` (hidden from buyers until admin approval).
       - The `moderate` endpoint handles approval/rejection: admins approve or reject reviews.
    - If `dto.action === 'reject'`:
      - Validate `dto.reason` is provided and non-empty. If missing, return 400 with `REJECTION_REASON_REQUIRED`.
-     - Check current `is_approved` state. If already `false`, return 409 with `REVIEW_ALREADY_REJECTED`.
+     - Check current `status`. If already `'rejected'`, return 409 with `REVIEW_ALREADY_REJECTED`.
    - If `dto.action === 'approve'`:
-     - Check current `is_approved` state. If already `true`, return 409 with `REVIEW_ALREADY_APPROVED`.
-   - Update `reviews.is_approved` (`true` for approve, `false` for reject).
+     - Check current `status`. If already `'approved'`, return 409 with `REVIEW_ALREADY_APPROVED`.
+   - Update `reviews.status` to `'approved'` or `'rejected'`.
    - **Recalculate product statistics:**
-     - Query `SELECT AVG(rating), COUNT(*) FROM reviews WHERE product_id = :productId AND is_approved = true`
+     - Query `SELECT AVG(rating), COUNT(*) FROM reviews WHERE product_id = :productId AND status = 'approved'`
      - Update `products.avg_rating` and `products.review_count`
    - **Invalidate caches:**
      - Delete `cache:product:{productId}` from Redis
@@ -57,7 +58,7 @@ This document specifies the core business logic, state transition rules, cache i
    - Capture `productId` before deletion for recalculation.
    - Hard delete review from `reviews` table.
    - **Recalculate product statistics:**
-     - Query remaining approved reviews for the product
+     - Query remaining `status = 'approved'` reviews for the product
      - Update `products.avg_rating` and `products.review_count`
    - **Invalidate caches:**
      - Delete `cache:product:{productId}` from Redis
@@ -102,13 +103,12 @@ This document specifies the core business logic, state transition rules, cache i
    - **Synchronize shop visibility:**
      - If approved: set `shops.is_approved = true`
      - If rejected: set `shops.is_approved = false`
-   - **If rejected: deactivate merchant's products:**
-     - Update `products.is_active = false` WHERE `shop_id = shopId`
-     - Invalidate product caches for all affected products
+   - **If rejected: invalidate product list cache:**
+     - Invalidate `cache:products:list:*` in Redis (merchant's products are **not** individually deactivated)
    - **Create website notification:**
      - Insert notification record for the merchant user with type `MERCHANT_STATUS_CHANGED`
    - **Audit log:** Insert `MERCHANT_APPROVED` or `MERCHANT_REJECTED` with `adminId`, `merchantId`, `shopId`, `reason` (if rejected), `timestamp`.
-3. **Transaction Boundaries:** Merchant update, shop sync, product deactivation, notification creation, and audit log must be atomic.
+3. **Transaction Boundaries:** Merchant update, shop sync, cache invalidation, notification creation, and audit log must be atomic.
 
 ### 2.6 moderateProduct(productId, dto)
 
@@ -165,9 +165,9 @@ This document specifies the core business logic, state transition rules, cache i
    - Set `review_reports.resolved_at` to current timestamp.
    - Set `review_reports.admin_note` from `dto.adminNote`.
    - **If status = `'resolved'`:**
-     - Reject the target review: Update `reviews.is_approved = false` WHERE `id = report.reviewId`.
+     - Reject the target review: Update `reviews.status = 'rejected'` WHERE `id = report.reviewId`.
      - **Recalculate product statistics:**
-       - Query `SELECT AVG(rating), COUNT(*) FROM reviews WHERE product_id = :productId AND is_approved = true`
+       - Query `SELECT AVG(rating), COUNT(*) FROM reviews WHERE product_id = :productId AND status = 'approved'`
        - Update `products.avg_rating` and `products.review_count`
      - **Invalidate caches:**
        - Delete `cache:product:{productId}` from Redis
@@ -212,8 +212,8 @@ This document specifies the core business logic, state transition rules, cache i
 
 | Transition | Origin | Target | Guard Conditions |
 |------------|--------|--------|------------------|
-| TR-MOD-01 | `is_approved = true` | `is_approved = false` | Admin role, review exists |
-| TR-MOD-02 | `is_approved = false` | `is_approved = true` | Admin role, review exists |
+| TR-MOD-01 | `status = 'approved'` | `status = 'rejected'` | Admin role, review exists |
+| TR-MOD-02 | `status = 'rejected'` | `status = 'approved'` | Admin role, review exists |
 
 ```typescript
 function transitionReviewState(review: Review, action: ReviewAction): boolean {
@@ -333,7 +333,7 @@ async recalculateProductStats(productId: string): Promise<void> {
       COUNT(*) as review_count
     FROM reviews 
     WHERE product_id = ${productId} 
-    AND is_approved = true
+    AND status = 'approved'
   `;
 
   await this.prisma.products.update({

@@ -3,12 +3,382 @@
   "specFiles": [
     "e2e/tests/Checkout_Purchase/checkout.spec.ts"
   ],
+  "format": "pcl-id-keyed",
+  "evidenceDirectory": "e2e/test-results/Checkout_Purchase/screenshots",
   "mappings": {
-    "should display checkout page with order summary": "E2E-CHECK-01: Checkout page loads with order summary",
-    "should place an order successfully": "E2E-CHECK-02: Order placement succeeds",
-    "should display order confirmation after purchase": "E2E-CHECK-03: Order confirmation displays",
-    "should apply a valid promo code": "E2E-CHECK-04: Valid promo code applies discount",
-    "should show error for invalid promo code": "E2E-CHECK-05: Invalid promo code shows error",
-    "should calculate correct total (subtotal - discount)": "E2E-CHECK-06: Total calculation is correct"
+    "N-01": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-01: renders the order summary, shipping form, payment choices, and actions"
+      }
+    ],
+    "N-02": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-02: starts with empty shipping fields and Japan selected"
+      }
+    ],
+    "N-03": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-03: defaults to Cash on Delivery and switches between payment radios"
+      }
+    ],
+    "N-04": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-04: applies a valid shop coupon and updates the discount and total"
+      }
+    ],
+    "N-05": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-05: removes an applied coupon and reverts the total"
+      }
+    ],
+    "N-06": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-06: submits shipping and payment details and reaches the order confirmation"
+      }
+    ],
+    "N-07": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-07: renders the placed order details on the confirmation page"
+      }
+    ],
+    "N-08": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-08: Successful order placement applies all write effects atomically"
+      }
+    ],
+    "N-09": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-09: Sponsored ad panel renders eligible Checkout ads"
+      }
+    ],
+    "N-10": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-10: Ad carousel auto-advances every 5 seconds and loops"
+      }
+    ],
+    "N-11": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-11: Ad carousel pauses on hover/focus and resumes on leave/blur"
+      }
+    ],
+    "N-12": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-12: Ad CTA click fires the analytics event"
+      }
+    ],
+    "N-13": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-13: Order Confirmation action buttons work"
+      }
+    ],
+    "N-14": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-14: Language toggle updates checkout and confirmation labels"
+      }
+    ],
+    "N-15": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-15: Theme toggle works on checkout and confirmation pages"
+      }
+    ],
+    "N-16": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-16: Responsive layout on desktop viewport"
+      }
+    ],
+    "N-17": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-17: Responsive layout on mobile viewport"
+      }
+    ],
+    "N-18": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-18: Language toggle updates all checkout labels (Japanese)"
+      }
+    ],
+    "N-19": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-19: Language toggle updates all checkout labels (Myanmar)"
+      }
+    ],
+    "N-20": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-20: Shipping form validation error messages display in selected language (Japanese / Myanmar)"
+      }
+    ],
+    "N-21": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-21: Toast notifications and modals respect selected language"
+      }
+    ],
+    "N-22": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "N-22: Order placement creates an ORDER_PLACED in-app notification for the merchant"
+      }
+    ],
+    "A-01": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "A-01: empty cart renders the empty state without an order summary"
+      }
+    ],
+    "A-02": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "A-02: redirects an unauthenticated visitor to login"
+      }
+    ],
+    "A-03": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "A-03: Guest on a stale checkout view is blocked by the Guest Login dialog"
+      }
+    ],
+    "A-04": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "A-04: Non-buyer roles are blocked from checkout"
+      }
+    ],
+    "A-05": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "A-05: Stock conflict at submission rejects the whole order"
+      }
+    ],
+    "A-06": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "A-06: Invalid or inactive coupon code is rejected"
+      }
+    ],
+    "A-07": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "A-07: Expired coupon is rejected"
+      }
+    ],
+    "A-08": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "A-08: Coupon below the minimum order amount is rejected"
+      }
+    ],
+    "A-09": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "A-09: Coupon usage limit reached is rejected"
+      }
+    ],
+    "A-10": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "A-10: Coupon already used by this buyer is rejected"
+      }
+    ],
+    "A-11": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "A-11: Coupon that would zero the order total is rejected at validation"
+      }
+    ],
+    "A-12": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "A-12: Missing required shipping field blocks submission"
+      }
+    ],
+    "A-13": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "A-13: Invalid payment method is rejected"
+      }
+    ],
+    "A-14": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "A-14: Another buyer cannot open someone else's confirmation page"
+      }
+    ],
+    "A-15": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "A-15: Order placement rate limit returns 429"
+      }
+    ],
+    "A-16": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "A-16: shows a recoverable checkout load error when the checkout API fails"
+      }
+    ],
+    "B-01": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "B-01: flags unavailable cart items and keeps order submission disabled"
+      }
+    ],
+    "B-02": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "B-02: accepts a valid coupon code at the exact 8-character minimum length"
+      }
+    ],
+    "B-03": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "B-03: rejects coupon codes outside the 8-12 alphanumeric format without an API request"
+      }
+    ],
+    "B-04": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "B-04: accepts shipping fields at their exact maximum length"
+      }
+    ],
+    "B-05": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "B-05: rejects a shipping field one character over the maximum"
+      }
+    ],
+    "B-06": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "B-06: order notes accept 500 characters and reject the 501st"
+      }
+    ],
+    "B-07": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "B-07: Coupon discount equal to the subtotal is rejected with full rollback"
+      }
+    ],
+    "B-08": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "B-08: No eligible ads renders no panel at all"
+      }
+    ],
+    "B-09": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "B-09: Ad slider never exceeds 5 slides even with more eligible ads"
+      }
+    ],
+    "B-10": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "B-10: Reduced motion preference disables the ad animation and auto-slide"
+      }
+    ],
+    "B-11": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "B-11: No horizontal overflow at 320px viewport"
+      }
+    ],
+    "I-01": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "I-01: GET /api/v1/checkout — returns 200 with checkout data"
+      }
+    ],
+    "I-02": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "I-02: GET /api/v1/checkout — returns 400 for an empty cart"
+      }
+    ],
+    "I-03": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "I-03: POST /api/v1/checkout/validate-coupon — returns 200 with the discount calculation"
+      }
+    ],
+    "I-04": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "I-04: POST /api/v1/checkout/validate-coupon — returns an error for each coupon rejection reason"
+      }
+    ],
+    "I-05": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "I-05: POST /api/v1/checkout/validate-coupon — returns 400 when the discount would zero the total"
+      }
+    ],
+    "I-06": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "I-06: POST /api/v1/orders — returns 201 with the created orders array"
+      }
+    ],
+    "I-07": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "I-07: POST /api/v1/orders — rejects insufficient stock at submission"
+      }
+    ],
+    "I-08": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "I-08: POST /api/v1/orders — returns 400 for payload validation failures"
+      }
+    ],
+    "I-09": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "I-09: Protected checkout endpoints return 401 without a valid token"
+      }
+    ],
+    "I-10": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "I-10: Protected checkout endpoints return 403 for non-buyer roles"
+      }
+    ],
+    "I-11": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "I-11: Ad contract and graceful degradation"
+      }
+    ],
+    "I-12": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "I-12: Rate limits return 429 per endpoint configuration"
+      }
+    ],
+    "I-13": [
+      {
+        "file": "checkout.spec.ts",
+        "title": "I-13: Error responses follow the standard API error envelope"
+      }
+    ]
   }
 }
+
+

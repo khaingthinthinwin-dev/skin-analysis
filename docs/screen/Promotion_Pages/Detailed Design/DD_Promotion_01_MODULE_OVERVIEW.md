@@ -1,7 +1,7 @@
 # DD_PROMO_01 — Module Overview
 
-> **Doc ID:** SKM-DD-PROMO-01 | **Version:** 2.0 | **Status:** Updated  
-> **Last Updated:** 2026-10-15
+> **Doc ID:** SKM-DD-PROMO-01 | **Version:** 2.1 | **Status:** Updated  
+> **Last Updated:** 2026-10-21
 
 ---
 
@@ -41,6 +41,10 @@ and is exposed through the controller and service classes that manage coupon cod
 - Backend controller: `backend/src/modules/merchant/promotions/promotions.controller.ts`
 - Backend service: `backend/src/modules/merchant/promotions/promotions.service.ts`
 - Backend DTOs: `backend/src/modules/merchant/promotions/dto/`
+- Frontend pages: `frontend/src/pages/merchant/Promotions.tsx`, `PromotionCreate.tsx`, `PromotionEdit.tsx`
+- Frontend components: `frontend/src/features/merchant/promotions/components/PromotionForm.tsx`
+- Frontend hooks: `frontend/src/features/merchant/promotions/hooks/usePromotions.ts`
+- Frontend service: `frontend/src/features/merchant/promotions/services/promotion.service.ts`
 
 ---
 
@@ -82,9 +86,10 @@ These are the rules implemented in the live repo:
 | Merchant list page | `frontend/src/pages/merchant/Promotions.tsx` | list, filters, actions, banners |
 | Create page | `frontend/src/pages/merchant/PromotionCreate.tsx` | coupon creation form |
 | Edit page | `frontend/src/pages/merchant/PromotionEdit.tsx` | coupon edit form |
-| Query hooks | `frontend/src/hooks/usePromotions.ts` | CRUD and list queries |
-| API service | `frontend/src/services/promotion.service.ts` | HTTP wrapper for `/promotions` |
+| Query hooks | `frontend/src/features/merchant/promotions/hooks/usePromotions.ts` | CRUD and list queries |
+| API service | `frontend/src/features/merchant/promotions/services/promotion.service.ts` | HTTP wrapper for `/promotions` |
 | Frontend types | `frontend/src/types/promotion.types.ts` | request and response models |
+| Form component | `frontend/src/features/merchant/promotions/components/PromotionForm.tsx` | shared form for create/edit |
 | Merchant guard | `frontend/src/features/merchant/products/guards/merchantProducts.guard.ts` | license-state gating for UI actions |
 
 ### 4.2 Actual UI behavior
@@ -95,7 +100,6 @@ These are the rules implemented in the live repo:
 - Pagination uses `page` and `limit`.
 - Delete uses a confirmation dialog pattern via `AlertDialog`.
 - Toggle is implemented through `PATCH /promotions/:id/toggle-active`.
-- Copy-to-clipboard is available on the table for coupon codes.
 - Deactivated, pending, and rejected banners are rendered before the list table.
 
 ---

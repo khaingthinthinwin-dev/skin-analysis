@@ -174,10 +174,10 @@ export function AdTable({
           </div>
         </td>
         <td className={`${TD_BASE} text-foreground ${getCellHighlight(isHighlighted, 2)}`}>
-          <div className="max-w-[120px] truncate flex items-center gap-2" title={ad.title}>
-            {ad.title}
+          <div className="flex max-w-[120px] min-w-0 items-center gap-2" title={ad.title}>
+            <span className="min-w-0 flex-1 truncate">{ad.title}</span>
             {isHighlighted && (
-              <span className="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-purple-600 text-white animate-pulse">
+              <span className="inline-flex flex-shrink-0 items-center rounded-full bg-purple-600 px-2 py-0.5 text-xs font-bold text-white animate-pulse">
                 {t('admin.ads.list.newBadge', 'NEW')}
               </span>
             )}

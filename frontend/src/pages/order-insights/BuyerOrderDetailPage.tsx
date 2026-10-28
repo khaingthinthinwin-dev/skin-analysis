@@ -32,7 +32,12 @@ import type {
 import { OrderStatus } from "@/features/order-insights/types/orderInsights.types";
 
 function formatMoney(value: string): string {
-  return `$${parseFloat(value).toFixed(2)}`;
+  const num = parseFloat(value);
+  if (Number.isNaN(num)) return "0.00 Ks";
+  return `${num.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })} Ks`;
 }
 
 function formatDate(value: string): string {

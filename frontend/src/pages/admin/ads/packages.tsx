@@ -51,7 +51,9 @@ export default function PackageFeeManagementPage() {
   // Disable creation once every placement × tier package exists (12 total),
   // using the same placement+tier uniqueness rule as CreateFeeModal.
   const createdCombinations = new Set(
-    (feeSettingsQuery.data ?? []).map((setting) => `${setting.placement}:${setting.tier}`),
+    (feeSettingsQuery.data ?? [])
+      .filter((setting) => setting.isActive)
+      .map((setting) => `${setting.placement}:${setting.tier}`),
   )
   const allPackagesCreated = createdCombinations.size >= TOTAL_PACKAGES
 

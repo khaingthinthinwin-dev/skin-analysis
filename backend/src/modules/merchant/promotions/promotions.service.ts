@@ -141,16 +141,9 @@ export class PromotionsService {
       throw new NotFoundException('Promotion not found');
     }
 
-    const usageResult = await this.prisma.order.groupBy({
-      by: ['couponCode'],
-      where: { couponCode: promotion.code },
-      _count: { id: true },
-    });
-    const realUsedCount = usageResult[0]?._count.id ?? 0;
-
     return {
       ...promotion,
-      usedCount: realUsedCount,
+      usedCount: promotion.usedCount,
       discountType: promotion.discountType.typeCode,
       discountValue: promotion.discountValue.toString(),
       minOrderAmount: promotion.minOrderAmount?.toString() ?? null,
@@ -217,6 +210,37 @@ export class PromotionsService {
 
     await this.invalidateCache(merchantId, promotion.code);
 
+    try {
+      const users = await this.prisma.user.findMany({
+        where: { isActive: true },
+        select: { id: true },
+      });
+      if (users.length > 0) {
+        const discountLabel =
+          promotion.discountTypeCode === 'percentage'
+            ? `${Number(promotion.discountValue)}%`
+            : `${Number(promotion.discountValue)} MMK`;
+        const validUntil = expiresAt.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
+        await this.prisma.notification.createMany({
+          data: users.map((u) => ({
+            userId: u.id,
+            type: 'PROMO_CREATED',
+            title: 'New Promotion Available',
+            message: `Use code "${promotion.code}" for ${discountLabel} off. Valid until ${validUntil}.`,
+            entityType: 'promotion',
+            entityId: promotion.id,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    } catch {
+      // notification is best-effort and should not block promotion creation
+    }
+
     return {
       ...promotion,
       discountType: promotion.discountType.typeCode,
@@ -236,17 +260,11 @@ export class PromotionsService {
       throw new NotFoundException('Promotion not found');
     }
 
-    const usageResult = await this.prisma.order.groupBy({
-      by: ['couponCode'],
-      where: { couponCode: existing.code },
-      _count: { id: true },
-    });
-    const realUsedCount = usageResult[0]?._count.id ?? 0;
-
-    if (realUsedCount > 0) {
-      throw new ConflictException(
-        'Cannot edit a promotion that has already been used',
-      );
+    if (existing.usedCount > 0) {
+      throw new ConflictException({
+        error: 'PROMO_EDIT_RESTRICTED',
+        message: 'Cannot edit a promotion that has already been used',
+      });
     }
 
     if (dto.discountTypeCode) {
@@ -336,17 +354,11 @@ export class PromotionsService {
       throw new NotFoundException('Promotion not found');
     }
 
-    const usageResult = await this.prisma.order.groupBy({
-      by: ['couponCode'],
-      where: { couponCode: existing.code },
-      _count: { id: true },
-    });
-    const realUsedCount = usageResult[0]?._count.id ?? 0;
-
-    if (realUsedCount > 0) {
-      throw new ConflictException(
-        'Cannot delete a promotion that has already been used',
-      );
+    if (existing.usedCount > 0) {
+      throw new ConflictException({
+        error: 'PROMO_DELETE_RESTRICTED',
+        message: 'Cannot delete a promotion that has already been used',
+      });
     }
 
     await this.prisma.promotion.delete({ where: { id } });
@@ -372,18 +384,11 @@ export class PromotionsService {
       include: { discountType: true },
     });
 
-    const usageResult = await this.prisma.order.groupBy({
-      by: ['couponCode'],
-      where: { couponCode: promotion.code },
-      _count: { id: true },
-    });
-    const realUsedCount = usageResult[0]?._count.id ?? 0;
-
     await this.invalidateCache(merchantId, promotion.code);
 
     return {
       ...promotion,
-      usedCount: realUsedCount,
+      usedCount: promotion.usedCount,
       discountType: promotion.discountType.typeCode,
       discountValue: promotion.discountValue.toString(),
       minOrderAmount: promotion.minOrderAmount?.toString() ?? null,
@@ -418,6 +423,15 @@ export class PromotionsService {
     });
     const realUsedCount = usageResult[0]?._count.id ?? 0;
 
+    // Per-user check: each user may only use a coupon once
+    const userUsage = await this.prisma.order.count({
+      where: { buyerId: userId, couponCode: promotion.code },
+    });
+    if (userUsage > 0) {
+      throw new BadRequestException('You have already used this coupon');
+    }
+
+    // Global cap
     if (promotion.maxUses && realUsedCount >= promotion.maxUses) {
       throw new BadRequestException('Coupon has reached maximum usage');
     }

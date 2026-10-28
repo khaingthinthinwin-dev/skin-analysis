@@ -1,0 +1,311 @@
+{
+  "module": "Matching_And_Recommendation",
+  "timestamp": "2026-10-22T04:36:03.354Z",
+  "total": 50,
+  "passed": 50,
+  "failed": 0,
+  "skipped": 0,
+  "durationMs": 298469,
+  "tests": [
+    {
+      "title": "N-01: displays personalized recommendations and match scores",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 4059
+    },
+    {
+      "title": "N-02: displays generic recommendations without match scores",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 3506
+    },
+    {
+      "title": "N-03: shows the stale analysis prompt and retake navigation",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 3809
+    },
+    {
+      "title": "N-08: expands a recommendation history session",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 4050
+    },
+    {
+      "title": "N-07: opens the product page from a recommendation card",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 3901
+    },
+    {
+      "title": "N-09: views similar products from a product detail page",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 3059
+    },
+    {
+      "title": "N-20: expands and collapses recommendation history beyond the first five sessions",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 4145
+    },
+    {
+      "title": "N-04: filters by skin type, price, category, and rating",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 3920
+    },
+    {
+      "title": "N-05: sorts by ascending price and paginates results",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 5013
+    },
+    {
+      "title": "N-06: resets filters and returns pagination to page 1",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 3278
+    },
+    {
+      "title": "N-13: renders the product grid at desktop, tablet, and mobile widths",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 6997
+    },
+    {
+      "title": "N-12: switches the app-shell language and returns to English",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 7055
+    },
+    {
+      "title": "N-17: switches between grid and list views",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 5976
+    },
+    {
+      "title": "N-18: validates category, rating, and invalid price range",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 7761
+    },
+    {
+      "title": "N-19: defaults to Newest and falls back from an unsupported sort",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 8311
+    },
+    {
+      "title": "N-21: opens the mobile filters sheet and applies a filter",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 7444
+    },
+    {
+      "title": "N-22: removes a filter chip and clears all chips",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 8134
+    },
+    {
+      "title": "N-23: selects multiple skin types and removes one without a reload",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 13672
+    },
+    {
+      "title": "N-24: offers Match Score sort only for AI recommendations",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 9186
+    },
+    {
+      "title": "N-25: hides the freshness prompt at exactly 24 hours",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 6255
+    },
+    {
+      "title": "N-14: changes recommendation pages on mobile with numbered pagination",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 9140
+    },
+    {
+      "title": "N-10: displays sponsored ads and records a panel impression",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 6636
+    },
+    {
+      "title": "N-11: tracks a sponsored ad click and follows its destination",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 7495
+    },
+    {
+      "title": "N-15: adds and removes a recommendation from the wishlist",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 13733
+    },
+    {
+      "title": "N-16: adds an in-stock recommendation to the cart",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 10357
+    },
+    {
+      "title": "A-01: redirects unauthenticated visitors to login",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 2265
+    },
+    {
+      "title": "A-02: rejects an invalid recommendation query",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 3284
+    },
+    {
+      "title": "A-03: rejects a non-buyer recommendation request",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 3310
+    },
+    {
+      "title": "A-04: offers retry after a failed recommendations request",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 9375
+    },
+    {
+      "title": "A-05: records malformed and missing similar-product ID behavior",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 3856
+    },
+    {
+      "title": "A-06: accepts requests above the documented rate-limit threshold",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 4301
+    },
+    {
+      "title": "A-07: blocks non-buyers from the recommendations page",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 4251
+    },
+    {
+      "title": "A-08: rejects negative price input without applying it",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 7164
+    },
+    {
+      "title": "B-01: displays the empty result state",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 8072
+    },
+    {
+      "title": "B-02: shows out-of-stock products and hides cart action",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 8529
+    },
+    {
+      "title": "B-03: returns an empty page beyond total pages",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 3762
+    },
+    {
+      "title": "B-04: accepts limit 50 and rejects limit 51",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 4804
+    },
+    {
+      "title": "B-05: displays the empty recommendation history state",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 6429
+    },
+    {
+      "title": "B-06: hides the ad panel with an empty ad response",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 9545
+    },
+    {
+      "title": "B-07: uses image fallback and formats product prices",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 6255
+    },
+    {
+      "title": "B-08: shows first-load skeleton cards while the request is pending",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 7379
+    },
+    {
+      "title": "I-01: returns recommendation data and pagination metadata",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 3916
+    },
+    {
+      "title": "I-01: renders live recommendation data without mocks",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 7924
+    },
+    {
+      "title": "I-02: rejects missing and invalid tokens",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 3810
+    },
+    {
+      "title": "I-03: returns a similar-products array excluding the source product",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 3376
+    },
+    {
+      "title": "I-04: returns paginated history for the authenticated buyer",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 3881
+    },
+    {
+      "title": "I-05: returns the ad panel contract for the recommendation placement",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 3485
+    },
+    {
+      "title": "I-06: records impressions for submitted ad IDs",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 3873
+    },
+    {
+      "title": "I-07: records a sponsored ad click",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 3794
+    },
+    {
+      "title": "I-08: documents permissive handling of malformed ad tracking payloads",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\Matching_And_Recommendation\\matching.spec.ts",
+      "status": "passed",
+      "duration": 4937
+    }
+  ]
+}

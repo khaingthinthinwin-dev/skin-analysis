@@ -492,6 +492,45 @@
       "closeButton": "Cancel"
     }
   },
+  "notifications": {
+    "title": "Notifications Center",
+    "subtitle": "Your latest account and order updates",
+    "markAllRead": "Mark all read",
+    "loading": "Loading notifications",
+    "loadError": "Couldn't load notifications. Please try again.",
+    "retry": "Retry",
+    "emptyTitle": "No notifications yet",
+    "emptyDescription": "New merchant registrations and moderation events will appear here.",
+    "rejectionDetails": "Rejection details",
+    "rejectionReason": "Rejection reason",
+    "reviewStoreProfile": "Review your Store Profile before resubmitting your application.",
+    "close": "Close",
+    "resubmit": "Resubmit from Store Profile",
+    "accountDeactivated": "Account Deactivated",
+    "deactivatedByAdmin": "Your account has been deactivated by an administrator",
+    "accountStatus": "Account Status",
+    "deactivatedMessage": "Your account has been deactivated. Some features may be restricted until an admin reactivates your account.",
+    "deactivationReason": "Deactivation Reason",
+    "contactSupport": "Please contact support or visit your profile for more information.",
+    "goToProfile": "Go to Profile",
+    "viewMerchantManagement": "View in Merchant Management →",
+    "viewProductReview": "View in Product Review →",
+    "viewYourReview": "View your review →",
+    "viewOrder": "View order →",
+    "reviewReport": "Review in Review Management →",
+    "reviewSubmission": "Moderate in Review Management →",
+    "analysisCompleted": "Analysis completed 🔔",
+    "analysisCompletedMessage": "Your skin analysis is ready. Check your results and personalized recommendations.",
+    "reanalysisReminder": "Re-analysis reminder 📅",
+    "reanalysisReminderMessage": "It's been a while since your last skin analysis. Take a new analysis to check your skin condition.",
+    "orderStatusTitle": "Order {{status}}",
+    "orderStatusMessage": "Your order {{orderNumber}} is now {{status}}.",
+    "orderPlaced": "Order placed",
+    "orderPlacedMessage": "Your order was placed.",
+    "newOrderReceived": "New order received",
+    "newOrderReceivedMessage": "A buyer placed order {{orderNumber}}.",
+    "time": { "justNow": "Just now", "minutes": "{{count}} min ago", "hours": "{{count}} hour ago", "days": "{{count}} day ago" }
+  },
   "buyer": {
     "dashboard": {
       "beautyHub": "Buyer Beauty Hub",
@@ -1051,7 +1090,7 @@
       },
       "delete": {
         "title": "Delete Products", "selectedTitle": "Delete Selected Products", "none": "No products to delete.",
-        "noneSelected": "No products selected.", "confirmSelected": "Are you sure you want to delete {{count}} product(s)?",
+        "noneSelected": "No products selected.", "noSelectionTitle": "No Selection", "noSelectionMessage": "Please select at least one product to delete", "confirmSelected": "Are you sure you want to delete {{count}} product(s)?",
         "confirmAll": "Are you sure you want to delete all {{count}} products?", "deactivatedCount": "{{count}} will be deactivated",
         "permanentlyDeletedCount": "{{count}} soft-deleted product(s) will be permanently deleted",
         "skippedActiveOrders": "{{count}} product(s) with active orders will be skipped", "deleting": "Deleting..."
@@ -2322,6 +2361,9 @@
         "images": "Product Images"
       },
       "action": { "deactivate": "Deactivate", "reactivate": "Reactivate" },
+      "tooltip": {
+        "pendingOrders": "Cannot deactivate until the order delivery is completed."
+      },
       "dialog": {
         "deactivateTitle": "Deactivate Product",
         "reactivateTitle": "Reactivate Product"

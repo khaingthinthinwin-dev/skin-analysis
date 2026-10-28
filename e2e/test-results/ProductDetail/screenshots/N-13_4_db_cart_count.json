@@ -1,0 +1,16 @@
+{
+  "capturedAt": "2026-10-28T08:36:58.889Z",
+  "description": "cart row count and total quantity for the buyer after adding the product",
+  "results": [
+    {
+      "label": "cart count by buyer and product",
+      "rowCount": 1,
+      "rows": [
+        {
+          "cart_item_count": 1,
+          "total_quantity": 2
+        }
+      ]
+    }
+  ]
+}

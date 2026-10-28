@@ -1,0 +1,23 @@
+{
+  "capturedAt": "2026-10-28T08:39:50.595Z",
+  "description": "products stock row for the out-of-stock product",
+  "results": [
+    {
+      "label": "cart row by buyer and product",
+      "rowCount": 0,
+      "rows": []
+    },
+    {
+      "label": "product stock by id",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "0eabe625-0f04-4f79-9933-a5f20caf3c88",
+          "name": "Hydrating Toner",
+          "stock_quantity": 0,
+          "is_active": true
+        }
+      ]
+    }
+  ]
+}

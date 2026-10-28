@@ -1,0 +1,11 @@
+{
+  "capturedAt": "2026-10-21T03:12:15.490Z",
+  "description": "DB cart item is gone after DELETE /api/v1/cart/items/:id",
+  "results": [
+    {
+      "label": "cart item by id",
+      "rowCount": 0,
+      "rows": []
+    }
+  ]
+}

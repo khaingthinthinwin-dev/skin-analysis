@@ -29,6 +29,8 @@ describe('AdminService review moderation', () => {
       },
       product: {
         findUnique: jest.fn(),
+        findMany: jest.fn(),
+        count: jest.fn(),
         update: jest.fn(),
       },
       user: {
@@ -41,6 +43,7 @@ describe('AdminService review moderation', () => {
       },
       order: {
         findFirst: jest.fn(),
+        findMany: jest.fn(),
       },
       orderStatusHistory: {
         findFirst: jest.fn(),
@@ -454,6 +457,10 @@ describe('AdminService review moderation', () => {
   });
 
   describe('product moderation', () => {
+    beforeEach(() => {
+      prisma.order.findFirst.mockResolvedValue(null);
+    });
+
     it('sends a merchant notification when an admin deactivates a product', async () => {
       prisma.product.findUnique.mockResolvedValue({
         id: 'p1',
@@ -490,6 +497,154 @@ describe('AdminService review moderation', () => {
           entityId: 'p1',
         },
       });
+    });
+
+    it('sends a merchant notification when an admin reactivates a product', async () => {
+      prisma.product.findUnique.mockResolvedValue({
+        id: 'p1',
+        name: 'Glow Serum',
+        merchantId: 'm1',
+        isActive: false,
+      });
+      prisma.product.update.mockResolvedValue({
+        id: 'p1',
+        name: 'Glow Serum',
+        isActive: true,
+        updatedAt: new Date('2026-09-23T00:00:00Z'),
+      });
+      prisma.merchant.findUnique.mockResolvedValue({
+        id: 'm1',
+        userId: 'merchant-user-1',
+      });
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'merchant-user-1',
+        isActive: true,
+      });
+
+      const result = await service.moderateProduct(
+        'p1',
+        { isActive: true },
+        'admin1',
+      );
+
+      expect(result.isActive).toBe(true);
+      expect(prisma.notification.create).toHaveBeenCalledWith({
+        data: {
+          userId: 'merchant-user-1',
+          type: 'PRODUCT_REACTIVATED',
+          title: 'Product Reactivated',
+          message:
+            'Your product "Glow Serum" is active again and is now available to shoppers.',
+          entityType: 'product',
+          entityId: 'p1',
+        },
+      });
+    });
+
+    it('blocks deactivation while the product has an undelivered order', async () => {
+      prisma.product.findUnique.mockResolvedValue({
+        id: 'p1',
+        name: 'Glow Serum',
+        merchantId: 'm1',
+        isActive: true,
+      });
+      prisma.order.findFirst.mockResolvedValue({ id: 'o1' });
+
+      await expect(
+        service.moderateProduct(
+          'p1',
+          { isActive: false, reason: 'Policy violation' },
+          'admin1',
+        ),
+      ).rejects.toThrow(
+        'Cannot deactivate until the order delivery is completed.',
+      );
+
+      expect(prisma.order.findFirst).toHaveBeenCalledWith({
+        where: {
+          items: { some: { productId: 'p1' } },
+          status: { isTerminalState: false },
+        },
+        select: { id: true },
+      });
+      expect(prisma.product.update).not.toHaveBeenCalled();
+    });
+
+    it('allows deactivation once all orders for the product are delivered', async () => {
+      prisma.product.findUnique.mockResolvedValue({
+        id: 'p1',
+        name: 'Glow Serum',
+        merchantId: 'm1',
+        isActive: true,
+      });
+      prisma.product.update.mockResolvedValue({
+        id: 'p1',
+        isActive: false,
+        updatedAt: new Date('2026-09-23T00:00:00Z'),
+      });
+      prisma.merchant.findUnique.mockResolvedValue({
+        id: 'm1',
+        userId: 'merchant-user-1',
+      });
+      prisma.order.findFirst.mockResolvedValue(null);
+
+      const result = await service.moderateProduct(
+        'p1',
+        { isActive: false, reason: 'Policy violation' },
+        'admin1',
+      );
+
+      expect(result.isActive).toBe(false);
+      expect(prisma.order.findFirst).toHaveBeenCalledWith({
+        where: {
+          items: { some: { productId: 'p1' } },
+          status: { isTerminalState: false },
+        },
+        select: { id: true },
+      });
+    });
+
+    it('flags products with undelivered orders in getProducts', async () => {
+      prisma.product.findMany.mockResolvedValue([
+        { id: 'p1', name: 'Persa-Gel', isActive: true },
+        { id: 'p2', name: 'COSRX Serum', isActive: true },
+      ]);
+      prisma.product.count.mockResolvedValue(2);
+      prisma.order.findMany.mockResolvedValue([
+        { items: [{ productId: 'p1' }] },
+      ]);
+
+      const result = await service.getProducts({});
+
+      expect(result.items).toHaveLength(2);
+      expect(result.items[0].hasPendingOrders).toBe(true);
+      expect(result.items[1].hasPendingOrders).toBe(false);
+      expect(prisma.order.findMany).toHaveBeenCalledWith({
+        where: {
+          items: { some: { productId: { in: ['p1', 'p2'] } } },
+          status: { isTerminalState: false },
+        },
+        select: {
+          items: {
+            where: { productId: { in: ['p1', 'p2'] } },
+            select: { productId: true },
+          },
+        },
+      });
+    });
+
+    it('returns hasPendingOrders false in getProductById when all orders are delivered', async () => {
+      prisma.product.findUnique.mockResolvedValue({
+        id: 'p1',
+        name: 'Glow Serum',
+        merchantId: 'm1',
+        isActive: true,
+      });
+      prisma.order.findFirst.mockResolvedValue(null);
+
+      const result = await service.getProductById('p1');
+
+      expect(result.hasPendingOrders).toBe(false);
     });
   });
 });

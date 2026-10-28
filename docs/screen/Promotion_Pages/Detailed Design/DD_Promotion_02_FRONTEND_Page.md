@@ -1,7 +1,7 @@
 # DD_PROMO_02 — Frontend Page Design
 
-> **Doc ID:** SKM-DD-PROMO-02 | **Version:** 2.0 | **Status:** Updated  
-> **Last Updated:** 2026-10-15
+> **Doc ID:** SKM-DD-PROMO-02 | **Version:** 2.1 | **Status:** Updated  
+> **Last Updated:** 2026-10-21
 
 ---
 
@@ -34,7 +34,7 @@ These screens are rendered under the merchant dashboard layout and use the share
 `Promotions.tsx` renders a card-based layout with:
 
 - page title: `merchant.promotions.title`
-- account warning banners for deactivated, pending, or rejected merchants
+- account warning banners for pending or rejected merchants
 - search input
 - status filter dropdown
 - sort dropdown
@@ -48,7 +48,7 @@ Key UI controls include:
 - status filter: `all`, `active`, `inactive`, `expired`
 - sort: `newest`, `oldest`, `code`
 - Add New button
-- Edit, Delete, Toggle, and Copy actions per row
+- Edit, Delete, Toggle actions per row
 
 ### 2.2 Create and edit forms
 
@@ -110,7 +110,6 @@ The list page reads the account status using `useAuth()` and `useMerchantProduct
 
 The page decides whether to show:
 
-- deactivated account banner
 - pending merchant banner
 - rejection banner
 - CRUD action controls
@@ -119,7 +118,6 @@ The effective logic is:
 
 ```ts
 const showPendingBanner = (guard.showPendingBanner || isPending) && !isDeactivated
-const showDeactivatedBanner = guard.showDeactivatedBanner || isDeactivated
 const showCrudActions = guard.showCrudActions && !isPending && !isDeactivated
 ```
 
@@ -166,7 +164,6 @@ return <Badge ...>Inactive</Badge>
 
 Each promotion row exposes:
 
-- copy code
 - toggle active
 - edit
 - delete

@@ -2,28 +2,100 @@
   "N-01_1_wishlist_items.png": {
     "test": "wishlist-cart.spec.ts::should display wishlist items"
   },
+  "N-01_2_db_wishlists.png": {
+    "description": "DB wishlists rows for the buyer after loading the wishlist page",
+    "test": "wishlist-cart.spec.ts::should display wishlist items"
+  },
+  "N-01_2_db_wishlists.json": {
+    "description": "DB wishlists rows for the buyer after loading the wishlist page",
+    "test": "wishlist-cart.spec.ts::should display wishlist items"
+  },
   "N-02_1_wishlist_add_from_pdp.png": {
+    "test": "wishlist-cart.spec.ts::should add product to wishlist from product detail page"
+  },
+  "N-02_2_db_wishlist.png": {
+    "description": "DB wishlist row after adding Hydrating Toner from the product detail page",
+    "test": "wishlist-cart.spec.ts::should add product to wishlist from product detail page"
+  },
+  "N-02_2_db_wishlist.json": {
+    "description": "DB wishlist row after adding Hydrating Toner from the product detail page",
     "test": "wishlist-cart.spec.ts::should add product to wishlist from product detail page"
   },
   "N-03_1_wishlist_item_removed.png": {
     "test": "wishlist-cart.spec.ts::should remove item from wishlist"
   },
+  "N-03_2_db_wishlist.png": {
+    "description": "DB wishlist row is gone after removing the item from the UI",
+    "test": "wishlist-cart.spec.ts::should remove item from wishlist"
+  },
+  "N-03_2_db_wishlist.json": {
+    "description": "DB wishlist row is gone after removing the item from the UI",
+    "test": "wishlist-cart.spec.ts::should remove item from wishlist"
+  },
   "N-04_1_wishlist_item_moved_to_cart.png": {
+    "test": "wishlist-cart.spec.ts::should move an in-stock wishlist item to cart"
+  },
+  "N-04_2_db_wishlist_cart.png": {
+    "description": "DB wishlist row moved to cart_items after the UI move-to-cart action",
+    "test": "wishlist-cart.spec.ts::should move an in-stock wishlist item to cart"
+  },
+  "N-04_2_db_wishlist_cart.json": {
+    "description": "DB wishlist row moved to cart_items after the UI move-to-cart action",
     "test": "wishlist-cart.spec.ts::should move an in-stock wishlist item to cart"
   },
   "N-05_1_cart_items_and_summary.png": {
     "test": "wishlist-cart.spec.ts::should display cart items with correct total"
   },
+  "N-05_2_db_cart.png": {
+    "description": "DB cart_items rows for the buyer after loading the cart page",
+    "test": "wishlist-cart.spec.ts::should display cart items with correct total"
+  },
+  "N-05_2_db_cart.json": {
+    "description": "DB cart_items rows for the buyer after loading the cart page",
+    "test": "wishlist-cart.spec.ts::should display cart items with correct total"
+  },
   "N-06_1_cart_quantity_increased.png": {
+    "test": "wishlist-cart.spec.ts::should update cart quantity"
+  },
+  "N-06_2_db_cart.png": {
+    "description": "DB cart_items quantity after increasing it in the UI",
+    "test": "wishlist-cart.spec.ts::should update cart quantity"
+  },
+  "N-06_2_db_cart.json": {
+    "description": "DB cart_items quantity after increasing it in the UI",
     "test": "wishlist-cart.spec.ts::should update cart quantity"
   },
   "N-07_1_cart_quantity_decreased.png": {
     "test": "wishlist-cart.spec.ts::should decrease cart quantity with minus stepper"
   },
+  "N-07_2_db_cart.png": {
+    "description": "DB cart_items quantity after decreasing it with the minus stepper",
+    "test": "wishlist-cart.spec.ts::should decrease cart quantity with minus stepper"
+  },
+  "N-07_2_db_cart.json": {
+    "description": "DB cart_items quantity after decreasing it with the minus stepper",
+    "test": "wishlist-cart.spec.ts::should decrease cart quantity with minus stepper"
+  },
   "N-08_1_cart_quantity_direct_input.png": {
     "test": "wishlist-cart.spec.ts::should update cart quantity via direct input"
   },
+  "N-08_2_db_cart.png": {
+    "description": "DB cart_items quantity after direct numeric input",
+    "test": "wishlist-cart.spec.ts::should update cart quantity via direct input"
+  },
+  "N-08_2_db_cart.json": {
+    "description": "DB cart_items quantity after direct numeric input",
+    "test": "wishlist-cart.spec.ts::should update cart quantity via direct input"
+  },
   "N-09_1_cart_item_removed.png": {
+    "test": "wishlist-cart.spec.ts::should remove item from cart"
+  },
+  "N-09_2_db_cart.png": {
+    "description": "DB cart item is gone after removing it from the UI",
+    "test": "wishlist-cart.spec.ts::should remove item from cart"
+  },
+  "N-09_2_db_cart.json": {
+    "description": "DB cart item is gone after removing it from the UI",
     "test": "wishlist-cart.spec.ts::should remove item from cart"
   },
   "N-10_1_cart_checkout.png": {
@@ -50,7 +122,23 @@
   "N-17_1_wishlist_cleared.png": {
     "test": "wishlist-cart.spec.ts::should clear all wishlist items and restore them"
   },
+  "N-17_2_db_wishlist_count.png": {
+    "description": "DB wishlists count is 0 after clearing all items",
+    "test": "wishlist-cart.spec.ts::should clear all wishlist items and restore them"
+  },
+  "N-17_2_db_wishlist_count.json": {
+    "description": "DB wishlists count is 0 after clearing all items",
+    "test": "wishlist-cart.spec.ts::should clear all wishlist items and restore them"
+  },
   "N-18_1_cart_cleared.png": {
+    "test": "wishlist-cart.spec.ts::should clear all cart items and restore them"
+  },
+  "N-18_2_db_cart_count.png": {
+    "description": "DB cart_items count is 0 after clearing all items",
+    "test": "wishlist-cart.spec.ts::should clear all cart items and restore them"
+  },
+  "N-18_2_db_cart_count.json": {
+    "description": "DB cart_items count is 0 after clearing all items",
     "test": "wishlist-cart.spec.ts::should clear all cart items and restore them"
   },
   "N-19_1_wishlist_ja.png": {
@@ -68,8 +156,16 @@
   "A-01_1_duplicate_wishlist.png": {
     "test": "wishlist-cart.spec.ts::should reject adding duplicate product to wishlist"
   },
+  "A-01_2_db_wishlist_count.png": {
+    "description": "DB wishlist count is still 1 after the duplicate add attempt",
+    "test": "wishlist-cart.spec.ts::should reject adding duplicate product to wishlist"
+  },
+  "A-01_2_db_wishlist_count.json": {
+    "description": "DB wishlist count is still 1 after the duplicate add attempt",
+    "test": "wishlist-cart.spec.ts::should reject adding duplicate product to wishlist"
+  },
   "A-02_1_guest_wishlist_disabled.png": {
-    "test": "wishlist-cart.spec.ts::should disable wishlist action for guest user"
+    "test": "wishlist-cart.spec.ts::should redirect guest user attempting to add to wishlist"
   },
   "A-03_1_guest_cart_redirect.png": {
     "test": "wishlist-cart.spec.ts::should redirect guest user attempting to add to cart"
@@ -83,25 +179,309 @@
   "A-06_1_zero_quantity_blocked.png": {
     "test": "wishlist-cart.spec.ts::should block cart quantity zero or negative"
   },
+  "A-06_2_db_cart.png": {
+    "description": "DB cart_items quantity is unchanged after entering zero",
+    "test": "wishlist-cart.spec.ts::should block cart quantity zero or negative"
+  },
+  "A-06_2_db_cart.json": {
+    "description": "DB cart_items quantity is unchanged after entering zero",
+    "test": "wishlist-cart.spec.ts::should block cart quantity zero or negative"
+  },
   "A-08_1_out_of_stock_add_disabled.png": {
+    "test": "wishlist-cart.spec.ts::should disable add button for out-of-stock wishlist item"
+  },
+  "A-08_2_db_wishlist_cart.png": {
+    "description": "DB wishlist row and zero stock confirm the disabled add-to-cart button",
+    "test": "wishlist-cart.spec.ts::should disable add button for out-of-stock wishlist item"
+  },
+  "A-08_2_db_wishlist_cart.json": {
+    "description": "DB wishlist row and zero stock confirm the disabled add-to-cart button",
     "test": "wishlist-cart.spec.ts::should disable add button for out-of-stock wishlist item"
   },
   "A-12_1_already_in_cart_dialog.png": {
     "test": "wishlist-cart.spec.ts::should reject moving wishlist item already in cart"
   },
+  "A-12_2_db_wishlist_cart.png": {
+    "description": "DB wishlist row and existing cart row behind the already-in-cart dialog",
+    "test": "wishlist-cart.spec.ts::should reject moving wishlist item already in cart"
+  },
+  "A-12_2_db_wishlist_cart.json": {
+    "description": "DB wishlist row and existing cart row behind the already-in-cart dialog",
+    "test": "wishlist-cart.spec.ts::should reject moving wishlist item already in cart"
+  },
   "A-13_1_pdp_duplicate_cart_dialog.png": {
+    "test": "wishlist-cart.spec.ts::should reject adding duplicate product to cart"
+  },
+  "A-13_2_db_cart_count.png": {
+    "description": "DB cart_items count is still 1 after the duplicate add attempt",
+    "test": "wishlist-cart.spec.ts::should reject adding duplicate product to cart"
+  },
+  "A-13_2_db_cart_count.json": {
+    "description": "DB cart_items count is still 1 after the duplicate add attempt",
     "test": "wishlist-cart.spec.ts::should reject adding duplicate product to cart"
   },
   "B-01_1_quantity_min_one.png": {
     "test": "wishlist-cart.spec.ts::should accept minimum cart quantity of 1 and disable minus button"
   },
+  "B-01_2_db_cart.png": {
+    "description": "DB cart_items quantity is 1 at the minimum boundary",
+    "test": "wishlist-cart.spec.ts::should accept minimum cart quantity of 1 and disable minus button"
+  },
+  "B-01_2_db_cart.json": {
+    "description": "DB cart_items quantity is 1 at the minimum boundary",
+    "test": "wishlist-cart.spec.ts::should accept minimum cart quantity of 1 and disable minus button"
+  },
   "B-07_1_wishlist_empty_state.png": {
+    "test": "wishlist-cart.spec.ts::should display empty state when wishlist has no items"
+  },
+  "B-07_2_db_wishlist_count.png": {
+    "description": "DB wishlists count is 0 for the empty wishlist state",
+    "test": "wishlist-cart.spec.ts::should display empty state when wishlist has no items"
+  },
+  "B-07_2_db_wishlist_count.json": {
+    "description": "DB wishlists count is 0 for the empty wishlist state",
     "test": "wishlist-cart.spec.ts::should display empty state when wishlist has no items"
   },
   "B-08_1_cart_empty_state.png": {
     "test": "wishlist-cart.spec.ts::should display empty state when cart has no items"
   },
+  "B-08_2_db_cart_count.png": {
+    "description": "DB cart_items count is 0 for the empty cart state",
+    "test": "wishlist-cart.spec.ts::should display empty state when cart has no items"
+  },
+  "B-08_2_db_cart_count.json": {
+    "description": "DB cart_items count is 0 for the empty cart state",
+    "test": "wishlist-cart.spec.ts::should display empty state when cart has no items"
+  },
   "B-09_1_no_overflow_320px.png": {
     "test": "wishlist-cart.spec.ts::should have no horizontal scroll at 320px viewport"
+  },
+  "I-01_1_wishlist_200.png": {
+    "description": "GET /api/v1/wishlist returns 200 with the buyer's saved products.",
+    "test": "wishlist-cart.spec.ts::GET /api/v1/wishlist returns 200 with saved products"
+  },
+  "I-01_2_db_wishlists.png": {
+    "description": "DB wishlists rows matched by the GET /api/v1/wishlist response",
+    "test": "wishlist-cart.spec.ts::GET /api/v1/wishlist returns 200 with saved products"
+  },
+  "I-01_2_db_wishlists.json": {
+    "description": "DB wishlists rows matched by the GET /api/v1/wishlist response",
+    "test": "wishlist-cart.spec.ts::GET /api/v1/wishlist returns 200 with saved products"
+  },
+  "I-02_1_wishlist_create_201.png": {
+    "description": "POST /api/v1/wishlist/:productId returns 201 with the created item.",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/wishlist/:productId returns 201 with created item"
+  },
+  "I-02_2_db_wishlist.png": {
+    "description": "DB wishlist row created by POST /api/v1/wishlist/:productId",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/wishlist/:productId returns 201 with created item"
+  },
+  "I-02_2_db_wishlist.json": {
+    "description": "DB wishlist row created by POST /api/v1/wishlist/:productId",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/wishlist/:productId returns 201 with created item"
+  },
+  "I-03_1_wishlist_duplicate_409.png": {
+    "description": "POST /api/v1/wishlist/:productId returns 409 for a duplicate product.",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/wishlist/:productId returns 409 for duplicate"
+  },
+  "I-03_2_db_wishlist_count.png": {
+    "description": "DB wishlist count remains 1 after the 409 duplicate response",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/wishlist/:productId returns 409 for duplicate"
+  },
+  "I-03_2_db_wishlist_count.json": {
+    "description": "DB wishlist count remains 1 after the 409 duplicate response",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/wishlist/:productId returns 409 for duplicate"
+  },
+  "I-04_1_wishlist_delete_204.png": {
+    "description": "DELETE /api/v1/wishlist/:productId returns 204 and removes the item.",
+    "test": "wishlist-cart.spec.ts::DELETE /api/v1/wishlist/:productId returns 204"
+  },
+  "I-04_2_db_wishlist_count.png": {
+    "description": "DB wishlist count is 0 after DELETE /api/v1/wishlist/:productId",
+    "test": "wishlist-cart.spec.ts::DELETE /api/v1/wishlist/:productId returns 204"
+  },
+  "I-04_2_db_wishlist_count.json": {
+    "description": "DB wishlist count is 0 after DELETE /api/v1/wishlist/:productId",
+    "test": "wishlist-cart.spec.ts::DELETE /api/v1/wishlist/:productId returns 204"
+  },
+  "I-05_1_wishlist_clear_200.png": {
+    "description": "DELETE /api/v1/wishlist returns 200 and clears all items.",
+    "test": "wishlist-cart.spec.ts::DELETE /api/v1/wishlist returns 200 and clears all items"
+  },
+  "I-05_2_db_wishlist_count.png": {
+    "description": "DB wishlists count is 0 after clearing the wishlist through the API",
+    "test": "wishlist-cart.spec.ts::DELETE /api/v1/wishlist returns 200 and clears all items"
+  },
+  "I-05_2_db_wishlist_count.json": {
+    "description": "DB wishlists count is 0 after clearing the wishlist through the API",
+    "test": "wishlist-cart.spec.ts::DELETE /api/v1/wishlist returns 200 and clears all items"
+  },
+  "I-06_1_move_to_cart_200.png": {
+    "description": "POST /api/v1/wishlist/:productId/move-to-cart returns the created cart item.",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/wishlist/:productId/move-to-cart returns 200 with cart item"
+  },
+  "I-06_2_db_wishlist_cart.png": {
+    "description": "DB wishlist row deleted and cart_items row created by move-to-cart",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/wishlist/:productId/move-to-cart returns 200 with cart item"
+  },
+  "I-06_2_db_wishlist_cart.json": {
+    "description": "DB wishlist row deleted and cart_items row created by move-to-cart",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/wishlist/:productId/move-to-cart returns 200 with cart item"
+  },
+  "I-07_1_move_out_of_stock_400.png": {
+    "description": "POST /api/v1/wishlist/:productId/move-to-cart returns 400 for out-of-stock products.",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/wishlist/:productId/move-to-cart returns 400 for out-of-stock"
+  },
+  "I-07_2_db_wishlist_cart.png": {
+    "description": "DB wishlist row remains while cart_items stays empty for zero-stock product",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/wishlist/:productId/move-to-cart returns 400 for out-of-stock"
+  },
+  "I-07_2_db_wishlist_cart.json": {
+    "description": "DB wishlist row remains while cart_items stays empty for zero-stock product",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/wishlist/:productId/move-to-cart returns 400 for out-of-stock"
+  },
+  "I-08_1_move_already_in_cart_409.png": {
+    "description": "POST /api/v1/wishlist/:productId/move-to-cart returns 409 when the product is already in the cart.",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/wishlist/:productId/move-to-cart returns 409 when already in cart"
+  },
+  "I-08_2_db_wishlist_cart.png": {
+    "description": "DB wishlist row and existing cart_items row behind the 409 move response",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/wishlist/:productId/move-to-cart returns 409 when already in cart"
+  },
+  "I-08_2_db_wishlist_cart.json": {
+    "description": "DB wishlist row and existing cart_items row behind the 409 move response",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/wishlist/:productId/move-to-cart returns 409 when already in cart"
+  },
+  "I-09_1_cart_summary_200.png": {
+    "description": "GET /api/v1/cart returns 200 with items and summary.",
+    "test": "wishlist-cart.spec.ts::GET /api/v1/cart returns 200 with items and summary"
+  },
+  "I-09_2_db_cart.png": {
+    "description": "DB cart_items rows returned by GET /api/v1/cart",
+    "test": "wishlist-cart.spec.ts::GET /api/v1/cart returns 200 with items and summary"
+  },
+  "I-09_2_db_cart.json": {
+    "description": "DB cart_items rows returned by GET /api/v1/cart",
+    "test": "wishlist-cart.spec.ts::GET /api/v1/cart returns 200 with items and summary"
+  },
+  "I-10_1_cart_create_201.png": {
+    "description": "POST /api/v1/cart/items returns 201 with the created cart item.",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/cart/items returns 201 with created cart item"
+  },
+  "I-10_2_db_cart.png": {
+    "description": "DB cart_items row created by POST /api/v1/cart/items",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/cart/items returns 201 with created cart item"
+  },
+  "I-10_2_db_cart.json": {
+    "description": "DB cart_items row created by POST /api/v1/cart/items",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/cart/items returns 201 with created cart item"
+  },
+  "I-11_1_cart_out_of_stock_400.png": {
+    "description": "POST /api/v1/cart/items returns 400 for an out-of-stock product.",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/cart/items returns 400 for out-of-stock product"
+  },
+  "I-11_2_db_cart_product.png": {
+    "description": "DB cart_items has no row and product stock is 0 for the rejected add",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/cart/items returns 400 for out-of-stock product"
+  },
+  "I-11_2_db_cart_product.json": {
+    "description": "DB cart_items has no row and product stock is 0 for the rejected add",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/cart/items returns 400 for out-of-stock product"
+  },
+  "I-12_1_cart_duplicate_409.png": {
+    "description": "POST /api/v1/cart/items returns 409 for a duplicate product.",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/cart/items returns 409 for duplicate product"
+  },
+  "I-12_2_db_cart_count.png": {
+    "description": "DB cart_items count remains 1 after the 409 duplicate response",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/cart/items returns 409 for duplicate product"
+  },
+  "I-12_2_db_cart_count.json": {
+    "description": "DB cart_items count remains 1 after the 409 duplicate response",
+    "test": "wishlist-cart.spec.ts::POST /api/v1/cart/items returns 409 for duplicate product"
+  },
+  "I-13_1_cart_quantity_update_200.png": {
+    "description": "PATCH /api/v1/cart/items/:id returns 200 with recomputed totals.",
+    "test": "wishlist-cart.spec.ts::PATCH /api/v1/cart/items/:id returns 200 with recomputed totals"
+  },
+  "I-13_2_db_cart.png": {
+    "description": "DB cart_items quantity is 2 after the successful PATCH",
+    "test": "wishlist-cart.spec.ts::PATCH /api/v1/cart/items/:id returns 200 with recomputed totals"
+  },
+  "I-13_2_db_cart.json": {
+    "description": "DB cart_items quantity is 2 after the successful PATCH",
+    "test": "wishlist-cart.spec.ts::PATCH /api/v1/cart/items/:id returns 200 with recomputed totals"
+  },
+  "I-14_1_cart_exceeds_stock_400.png": {
+    "description": "PATCH /api/v1/cart/items/:id returns 400 when quantity exceeds available stock.",
+    "test": "wishlist-cart.spec.ts::PATCH /api/v1/cart/items/:id returns 400 when quantity exceeds stock"
+  },
+  "I-14_2_db_cart.png": {
+    "description": "DB cart_items quantity is unchanged after the rejected stock-exceeding PATCH",
+    "test": "wishlist-cart.spec.ts::PATCH /api/v1/cart/items/:id returns 400 when quantity exceeds stock"
+  },
+  "I-14_2_db_cart.json": {
+    "description": "DB cart_items quantity is unchanged after the rejected stock-exceeding PATCH",
+    "test": "wishlist-cart.spec.ts::PATCH /api/v1/cart/items/:id returns 400 when quantity exceeds stock"
+  },
+  "I-15_1_cart_invalid_quantity_400.png": {
+    "description": "PATCH /api/v1/cart/items/:id returns 400 for invalid quantity values.",
+    "test": "wishlist-cart.spec.ts::PATCH /api/v1/cart/items/:id returns 400 for invalid quantity values"
+  },
+  "I-15_2_db_cart.png": {
+    "description": "DB cart_items quantity is unchanged after both invalid PATCH values",
+    "test": "wishlist-cart.spec.ts::PATCH /api/v1/cart/items/:id returns 400 for invalid quantity values"
+  },
+  "I-15_2_db_cart.json": {
+    "description": "DB cart_items quantity is unchanged after both invalid PATCH values",
+    "test": "wishlist-cart.spec.ts::PATCH /api/v1/cart/items/:id returns 400 for invalid quantity values"
+  },
+  "I-16_1_cart_item_delete_204.png": {
+    "description": "DELETE /api/v1/cart/items/:id returns 204 and removes the item.",
+    "test": "wishlist-cart.spec.ts::DELETE /api/v1/cart/items/:id returns 204 and removes item"
+  },
+  "I-16_2_db_cart.png": {
+    "description": "DB cart item is gone after DELETE /api/v1/cart/items/:id",
+    "test": "wishlist-cart.spec.ts::DELETE /api/v1/cart/items/:id returns 204 and removes item"
+  },
+  "I-16_2_db_cart.json": {
+    "description": "DB cart item is gone after DELETE /api/v1/cart/items/:id",
+    "test": "wishlist-cart.spec.ts::DELETE /api/v1/cart/items/:id returns 204 and removes item"
+  },
+  "I-17_1_cart_clear_200.png": {
+    "description": "DELETE /api/v1/cart/items returns 200 and clears all items.",
+    "test": "wishlist-cart.spec.ts::DELETE /api/v1/cart/items returns 200 and clears all items"
+  },
+  "I-17_2_db_cart_count.png": {
+    "description": "DB cart_items count is 0 after clearing the cart through the API",
+    "test": "wishlist-cart.spec.ts::DELETE /api/v1/cart/items returns 200 and clears all items"
+  },
+  "I-17_2_db_cart_count.json": {
+    "description": "DB cart_items count is 0 after clearing the cart through the API",
+    "test": "wishlist-cart.spec.ts::DELETE /api/v1/cart/items returns 200 and clears all items"
+  },
+  "I-18_1_wishlist_cart_401.png": {
+    "description": "Wishlist and cart endpoints return 401 without a valid token.",
+    "test": "wishlist-cart.spec.ts::wishlist and cart endpoints return 401 without valid token"
+  },
+  "I-19_1_wishlist_cart_403.png": {
+    "description": "Wishlist and cart endpoints return 403 for non-buyer roles.",
+    "test": "wishlist-cart.spec.ts::wishlist and cart endpoints return 403 for non-buyer roles"
+  },
+  "I-20_1_forbidden_mutation_403.png": {
+    "description": "Mutation endpoints reject forbidden accounts with 403; the same guard protects deactivated accounts.",
+    "test": "wishlist-cart.spec.ts::wishlist and cart endpoints return 403 for non-buyer roles"
+  },
+  "I-21_1_wishlist_cart_404.png": {
+    "description": "Non-existent wishlist and cart resources return 404.",
+    "test": "wishlist-cart.spec.ts::non-existent wishlist or cart resource returns 404"
+  },
+  "I-22_1_standard_error_format_401.png": {
+    "description": "Error responses follow the standard API error format.",
+    "test": "wishlist-cart.spec.ts::error responses follow standard API error format"
+  },
+  "I-23_1_english_error_message.png": {
+    "description": "API error messages are returned in English regardless of the frontend locale.",
+    "test": "wishlist-cart.spec.ts::error responses follow standard API error format"
   }
 }

@@ -88,7 +88,9 @@ export function CreateFeeModal({
   const selectedTier = form.watch('tier')
 
   const isCombinationTaken = (placement: Placement, tier: Tier) =>
-    existingFeeSettings.some((s) => s.placement === placement && s.tier === tier)
+    existingFeeSettings.some(
+      (s) => s.isActive && s.placement === placement && s.tier === tier,
+    )
 
   const handlePlacementChange = (placement: Placement) => {
     if (selectedTier && isCombinationTaken(placement, selectedTier)) {

@@ -1,0 +1,15 @@
+{
+  "capturedAt": "2026-10-21T03:11:45.695Z",
+  "description": "DB wishlist count is 0 after DELETE /api/v1/wishlist/:productId",
+  "results": [
+    {
+      "label": "wishlist count by buyer and product",
+      "rowCount": 1,
+      "rows": [
+        {
+          "wishlist_count": 0
+        }
+      ]
+    }
+  ]
+}
