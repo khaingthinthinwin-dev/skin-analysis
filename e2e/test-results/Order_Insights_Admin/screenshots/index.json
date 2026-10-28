@@ -1,0 +1,215 @@
+{
+  "N-01_1_admin_platform_orders.png": {
+    "test": "admin-order-insights.spec.ts::N-01: admin views platform orders and KPI tiles"
+  },
+  "N-01_2_admin_order_list_and_kpis.png": {
+    "test": "admin-order-insights.spec.ts::N-01: admin views platform orders and KPI tiles"
+  },
+  "N-06_1_admin_order_detail.png": {
+    "test": "admin-order-insights.spec.ts::N-06: admin opens order detail and reviews the read-only information"
+  },
+  "N-06_2_admin_items_payment_and_shipping.png": {
+    "test": "admin-order-insights.spec.ts::N-06: admin opens order detail and reviews the read-only information"
+  },
+  "N-07_1_back_to_admin_orders.png": {
+    "test": "admin-order-insights.spec.ts::N-07: admin returns to all orders from detail"
+  },
+  "N-07_2_admin_list_after_return.png": {
+    "test": "admin-order-insights.spec.ts::N-07: admin returns to all orders from detail"
+  },
+  "A-01_1_buyer_denied_admin_orders.png": {
+    "test": "admin-order-insights.spec.ts::A-01: non-admin and unauthenticated users are denied admin order data"
+  },
+  "A-02_2_missing_order_api_404.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders/00000000-0000-4000-8000-000000000000 returned 404",
+    "test": "admin-order-insights.spec.ts::A-02: admin receives not found for a missing order"
+  },
+  "A-02_1_admin_missing_order.png": {
+    "test": "admin-order-insights.spec.ts::A-02: admin receives not found for a missing order"
+  },
+  "I-01_1_platform_orders_api.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders?page=1&limit=10 returned 200",
+    "test": "admin-order-insights.spec.ts::I-01: admin orders API returns platform rows, metadata, and summary"
+  },
+  "I-03_1_admin_detail_api.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders/49a09c99-5ebe-41bd-9029-232696356672 returned 200",
+    "test": "admin-order-insights.spec.ts::I-03: admin order detail API returns the admin projection"
+  },
+  "I-05_1_admin_tracking_api.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders/49a09c99-5ebe-41bd-9029-232696356672/tracking returned 200",
+    "test": "admin-order-insights.spec.ts::I-05: admin tracking API returns the service tracking response"
+  },
+  "N-02_1_status_payment_and_date_filters.png": {
+    "test": "admin-order-insights.spec.ts::N-02: admin filters by status, payment status, and date range"
+  },
+  "N-02_2_filtered_orders_and_kpis.png": {
+    "test": "admin-order-insights.spec.ts::N-02: admin filters by status, payment status, and date range"
+  },
+  "N-03_1_shop_merchant_scope_selected.png": {
+    "test": "admin-order-insights.spec.ts::N-03: admin searches and scopes orders by shop and order reference"
+  },
+  "N-03_2_order_reference_search.png": {
+    "test": "admin-order-insights.spec.ts::N-03: admin searches and scopes orders by shop and order reference"
+  },
+  "N-04_date_sort.png": {
+    "test": "admin-order-insights.spec.ts::N-04: admin sorts, paginates, and changes page size"
+  },
+  "N-04_total_sort.png": {
+    "test": "admin-order-insights.spec.ts::N-04: admin sorts, paginates, and changes page size"
+  },
+  "N-04_status_sort.png": {
+    "test": "admin-order-insights.spec.ts::N-04: admin sorts, paginates, and changes page size"
+  },
+  "N-04_4_second_page.png": {
+    "test": "admin-order-insights.spec.ts::N-04: admin sorts, paginates, and changes page size"
+  },
+  "N-04_5_page_size_50.png": {
+    "test": "admin-order-insights.spec.ts::N-04: admin sorts, paginates, and changes page size"
+  },
+  "N-05_1_multiple_active_filters.png": {
+    "test": "admin-order-insights.spec.ts::N-05: admin clears one active filter and resets all filters"
+  },
+  "N-05_2_one_filter_cleared.png": {
+    "test": "admin-order-insights.spec.ts::N-05: admin clears one active filter and resets all filters"
+  },
+  "N-05_3_all_filters_reset.png": {
+    "test": "admin-order-insights.spec.ts::N-05: admin clears one active filter and resets all filters"
+  },
+  "N-08_1_print_ready_order.png": {
+    "test": "admin-order-insights.spec.ts::N-08: admin opens the print-ready order view"
+  },
+  "N-09_1_admin_export_scope.png": {
+    "test": "admin-order-insights.spec.ts::N-09: admin exports matching orders as CSV"
+  },
+  "N-09_2_admin_export_completed.png": {
+    "test": "admin-order-insights.spec.ts::N-09: admin exports matching orders as CSV"
+  },
+  "N-10_english_admin_orders.png": {
+    "test": "admin-order-insights.spec.ts::N-10: admin list and detail translate into English, Japanese, and Myanmar"
+  },
+  "N-10_english_admin_detail.png": {
+    "test": "admin-order-insights.spec.ts::N-10: admin list and detail translate into English, Japanese, and Myanmar"
+  },
+  "N-10_japanese_admin_orders.png": {
+    "test": "admin-order-insights.spec.ts::N-10: admin list and detail translate into English, Japanese, and Myanmar"
+  },
+  "N-10_japanese_admin_detail.png": {
+    "test": "admin-order-insights.spec.ts::N-10: admin list and detail translate into English, Japanese, and Myanmar"
+  },
+  "N-10_myanmar_admin_orders.png": {
+    "test": "admin-order-insights.spec.ts::N-10: admin list and detail translate into English, Japanese, and Myanmar"
+  },
+  "N-10_myanmar_admin_detail.png": {
+    "test": "admin-order-insights.spec.ts::N-10: admin list and detail translate into English, Japanese, and Myanmar"
+  },
+  "N-11_1_japanese_admin_list.png": {
+    "test": "admin-order-insights.spec.ts::N-11: admin language preference persists between list, detail, return, and reload"
+  },
+  "N-11_2_japanese_admin_detail.png": {
+    "test": "admin-order-insights.spec.ts::N-11: admin language preference persists between list, detail, return, and reload"
+  },
+  "N-11_3_japanese_preference_after_reload.png": {
+    "test": "admin-order-insights.spec.ts::N-11: admin language preference persists between list, detail, return, and reload"
+  },
+  "A-03_1_reversed_date_range_api.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders?from=2026-10-10&to=2026-10-01 returned 400",
+    "test": "admin-order-insights.spec.ts::A-03: admin filter API rejects reversed dates and conflicting merchant/shop scope"
+  },
+  "A-03_2_conflicting_scope_api.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders?merchantId=2c1947c6-780d-461e-b2c2-db7624d8370a&shopId=657e2c6e-34e6-4b20-be25-9b87cd8ed8d3 returned 400",
+    "test": "admin-order-insights.spec.ts::A-03: admin filter API rejects reversed dates and conflicting merchant/shop scope"
+  },
+  "A-03_3_reversed_date_ui_validation.png": {
+    "test": "admin-order-insights.spec.ts::A-03: admin filter API rejects reversed dates and conflicting merchant/shop scope"
+  },
+  "A-04_1_admin_order_list_error.png": {
+    "test": "admin-order-insights.spec.ts::A-04: admin list, detail, and tracking failures show retryable feedback"
+  },
+  "A-04_2_admin_order_list_retried.png": {
+    "test": "admin-order-insights.spec.ts::A-04: admin list, detail, and tracking failures show retryable feedback"
+  },
+  "A-04_3_admin_order_detail_error.png": {
+    "test": "admin-order-insights.spec.ts::A-04: admin list, detail, and tracking failures show retryable feedback"
+  },
+  "A-04_4_admin_order_detail_retried.png": {
+    "test": "admin-order-insights.spec.ts::A-04: admin list, detail, and tracking failures show retryable feedback"
+  },
+  "A-04_5_tracking_failure_separate_from_detail.png": {
+    "test": "admin-order-insights.spec.ts::A-04: admin list, detail, and tracking failures show retryable feedback"
+  },
+  "A-04_6_tracking_retry_completed.png": {
+    "test": "admin-order-insights.spec.ts::A-04: admin list, detail, and tracking failures show retryable feedback"
+  },
+  "A-05_1_admin_unread_notifications_before_view.png": {
+    "description": "API GET http://localhost:8080/api/v1/notifications?limit=100&unreadOnly=true returned 200",
+    "test": "admin-order-insights.spec.ts::A-05: merchant order lifecycle updates do not create admin notifications"
+  },
+  "A-05_2_admin_notifications_before_lifecycle_event.png": {
+    "test": "admin-order-insights.spec.ts::A-05: merchant order lifecycle updates do not create admin notifications"
+  },
+  "A-05_3_merchant_advances_seed_order.png": {
+    "description": "API PATCH http://localhost:8080/api/v1/merchant/orders/9577c08d-2d0b-48db-b9ef-3f1a36fb5a79/status returned 200",
+    "test": "admin-order-insights.spec.ts::A-05: merchant order lifecycle updates do not create admin notifications"
+  },
+  "A-05_4_admin_notifications_after_lifecycle_event.png": {
+    "description": "API GET http://localhost:8080/api/v1/notifications?limit=100&unreadOnly=true returned 200",
+    "test": "admin-order-insights.spec.ts::A-05: merchant order lifecycle updates do not create admin notifications"
+  },
+  "A-05_5_admin_notifications_after_lifecycle_event.png": {
+    "test": "admin-order-insights.spec.ts::A-05: merchant order lifecycle updates do not create admin notifications"
+  },
+  "A-05_6_admin_order_detail_after_read_only_view.png": {
+    "test": "admin-order-insights.spec.ts::A-05: merchant order lifecycle updates do not create admin notifications"
+  },
+  "B-01_1_no_matching_admin_orders.png": {
+    "test": "admin-order-insights.spec.ts::B-01: empty filtered result shows empty state and disables export"
+  },
+  "B-01_2_empty_state_cleared.png": {
+    "test": "admin-order-insights.spec.ts::B-01: empty filtered result shows empty state and disables export"
+  },
+  "B-02_1_page_size_10.png": {
+    "test": "admin-order-insights.spec.ts::B-02: admin page sizes and API limit boundaries are enforced"
+  },
+  "B-02_2_page_size_50.png": {
+    "test": "admin-order-insights.spec.ts::B-02: admin page sizes and API limit boundaries are enforced"
+  },
+  "B-02_3_api_limit_1.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders?page=1&limit=1 returned 200",
+    "test": "admin-order-insights.spec.ts::B-02: admin page sizes and API limit boundaries are enforced"
+  },
+  "B-02_4_api_limit_100.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders?page=1&limit=100 returned 200",
+    "test": "admin-order-insights.spec.ts::B-02: admin page sizes and API limit boundaries are enforced"
+  },
+  "B-02_5_api_limit_0_rejected.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders?page=1&limit=0 returned 400",
+    "test": "admin-order-insights.spec.ts::B-02: admin page sizes and API limit boundaries are enforced"
+  },
+  "B-02_6_api_limit_101_rejected.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders?page=1&limit=101 returned 400",
+    "test": "admin-order-insights.spec.ts::B-02: admin page sizes and API limit boundaries are enforced"
+  },
+  "B-03_1_mobile_admin_order_detail.png": {
+    "description": "Admin order detail at 375 by 667 viewport",
+    "test": "admin-order-insights.spec.ts::B-03: admin order detail remains usable at 375 by 667"
+  },
+  "B-03_2_mobile_admin_orders_list.png": {
+    "description": "Admin order list at 375 by 667 viewport",
+    "test": "admin-order-insights.spec.ts::B-03: admin order detail remains usable at 375 by 667"
+  },
+  "B-04_1_unavailable_tracking_and_missing_image.png": {
+    "test": "admin-order-insights.spec.ts::B-04: admin detail handles unavailable tracking history and missing product images"
+  },
+  "I-02_merchantId_scoped_orders_api.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders?page=1&limit=10&merchantId=2c1947c6-780d-461e-b2c2-db7624d8370a returned 200",
+    "test": "admin-order-insights.spec.ts::I-02: admin list API scopes orders by merchant and shop selectors"
+  },
+  "I-02_shopId_scoped_orders_api.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders?page=1&limit=10&shopId=278b4327-7a8c-418d-b134-d54767fe5d3f returned 200",
+    "test": "admin-order-insights.spec.ts::I-02: admin list API scopes orders by merchant and shop selectors"
+  },
+  "I-04_1_missing_order_detail_api_404.png": {
+    "description": "API GET http://localhost:8080/api/v1/orders/00000000-0000-4000-8000-000000000000 returned 404",
+    "test": "admin-order-insights.spec.ts::I-04: admin missing order detail API returns 404"
+  }
+}
