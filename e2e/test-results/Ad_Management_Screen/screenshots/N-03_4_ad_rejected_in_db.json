@@ -1,0 +1,24 @@
+{
+  "capturedAt": "2026-10-23T09:25:11.759Z",
+  "description": "DB query ads row after rejection shows status = rejected and rejection_reason",
+  "results": [
+    {
+      "label": "advertisements row by id",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "3f453d5a-529c-4c91-8443-a129877da47e",
+          "shop_id": "00e3e559-1edf-4b67-b88c-0a2f13817e6e",
+          "shop_name": "Glow Beauty Shop",
+          "title": "E2E pending ad 3f453d5a-529c-4c91-8443-a129877da47e",
+          "approval_status": "rejected",
+          "payment_status": "refunded",
+          "approved_by": "a2960258-8a74-47a6-817f-af88f00d763b",
+          "approved_at": "2026-10-23T02:55:10.703Z",
+          "rejection_reason": "E2E rejection reason",
+          "created_at": "2026-10-23T10:25:08.514Z"
+        }
+      ]
+    }
+  ]
+}

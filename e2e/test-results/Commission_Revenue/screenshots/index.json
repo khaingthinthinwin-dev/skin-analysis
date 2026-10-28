@@ -1,20 +1,90 @@
 {
+  "N-01_1_ui_commission_tab_loaded.png": {
+    "test": "commission-revenue.spec.ts::N-01: navigates from the admin dashboard to the Commission tab"
+  },
   "commission_revenue_page_loaded.png": {
     "test": "commission-revenue.spec.ts::I-23: delete endpoint returns success, conflict, not-found, and validation responses"
   },
-  "N-01_1_commission_tab.png": {
-    "test": "commission-revenue.spec.ts::N-01: loads the Commission tab by default with rate and reports"
+  "N-02_1_ui_before_rate_card.png": {
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate successfully (live stack evidence)"
   },
-  "N-01_final_state.png": {
-    "description": "Final UI state for N-01: loads the Commission tab by default with rate and reports",
-    "test": "commission-revenue.spec.ts::N-01: loads the Commission tab by default with rate and reports"
+  "N-02_2_ui_doing_rate_input_filled.png": {
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate successfully (live stack evidence)"
   },
-  "N-02_1_rate_updated.png": {
-    "test": "commission-revenue.spec.ts::N-02: updates the commission rate successfully"
+  "N-02_3_ui_after_rate_changed.png": {
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate successfully (live stack evidence)"
   },
-  "N-02_final_state.png": {
-    "description": "Final UI state for N-02: updates the commission rate successfully",
-    "test": "commission-revenue.spec.ts::N-02: updates the commission rate successfully"
+  "N-02_4_db_after_rate_update.png": {
+    "description": "DB CHANGES — commission_settings updated in place, one new rate-history row, one new audit row",
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate successfully (live stack evidence)"
+  },
+  "N-02_4_db_after_rate_update.json": {
+    "description": "DB CHANGES — commission_settings updated in place, one new rate-history row, one new audit row",
+    "test": "commission-revenue.spec.ts::N-02: updates the commission rate successfully (live stack evidence)"
+  },
+  "N-08_1_ui_doing_process_dialog.png": {
+    "test": "commission-revenue.spec.ts::N-08: processes a pending payout after confirmation (live stack evidence)"
+  },
+  "N-08_2_db_after_payout_process.png": {
+    "description": "DB CHANGES — the payout row is completed and the PAYOUT_PROCESSED audit row was written",
+    "test": "commission-revenue.spec.ts::N-08: processes a pending payout after confirmation (live stack evidence)"
+  },
+  "N-08_2_db_after_payout_process.json": {
+    "description": "DB CHANGES — the payout row is completed and the PAYOUT_PROCESSED audit row was written",
+    "test": "commission-revenue.spec.ts::N-08: processes a pending payout after confirmation (live stack evidence)"
+  },
+  "N-09_1_ui_doing_target_filled.png": {
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and changes its period (live stack evidence)"
+  },
+  "N-09_2_db_after_target_save.png": {
+    "description": "DB CHANGES — the monthly row is updated in place and a TARGET_UPDATED audit row was written",
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and changes its period (live stack evidence)"
+  },
+  "N-09_2_db_after_target_save.json": {
+    "description": "DB CHANGES — the monthly row is updated in place and a TARGET_UPDATED audit row was written",
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and changes its period (live stack evidence)"
+  },
+  "N-11_1_ui_quarterly_gauge.png": {
+    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and changes its period (live stack evidence)"
+  },
+  "N-13_1_ui_doing_export_commission.png": {
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-14_1_ui_doing_export_revenue.png": {
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-15_1_ui_doing_export_payout.png": {
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-15_2_db_after_exports.png": {
+    "description": "DB CHANGES — one EXPORT_GENERATED audit row per export; no business table was modified",
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-15_2_db_after_exports.json": {
+    "description": "DB CHANGES — one EXPORT_GENERATED audit row per export; no business table was modified",
+    "test": "commission-revenue.spec.ts::N-13 to N-15: exports the three reports and proves only the audit log changed in the database"
+  },
+  "N-28_1_ui_doing_delete_dialog.png": {
+    "test": "commission-revenue.spec.ts::N-28: selects and deletes an eligible payout row (live stack evidence)"
+  },
+  "N-28_2_db_after_payout_deleted.png": {
+    "description": "DB CHANGES — the payout row is gone from payouts and a PAYOUT_DELETED audit row remains",
+    "test": "commission-revenue.spec.ts::N-28: selects and deletes an eligible payout row (live stack evidence)"
+  },
+  "N-28_2_db_after_payout_deleted.json": {
+    "description": "DB CHANGES — the payout row is gone from payouts and a PAYOUT_DELETED audit row remains",
+    "test": "commission-revenue.spec.ts::N-28: selects and deletes an eligible payout row (live stack evidence)"
+  },
+  "N-31_1_ui_before_report_rows.png": {
+    "test": "commission-revenue.spec.ts::N-31: historical rate locking for existing report rows after a rate change (live stack evidence)"
+  },
+  "N-31_2_db_after_rate_lock.png": {
+    "description": "DB CHANGES — exactly one new rate-history row; the existing orders keep their historical rate",
+    "test": "commission-revenue.spec.ts::N-31: historical rate locking for existing report rows after a rate change (live stack evidence)"
+  },
+  "N-31_2_db_after_rate_lock.json": {
+    "description": "DB CHANGES — exactly one new rate-history row; the existing orders keep their historical rate",
+    "test": "commission-revenue.spec.ts::N-31: historical rate locking for existing report rows after a rate change (live stack evidence)"
   },
   "N-03_1_filtered_reports.png": {
     "test": "commission-revenue.spec.ts::N-03 and N-04: applies and resets commission report date filters"
@@ -45,16 +115,6 @@
     "description": "Final UI state for N-22: canceling rate edits preserves the saved value",
     "test": "commission-revenue.spec.ts::N-22: canceling rate edits preserves the saved value"
   },
-  "N-31_1_rows_before_rate_change.png": {
-    "test": "commission-revenue.spec.ts::N-31: historical rate locking for existing report rows after a rate change"
-  },
-  "N-31_2_rows_locked_after_change.png": {
-    "test": "commission-revenue.spec.ts::N-31: historical rate locking for existing report rows after a rate change"
-  },
-  "N-31_final_state.png": {
-    "description": "Final UI state for N-31: historical rate locking for existing report rows after a rate change",
-    "test": "commission-revenue.spec.ts::N-31: historical rate locking for existing report rows after a rate change"
-  },
   "N-06_1_revenue_tab.png": {
     "test": "commission-revenue.spec.ts::N-06 and N-20: loads revenue KPIs, chart, target, panels, and payout columns"
   },
@@ -72,20 +132,6 @@
   "N-07_final_state.png": {
     "description": "Final UI state for N-07: changes the revenue trend range",
     "test": "commission-revenue.spec.ts::N-07: changes the revenue trend range"
-  },
-  "N-09_1_target_saved.png": {
-    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and changes its period"
-  },
-  "N-11_1_target_period_toggle.png": {
-    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and changes its period"
-  },
-  "N-09_final_state.png": {
-    "description": "Final UI state for N-09 and N-11: saves a revenue target and changes its period",
-    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and changes its period"
-  },
-  "N-11_final_state.png": {
-    "description": "Final UI state for N-09 and N-11: saves a revenue target and changes its period",
-    "test": "commission-revenue.spec.ts::N-09 and N-11: saves a revenue target and changes its period"
   },
   "N-10_1_forecast_line.png": {
     "test": "commission-revenue.spec.ts::N-10: displays the AI forecast legend when forecast data is available"
@@ -131,41 +177,9 @@
     "description": "Final UI state for N-29: payout processing dialog shows payout amounts",
     "test": "commission-revenue.spec.ts::N-29: payout processing dialog shows payout amounts"
   },
-  "N-08_1_payout_processed.png": {
-    "test": "commission-revenue.spec.ts::N-08: processes a pending payout after confirmation"
-  },
-  "N-08_final_state.png": {
-    "description": "Final UI state for N-08: processes a pending payout after confirmation",
-    "test": "commission-revenue.spec.ts::N-08: processes a pending payout after confirmation"
-  },
   "N-26_final_state.png": {
     "description": "Final UI state for N-26: paginates the payout table",
     "test": "commission-revenue.spec.ts::N-26: paginates the payout table"
-  },
-  "N-28_final_state.png": {
-    "description": "Final UI state for N-28: selects and deletes an eligible payout row",
-    "test": "commission-revenue.spec.ts::N-28: selects and deletes an eligible payout row"
-  },
-  "N-13_1_export_commission.png": {
-    "test": "commission-revenue.spec.ts::N-13: exports the commission report as CSV"
-  },
-  "N-13_final_state.png": {
-    "description": "Final UI state for N-13: exports the commission report as CSV",
-    "test": "commission-revenue.spec.ts::N-13: exports the commission report as CSV"
-  },
-  "N-14_1_export_revenue.png": {
-    "test": "commission-revenue.spec.ts::N-14: exports the revenue report as XLSX"
-  },
-  "N-14_final_state.png": {
-    "description": "Final UI state for N-14: exports the revenue report as XLSX",
-    "test": "commission-revenue.spec.ts::N-14: exports the revenue report as XLSX"
-  },
-  "N-15_1_export_payout.png": {
-    "test": "commission-revenue.spec.ts::N-15: exports payout history as CSV"
-  },
-  "N-15_final_state.png": {
-    "description": "Final UI state for N-15: exports payout history as CSV",
-    "test": "commission-revenue.spec.ts::N-15: exports payout history as CSV"
   },
   "N-18_1_desktop_layout.png": {
     "test": "commission-revenue.spec.ts::N-18 and N-19: keeps the dashboard usable at desktop and mobile widths"

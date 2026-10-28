@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProductDetail } from '../services/product.service';
@@ -10,30 +10,46 @@ interface ProductTabsProps {
   product: ProductDetail;
   showReviewForm?: boolean;
   showProductDetails?: boolean;
+  /** Controlled tab value. The page owns the state so it can switch tabs. */
+  value?: string;
+  onValueChange?: (value: string) => void;
 }
 
 export function ProductTabs({
   product,
   showReviewForm = true,
   showProductDetails = true,
+  value,
+  onValueChange,
 }: ProductTabsProps) {
   const { t } = useTranslation();
   const location = useLocation();
 
-  // A #reviews deep link jumps straight to the reviews tab and scrolls to it
-  // once the tab content is mounted.
+  const isControlled = value !== undefined;
+  const [internalTab, setInternalTab] = useState<string>(() =>
+    location.hash === '#reviews' || !showProductDetails ? 'reviews' : 'description',
+  );
+  const activeTab = isControlled ? (value as string) : internalTab;
+
+  const handleValueChange = (next: string) => {
+    if (!isControlled) setInternalTab(next);
+    onValueChange?.(next);
+  };
+
+  // The reviews panel is only mounted while the reviews tab is active, so the
+  // scroll target only exists from this point on.
   useEffect(() => {
-    if (location.hash !== '#reviews') return;
-    document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' });
-  }, [location.hash]);
+    if (activeTab !== 'reviews') return;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeTab]);
 
   return (
     <Tabs
-      defaultValue={
-        location.hash === '#reviews' || !showProductDetails
-          ? 'reviews'
-          : 'description'
-      }
+      value={activeTab}
+      onValueChange={handleValueChange}
       className="mt-8 w-full"
     >
       <TabsList className="w-full justify-start border-b bg-transparent">

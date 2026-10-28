@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { test, expect } from '../../fixtures/auth.fixture';
+import type { Page } from '@playwright/test';
 import { AdManagementPage } from '../../pages/Ad_Management_Screen/AdManagementPage';
 import { AdFeePackagesPage } from '../../pages/Ad_Management_Screen/AdFeePackagesPage';
 import { AdFeeHistoryPage } from '../../pages/Ad_Management_Screen/AdFeeHistoryPage';
@@ -9,6 +10,11 @@ import { createPendingAds, deleteAds, prepareFeeCombination } from '../../utils/
 import { API_BASE_URL } from '../../utils/constants';
 import { adminHeaders, getBearerFromPage } from '../../utils/api-auth';
 import { captureApiEvidence } from '../../utils/api-evidence';
+import {
+  captureAdDbEvidence,
+  captureBulkAdsDbEvidence,
+  captureAdListDbEvidence,
+} from '../../utils/db-evidence';
 import { captureFinalTestScreenshot, captureScreenshot } from '../../utils/screenshot';
 
 let adPage: AdManagementPage;
@@ -16,6 +22,15 @@ let feePage: AdFeePackagesPage;
 let historyPage: AdFeeHistoryPage;
 let analyticsPage: AdAnalyticsPage;
 let exportPage: AdExportPage;
+
+async function captureReviewModalSections(page: Page, prefix: string, description: string) {
+  const modal = page.getByRole('dialog');
+  await modal.evaluate((element) => { element.scrollTop = 0; });
+  await captureScreenshot(page, `${prefix}_top`, `${description} (top of modal).`);
+  await modal.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+  await captureScreenshot(page, `${prefix}_details`, `${description} (lower details of modal).`);
+  await modal.evaluate((element) => { element.scrollTop = 0; });
+}
 
 test.beforeEach(async ({ adminPage, page }) => {
   // Use authenticated adminPage for navigation
@@ -66,49 +81,165 @@ test.describe('Admin Ad Management — PCL Normal Scenarios', () => {
   });
 
   test.describe('N-01: View pending advertisement queue with filters', () => {
-    test('should filter ad list by status, placement, tier, and shop', async ({ page }) => {
-      await adPage.goto();
-      // Apply status filter
-      await adPage.filterByStatus('pending');
-      // Apply placement filter
-      await adPage.filterByPlacement('search_page_banner');
-      // Apply tier filter
-      await adPage.filterByTier('basic');
-      // Search by shop name
-      await adPage.search('Test Shop');
-      // Verify filtered results
-      await expect(adPage.heading).toBeVisible();
-      await adPage.captureSearchFilter();
-      await adPage.captureStatusFilter();
+    test('should filter ad list by status, placement, tier, and shop', async ({ page, request }) => {
+      const seeded = await createPendingAds(1);
+      try {
+        const [adId] = seeded;
+        const adDetailResponse = await request.get(`${API_BASE_URL}/admin/ads/${adId}`, {
+          headers: await adminHeaders(request),
+        });
+        expect(adDetailResponse.status()).toBe(200);
+        const adBody = await adDetailResponse.json();
+        const ad = adBody.data?.data ?? adBody.data;
+        await adPage.goto();
+        // Apply status filter
+        await adPage.filterByStatus('pending');
+        // Apply placement filter
+        await adPage.filterByPlacement(ad.placement);
+        // Apply tier filter
+        await adPage.filterByTier(ad.tier);
+        // Search by shop name
+        const filteredListResponse = adPage.page.waitForResponse((response) => {
+          const url = new URL(response.url());
+          return url.pathname.endsWith('/admin/ads') && url.searchParams.get('shop') === ad.shopName;
+        });
+        await adPage.search(ad.shopName);
+        const filteredResponse = await filteredListResponse;
+        expect(filteredResponse.status()).toBe(200);
+        const filteredUrl = new URL(filteredResponse.url());
+        expect(filteredUrl.searchParams.get('status')).toBe('pending');
+        expect(filteredUrl.searchParams.get('placement')).toBe(ad.placement);
+        expect(filteredUrl.searchParams.get('tier')).toBe(ad.tier);
+        expect(filteredUrl.searchParams.get('shop')).toBe(ad.shopName);
+        const filteredBody = await filteredResponse.json();
+        const filteredRows = filteredBody.data?.data ?? filteredBody.data ?? [];
+        expect(filteredRows.some((row: { id: string }) => row.id === adId)).toBe(true);
+        const filteredMeta = filteredBody.data?.meta ?? filteredBody.meta;
+        expect(filteredMeta.page).toBe(1);
+        expect(filteredMeta.total).toBeGreaterThan(0);
+        await expect(adPage.page.getByText(/Showing page 1 of/i)).toBeVisible();
+        // Verify filtered results
+        await expect(adPage.heading).toBeVisible();
+        await captureScreenshot(
+          adPage.page,
+          'N-01_2_filter_applied',
+          'The ad list shows the applied status, placement, tier, and shop filters.',
+        );
+        // Live Database Verification (.png and .json)
+        await captureAdListDbEvidence(
+          page,
+          'N-01_3_db_ad_list',
+          'DB query SELECT a.id, a.title, a.approval_status, a.payment_status, s.shop_name, a.created_at FROM advertisements a WHERE a.approval_status = pending'
+        );
+      } finally {
+        if (seeded && seeded.length > 0) {
+          await deleteAds(seeded);
+        }
+      }
     });
 
-    test('should reset all filters and restore default list', async ({ page }) => {
+    test('should reset all filters and restore default list', async ({ page, request }) => {
       await adPage.goto();
       await adPage.filterByStatus('pending');
       await adPage.filterByPlacement('search_page_banner');
       await adPage.resetFilters();
       await expect(adPage.heading).toBeVisible();
       await adPage.captureMainList();
+      // DB verification: default pending list loads
+      const defaultAds = await request.get(`${API_BASE_URL}/admin/ads?status=pending`, {
+        headers: await adminHeaders(request),
+      });
+      expect(defaultAds.status()).toBe(200);
     });
   });
 
   test.describe('N-02: Review a single pending ad and approve it', () => {
-    test('should open review modal and approve a pending ad', async ({ page }) => {
+    test('should open review modal and approve a pending ad', async ({ page, request }) => {
       await adPage.goto();
       // Ensure we have pending ads - create if needed via API or use seeded
-      await adPage.captureReviewModal();
+      const [adId] = await createPendingAds();
+      try {
+        await adPage.goto();
+        await adPage.openReviewModal(`E2E pending ad ${adId}`);
+        await captureReviewModalSections(
+          adPage.page,
+          'N-02_1_review_modal_opened',
+          'The review modal displays the pending advertisement details before approval.',
+        );
+        await adPage.approveInReviewModal();
+        await expect(adPage.rowById(adId)).toContainText(/approved/i);
+        await captureScreenshot(
+          adPage.page,
+          'N-02_3_ad_approved_in_ui',
+          'The ad row shows approved after the review modal is submitted.',
+        );
+        // DB verification: ad status changed to approved
+        const detail = await request.get(`${API_BASE_URL}/admin/ads/${adId}`, {
+          headers: await adminHeaders(request),
+        });
+        expect(detail.status()).toBe(200);
+        const body = await detail.json();
+        expect(body.data.approvalStatus).toBe('approved');
+        expect(body.data.approvedBy).toBeDefined();
+        expect(body.data.approvedAt).toBeDefined();
+        // Live Database Verification (.png and .json)
+        await captureAdDbEvidence(
+          page,
+          'N-02_4_ad_approved_in_db',
+          adId,
+          'DB query ads row after approval shows status = approved and acting admin'
+        );
+      } finally {
+        await deleteAds([adId]);
+      }
     });
   });
 
   test.describe('N-03: Reject a single pending ad with a valid reason', () => {
-    test('should reject a pending ad with a valid reason', async ({ page }) => {
-      await adPage.goto();
-      await adPage.captureRejectSuccess();
+    test('should reject a pending ad with a valid reason', async ({ page, request }) => {
+      const [adId] = await createPendingAds();
+      try {
+        await adPage.goto();
+        await adPage.openReviewModal(`E2E pending ad ${adId}`);
+        await adPage.reviewModal.getByRole('button', { name: 'Reject', exact: true }).click();
+        await adPage.rejectTextarea.waitFor({ state: 'visible' });
+        await adPage.rejectTextarea.fill('E2E rejection reason');
+        await captureReviewModalSections(
+          adPage.page,
+          'N-03_1_review_modal_with_reason',
+          'The review modal shows the entered rejection reason before the admin confirms rejection.',
+        );
+        await adPage.confirmRejectButton.click();
+        await adPage.reviewModal.waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
+        await expect(adPage.rowById(adId)).toContainText(/rejected/i);
+        await captureScreenshot(
+          adPage.page,
+          'N-03_3_ad_rejected_in_ui',
+          'The ad row shows rejected after confirming the entered rejection reason.',
+        );
+        // DB verification: ad status changed to rejected
+        const detail = await request.get(`${API_BASE_URL}/admin/ads/${adId}`, {
+          headers: await adminHeaders(request),
+        });
+        expect(detail.status()).toBe(200);
+        const body = await detail.json();
+        expect(body.data.approvalStatus).toBe('rejected');
+        expect(body.data.rejectionReason).toBe('E2E rejection reason');
+        // Live Database Verification (.png and .json)
+        await captureAdDbEvidence(
+          page,
+          'N-03_4_ad_rejected_in_db',
+          adId,
+          'DB query ads row after rejection shows status = rejected and rejection_reason'
+        );
+      } finally {
+        await deleteAds([adId]);
+      }
     });
   });
 
   test.describe('N-04: Bulk approve multiple pending ads', () => {
-    test('should bulk approve selected pending ads', async ({ adminPage }) => {
+    test('should bulk approve selected pending ads', async ({ adminPage, request }) => {
       const adIds = await createPendingAds(2);
       try {
         await adPage.goto();
@@ -118,9 +249,27 @@ test.describe('Admin Ad Management — PCL Normal Scenarios', () => {
         await expect(adPage.bulkApproveModal).toBeVisible();
         await expect(adminPage.getByRole('dialog')).toContainText('2 advertisements');
         await adminPage.getByRole('dialog').getByRole('button', { name: 'Confirm Approve' }).click();
-        for (const adId of adIds) {
-          await expect(adPage.rowById(adId)).toContainText(/approved/i);
-        }
+        // DB verification: both ads status changed to approved
+        const bulkDetail = await request.get(`${API_BASE_URL}/admin/ads`, {
+          headers: await adminHeaders(request),
+          params: { status: 'approved' },
+        });
+        expect(bulkDetail.status()).toBe(200);
+        const bulkBody = await bulkDetail.json();
+        const approvedAds = (bulkBody.data?.data ?? bulkBody.data ?? []).filter(
+          (ad: any) => adIds.includes(ad.id),
+        );
+        expect(approvedAds.length).toBe(2);
+        approvedAds.forEach((ad: any) => {
+          expect(ad.approvalStatus).toBe('approved');
+        });
+        // Live Database Verification (.png and .json)
+        await captureBulkAdsDbEvidence(
+          adminPage,
+          'N-04_2_ads_approved_in_db',
+          adIds,
+          'DB query shows both ads moved to approved status'
+        );
         await captureScreenshot(adminPage, 'N-04_1_bulk_approve', 'Two selected pending ads were approved and the table reflects their new state.');
       } finally {
         await deleteAds(adIds);
@@ -129,7 +278,7 @@ test.describe('Admin Ad Management — PCL Normal Scenarios', () => {
   });
 
   test.describe('N-05: Bulk reject multiple pending ads with one reason', () => {
-    test('should bulk reject selected pending ads with common reason', async ({ adminPage, request }) => {
+    test('should bulk reject selected pending ads with common reason', async ({ adminPage, request, page }) => {
       const adIds = await createPendingAds(2);
       const reason = 'Common E2E rejection reason';
       try {
@@ -148,6 +297,27 @@ test.describe('Admin Ad Management — PCL Normal Scenarios', () => {
           expect(detail.status()).toBe(200);
           expect((await detail.json()).data.rejectionReason).toBe(reason);
         }
+        // DB verification: both ads status changed to rejected
+        const bulkRejectDetail = await request.get(`${API_BASE_URL}/admin/ads`, {
+          headers: await adminHeaders(request),
+          params: { status: 'rejected' },
+        });
+        expect(bulkRejectDetail.status()).toBe(200);
+        const bulkRejectBody = await bulkRejectDetail.json();
+        const rejectedAds = (bulkRejectBody.data?.data ?? bulkRejectBody.data ?? []).filter(
+          (ad: any) => adIds.includes(ad.id),
+        );
+        expect(rejectedAds.length).toBe(2);
+        rejectedAds.forEach((ad: any) => {
+          expect(ad.approvalStatus).toBe('rejected');
+        });
+        // Live Database Verification (.png and .json)
+        await captureBulkAdsDbEvidence(
+          adminPage,
+          'N-05_2_ads_rejected_in_db',
+          adIds,
+          'DB query shows both ads moved to rejected status with common reason'
+        );
         await captureScreenshot(adminPage, 'N-05_1_bulk_reject', 'Two selected pending ads were rejected with the same reason.');
       } finally {
         await deleteAds(adIds);
@@ -156,11 +326,25 @@ test.describe('Admin Ad Management — PCL Normal Scenarios', () => {
   });
 
   test.describe('N-21: Open a newly submitted ad from an admin notification', () => {
-    test('should navigate from notification highlight and highlight ad', async ({ page }) => {
-      await adPage.goto();
-      // The highlightAdId is set from notification URL param
-      // Verify highlight appears and fades after 3s
-      await adPage.captureReviewModal();
+    test('should open a newly submitted ad from an admin notification', async ({ adminPage }) => {
+      const [adId] = await createPendingAds();
+      try {
+        await adminPage.goto(`/admin/ads?highlightAdId=${adId}`);
+        const targetRow = adPage.rowById(adId);
+        await expect(adminPage).toHaveURL(new RegExp(`highlightAdId=${adId}`));
+        await expect(targetRow).toBeVisible();
+        await expect(targetRow.getByText('NEW')).toBeInViewport();
+        await captureScreenshot(
+          adminPage,
+          'N-21_1_ad_highlighted',
+          'The notification deep link opens the matching ad row and displays its NEW highlight.',
+        );
+        await expect(targetRow.getByText('NEW')).toBeVisible();
+        await adminPage.waitForTimeout(3200);
+        await expect(targetRow.getByText('NEW')).not.toBeVisible();
+      } finally {
+        await deleteAds([adId]);
+      }
     });
   });
 
@@ -209,7 +393,7 @@ test.describe('Admin Ad Management — PCL Normal Scenarios', () => {
       expect(response.status()).toBe(403);
       await captureApiEvidence(
         page,
-        'A-01',
+        'A-01_1_buyer_moderation_forbidden',
         'POST',
         '/admin/ads/bulk/approve (buyer token)',
         response.status(),
@@ -343,7 +527,7 @@ test.describe('Admin Ad Management — PCL Abnormal Scenarios', () => {
         expect(second.status()).toBe(400);
         await captureApiEvidence(
           page,
-          'A-03',
+          'A-03_1_ad_not_pending_error',
           'POST',
           '/admin/ads/:id/approve (already-approved ad)',
           second.status(),
@@ -364,7 +548,7 @@ test.describe('Admin Ad Management — PCL Abnormal Scenarios', () => {
       expect(response.status()).toBe(400);
       await captureApiEvidence(
         page,
-        'A-04',
+        'A-04_1_bulk_exceeds_limit_error',
         'POST',
         '/admin/ads/bulk/approve (51 ids)',
         response.status(),
@@ -411,7 +595,7 @@ test.describe('Admin Ad Management — PCL Abnormal Scenarios', () => {
         expect(detail.paymentInfo.adPayments ?? []).toHaveLength(0);
         await captureApiEvidence(
           page,
-          'A-13',
+          'A-13_1_unpaid_ad_rejected',
           'POST',
           '/admin/ads/:id/reject (no completed payment)',
           response.status(),
@@ -446,7 +630,7 @@ test.describe('Admin Ad Management — PCL Abnormal Scenarios', () => {
       expect(invalidStatus.status()).toBe(400);
       expect(invalidPagination.status()).toBe(400);
       expect(longShop.status()).toBe(400);
-      await captureApiEvidence(page, 'A-19', 'GET', '/admin/ads (invalid status, page/limit, and shop length)', longShop.status(), 'The API rejects an invalid status, zero page/limit, and a shop filter longer than 255 characters.');
+      await captureApiEvidence(page, 'A-19_1_invalid_filters_rejected', 'GET', '/admin/ads (invalid status, page/limit, and shop length)', longShop.status(), 'The API rejects an invalid status, zero page/limit, and a shop filter longer than 255 characters.');
     });
   });
 
@@ -459,7 +643,7 @@ test.describe('Admin Ad Management — PCL Abnormal Scenarios', () => {
       expect(response.status()).toBe(400);
       await captureApiEvidence(
         page,
-        'A-20',
+        'A-20_1_reversed_date_range_rejected',
         'GET',
         '/admin/ads?dateFrom=2026-10-20&dateTo=2026-10-01',
         response.status(),
@@ -483,7 +667,7 @@ test.describe('Admin Ad Management — PCL Abnormal Scenarios', () => {
         expect((await detail.json()).data.approvalStatus).toBe('pending');
         await captureApiEvidence(
           page,
-          'A-21',
+          'A-21_1_mixed_ids_rejected',
           'POST',
           '/admin/ads/bulk/approve (pending id plus missing id)',
           response.status(),
@@ -630,25 +814,6 @@ test.describe('Admin Ad Management — PCL Boundary Scenarios', () => {
 });
 
 test.describe('Admin Ad Management — PCL Interface Scenarios', () => {
-  test.describe('N-15: Language toggle works on admin ad management screens', () => {
-    test('should update all labels when toggling to Japanese', async ({ page, }) => {
-      await adPage.goto();
-      // Toggle language to Japanese
-      // Verify labels update
-      await expect(adPage.heading).toBeVisible();
-    });
-    test('should update all labels when toggling to Myanmar', async ({ page, }) => {
-      await adPage.goto();
-      // Toggle language to Myanmar
-      await expect(adPage.heading).toBeVisible();
-    });
-    test('should return to English default', async ({ page, }) => {
-      await adPage.goto();
-      // Toggle back to English
-      await expect(adPage.heading).toBeVisible();
-    });
-  });
-
   test.describe('N-16: Theme toggle works on admin ad management screens', () => {
     test('should switch to dark mode without breaking layout', async ({ page, }) => {
       await adPage.goto();

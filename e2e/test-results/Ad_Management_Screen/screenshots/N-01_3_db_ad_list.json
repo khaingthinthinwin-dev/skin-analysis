@@ -1,0 +1,92 @@
+{
+  "capturedAt": "2026-10-23T09:24:43.512Z",
+  "description": "DB query SELECT a.id, a.title, a.approval_status, a.payment_status, s.shop_name, a.created_at FROM advertisements a WHERE a.approval_status = pending",
+  "results": [
+    {
+      "label": "pending advertisements queue",
+      "rowCount": 10,
+      "rows": [
+        {
+          "id": "32753830-cf0e-4b6b-bf43-96a382ab529a",
+          "title": "E2E pending ad 32753830-cf0e-4b6b-bf43-96a382ab529a",
+          "approval_status": "pending",
+          "payment_status": "completed",
+          "shop_name": "Glow Beauty Shop",
+          "created_at": "2026-10-23T10:24:37.579Z"
+        },
+        {
+          "id": "f8dfaa8f-e2c0-49df-ac80-b59368c039a0",
+          "title": "",
+          "approval_status": "pending",
+          "payment_status": "pending",
+          "shop_name": "Skin Pure Store",
+          "created_at": "2026-10-23T00:53:40.381Z"
+        },
+        {
+          "id": "0c737698-6f4d-4c60-ad13-c9ff3fa2ff1a",
+          "title": "",
+          "approval_status": "pending",
+          "payment_status": "pending",
+          "shop_name": "Village Shop",
+          "created_at": "2026-10-19T18:47:26.634Z"
+        },
+        {
+          "id": "d4aa6307-0426-4137-b020-fe74da71fea8",
+          "title": "",
+          "approval_status": "pending",
+          "payment_status": "pending",
+          "shop_name": "Kay Kay",
+          "created_at": "2026-10-19T03:55:30.115Z"
+        },
+        {
+          "id": "c878b909-dd04-4724-90f2-1b86251b5910",
+          "title": "",
+          "approval_status": "pending",
+          "payment_status": "pending",
+          "shop_name": "Kay Kay",
+          "created_at": "2026-10-19T03:50:28.762Z"
+        },
+        {
+          "id": "b6a5cb81-74cc-4db7-882e-9ca417b90f2c",
+          "title": "",
+          "approval_status": "pending",
+          "payment_status": "pending",
+          "shop_name": "Skin Pure Store",
+          "created_at": "2026-10-18T19:49:36.126Z"
+        },
+        {
+          "id": "ffd2d2a8-3bf5-4a5d-bf71-128ee4713996",
+          "title": "",
+          "approval_status": "pending",
+          "payment_status": "pending",
+          "shop_name": "Skin Pure Store",
+          "created_at": "2026-10-18T19:26:19.859Z"
+        },
+        {
+          "id": "7206b921-2213-4392-ad2d-2c80fc809aba",
+          "title": "test",
+          "approval_status": "pending",
+          "payment_status": "completed",
+          "shop_name": "Skin Pure Store",
+          "created_at": "2026-10-15T00:54:55.385Z"
+        },
+        {
+          "id": "5ca24526-8e20-414e-857c-5dda691950bc",
+          "title": "test",
+          "approval_status": "pending",
+          "payment_status": "completed",
+          "shop_name": "Skin Pure Store",
+          "created_at": "2026-10-15T00:54:26.483Z"
+        },
+        {
+          "id": "480106ba-aabe-4093-880b-25251c5b6ae9",
+          "title": "test",
+          "approval_status": "pending",
+          "payment_status": "pending",
+          "shop_name": "Skin Pure Store",
+          "created_at": "2026-10-09T00:39:55.526Z"
+        }
+      ]
+    }
+  ]
+}

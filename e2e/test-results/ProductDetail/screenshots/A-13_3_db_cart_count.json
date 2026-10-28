@@ -1,0 +1,16 @@
+{
+  "capturedAt": "2026-10-23T08:30:45.300Z",
+  "description": "cart row count for the buyer and product, proving no cart row was created",
+  "results": [
+    {
+      "label": "cart count by buyer and product",
+      "rowCount": 1,
+      "rows": [
+        {
+          "cart_item_count": 0,
+          "total_quantity": 0
+        }
+      ]
+    }
+  ]
+}

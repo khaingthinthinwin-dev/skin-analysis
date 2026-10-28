@@ -1,0 +1,22 @@
+{
+  "capturedAt": "2026-10-23T09:23:48.217Z",
+  "description": "DB query ad_fee_settings row after creation shows is_active = true, correct placement/tier/daily_rate",
+  "results": [
+    {
+      "label": "ad_fee_settings row by id",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "d01db084-576f-4e2b-a226-c1154dece882",
+          "placement": "checkout_page_banner",
+          "tier": "basic",
+          "daily_rate": "1.50",
+          "duration_days": 30,
+          "max_ads": 100,
+          "is_active": true,
+          "created_at": "2026-09-30T03:43:54.404Z"
+        }
+      ]
+    }
+  ]
+}

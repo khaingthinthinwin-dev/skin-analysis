@@ -4,11 +4,11 @@
 **Target Screen:** Purchase & Checkout (購入・チェックアウト)  
 **Subsystem:** Buyer Module — Checkout & Order Placement  
 **Function ID:** FN-CHECK-001, FN-ORDER-001  
-**Version:** 1.1  
+**Version:** 1.2  
 **Created:** 2026-08-25  
-**Last Updated:** 2026-08-26  
+**Last Updated:** 2026-10-21  
 **Author:** Senior System Engineer  
-**Review Status:** Released (承認済み)  
+**Review Status:** Source-aligned (implementation baseline; known gaps identified)  
 **Classification:** Internal — Engineering Division
 
 ---
@@ -19,9 +19,9 @@
 
 | Version | Date | Author | Description of Changes |
 | :--- | :--- | :--- | :--- |
+| 1.2 | 2026-10-21 | Senior System Engineer | Reconciled checkout, voucher, ad, order-placement, and confirmation screen items with current frontend/backend behavior; documented known differences from planned PCL scenarios. |
+| 1.1 | 2026-08-26 | Senior System Engineer | Specified planned sponsored ad panel/carousel behavior, responsive layouts, and related item definitions/checklist. |
 | 1.0 | 2026-08-25 | Senior System Engineer | Initial release. Screen items specification for Checkout and Order Confirmation pages. Order History, Order Detail, and Order Tracking pages are developed by the order status screen team. Aligned with REQUIREMENT_SPEC v2.11, DATABASE_SPEC v2.5, DEVELOPMENT_RULES v2.1, and Functional Specification v1.2. |
-| 1.1 | 2026-08-26 | Senior System Engineer | Implemented full Sponsored Ad Slide-Down Panel (`slotAdCheckout`, [D0]–[D0d]) with slide-down animation, horizontal carousel (5s auto-slide, max 5 ads), responsive desktop (horizontal) / mobile (stacked) layouts. Added slide sub-item definitions (Sec 4.2 items 3–10), updated layout diagrams (Sec 3.1), breakpoints (Sec 3.2), behavior (Sec 5.2), i18n keys (Sec 8), and test checklist (Sec 12.1). Slide-down animation, 5-second auto-slide, maximum 5 ads, API, approval, schedule, and tier-priority rules aligned with Search & Filter specification. |
-
 ### 1.2 Related Documents
 
 | No. | Document ID | Document Name | File Path | Remarks |
@@ -29,14 +29,12 @@
 | 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
 | 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`orders`, `order_items`, `promotions`), constraints. |
 | 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
-| 4 | SKM-FDS-CHECKOUT-001 | Functional Specification — Checkout | `docs/screen/Checkout_Purchase/機能設計書_Checkout_Purchase.md` | Use cases, state transitions, validation rules, error handling. |
-
----
-
+| 4 | SKM-FDS-CHECKOUT-001 | Functional Specification — Checkout | `docs/screen/Checkout_Purchase/機能設計書_Checkout_Purchase.md` | Functional rules and source-aligned implementation details. |
+| 5 | SKM-PCL-CHECK-001 | Program Checklist — Checkout & Purchase | `docs/screen/Checkout_Purchase/Checkout_Purchase_PCL.md` | Scenario audit and known differences; check code where PCL notes differ from source. |
 ## 2. Screen Overview & Purpose (画面概要・目的)
 
 ### 2.1 Purpose (目的)
-The Checkout and Order Confirmation pages provide the purchase workflow for authenticated buyers on the Cosmetics Finder platform. These screens convert cart contents into confirmed orders while validating stock availability, applying coupon discounts, calculating totals, and persisting order records for merchant fulfillment.
+The Checkout and Order Confirmation pages provide the purchase workflow for authenticated buyers. Checkout groups cart items and vouchers by merchant, collects shipping/payment details, and places order(s). A cart with no items currently displays the normal checkout form with an empty summary; order submission is rejected by the API.
 
 ### 2.2 Target Users & Roles (対象ユーザーと権限)
 
@@ -45,13 +43,13 @@ The Checkout and Order Confirmation pages provide the purchase workflow for auth
 | **Primary Actors** | Authenticated Buyer |
 | **Required Authentication** | JWT Bearer Token |
 | **Data Scope** | Own orders, own shipping addresses, own payment records |
-| **Guest Behavior** | Checkout unavailable. When a guest user attempts to access `/checkout`, an alert modal is displayed: "Please log in to complete your purchase." Clicking [Log in] navigates to the login page (`/login`). |
+| **Guest Behavior** | On `/buyer/checkout`, unauthenticated users see a login dialog if the page is rendered. [Log in] navigates to `/login?redirect=%2Fcheckout`; closing the dialog returns to `/buyer/cart`. The app protected route normally redirects guests before this dialog is reachable. |
 
 ### 2.3 Core Functions & Basic Design Principles (主要機能・基本設計方針)
 1. **Checkout Flow** — Guiding the user through shipping address entry, payment method selection, coupon application, and order summary review before final confirmation.
 2. **Coupon Validation** — Validating and applying discount codes (percentage or fixed) at checkout, enforcing expiry, minimum order amount, and single-use constraints.
 3. **Order Calculation** — Computing subtotal, discount amount, and final total based on cart items and applied coupons.
-4. **Order Placement** — Creating order records with status `placed`, decrementing stock atomically, clearing the cart, and returning order confirmation.
+4. **Order Placement** — Creates one order per merchant group in one Prisma transaction, with status `placed` and payment status `pending`, decrements stock, clears cart items, and returns an orders array. Checkout does not create `inventory_transactions` rows.
 
 ---
 
@@ -59,12 +57,12 @@ The Checkout and Order Confirmation pages provide the purchase workflow for auth
 
 ### 3.1 Overall Page Structure (全体画面構成)
 
-#### Checkout Page Layout (`/checkout`)
+#### Checkout Page Layout (`/buyer/checkout`)
 ```text
-┌──────────────────────────────────────────────────────────────────────┐
-│                           BROWSER VIEWPORT                           │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
+┌─────────────────────────────────────────────────────────────────────┐
+│                           BROWSER VIEWPORT                          │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
 │  ┌───────────────────────────────────────────────────────────────┐  │
 │  │  [A] PAGE HEADER                                              │  │
 │  │  [A1] Page Title "Checkout"                                   │  │
@@ -72,15 +70,15 @@ The Checkout and Order Confirmation pages provide the purchase workflow for auth
 │  └───────────────────────────────────────────────────────────────┘  │
 │                                                                     │
 │  ┌───────────────────────────────────────────────────────────────┐  │
-│  │           [D0] SPONSORED AD SLIDE-DOWN PANEL (cond.)          │  │
-│  │                (slides down on ad load, centered)             │  │
+│  │           [D0] SPONSORED AD CAROUSEL (conditional)            │  │
+│  │              (shared banner; hidden when empty)               │  │
 │  │          ┌─────────────┬──────────────────────────┐           │  │
 │  │          │ [D0a]       │ [D0b] Ad Title           │           │  │
 │  │          │ Image /     │ [D0c] Description        │           │  │
 │  │          │ Banner      │ [D0d] CTA Button         │           │  │
 │  │          └─────────────┴──────────────────────────┘           │  │
 │  │      (full container width, horizontally centered between     │  │
-│  │       [A] and [B+C]; horizontal slide, 5s auto-slide, max 5)  │  │
+│  │      [A] and [B+C]; 5s auto-advance, max 5 results)           │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 │                                                                     │
 │  ┌──────────────────────┐  ┌───────────────────────────────────┐    │
@@ -126,7 +124,7 @@ The Checkout and Order Confirmation pages provide the purchase workflow for auth
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-#### Order Confirmation Page Layout (`/checkout/confirmation/:orderId`)
+#### Order Confirmation Page Layout (`/buyer/checkout/confirmation/:orderId`)
 ```text
 ┌─────────────────────────────────────────────────────────┐
 │                    BROWSER VIEWPORT                     │
@@ -138,7 +136,6 @@ The Checkout and Order Confirmation pages provide the purchase workflow for auth
 │              │   [I2] Success Title        │            │
 │              │   [I3] Order ID             │            │
 │              │   [I4] Order Status Badge   │            │
-│              │   [I5] Estimated Delivery   │            │
 │              └─────────────────────────────┘            │
 │                                                         │
 │              ┌─────────────────────────────┐            │
@@ -146,15 +143,14 @@ The Checkout and Order Confirmation pages provide the purchase workflow for auth
 │              │   [J1] Order Items List     │            │
 │              │   [J2] Subtotal             │            │
 │              │   [J3] Discount             │            │
-│              │   [J4] Total                │            │
-│              │   [J5] Shipping Address     │            │
+│              │   [J4] Total Due            │            │
+│              │   [J5] Shipping & Payment   │            │
 │              └─────────────────────────────┘            │
 │                                                         │
 │              ┌─────────────────────────────┐            │
 │              │  [K] ACTION BUTTONS         │            │
 │              │   [K1] Continue Shopping    │            │
 │              │   [K2] View Order           │            │
-│              │   [K3] Print Receipt        │            │
 │              └─────────────────────────────┘            │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -164,10 +160,10 @@ The Checkout and Order Confirmation pages provide the purchase workflow for auth
 
 | Breakpoint | Min Width | Checkout Layout |
 | :--- | :--- | :--- |
-| Mobile (default) | 0px | Single column: Header → Ad (stacked: full-width image on top, title, description, full-width CTA below) → Summary + Address (stacked) → Payment → Notes → Place Order. Ad panel renders between [A] and [B+C], spanning full container width. |
-| Tablet (`md:`) | 768px | Single column: Header → Ad (horizontal: image left, text block right) → Summary + Address (stacked) → Payment → Notes → Place Order. Ad panel spans full container width, horizontally centered between [A] and [B+C]. |
-| Desktop (`lg:`) | 1024px | Two-column: Summary left, Address right. Ad panel horizontal (image left, text block right), spans full container width above columns, horizontally centered between [A] and [B+C]. |
-| Wide (`xl:`) | 1280px | Same as `lg:` with enhanced spacing. Ad panel identical to `lg:` with enhanced spacing. |
+| Mobile (default) | 0px | Single column: Header → Ad (stacked at mobile width) → Summary → Shipping form → Payment → Notes → actions. Ad banner appears only when eligible data is returned. |
+| Tablet (`md:`) | 768px | Single column: Header → Ad (horizontal at md width) → Summary → Shipping form → Payment → Notes → actions. |
+| Desktop (`lg:`) | 1024px | Two-column form grid at `lg` width: summary and shipping form side by side; payment, notes, and action controls span the form width. Ad banner remains above the form. |
+| Wide (`xl:`) | 1280px | Same grid with the page max width of 5xl. |
 
 ---
 
@@ -177,24 +173,23 @@ The Checkout and Order Confirmation pages provide the purchase workflow for auth
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 1 | `lblCheckoutTitle` | Page Title | Heading (`<h1>`) | String | — | Visible. Text: "Checkout" / "チェックアウト" | — | Hardcoded UI text | i18n key: `checkout.title`. Tailwind: `text-2xl font-bold`. |
-| 2 | `lnkBackToCart` | Back to Cart Link | Link (`<Link>`) | String | — | Visible. Text: "← Back to Cart" / "← カートに戻る" | — | — | i18n key: `checkout.backToCart`. Navigates to `/cart`. Tailwind: `text-sm text-muted-foreground hover:text-primary`. |
+| 1 | `lblCheckoutTitle` | Page Title | Heading (`<h1>`) | String | — | Visible. Text: "Checkout" / "チェックアウト" | — | Hardcoded UI text | i18n key: `buyer.checkout.title`. Tailwind: `text-2xl font-bold`. |
+| 2 | `lnkBackToCart` | Back to Cart Link | Link (`<Link>`) | String | — | Visible. Text: “Back to Cart”. | — | — | i18n key: `buyer.checkout.actions.backToCart`. Navigates to `/buyer/cart`. |
 
-### 4.2 Section [D0]: Sponsored Ad Slide-Down Panel (スポンサー広告スライドダウンパネル)
+### 4.2 Section [D0]: Sponsored Ad Banner (スポンサー広告バナー)
 
-Rendered horizontally centered between Section [A] (Page Header) and the [B]+[C] (Order Summary + Shipping Address) row across the full container width; the [B]+[C] row renders immediately below this panel.
+The mounted checkout page renders the shared `AdBannerSlider` after the page header and before the checkout form. Its data source is `GET /api/v1/search/ads?placement=checkout_page_banner`; no panel is rendered when the request has no eligible results or errors.
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 3 | `slotAdCheckout` | Sponsored Ad Slot — Checkout Top (Slide-Down Panel) | Slide-down panel (`div`, animated expand/collapse) | — | Conditional | Hidden until ad response arrives. On first eligible ad: panel slides down into view directly below [A] Page Header and above the [B]+[C] (Order Summary + Shipping Address) row — horizontally centered across the full container width (translateY −100% → 0 with height expand, 300ms ease-out, once per mount), pushing the order summary + shipping address row and remaining sections down smoothly. | Maximum 5 ads; auto-slide every 5 seconds. | `GET /api/v1/ads?placement=checkout_top` (5-min Redis TTL, `cache:ads:checkout-top`) | Displays the Merchant's approved advertisement records from purchased Advertisement Packages whose placement includes Checkout Top. Applies package placement and tier priority rules (Premium > Standard > Basic, round-robin within a tier). Only approved, active, in-schedule ads are eligible. On ad fetch error or no eligible ads: hidden — no slide-down occurs (graceful degradation). `prefers-reduced-motion: reduce` skips the entrance animation (instant appear; rotation rules unchanged). |
-| 4 | `trackAdSlides` | Ad Slide Track *(sub-item of `slotAdCheckout`)* | Slider track (`div`, vertical) | — | Conditional | Renders when `slotAdCheckout` is expanded. | Vertical slide-down transition between slides (500ms ease-in-out); advance interval 5s. | `data[]` from `GET /api/v1/ads?placement=checkout_top` | Auto-advancement pauses on hover or while keyboard focus is inside `slotAdCheckout`; resumes on pointer leave / blur (WCAG 2.2.2). Loops after the last slide. |
-| 5 | `cardAdSlide` | Ad Slide Card *(sub-item of `slotAdCheckout`)* | Card (flex container) | — | Per ad (≤ 5) | One card per eligible ad. Card spans the full container width, centered within `slotAdCheckout`. | Desktop/tablet (≥ 768px): horizontal — image left (w-80), text block right. Mobile (< 768px): stacked — image top, content below. | `data[]` ad object | Responsive re-layout is CSS-only (Tailwind breakpoints); no refetch and no rotation reset on breakpoint change. Whole card clickable. |
-| 6 | `imgAdBanner` | Ad Image / Banner *(sub-item of `slotAdCheckout`)* | Image (`<img>`) | VARCHAR(500) URL | Mandatory (per ad) | Rendered per slide. | Desktop: fixed 320×120, `object-cover`. Mobile: full-width 16:9, `object-cover`. Lazy-loaded. | `advertisements.image_url` → `imageUrl` | `alt` built from i18n template `checkout.sponsored.adAlt` with the ad title. |
-| 7 | `lblAdTitle` | Ad Title *(sub-item of `slotAdCheckout`)* | Heading (`<h3>`) | VARCHAR(255) | Mandatory (per ad) | Rendered per slide. | Single-line truncation (`truncate`). | `advertisements.title` → `title` | Displayed together with `imgAdBanner`, `txtAdDescription`, and `btnAdCta` inside the same `cardAdSlide`. |
-| 8 | `txtAdDescription` | Ad Description *(sub-item of `slotAdCheckout`)* | Paragraph (`<p>`) | TEXT | Optional | Rendered per slide when present. | Clamped to 2 lines (`line-clamp-2`) on all breakpoints. | `advertisements.description` → `description` | Displayed with title, image/banner, and CTA. Hidden when null/empty without breaking layout. |
-| 9 | `btnAdCta` | Ad CTA Button *(sub-item of `slotAdCheckout`)* | Button/Link (`primary`) | VARCHAR(100) label / VARCHAR(500) URL | Mandatory (per ad) | Rendered per slide. | Desktop: inline, right-aligned. Mobile: full-width. Keyboard-focusable link with visible primary focus ring. | `advertisements.cta_text` / `cta_url` → `ctaText` / `ctaUrl` | Navigates to the ad target; fires `ad.click` analytics event with `ad_id` and `placement`. |
-| 10 | `badgeSponsored` | Sponsored Badge *(sub-item of `slotAdCheckout`)* | Badge (`span`) | — | Mandatory (per slide) | Visible on every slide. | Text: i18n key `checkout.sponsored.label`; uppercase, amber background + dark text. | Hardcoded UI element | Distinguishes ads from organic checkout content. |
-
+| 3 | `slotAdCheckout` | Sponsored Ad Banner | Shared card carousel | — | Conditional | Hidden when filtered ads list is empty. One ad visible at a time. | Maximum 5 results; auto-advance every 5 seconds when motion is allowed. | `GET /api/v1/search/ads?placement=checkout_page_banner` | SearchService filters placement, approved/active ad, active schedule, approved shop; sorts `startsAt DESC`; response `tier` is always `standard`. No checkout-specific cache/rotation/tier priority. |
+| 4 | `trackAdSlides` | Carousel Controls | Card content, chevrons, dot buttons | — | Conditional | Controls/dots shown when more than one ad exists. | Previous/next wrap; dot selects slide; auto-slide pauses on hover/focus; reduced-motion disables auto-slide. | Ad list in shared search response | There is no vertical slide-down entrance or vertical slide transition. |
+| 5 | `cardAdSlide` | Current Ad Card | Card (`div`, role `link`) | — | Per visible ad | One card rendered for current index; whole card clickable. | Mobile stacked; medium and wider horizontal layout. | Shared search sponsored-ad DTO | Destination resolves by SKU/product, target URL, or `/buyer/products`. |
+| 6 | `imgAdBanner` | Ad Image | Image (`img`) | URL | Conditional | Ad image, product image, or sample image fallback. | Responsive sizing; image error advances to next available fallback. | `imageUrl`, resolved product image | Alt text uses ad title. |
+| 7 | `lblAdTitle` | Ad Title | Heading (`h3`) | String | Conditional | Ad title or resolved product name. | Line clamp on mobile; truncation on medium widths. | `title` / product name | — |
+| 8 | `txtAdDescription` | Ad Description | Paragraph (`p`) | String | Conditional | Hidden when no description is available. | HTML tags stripped. | `description` / product description | — |
+| 9 | `btnAdCta` | Learn More Button | Button | String | Conditional | Text: “Learn more”. | Click navigates to the same destination as the card. | Ad/product destination | Checkout does not pass the component's `onAdClick` analytics callback. |
+| 10 | `badgeSponsored` | Announcement and Shop/Category Badges | Badge (`span`) | String | Conditional | Announcement text or “SPONSORED”; second badge uses shop/category or “Natural Skin Care”. | Rendered above title. | `announcementMessage`, product merchant/category | No separate amber localized Sponsored badge is rendered. |
 ### 4.3 Section [B]: Order Summary (注文サマリー)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
@@ -203,45 +198,45 @@ Rendered horizontally centered between Section [A] (Page Header) and the [B]+[C]
 | 7 | `itmOrderItem` | Order Item Row | Row (`<li>`) | Object | — | Visible per cart item. | — | `cart_items.quantity`, `products.name`, `products.price`, `products.images` | Tailwind: `flex items-center gap-4 py-3 border-b`. |
 | 8 | `imgOrderItem` | Product Image | Image (`<img>`) | URL | — | Visible. Product thumbnail. | — | `products.images[0]` | Tailwind: `h-16 w-16 rounded-md object-cover`. |
 | 9 | `lblOrderItemName` | Product Name | Static Label (`<span>`) | String(255) | — | Visible. Product display name. | — | `products.name` | Tailwind: `font-medium`. |
-| 10 | `lblOrderItemQty` | Quantity | Static Label (`<span>`) | Integer | — | Visible. "Qty: {quantity}" | — | `cart_items.quantity` | Tailwind: `text-sm text-muted-foreground`. |
+| 10 | `lblOrderItemQty` | Quantity | Static Label (`<span>`) | Integer | — | Visible. "Qty: {quantity} x {unitPrice}" | — | `cart_items.quantity` | Tailwind: `text-sm text-muted-foreground`. |
 | 11 | `lblOrderItemPrice` | Unit Price | Static Label (`<span>`) | Decimal(10,2) | — | Visible. Formatted price. | — | `products.price` | Tailwind: `text-sm`. Currency formatted. |
 | 12 | `lblOrderItemTotal` | Line Total | Static Label (`<span>`) | Decimal(10,2) | — | Visible. "unit_price × quantity". | — | Calculated | Tailwind: `font-medium`. Currency formatted. |
-| 13 | `lblSubtotal` | Subtotal Label | Static Label (`<span>`) | String | — | Visible. Text: "Subtotal" / "小計" | — | Hardcoded UI text | i18n key: `checkout.subtotal`. |
+| 13 | `lblSubtotal` | Subtotal Label | Static Label (`<span>`) | String | — | Visible. Text: "Subtotal" / "小計" | — | Hardcoded UI text | i18n key: `buyer.checkout.subtotal`. |
 | 14 | `lblSubtotalValue` | Subtotal Value | Static Label (`<span>`) | Decimal(10,2) | — | Visible. Sum of all line totals. | — | Calculated | Tailwind: `font-medium`. Currency formatted. |
-| 15 | `txtCouponCode` | Coupon Code Input | Input (`text`) | String(50) | No | Empty. Placeholder: "Enter coupon code" / "クーポンコードを入力" | MaxLength: 50. | — | i18n key: `checkout.couponCode`. Tailwind: `w-full`. |
-| 16 | `btnApplyCoupon` | Apply Coupon Button | Button (`button`, `secondary`) | — | — | Visible. Text: "Apply" / "適用" | — | — | i18n key: `checkout.applyCoupon`. Tailwind: `ml-2`. Loading: Spinner + "Applying...". |
-| 17 | `lblDiscount` | Discount Amount | Static Label (`<span>`) | Decimal(10,2) | Conditional | Hidden by default. Shown when coupon applied. Text: "-$X.XX" / "-¥X.XX" | — | `orders.discount_amount` | i18n key: `checkout.discount`. Tailwind: `text-green-600 font-medium`. |
-| 18 | `btnRemoveCoupon` | Remove Coupon Button | Button (`button`, `ghost`) | — | Conditional | Hidden by default. Shown when coupon applied. Text: "Remove" / "削除" | — | — | i18n key: `checkout.removeCoupon`. Tailwind: `text-sm text-destructive`. |
-| 19 | `lblTotal` | Total Label | Static Label (`<span>`) | String | — | Visible. Text: "Total" / "合計" | — | Hardcoded UI text | i18n key: `checkout.total`. |
-| 20 | `lblTotalValue` | Total Value | Static Label (`<span>`) | Decimal(10,2) | — | Visible. "subtotal - discount". Must be > 0. | — | Calculated | Tailwind: `text-lg font-bold`. Currency formatted. |
+| 15 | `rowShopVoucher` | Shop Voucher Row | Button row | — | Per merchant group | Visible under each shop item group; shows Select/Enter code or applied discount. | Opens voucher selection modal. | `merchantId`, merchant promotions | At most one applied voucher per merchant in current page state. |
+| 16 | `dlgShopVouchers` | Shop Vouchers Modal | Dialog | — | Conditional | Opens from Shop Voucher row; lists available vouchers and manual code entry. | Manual Apply disabled for empty input/loading; no client-side length or 8–12 alphanumeric rule. | `GET /api/v1/checkout/merchant-promotions/:merchantId`; manual code validated by `POST /api/v1/checkout/validate-coupon` with the merchant subtotal. | Applied voucher shows code/discount and Remove action in modal. |
+| 17 | `txtCouponCode` | Manual Coupon Code Input | Input (`text`) | String (no client max) | No | Empty in modal. | Trimmed for non-empty check only; submitted code otherwise verbatim. | Modal state; promotion code | No client format rule; backend coupon lookup is exact. |
+| 18 | `btnApplyCoupon` | Apply Coupon Button | Button (`button`, `outline`) | — | — | Visible in modal; label “Apply” / “Applying…”. | Disabled when input empty or validation is loading. | `POST /api/v1/checkout/validate-coupon` | On success closes modal and applies to current merchant. |
+| 19 | `lblTotal` | Total Label | Static Label (`<span>`) | String | — | Visible: “Total”. | — | i18n key: `cart.total` | — |
+| 20 | `lblTotalValue` | Total Value | Static Label (`<span>`) | Decimal string | — | `max(subtotal − sum of shop discounts, 0)`; formatted as rounded Myanmar kyat (`Ks`). | — | Calculated in frontend | Coupon validation may preview a zero total, but order placement rejects a merchant order group totaling zero or less. |
 
 ### 4.4 Section [C]: Shipping Address Form (配送先住所フォーム)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 21 | `lblRecipientName` | Recipient Name Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Recipient Name" / "受取人氏名" | — | Hardcoded UI text | i18n key: `checkout.recipientName`. Associated with `txtRecipientName`. |
+| 21 | `lblRecipientName` | Recipient Name Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Recipient Name" / "受取人氏名" | — | Hardcoded UI text | i18n key: `buyer.checkout.recipientName`. Associated with `txtRecipientName`. |
 | 22 | `txtRecipientName` | Recipient Name Input | Input (`text`) | String(200) | Mandatory | Empty. Placeholder: "Full name" / "氏名" | MaxLength: 200. MinLength: 1. | `shipping_address.recipientName` | AutoComplete: `name`. Tailwind: `w-full`. |
-| 23 | `lblPhone` | Phone Number Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Phone Number" / "電話番号" | — | Hardcoded UI text | i18n key: `checkout.phone`. Associated with `txtPhone`. |
-| 24 | `txtPhone` | Phone Number Input | Input (`tel`) | String(20) | Mandatory | Empty. Placeholder: "Phone number" / "電話番号" | MaxLength: 20. | `shipping_address.phone` | AutoComplete: `tel`. InputMode: `tel`. |
-| 25 | `lblAddress1` | Address Line 1 Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Address Line 1" / "住所1" | — | Hardcoded UI text | i18n key: `checkout.address1`. Associated with `txtAddress1`. |
+| 23 | `lblPhone` | Phone Number Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Phone Number" / "電話番号" | — | Hardcoded UI text | i18n key: `buyer.checkout.phone`. Associated with `txtPhone`. |
+| 24 | `txtPhone` | Phone Number Input | Input (`tel`) | String | Mandatory | Empty. | Digits only; must start with `0` and have 9 or 11 digits; HTML maxLength 11. | `shippingAddress.phone` | Client schema and server DTO also validate. |
+| 25 | `lblAddress1` | Address Line 1 Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Address Line 1" / "住所1" | — | Hardcoded UI text | i18n key: `buyer.checkout.address1`. Associated with `txtAddress1`. |
 | 26 | `txtAddress1` | Address Line 1 Input | Input (`text`) | String(255) | Mandatory | Empty. Placeholder: "Street address" / "住所" | MaxLength: 255. | `shipping_address.addressLine1` | AutoComplete: `address-line1`. |
-| 27 | `lblAddress2` | Address Line 2 Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Address Line 2" / "住所2" | — | Hardcoded UI text | i18n key: `checkout.address2`. Associated with `txtAddress2`. |
+| 27 | `lblAddress2` | Address Line 2 Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Address Line 2" / "住所2" | — | Hardcoded UI text | i18n key: `buyer.checkout.address2`. Associated with `txtAddress2`. |
 | 28 | `txtAddress2` | Address Line 2 Input | Input (`text`) | String(255) | No | Empty. Placeholder: "Apartment, suite, unit, etc." / "マンション名・部屋番号など" | MaxLength: 255. | `shipping_address.addressLine2` | AutoComplete: `address-line2`. |
-| 29 | `lblCity` | City Label | Static Label (`<label>`) | String | — | Always displayed. Text: "City" / "市区町村" | — | Hardcoded UI text | i18n key: `checkout.city`. Associated with `txtCity`. |
+| 29 | `lblCity` | City Label | Static Label (`<label>`) | String | — | Always displayed. Text: "City" / "市区町村" | — | Hardcoded UI text | i18n key: `buyer.checkout.city`. Associated with `txtCity`. |
 | 30 | `txtCity` | City Input | Input (`text`) | String(100) | Mandatory | Empty. Placeholder: "City" / "市区町村" | MaxLength: 100. | `shipping_address.city` | AutoComplete: `address-level2`. |
-| 31 | `lblState` | State/Province Label | Static Label (`<label>`) | String | — | Always displayed. Text: "State/Province" / "都道府県" | — | Hardcoded UI text | i18n key: `checkout.state`. Associated with `txtState`. |
+| 31 | `lblState` | State/Province Label | Static Label (`<label>`) | String | — | Always displayed. Text: "State/Province" / "都道府県" | — | Hardcoded UI text | i18n key: `buyer.checkout.state`. Associated with `txtState`. |
 | 32 | `txtState` | State/Province Input | Input (`text`) | String(100) | Mandatory | Empty. Placeholder: "State/Province" / "都道府県" | MaxLength: 100. | `shipping_address.state` | AutoComplete: `address-level1`. |
-| 33 | `lblPostalCode` | Postal Code Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Postal Code" / "郵便番号" | — | Hardcoded UI text | i18n key: `checkout.postalCode`. Associated with `txtPostalCode`. |
-| 34 | `txtPostalCode` | Postal Code Input | Input (`text`) | String(20) | Mandatory | Empty. Placeholder: "Postal code" / "郵便番号" | MaxLength: 20. | `shipping_address.postalCode` | AutoComplete: `postal-code`. |
-| 35 | `lblCountry` | Country Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Country" / "国" | — | Hardcoded UI text | i18n key: `checkout.country`. Associated with `selCountry`. |
-| 36 | `selCountry` | Country Select | Select (`<select>`) | String(100) | Mandatory | Default: first option or empty. | Options loaded from predefined list. | `shipping_address.country` | AutoComplete: `country`. |
+| 33 | `lblPostalCode` | Postal Code Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Postal Code" / "郵便番号" | — | Hardcoded UI text | i18n key: `buyer.checkout.postalCode`. Associated with `txtPostalCode`. |
+| 34 | `txtPostalCode` | Postal Code Input | Input (`text`) | String | Mandatory | Empty. | Digits only; client requires 4–7 digits and HTML maxLength 7. Backend max length 20. | `shippingAddress.postalCode` | — |
+| 35 | `lblCountry` | Country Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Country" / "国" | — | Hardcoded UI text | i18n key: `buyer.checkout.country`. Associated with `selCountry`. |
+| 36 | `selCountry` | Country Select | Select (`<select>`) | String(100) | Mandatory | Defaults to `JP`. | Fixed options: JP, US, GB, MM, TH, KR, CN, SG. | `shippingAddress.country` | — |
 
 ### 4.5 Section [D]: Payment Method (決済方法)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 37 | `lblPaymentMethod` | Payment Method Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Payment Method" / "決済方法" | — | Hardcoded UI text | i18n key: `checkout.paymentMethod`. |
-| 38 | `rdoPaymentMethod` | Payment Method Radio Group | Radio Group | Enum | Mandatory | Default: `cod` | Options: `cod`, `bank_transfer`, `card` | `orders.payment_method` | i18n keys: `checkout.cod`, `checkout.bankTransfer`, `checkout.cardPayment`. |
+| 37 | `lblPaymentMethod` | Payment Method Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Payment Method" / "決済方法" | — | Hardcoded UI text | i18n key: `buyer.checkout.paymentMethod`. |
+| 38 | `rdoPaymentMethod` | Payment Method Radio Group | Radio Group | Enum | Mandatory | Default: `cod` | Options: `cod`, `bank_transfer`, `card` | `orders.payment_method` | i18n keys: `buyer.checkout.cod`, `buyer.checkout.bankTransfer`, `buyer.checkout.cardPayment`. |
 | 39 | `rdoCOD` | Cash on Delivery Radio | Radio Button | — | — | Selected by default. | Value: `cod` | — | Label: "Cash on Delivery" / "代金引換" |
 | 40 | `rdoBankTransfer` | Bank Transfer Radio | Radio Button | — | — | Unselected. | Value: `bank_transfer` | — | Label: "Bank Transfer" / "銀行振込" |
 | 41 | `rdoCard` | Card Payment Radio | Radio Button | — | — | Unselected. | Value: `card` | — | Label: "Credit/Debit Card" / "クレジット・デビットカード" (stubbed for MVP) |
@@ -250,22 +245,22 @@ Rendered horizontally centered between Section [A] (Page Header) and the [B]+[C]
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 42 | `lblNotes` | Order Notes Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Order Notes (optional)" / "備考（任意）" | — | Hardcoded UI text | i18n key: `checkout.notes`. Associated with `txtNotes`. |
-| 43 | `txtNotes` | Order Notes Textarea | Textarea (`<textarea>`) | TEXT(500) | No | Empty. Placeholder: "Notes for the merchant..." / "出品者への備考..." | MaxLength: 500. | `orders.notes` | Tailwind: `w-full min-h-[80px]`. |
+| 42 | `lblNotes` | Order Notes Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Order Notes (optional)" / "備考（任意）" | — | Hardcoded UI text | i18n key: `buyer.checkout.notes`. Associated with `txtNotes`. |
+| 43 | `txtNotes` | Order Notes Textarea | Textarea (`<textarea>`) | String | No | Empty; placeholder “Notes for the merchant…”. | Frontend `maxLength=500`; backend DTO has no max-length validator. | `notes` → `orders.notes` | — |
 
 ### 4.7 Section [F]: Place Order (注文確定)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 44 | `btnPlaceOrder` | Place Order Button | Button (`submit`, `primary`, `lg`) | — | — | Visible. Text: "Place Order" / "注文を確定する" | — | — | i18n key: `checkout.placeOrder`. Full width. Loading: Spinner + "Placing order...". Disabled when form invalid or submitting. Tailwind: `w-full`. |
+| 44 | `btnPlaceOrder` | Place Order Button | Button (`submit`, `primary`, `lg`) | — | — | Visible. Text: "Place Order" / "注文を確定する" | — | — | i18n key: `buyer.checkout.placeOrder`. Full width. Loading: Spinner + "Placing order...". Disabled when form invalid or submitting. Tailwind: `w-full`. |
 
 ### 4.8 Section [G]: Guest Login Alert Modal (ゲストログインアラートモーダル)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 45 | `dlgGuestAlert` | Guest Login Alert Modal | Dialog/Modal | — | Conditional | Hidden by default. Shown when guest attempts checkout. | — | — | i18n key: `checkout.guestLoginAlert`. |
+| 45 | `dlgGuestAlert` | Checkout Login Dialog | Dialog | — | Conditional | Rendered when checkout sees unauthenticated state; normally pre-empted by protected-route redirect. | Close navigates to `/buyer/cart`. | Auth state | i18n keys: `buyer.checkout.auth.*`. |
 | 46 | `lblGuestAlertMessage` | Alert Message | Static Label (`<p>`) | String | — | Visible inside modal. Text: "Please log in to complete your purchase." / "購入を完了するにはログインしてください。" | — | Hardcoded UI text | Tailwind: `text-center`. |
-| 47 | `btnGuestLogin` | Log In Button | Button (`button`, `default`) | — | — | Visible inside modal. Text: "Log in" / "ログイン" | — | — | Navigates to `/login`. Tailwind: `w-full`. |
+| 47 | `btnGuestLogin` | Log In Button | Button (`button`, `default`) | — | — | “Log in”. | — | — | Navigates to `/login?redirect=%2Fcheckout`. |
 
 ### 4.9 Section [H]: Loading Overlay (読み込みオーバーレイ)
 
@@ -278,342 +273,195 @@ Rendered horizontally centered between Section [A] (Page Header) and the [B]+[C]
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 49 | `icoSuccess` | Success Icon | Icon (`CheckCircle2`) | — | — | Visible. Large green checkmark. | — | — | Lucide icon. Tailwind: `h-16 w-16 text-green-500 mx-auto`. |
-| 50 | `lblConfirmTitle` | Success Title | Heading (`<h1>`) | String | — | Visible. Text: "Order Placed Successfully!" / "注文が完了しました！" | — | Hardcoded UI text | i18n key: `checkout.confirmation.title`. Tailwind: `text-2xl font-bold text-center mt-4`. |
-| 51 | `lblConfirmOrderId` | Order ID | Static Label (`<p>`) | UUID | — | Visible. "Order #ABC-12345" | — | `orders.id` | i18n key: `checkout.confirmation.orderId`. Displays first 8 chars of UUID. Tailwind: `text-center text-muted-foreground`. |
-| 52 | `lblConfirmStatus` | Order Status Badge | Badge | Enum | — | Visible. Status: "Placed" | — | `orders.status` | i18n key: `checkout.confirmation.status`. Color-coded badge. |
-| 53 | `lblConfirmEstDelivery` | Estimated Delivery | Static Label (`<p>`) | Date | Conditional | Visible for shipped/out_for_delivery orders. | — | Calculated | i18n key: `checkout.confirmation.estimatedDelivery`. Tailwind: `text-center text-muted-foreground`. |
-| 54 | `cardConfirmSummary` | Order Summary Card | Card | — | — | Visible. Contains items, totals, shipping address. | — | Order data | Tailwind: `mt-6 border rounded-lg p-4`. |
+| 50 | `lblConfirmTitle` | Success Title | Heading (`<h1>`) | String | — | Visible. Text: "Order Placed Successfully!" / "注文が完了しました！" | — | Hardcoded UI text | i18n key: `buyer.checkout.confirmation.title`. Tailwind: `text-2xl font-bold text-center mt-4`. |
+| 51 | `lblConfirmOrderId` | Order Number | Static Label (`<p>`) | String | — | Shows `#{orderNumber}` in monospace, e.g. `#ORD-XXXXXXXX`. | — | Order detail response; `orderNumber` is `ORD-` + first 8 uppercase UUID characters. | Confirmation renders order number, not raw UUID. |
+| 52 | `lblConfirmStatus` | Order Status Badge | Badge | Enum | — | Visible. Status: "Placed" | — | `orders.status` | i18n key: `buyer.checkout.confirmation.status`. Color-coded badge. |
+| 53 | `lblConfirmEstDelivery` | Estimated Delivery | Static Label (`<p>`) | Date | Not rendered | Order placement response contains estimatedDelivery (+7 days), but confirmation page does not display it. | — | Order placement response | Documented implementation gap. |
+| 54 | `cardConfirmSummary` | Order Summary Card | Card | — | — | Contains purchased items, voucher discounts, subtotal, Total Due, shipping address, and payment details as defined below. | — | Order detail data | Confirmation strings are partly hardcoded English. |
+| 57 | `lstConfirmItems` | Purchased Items | List | — | Per order item | Shows product image/name, quantity, unit price, and line total. | Uses order detail data. | `order.items`, product projection | — |
+| 58 | `lstVoucherDiscounts` | Voucher Discount Rows | List | Decimal values | Conditional | Green discount row for each voucher breakdown; fallback aggregate discount row if no voucher breakdown is available. | Currency formatted. | Order `voucherCodes` / `discountAmount` | — |
+| 59 | `lblConfirmSubtotal` | Subtotal | Text | Decimal string | — | Displays subtotal. | — | Order subtotal | — |
+| 60 | `lblConfirmTotalDue` | Total Due | Text | Decimal string | — | Displays final total and “Tax included” label; payment badge shows Paid or Pending Payment. | Currency formatted. | Order total/paymentStatus | Several labels hardcoded English. |
+| 61 | `cardConfirmShipping` | Shipping Address | Card | — | — | Displays recipient, address lines, city/state/postal code, and country. | — | Order shippingAddress JSON | — |
+| 62 | `cardConfirmPayment` | Payment Method | Card | Enum | — | Displays payment method and payment-status badge. | — | Order paymentMethod/paymentStatus | Several labels hardcoded English. |
 
 ### 4.11 Section [K]: Order Confirmation — Action Buttons (注文確認 — アクションボタン)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 55 | `btnContinueShopping` | Continue Shopping Button | Button (`button`, `primary`) | — | — | Visible. Text: "Continue Shopping" / "買い物を続ける" | — | — | i18n key: `checkout.confirmation.continueShopping`. Navigates to `/products`. Tailwind: `w-full`. |
-| 56 | `btnViewOrder` | View Order Button | Button (`button`, `secondary`) | — | — | Visible. Text: "View Order" / "注文を表示" | — | — | i18n key: `checkout.confirmation.viewOrder`. Navigates to `/orders/:orderId`. Tailwind: `w-full`. |
-| 57 | `btnPrintReceipt` | Print Receipt Button | Button (`button`, `ghost`) | — | — | Visible. Text: "Print Receipt" / "領収書を印刷" | — | — | i18n key: `checkout.confirmation.print`. Calls `window.print()`. Tailwind: `w-full`. |
+| 55 | `btnContinueShopping` | Continue Shopping Button | Button (`button`, `primary`) | — | — | Visible. Text: “Continue Shopping”. | — | — | Navigates to `/buyer/search`. Confirmation label is hardcoded English. |
+| 56 | `btnViewOrder` | View Order Button | Button (`button`, `secondary`) | — | — | Visible. Text: "View Order" / "注文を表示" | — | — | i18n key: `buyer.checkout.confirmation.viewOrder`. Navigates to `/orders/:orderId`. Tailwind: `w-full`. |
+
 
 ---
 
 ## 5. Item Behaviors & Event Specifications (各項目における挙動・イベント仕様)
 
-### 5.1 Load Checkout Page (`/checkout`)
-- **Trigger:** Navigation from cart page via "Proceed to Checkout" button.
-- **Processing Logic:**
-  1. **Authentication Check:** Verify JWT token. If guest, show `dlgGuestAlert`.
-  2. **Role Check:** Verify role is `buyer`. If not, show 403 toast.
-  3. **Cart Validation:** Fetch cart items with product details. If empty, redirect to `/cart`.
-  4. **Stock Validation:** Check stock for all items. If any item out of stock, show `alertStockWarning`.
-  5. **Calculate Subtotal:** Sum of (unit_price × quantity) for all items.
-  6. **Render:** Display order summary, shipping form, payment options.
-- **Exception Handling:**
-  - `401 UNAUTHORIZED`: Redirect to `/login`.
-  - `403 FORBIDDEN`: Toast: "Shopping features are only available to buyers".
-  - Empty cart: Redirect to `/cart`.
+### 5.1 Load Checkout Page (`/buyer/checkout`)
+- **Trigger:** Buyer navigates from `/buyer/cart` or opens the route directly.
+- **Processing:** The page requests `GET /api/v1/checkout`; the backend upserts the cart and returns current cart/product data and totals. Loading shows a spinner. Request failure shows “Unable to load checkout”. Empty `items` is a successful response: checkout form and empty summary remain visible; there is no automatic redirect or empty-cart toast.
+- **Authentication:** The app protected route redirects guests. If the component renders unauthenticated, its dialog offers `/login?redirect=%2Fcheckout` and close navigates to `/buyer/cart`.
+- **Stock:** Each item exposes `isAvailable`; the page does not render a distinct stock warning in the mounted checkout component.
 
 ### 5.2 Sponsored Advertisement Display (`slotAdCheckout` on mount)
-- **Trigger:** Component mounts (Checkout page loaded).
-- **Processing Logic:**
-  1. **Fetch ad slot:** `GET /api/v1/ads?placement=checkout_top` — parallel to cart data fetch, does not block or defer checkout loading.
-  2. **Filter:** Select approved advertisement records from Merchant-purchased Advertisement Packages for the Checkout Top placement. Keep only approved, active ads whose schedule covers the current time.
-  3. **Prioritize:** Apply package placement and tier priority rules (Premium > Standard > Basic), with round-robin rotation within each tier, then limit the slider to a maximum of 5 ads.
-  4. **Cache:** Cache the resulting ad list in Redis with key `cache:ads:checkout-top`, TTL 5 minutes.
-  5. **Slide-down entrance:** If eligible ads exist, `slotAdCheckout` slides down into view directly between the page header ([A]) and the order summary + shipping address row ([B]+[C]) — horizontally centered across the full container width — height expands from 0 while the panel translates from −100% to 0 (300ms ease-out, once per mount), smoothly pushing the [B]+[C] row and remaining sections down. With `prefers-reduced-motion: reduce`, the panel appears instantly without animation.
-  6. **Render slide content:** Each slide renders the ad's image/banner (`imgAdBanner`), title (`lblAdTitle`), description (`txtAdDescription`, hidden when absent), and CTA (`btnAdCta`) together in one `cardAdSlide`, plus the "Sponsored" badge (`badgeSponsored`) on every slide. Description clamped to 2 lines; title truncated to 1 line.
-  7. **Auto-slide:** Advance to the next ad every 5 seconds using a vertical slide-down transition (current slide exits upward, next enters from the top, 500ms). Maximum 5 slides; loops back to the first after the last.
-  8. **Responsive layout:** Desktop/tablet (≥ 768px): horizontal slide — image left (320×120, object-cover), text block right, inline CTA. Mobile (< 768px): stacked slide — full-width 16:9 image, title, description, full-width CTA below. On all breakpoints the panel spans the full container width and stays horizontally centered between [A] and the [B]+[C] row. Layout switching is CSS-only (breakpoints); no refetch and no rotation reset occurs when crossing breakpoints.
-  9. **Pause on interaction:** Auto-advancement pauses while the pointer hovers over, or keyboard focus is within, `slotAdCheckout`; it resumes on pointer leave / blur (WCAG 2.2.2). The 5-second interval itself is unchanged.
-  10. **Error handling:** On ad fetch error or empty response, hide `slotAdCheckout` entirely — no slide-down entrance runs (graceful degradation; ad failure never blocks checkout functionality).
-  11. **Click tracking:** CTA click triggers `ad.click` analytics event with `ad_id` and `placement`.
-- **Exception Handling:** None (ad slot failure is non-critical; page functions normally without ads).
+- **Trigger:** Shared `AdBannerSlider` mounts after the checkout header.
+- **Request:** `GET /api/v1/search/ads?placement=checkout_page_banner`; this is public and runs through the search ads endpoint. The separate `/api/v1/checkout/sponsored-ads` endpoint is unused by the page.
+- **Eligibility and ordering:** SearchService filters matching fee-setting placement, approved and active ads, schedule (`startsAt <= now`, `expiresAt >= now`) and approved shops; orders by `startsAt DESC`, returns at most five, and maps every ad to `tier: standard`. This route has no payment-status filter, named tier ranking, Redis rotation, or five-minute response cache.
+- **Display:** No eligible ads or query error means no panel. One card is shown at a time; it auto-advances and loops every 5 seconds, with previous/next and dot controls for multiple ads. Hover/focus pauses the timer; `prefers-reduced-motion: reduce` disables timed auto-advance. There is no slide-down entrance or vertical slide transition.
+- **Card content:** Image fallback chain is ad image, product image, sample image. Title uses ad title or product name. Description HTML is stripped. The announcement badge falls back to “SPONSORED”; a second badge uses merchant/category/default tag. The “Learn more” button and card use the resolved product/ad destination. Checkout does not pass `onAdClick`, so click analytics are not sent from this page.
 
-### 5.3 Apply Coupon Code (`btnApplyCoupon` onClick)
-- **Trigger:** User clicks "Apply" button after entering coupon code.
-- **Processing Logic:**
-  1. **Client-Side Pre-Check:** Coupon code not empty.
-  2. **Backend Dispatch:** `POST /api/v1/checkout/validate-coupon` with `{ couponCode, subtotal }`.
-  3. **Backend Execution:** Validate coupon (active, expired, min order, usage limit). Calculate discount.
-  4. **Post-Execution UI:** Update order summary with discount. Show `lblDiscount`, `btnRemoveCoupon`. Recalculate total.
-- **Exception Handling:**
-  - `VAL-CHECK-010`: "Coupon code is required" — inline error on `txtCouponCode`.
-  - `VAL-CHECK-011`: "Invalid coupon code" — toast.
-  - `VAL-CHECK-012`: "Coupon has expired" — toast.
-  - `VAL-CHECK-013`: "Minimum order amount not met" — toast.
-  - `VAL-CHECK-014`: "Coupon usage limit reached" — toast.
+### 5.3 Apply Coupon / Voucher (`Shop Voucher`)
+- **Trigger:** Buyer opens the Shop Voucher row under a merchant’s cart items, then selects an available promotion or enters a code.
+- **Requests:** Available merchant promotions use `GET /api/v1/checkout/merchant-promotions/:merchantId`. Manual code validation uses `POST /api/v1/checkout/validate-coupon` with `{ couponCode, subtotal: shopSubtotal }`.
+- **Client validation:** Only non-empty trimmed input is required; there is no client-side format/length rule. The code is sent verbatim.
+- **Success:** Close modal, store the voucher by merchant ID, update the shop discount indicator and order-wide Discount/Total. At most one voucher is stored for each merchant. A success toast is shown.
+- **Failure:** Keep modal open for manual-entry error; display server message or “Invalid coupon code”. Validation endpoint can return a zero total; order submission rejects a merchant group with total at or below zero.
 
-### 5.3 Remove Coupon Code (`btnRemoveCoupon` onClick)
-- **Trigger:** User clicks "Remove" button for applied coupon.
-- **Processing Logic:**
-  1. Clear coupon code from state.
-  2. Hide `lblDiscount`, `btnRemoveCoupon`.
-  3. Reset total to subtotal.
-  4. Clear `txtCouponCode` input.
-- **Exception Handling:** None applicable.
+### 5.4 Remove Coupon / Voucher
+- **Trigger:** Buyer clicks Remove on the applied voucher in the modal.
+- **Processing:** Remove that merchant’s voucher from frontend state, close modal, and recompute totals. No remove API is called; a success toast is shown.
 
-### 5.4 Place Order (`btnPlaceOrder` onClick)
-- **Trigger:** User clicks "Place Order" button.
-- **Processing Logic:**
-  1. **Client-Side Pre-Check:** All shipping fields valid, payment method selected, cart not empty.
-  2. **Backend Dispatch:** `POST /api/v1/orders` with `{ shippingAddress, paymentMethod, couponCode?, notes? }`.
-  3. **Backend Execution:** Validate DTO. Fetch cart items with current prices. Re-validate stock. Calculate subtotal. Validate and apply coupon if provided. Calculate discount and total. Create order record (status: `placed`). Create order_items records. Decrement stock atomically. Increment coupon used_count if applied. Clear cart. Send notification to merchant.
-  4. **Post-Execution UI:** Navigate to `/checkout/confirmation/:orderId`. Clear cart state.
-- **Exception Handling:**
-  - `VAL-CHECK-001`~`VAL-CHECK-008`: Field-level inline errors on shipping address fields.
-  - `VAL-CHECK-009`: "Payment method is required" — inline error.
-  - `CHECK_001` (400): "Your cart is empty" — toast.
-  - `CHECK_002` (409): "Some items are no longer available" — toast.
-  - `CHECK_003` (400): "Invalid coupon code" — toast.
-  - `401 UNAUTHORIZED`: Redirect to login.
-  - `500 INTERNAL_SERVER_ERROR`: Toast: "Something went wrong. Please try again."
+### 5.5 Place Order (`btnPlaceOrder` onClick)
+- **Client checks:** React Hook Form + Zod validates shipping fields in `onChange` mode. Payment method defaults to `cod`. Notes are optional and capped at 500 characters by the textarea. Button is disabled when form is invalid or submitting.
+- **Request:** `POST /api/v1/orders` with `shippingAddress`, `paymentMethod`, optional `voucherCodes` keyed by merchant ID, optional legacy `couponCode` (comma-joined applied codes), and optional `notes`.
+- **Backend effects:** Re-fetch cart/product data, reject empty cart or inactive/insufficient-stock items, compute prices from database values, group by merchant, and create one order per merchant inside a Prisma transaction. Each order has status `placed` and payment status `pending`; stock decrements, promotions usage increments, merchant notifications and initial status history are created, and cart items are deleted in the transaction. Checkout does not write `inventory_transactions` rows. Failures are HTTP 400, including insufficient stock; frontend displays a generic failure toast.
+- **Success:** Show success toast, then navigate to `/buyer/checkout/confirmation/{orders[0].orderId}`. Other order IDs are passed in `?orderIds=...`. Cart/query state is invalidated by the mutation hook.
 
-### 5.6 Guest Checkout Attempt (`dlgGuestAlert` display)
-- **Trigger:** Guest user navigates to `/checkout`.
-- **Processing Logic:**
-  1. Detect unauthenticated state.
-  2. Display `dlgGuestAlert` modal.
-  3. `btnGuestLogin` navigates to `/login`.
-- **Exception Handling:** None applicable.
+### 5.6 Guest Checkout Attempt (`dlgGuestAlert`)
+- The application’s protected route normally redirects guests before checkout renders. If rendered in the page component, the dialog’s Log in button navigates to `/login?redirect=%2Fcheckout`; closing returns to `/buyer/cart`.
 
 ### 5.7 Navigation Links
-- **Trigger:** User clicks navigation links.
-- **Processing Logic:**
-  1. `lnkBackToCart`: Navigate to `/cart`.
-  2. `btnContinueShopping`: Navigate to `/products`.
-  3. `btnViewOrder`: Navigate to `/orders/:orderId`.
-  4. `btnPrintReceipt`: Call `window.print()`.
-- **Exception Handling:** None applicable.
-
----
+- `lnkBackToCart` and Cancel navigate to `/buyer/cart`.
+- Confirmation `Continue Shopping` navigates to `/buyer/search`; `View Order` navigates to `/orders/:orderId`.
+- There is no Print Receipt button. Sibling order details are loaded using the `orderIds` query parameter.
 
 ## 6. Validation & Error Message Mapping (バリデーション及びエラーメッセージマッピング)
 
 ### 6.1 Shipping Address Validation Errors
 
-| Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **VAL-CHECK-001** | `txtRecipientName` | Recipient name is empty or exceeds 200 chars | Red border. Text below field. | "Recipient name is required" / "Name must not exceed 200 characters" | "受取人氏名は必須です" / "氏名は200文字以内にしてください" |
-| **VAL-CHECK-002** | `txtPhone` | Phone number is empty or exceeds 20 chars | Red border. Text below field. | "Phone number is required" / "Phone number is invalid" | "電話番号は必須です" / "無効な電話番号です" |
-| **VAL-CHECK-003** | `txtAddress1` | Address line 1 is empty or exceeds 255 chars | Red border. Text below field. | "Address is required" / "Address must not exceed 255 characters" | "住所は必須です" / "住所は255文字以内にしてください" |
-| **VAL-CHECK-004** | `txtCity` | City is empty or exceeds 100 chars | Red border. Text below field. | "City is required" / "City must not exceed 100 characters" | "市区町村は必須です" / "市区町村は100文字以内にしてください" |
-| **VAL-CHECK-005** | `txtState` | State is empty or exceeds 100 chars | Red border. Text below field. | "State is required" / "State must not exceed 100 characters" | "都道府県は必須です" / "都道府県は100文字以内にしてください" |
-| **VAL-CHECK-006** | `txtPostalCode` | Postal code is empty or exceeds 20 chars | Red border. Text below field. | "Postal code is required" / "Postal code must not exceed 20 characters" | "郵便番号は必須です" / "郵便番号は20文字以内にしてください" |
-| **VAL-CHECK-007** | `selCountry` | Country is empty | Red border. Text below field. | "Country is required" | "国は必須です" |
+| Field | Client Rule | Server Rule | Display / Message |
+| :--- | :--- | :--- | :--- |
+| `recipientName` | Required; max 200; Unicode letters and spaces only. Input strips other characters. | String, non-empty, max 200. | Inline field message; letter-only key currently falls back to English in locales. |
+| `phone` | Required; digits only; starts with 0; 9 or 11 digits; input max 11. | String, non-empty, max 20. | Inline required/digits/format error. |
+| `addressLine1` | Required; max 255. | String, non-empty, max 255. | Inline required/length error. |
+| `addressLine2` | Optional; max 255. | Optional string, max 255. | No required error. |
+| `city`, `state` | Required; max 100 each. | String, non-empty, max 100 each. | Inline required/length error. |
+| `postalCode` | Required; digits only; 4–7 digits. | String, non-empty, max 20. | Inline required/digits/format error. |
+| `country` | Fixed country selection, defaults to `JP`; client requires non-empty. | String, non-empty, max 100. | Inline required error. |
 
 ### 6.2 Payment Method Validation Errors
 
-| Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **VAL-CHECK-008** | `rdoPaymentMethod` | No payment method selected | Form-level error | "Payment method is required" | "決済方法は必須です" |
+The radio group always has a selection, default `cod`; choices are `cod`, `bank_transfer`, and `card`. Backend DTO rejects values outside that set with HTTP 400. The UI does not expose a “no method selected” state through its normal flow.
 
-### 6.3 Coupon Validation Errors
+### 6.3 Coupon / Voucher Validation Errors
 
-| Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **VAL-CHECK-010** | `txtCouponCode` | Coupon code is empty | Red border. Text below field. | "Coupon code is required" | "クーポンコードは必須です" |
-| **VAL-CHECK-011** | `alertError` | Coupon does not exist or is inactive (400 response) | Toast notification | "Invalid coupon code" | "無効なクーポンコードです" |
-| **VAL-CHECK-012** | `alertError` | Coupon expired (400 response) | Toast notification | "Coupon has expired" | "クーポンの有効期限が切れています" |
-| **VAL-CHECK-013** | `alertError` | Minimum order amount not met (400 response) | Toast notification | "Minimum order amount not met" | "最低注文金額を満たしていません" |
-| **VAL-CHECK-014** | `alertError` | Coupon usage limit reached (400 response) | Toast notification | "Coupon usage limit reached" | "クーポンの使用回数上限に達しました" |
+| Condition | Current API/UI behavior |
+| :--- | :--- |
+| Empty manual entry | Apply disabled; handler also trims and returns without dispatch. |
+| Invalid code not found | HTTP 404 `RES_001`; modal displays extracted server message or localized “Invalid coupon code”. |
+| Inactive, expired/not-yet-valid, minimum not met, usage cap reached | HTTP 400 `VAL_001`; modal displays server message for manual entry. |
+| Already used by buyer | Available-voucher listing marks it and disables selection; manual validate-coupon endpoint does not enforce prior buyer use. |
+| Code format/length | No client format or length validation; DTO requires non-empty string but no max length. |
+| Coupon reduces preview total to zero | Validation endpoint returns `newTotal: "0.00"`; order endpoint rejects a merchant group total at or below zero. |
 
 ### 6.4 Order Placement Errors
 
-| Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **CHECK_001** | `alertError` | Cart is empty (400 response) | Toast notification | "Your cart is empty" | "カートが空です" |
-| **CHECK_002** | `alertError` | Insufficient stock during submission (409 response) | Toast notification | "Some items are no longer available. Please review your cart." | "一部の商品は利用できなくなりました。カートを確認してください。" |
-| **CHECK_003** | `alertError` | Invalid coupon during order placement (400 response) | Toast notification | "Invalid coupon code" | "無効なクーポンコードです" |
-| **CHECK_004** | `alertError` | Non-buyer role (403 response) | Toast notification | "Shopping features are only available to buyers" | "ショッピング機能は購入者のみ利用できます" |
-| **AUTH_001** | `alertError` | Missing or invalid JWT token (401 response) | Redirect to login | "Session expired. Please log in again." | "セッションが期限切れです。再度ログインしてください。" |
-| **SYS_001** | `alertError` | Server error (500 response) | Toast notification | "Something went wrong. Please try again." | "問題が発生しました。もう一度お試しください。" |
-| **NET_ERR** | `alertError` | Network error | Toast notification | "Network error. Please check your connection" | "ネットワークエラー。接続を確認してください" |
+| Scenario | API response | User-visible behavior |
+| :--- | :--- | :--- |
+| Shipping field invalid | Client form remains invalid; no request sent. Direct API payload receives HTTP 400 validation error. | Field-level message in form. |
+| Empty cart | Checkout GET succeeds with `items: []`; POST order returns HTTP 400 `VAL_001`. | Empty summary/form remains on checkout; on submit failure, generic order failure toast. |
+| Stock insufficient/inactive product | HTTP 400 `VAL_001` (not 409); transaction rolls back order-side writes. | Generic “Failed to place order. Please try again.” toast. |
+| Non-positive merchant-order total | HTTP 400 `VAL_001`. | Generic order failure toast. |
+| Unauthenticated | Protected route normally redirects before checkout; endpoints return HTTP 401 `AUTH_001`. | Login flow. |
+| Unexpected placement error | Server error. | Generic order failure toast. |
 
-### 6.6 Validation Enforcement Layers
+### 6.5 Validation Enforcement Layers
 
-1. **Frontend (Client)**: React Hook Form + Zod schema validation with real-time feedback before API calls.
-2. **Backend (Server)**: NestJS ValidationPipe + class-validator DTOs on all endpoints.
-3. **Database (DB)**: Prisma constraints (unique, check, FK) as final safety net.
-
----
-
+1. **Frontend:** React Hook Form + Zod for shipping fields, with on-change validation. Coupon manual-entry validation checks non-empty trimmed input only.
+2. **Backend:** NestJS ValidationPipe and DTO validation. CreateOrderDto.notes has no server maximum; the textarea limits to 500 characters.
+3. **Database:** Prisma constraints and transaction behavior.
 ## 7. API Response Mapping (APIレスポンスマッピング)
 
 ### 7.1 Load Checkout Success Response
 
+`GET /api/v1/checkout` returns HTTP 200, including for an empty cart. Current item fields include `id`, `productId`, `productName`, `productImage`, decimal-string `unitPrice`, `quantity`, decimal-string `lineTotal`, `stockQuantity`, `isAvailable`, `merchantId`, and `merchantName`.
+
 ```json
 {
   "data": {
-    "items": [
-      {
-        "id": "uuid",
-        "productId": "uuid",
-        "productName": "Product Name",
-        "productImage": "https://...",
-        "unitPrice": 29.99,
-        "quantity": 2,
-        "lineTotal": 59.98,
-        "stockQuantity": 15
-      }
-    ],
-    "subtotal": 59.98,
-    "discountAmount": 0,
-    "total": 59.98,
-    "cartId": "uuid"
+    "items": [{
+      "id": "uuid", "productId": "uuid", "productName": "Product Name",
+      "productImage": "https://...", "unitPrice": "29.99", "quantity": 2,
+      "lineTotal": "59.98", "stockQuantity": 15, "isAvailable": true,
+      "merchantId": "uuid", "merchantName": "Shop Name"
+    }],
+    "subtotal": "59.98", "discountAmount": "0.00", "total": "59.98", "cartId": "uuid"
   }
 }
 ```
 
+`isAvailable` is computed from product active status and stock quantity. Empty cart returns `items: []`, subtotal/total `"0.00"`; this is not an API error.
+
 ### 7.2 Validate Coupon Success Response
+
+Request: `{ "couponCode": "CODE", "subtotal": 59.98 }` (the current UI sends the merchant subtotal). Response values are decimal strings and calculated from supplied subtotal. Validation does not increment usage count.
 
 ```json
 {
   "data": {
     "discountType": "percentage",
-    "discountValue": 10,
-    "discountAmount": 5.998,
-    "newTotal": 53.982
+    "discountValue": "10.00",
+    "discountAmount": "5.99",
+    "newTotal": "53.99"
   }
 }
 ```
 
 ### 7.3 Place Order Success Response (201)
 
+Request can include `voucherCodes` keyed by merchant ID. Response contains an `orders` array with one entry per merchant group. The page uses the first order as the primary confirmation and puts remaining IDs in the `orderIds` query parameter.
+
 ```json
 {
   "data": {
-    "orderId": "uuid",
-    "orderNumber": "abc12345",
-    "status": "placed",
-    "subtotal": 59.98,
-    "discountAmount": 5.998,
-    "total": 53.982,
-    "paymentMethod": "cod",
-    "shippingAddress": {
-      "recipientName": "John Doe",
-      "phone": "+1234567890",
-      "addressLine1": "123 Main St",
-      "city": "New York",
-      "state": "NY",
-      "postalCode": "10001",
-      "country": "US"
-    },
-    "createdAt": "2026-08-25T12:00:00.000Z",
-    "estimatedDelivery": "2026-08-30"
+    "orders": [{
+      "orderId": "uuid", "orderNumber": "ORD-XXXXXXXX", "merchantId": "uuid",
+      "status": "placed", "subtotal": "59.98", "discountAmount": "5.99",
+      "total": "53.99", "paymentMethod": "cod", "shippingAddress": { "recipientName": "Buyer" },
+      "createdAt": "2026-10-21T12:00:00.000Z",
+      "estimatedDelivery": "2026-10-28T12:00:00.000Z"
+    }]
   }
 }
 ```
 
+Saved orders have payment status `pending`. Estimated delivery is returned by order placement but not displayed on confirmation. Multi-merchant carts produce one order object per merchant.
+
 ### 7.4 Sponsored Ad Slot Response
+
+The checkout page calls `GET /api/v1/search/ads?placement=checkout_page_banner`. SearchService returns `{ data: [...] }`, up to five ads ordered by `startsAt DESC`; every ad currently has `tier: "standard"`.
 
 ```json
 {
-  "data": [
-    {
-      "id": "uuid",
-      "imageUrl": "https://cdn.example.com/ads/banner1.jpg",
-      "title": "Summer Sale - 20% Off",
-      "description": "Limited time offer on all skincare products.",
-      "ctaText": "Shop Now",
-      "ctaUrl": "https://example.com/summer-sale",
-      "priority": "premium",
-      "scheduleStart": "2026-08-20T00:00:00.000Z",
-      "scheduleEnd": "2026-09-30T23:59:59.000Z"
-    }
-  ]
+  "data": [{
+    "id": "uuid", "placement": "checkout_page_banner", "title": "Ad title",
+    "announcementMessage": "Sponsored", "description": "Description",
+    "imageUrl": "https://...", "sku": "SKU-1", "tier": "standard",
+    "approvalStatus": "approved", "startsAt": "2026-10-01T00:00:00.000Z",
+    "expiresAt": "2026-10-31T23:59:59.000Z"
+  }]
 }
 ```
 
----
-
+The separate `GET /api/v1/checkout/sponsored-ads` response is not consumed by the mounted checkout page.
 ## 8. i18n Keys Reference (i18nキーリファレンス)
 
-### 8.1 English (en) — Checkout
+Checkout labels and controls use the `buyer.checkout.*` translation namespace. Main groups include `title`, `subtitle`, `actions.*`, `shippingAddress.*`, `payment.*`, `orderNotes.*`, `vouchers.*`, `auth.*`, `errors.*`, `toasts.*`, and `processing`. The summary also uses shared `cart.summary`, `cart.subtotal`, `cart.total`, and `orders.detail.discount` keys.
 
-| Key | Value |
-| :--- | :--- |
-| `checkout.title` | "Checkout" |
-| `checkout.backToCart` | "← Back to Cart" |
-| `checkout.subtotal` | "Subtotal" |
-| `checkout.couponCode` | "Enter coupon code" |
-| `checkout.applyCoupon` | "Apply" |
-| `checkout.discount` | "Discount" |
-| `checkout.removeCoupon` | "Remove" |
-| `checkout.total` | "Total" |
-| `checkout.recipientName` | "Recipient Name" |
-| `checkout.phone` | "Phone Number" |
-| `checkout.address1` | "Address Line 1" |
-| `checkout.address2` | "Address Line 2" |
-| `checkout.city` | "City" |
-| `checkout.state` | "State/Province" |
-| `checkout.postalCode` | "Postal Code" |
-| `checkout.country` | "Country" |
-| `checkout.paymentMethod` | "Payment Method" |
-| `checkout.cod` | "Cash on Delivery" |
-| `checkout.bankTransfer` | "Bank Transfer" |
-| `checkout.cardPayment` | "Credit/Debit Card" |
-| `checkout.notes` | "Order Notes (optional)" |
-| `checkout.placeOrder` | "Place Order" |
-| `checkout.guestLoginAlert` | "Please log in to complete your purchase." |
-| `checkout.sponsored.label` | "Sponsored" |
-| `checkout.sponsored.adAlt` | "Advertisement: {title}" |
-
-### 8.2 English (en) — Confirmation
-
-| Key | Value |
-| :--- | :--- |
-| `checkout.confirmation.title` | "Order Placed Successfully!" |
-| `checkout.confirmation.orderId` | "Order #{orderId}" |
-| `checkout.confirmation.status` | "Status" |
-| `checkout.confirmation.estimatedDelivery` | "Estimated delivery: {date}" |
-| `checkout.confirmation.continueShopping` | "Continue Shopping" |
-| `checkout.confirmation.viewOrder` | "View Order" |
-| `checkout.confirmation.print` | "Print Receipt" |
-
-### 8.6 Japanese (ja) — Checkout
-
-| Key | Value |
-| :--- | :--- |
-| `checkout.title` | "チェックアウト" |
-| `checkout.backToCart` | "← カートに戻る" |
-| `checkout.subtotal` | "小計" |
-| `checkout.couponCode` | "クーポンコードを入力" |
-| `checkout.applyCoupon` | "適用" |
-| `checkout.discount` | "割引" |
-| `checkout.removeCoupon` | "削除" |
-| `checkout.total` | "合計" |
-| `checkout.recipientName` | "受取人氏名" |
-| `checkout.phone` | "電話番号" |
-| `checkout.address1` | "住所1" |
-| `checkout.address2` | "住所2" |
-| `checkout.city` | "市区町村" |
-| `checkout.state` | "都道府県" |
-| `checkout.postalCode` | "郵便番号" |
-| `checkout.country` | "国" |
-| `checkout.paymentMethod` | "決済方法" |
-| `checkout.cod` | "代金引換" |
-| `checkout.bankTransfer` | "銀行振込" |
-| `checkout.cardPayment` | "クレジット・デビットカード" |
-| `checkout.notes` | "備考（任意）" |
-| `checkout.placeOrder` | "注文を確定する" |
-| `checkout.guestLoginAlert` | "購入を完了するにはログインしてください。" |
-| `checkout.sponsored.label` | "スポンサー" |
-| `checkout.sponsored.adAlt` | "広告：{title}" |
-
-### 8.7 Japanese (ja) — Confirmation
-
-| Key | Value |
-| :--- | :--- |
-| `checkout.confirmation.title` | "注文が完了しました！" |
-| `checkout.confirmation.orderId` | "注文番号 #{orderId}" |
-| `checkout.confirmation.status` | "ステータス" |
-| `checkout.confirmation.estimatedDelivery` | "配達予定日：{date}" |
-| `checkout.confirmation.continueShopping` | "買い物を続ける" |
-| `checkout.confirmation.viewOrder` | "注文を表示" |
-| `checkout.confirmation.print` | "領収書を印刷" |
-
----
-
+Checkout supports EN / JA / MY localization. The recipient-name “letters and spaces only” validation key is missing from locale bundles and falls back to English. Order Confirmation still contains multiple hardcoded English labels; older per-locale confirmation key tables do not guarantee rendered localization.
 ## 9. Database Field Mapping (データベースフィールドマッピング)
 
-### 7.1 Checkout Form → Database
+### 9.1 Checkout Form → Database
 
 | Form Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
@@ -626,10 +474,10 @@ Rendered horizontally centered between Section [A] (Page Header) and the [B]+[C]
 | `txtPostalCode` | `shippingAddress.postalCode` | `shipping_address->>'postalCode'` | `orders` | JSONB |
 | `selCountry` | `shippingAddress.country` | `shipping_address->>'country'` | `orders` | JSONB |
 | `rdoPaymentMethod` | `paymentMethod` | `payment_method` | `orders` | VARCHAR(50) |
-| `txtCouponCode` | `couponCode` | `coupon_code` | `orders` | VARCHAR(50) |
+| Applied merchant vouchers | `voucherCodes` (per-merchant map) and legacy `couponCode` | `voucher_codes` (JSONB) and `coupon_code` (nullable string) | `orders` | JSONB / TEXT |
 | `txtNotes` | `notes` | `notes` | `orders` | TEXT |
 
-### 7.2 Order Items → Database
+### 9.2 Order Items → Database
 
 | Data Source | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- |
@@ -667,108 +515,54 @@ Rendered horizontally centered between Section [A] (Page Header) and the [B]+[C]
 | **Location** | `frontend/src/lib/format.ts` |
 | **Purpose** | Formats prices with locale-appropriate currency |
 
-### 10.3 SponsoredAdSlider Component
+### 10.3 Shared Checkout Ad Banner
 
 | Property | Value |
 | :--- | :--- |
-| **Location** | `frontend/src/features/buyer/checkout/components/SponsoredAdSlider.tsx` |
-| **Purpose** | Reusable slide-down ad carousel with auto-slide, pause-on-interaction, and responsive layouts |
-
-**Features:**
-- Slide-down entrance animation (300ms ease-out, translateY −100% → 0)
-- Vertical slide transitions between ads (500ms ease-in-out)
-- Auto-advance every 5 seconds (pauses on hover/focus, resumes on leave/blur)
-- Maximum 5 ads with tier-priority rotation (Premium > Standard > Basic)
-- Desktop/tablet (≥ 768px): horizontal layout — image left, text block right
-- Mobile (< 768px): stacked layout — image top, content below
-- `prefers-reduced-motion: reduce` skips entrance animation
-- Graceful degradation on fetch error (hidden, no animation)
-
----
-
+| **Location** | `frontend/src/components/shared/AdBannerSlider.tsx` |
+| **Data hook/service** | `features/search/hooks/useSponsoredAds.ts` → `features/search/services/ad.service.ts` |
+| **Checkout placement** | `checkout_page_banner` |
+| **Behavior** | Auto-advance every five seconds; hover/focus pause; reduced-motion stops timed auto-advance; empty/error data hides banner. |
+| **Not present on checkout** | Slide-down/vertical transition, named package-tier ranking, rotation, five-minute cache, and click analytics callback wiring. |
 ## 11. Special UI Notes & Styling Constraints (特記事項・UI仕様)
 
-- **Design System:** Luxury Cosmetics Theme — Primary `#7C3AED` (Purple), Accent `#EC4899` (Pink), Secondary `#F3E8FF` (Lavender).
-- **Responsive Viewport Design:** Two-column checkout layout on desktop (summary left, form right). Single column on mobile. Sponsored Ad slide-down panel spans full container width above the two-column layout, horizontally centered between page header and order summary + shipping address row.
-- **Sponsored Ad Behavior:** Slide-down entrance animation (300ms ease-out) on ad load. Auto-slide every 5 seconds with vertical transitions (500ms). Pauses on hover/focus (WCAG 2.2.2). Maximum 5 ads with tier-priority rotation. Graceful degradation on ad failure.
-- **Accessibility:** Every control must be keyboard navigable. ARIA labels required. Error messages must be announced via `role="alert"`.
-- **Performance:** Forms use skeleton loaders during initial load. Buttons display spinner during async operations. Checkout page loads in ≤ 2 seconds.
-- **Security:** All user input is sanitized to prevent XSS. Prices fetched from DB, not client. Atomic stock decrement via Prisma transaction.
-- **Design Tokens:** Status badges use standard color mapping — success: `bg-green-100 text-green-800`, error: `bg-red-100 text-red-800`, warning: `bg-amber-100 text-amber-800`.
-- **Currency Formatting:** All prices displayed with locale-appropriate currency (e.g., `$XX.XX` for EN, `¥XX,XXX` for JA).
-
----
+- **Checkout composition:** Buyer checkout route is `/buyer/checkout`. Page content uses a `max-w-5xl` container. Header and ad banner precede the checkout form; summary and shipping card form a two-column grid at `lg`; payment, notes, and action buttons span the form width.
+- **Currency:** Order summary formats rounded values as Myanmar kyat (`Ks`) in the current shared checkout component.
+- **Order state:** Checkout calculates display totals client-side from fetched subtotal and merchant voucher discounts. Server recomputes prices and totals when placing orders.
+- **Ad panel:** Shared `AdBannerSlider` hides when no eligible ads are present; behavior and endpoint are specified in Sections 4.2 and 5.2.
+- **Confirmation limitations:** Only View Order and Continue Shopping buttons are rendered. Order number is shown, estimated delivery is not rendered, and multiple confirmation labels remain hardcoded English.
+- **Accessibility:** Carousel has keyboard-operable card, previous/next, and dot controls; reduced-motion disables auto-advance; voucher modal errors use `role="alert"`.
+- **Implementation gaps:** Checkout does not create inventory ledger rows; notes maximum is enforced only by the UI; buyer tracking page is not mounted.
 
 ## 12. Testing Checklist (テストチェックリスト)
 
-### 12.1 Checkout Page Tests
+These are proposed manual/e2e checks against current behavior; all remain unchecked unless separately evidenced in `Checkout_Purchase_PCL.md`.
 
-- [ ] Checkout page loads with cart items
-- [ ] Sponsored Ad slide-down panel slides down when ads are available
-- [ ] Sponsored Ad panel hidden when no ads available
-- [ ] Ad panel renders horizontally centered between header and order summary row
-- [ ] Ad panel spans full container width
-- [ ] Ad image/banner loads correctly (desktop: 320×120, mobile: 16:9)
-- [ ] Ad title displays with single-line truncation
-- [ ] Ad description displays with 2-line clamp
-- [ ] Ad CTA button navigates to target URL
-- [ ] Ad CTA button opens in new tab
-- [ ] Sponsored badge displays on every slide
-- [ ] Auto-slide advances every 5 seconds
-- [ ] Auto-slide pauses on hover/focus
-- [ ] Auto-slide resumes on pointer leave/blur
-- [ ] Maximum 5 ads displayed
-- [ ] Horizontal layout on desktop/tablet (image left, text right)
-- [ ] Stacked layout on mobile (image top, content below)
-- [ ] Slide-down animation respects prefers-reduced-motion
-- [ ] Ad failure gracefully degrades (page functions normally)
-- [ ] Empty cart redirects to `/cart`
-- [ ] Guest user sees alert modal
-- [ ] Alert modal navigates to `/login`
-- [ ] Non-buyer role sees 403 error
-- [ ] Shipping address form validates all required fields
-- [ ] Phone number input accepts tel format
-- [ ] Country select loads options
-- [ ] Payment method defaults to Cash on Delivery
-- [ ] Payment method radio group works
-- [ ] Coupon code input accepts text
-- [ ] Apply button validates coupon via API
-- [ ] Valid coupon updates discount and total
-- [ ] Invalid coupon shows toast error
-- [ ] Expired coupon shows toast error
-- [ ] Remove coupon resets totals
-- [ ] Place Order button disabled when form invalid
-- [ ] Place Order submits order via API
-- [ ] Successful order navigates to confirmation
-- [ ] Loading overlay shown during submission
-- [ ] Stock validation error shows toast
-- [ ] Empty cart error shows toast
-- [ ] All i18n keys render correctly (EN/JA)
-- [ ] Keyboard navigation works (Tab, Enter)
-- [ ] Responsive layout works on mobile
+### 12.1 Checkout Page
 
-### 12.2 Order Confirmation Page Tests
+- [ ] Checkout page loads cart data and displays shop-grouped items, subtotal, voucher rows, discount (when positive), total, shipping, payment, and notes.
+- [ ] Empty-cart GET renders the empty summary/form; no redirect to cart occurs.
+- [ ] Guest access follows protected-route redirect; component dialog links to `/login?redirect=%2Fcheckout` if it renders.
+- [ ] Shipping fields enforce client rules, including phone 9/11 digit patterns, postal 4–7 digits, and country default JP.
+- [ ] Shop Voucher opens available promotions and manual code entry for that merchant.
+- [ ] Coupon input has no client format/length check; Apply remains disabled when input is blank.
+- [ ] Applying/removing a voucher updates that merchant row and aggregate discount/total.
+- [ ] Ad banner uses `checkout_page_banner`; empty/error responses hide it; carousel controls and reduced-motion behavior match Section 4.2.
+- [ ] Place Order is disabled while shipping form is invalid or request is pending.
+- [ ] Successful placement navigates to primary order confirmation and carries sibling IDs in `orderIds`.
+- [ ] Failed order submission displays the generic failure toast.
 
-- [ ] Success icon and title displayed
-- [ ] Order ID displayed (first 8 chars)
-- [ ] Order status badge displayed
-- [ ] Order summary shows all items
-- [ ] Subtotal, discount, total displayed correctly
-- [ ] Shipping address displayed
-- [ ] Continue Shopping navigates to `/products`
-- [ ] View Order navigates to `/orders/:orderId`
-- [ ] Print Receipt calls `window.print()`
-- [ ] All i18n keys render correctly
+### 12.2 Order Confirmation
 
-### 12.6 Error Handling Tests
+- [ ] Confirmation renders order number (`ORD-XXXXXXXX`), status/payment, item/totals, shipping, and payment method.
+- [ ] Estimated delivery is not currently rendered.
+- [ ] Continue Shopping navigates to `/buyer/search`; View Order navigates to `/orders/:orderId`.
+- [ ] No Print Receipt button is rendered.
+- [ ] Several confirmation strings remain hardcoded English.
 
-- [ ] 401 Unauthorized redirects to login
-- [ ] 404 Order not found shows toast
-- [ ] 403 Forbidden shows toast
-- [ ] Network error shows toast
-- [ ] Server error shows toast
-- [ ] Validation errors show inline errors
-- [ ] Stock conflict shows toast
+### 12.3 Verification Status
+
+- [ ] E2E scenarios and test completion remain tracked in `Checkout_Purchase_PCL.md`; current PCL scenarios are not marked complete.
 
 ---
 

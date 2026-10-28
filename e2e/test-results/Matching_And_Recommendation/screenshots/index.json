@@ -149,9 +149,6 @@
   "N-10_1_sponsored_impression.png": {
     "test": "matching.spec.ts::N-10: displays sponsored ads and records a panel impression"
   },
-  "N-11_1_sponsored_cta.png": {
-    "test": "matching.spec.ts::N-11: tracks a sponsored ad click and follows its destination"
-  },
   "N-11_2_ad_destination.png": {
     "test": "matching.spec.ts::N-11: tracks a sponsored ad click and follows its destination"
   },

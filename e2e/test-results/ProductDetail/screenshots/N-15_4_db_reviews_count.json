@@ -1,0 +1,15 @@
+{
+  "capturedAt": "2026-10-23T08:28:26.064Z",
+  "description": "reviews row count for the buyer and product after submitting",
+  "results": [
+    {
+      "label": "reviews count by buyer and product",
+      "rowCount": 1,
+      "rows": [
+        {
+          "review_count": 1
+        }
+      ]
+    }
+  ]
+}

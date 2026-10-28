@@ -2,7 +2,6 @@ import type { Page } from '@playwright/test';
 import { test } from '@playwright/test';
 import * as path from 'path';
 import * as fs from 'fs';
-import { createHash } from 'crypto';
 
 const TEST_RESULTS_ROOT = path.resolve(__dirname, '../test-results');
 
@@ -20,6 +19,8 @@ export const SCREEN_FOLDERS = [
   'Ad_Management_Screen',
   'Review_ContentModeration',
   'Commission_Revenue',
+  'Order_Insights_Admin',
+  'Order_Insights_Merchant',
   'Order_Insights',
   'Audit_Log',
 ];
@@ -101,7 +102,20 @@ async function updateScreenshotIndex(
       ...(description ? { description } : {}),
       ...(testKey ? { test: testKey } : {}),
     };
-    fs.writeFileSync(indexPath, JSON.stringify(index, null, 2), 'utf-8');
+    // Windows can transiently fail to open the shared index file while another
+    // worker or reader has it open; retry before giving up.
+    let writeError: unknown;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        fs.writeFileSync(indexPath, JSON.stringify(index, null, 2), 'utf-8');
+        writeError = undefined;
+        break;
+      } catch (error) {
+        writeError = error;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }
+    if (writeError) throw writeError;
   } finally {
     fs.closeSync(lockFd);
     fs.unlinkSync(lockPath);
@@ -114,6 +128,10 @@ export async function captureScreenshot(
   description?: string,
   testInfo?: { title: string; file: string }
 ): Promise<string> {
+  if (!page) {
+    console.warn('captureScreenshot: page is null/undefined, skipping screenshot');
+    return Promise.resolve('');
+  }
   let screenFolder = 'Other';
   let testKey: string | undefined;
 
@@ -138,8 +156,8 @@ export async function captureScreenshot(
   const filePath = path.join(screenshotDir, filename);
 
   // Order Insights desktop evidence should match the user's laptop-width view.
-  // Keep B-03 at its explicitly tested mobile viewport.
-  if (screenFolder === 'Order_Insights' && !step.startsWith('B-03_')) {
+  // Preserve the explicit mobile layout capture for responsive PCL coverage.
+  if (screenFolder.startsWith('Order_Insights') && !step.startsWith('B-04_')) {
     await page.setViewportSize({ width: 1920, height: 1032 });
   }
 
@@ -149,22 +167,27 @@ export async function captureScreenshot(
   } catch {}
 
   const captureMarker = 'data-e2e-full-page-capture';
-  const expandMain = await page.evaluate((marker) => {
-    const main = Array.from(document.querySelectorAll<HTMLElement>('main'))
-      .reverse()
-      .find((element) => element.scrollHeight > element.clientHeight + 1);
-    if (!main || main.scrollHeight <= main.clientHeight + 1) return false;
+  let expandMain = false;
+  try {
+    expandMain = await page.evaluate((marker) => {
+      const main = Array.from(document.querySelectorAll<HTMLElement>('main'))
+        .reverse()
+        .find((element) => element.scrollHeight > element.clientHeight + 1);
+      if (!main || main.scrollHeight <= main.clientHeight + 1) return false;
 
-    let element: HTMLElement | null = main;
-    let index = 0;
-    while (element && element !== document.documentElement) {
-      element.setAttribute(marker, index === 0 ? 'main' : 'ancestor');
-      if (element.scrollHeight > element.clientHeight) element.scrollTop = 0;
-      element = element.parentElement;
-      index += 1;
-    }
-    return true;
-  }, captureMarker);
+      let element: HTMLElement | null = main;
+      let index = 0;
+      while (element && element !== document.documentElement) {
+        element.setAttribute(marker, index === 0 ? 'main' : 'ancestor');
+        if (element.scrollHeight > element.clientHeight) element.scrollTop = 0;
+        element = element.parentElement;
+        index += 1;
+      }
+      return true;
+    }, captureMarker);
+  } catch {
+    // Page context closed or unavailable — skip full-page expansion
+  }
 
   let expansionStyle: Awaited<ReturnType<Page['addStyleTag']>> | undefined;
   try {
@@ -200,32 +223,65 @@ export async function captureScreenshot(
       .first()
       .isVisible();
     await page.screenshot({ path: filePath, fullPage: !hasOpenDialog });
+  } catch (screenshotError) {
+    console.warn(`captureScreenshot: failed to capture screenshot (non-fatal): ${screenshotError}`);
+    return '';
   } finally {
-    await expansionStyle?.evaluate((style) => style.parentNode?.removeChild(style));
+    await expansionStyle?.evaluate((style) => style.parentNode?.removeChild(style)).catch(() => {});
     if (expandMain) {
       await page.locator(`[${captureMarker}]`).evaluateAll((elements) => {
         for (const element of elements) element.removeAttribute('data-e2e-full-page-capture');
-      });
+      }).catch(() => {});
     }
   }
 
-  await updateScreenshotIndex(screenshotDir, filename, description, testKey);
+  try {
+    await updateScreenshotIndex(screenshotDir, filename, description, testKey);
+  } catch (indexError) {
+    console.warn(`captureScreenshot: failed to update screenshot index (non-fatal): ${indexError}`);
+  }
 
   return filePath;
+}
+
+/** Capture a dialog's top and lower content when its body scrolls. */
+export async function captureDialogScreenshots(
+  page: Page,
+  stepName: string,
+  description?: string,
+): Promise<void> {
+  const dialog = page.getByRole('dialog').first();
+  const dimensions = await dialog.evaluate((element) => ({
+    scrollHeight: element.scrollHeight,
+    clientHeight: element.clientHeight,
+  }));
+
+  await dialog.evaluate((element) => { element.scrollTop = 0; });
+  await captureScreenshot(page, stepName, description);
+
+  if (dimensions.scrollHeight > dimensions.clientHeight + 2) {
+    await dialog.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+    await captureScreenshot(page, `${stepName}_details`, `${description ?? stepName} (lower dialog content).`);
+    await dialog.evaluate((element) => { element.scrollTop = 0; });
+  }
 }
 
 export async function captureFinalTestScreenshot(
   page: Page,
   testInfo: { title: string; file: string; titlePath?: string[] },
 ): Promise<void> {
+  if (!page) {
+    console.warn('captureFinalTestScreenshot: page is null/undefined (fixture may have failed), skipping screenshot');
+    return;
+  }
   const titlePath = testInfo.titlePath?.join(' / ') || testInfo.title;
   const identity = `${path.basename(testInfo.file)}::${titlePath}`;
   const caseId = titlePath.match(/\b([NABI]-\d{2})\b/)?.[1];
-  const prefix = caseId ? `${caseId}_FINAL` : 'TEST_FINAL';
-  const suffix = createHash('sha1').update(identity).digest('hex').slice(0, 8);
+  // Name: N-02_FINAL.png (or TEST_FINAL.png if no case ID found)
+  const stepName = caseId ? `${caseId}_FINAL` : 'TEST_FINAL';
   await captureScreenshot(
     page,
-    `${prefix}_${suffix}_${titlePath}`,
+    stepName,
     `Final UI state for: ${titlePath}`,
     testInfo,
   );

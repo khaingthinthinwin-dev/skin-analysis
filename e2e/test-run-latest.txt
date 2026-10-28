@@ -1,0 +1,222 @@
+﻿
+Running 135 tests using 7 workers
+
+  笨・   7 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee.api.spec.ts:71:7 窶ｺ ad-fee.api 窶・API Contract Tests 窶ｺ should list fee settings with placement/tier metadata (8.4s)
+  笨・   2 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.api.spec.ts:13:7 窶ｺ ad-export.api 窶・API Contract Tests 窶ｺ I-13: should export CSV ad performance report (8.5s)
+  笨・   4 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.api.spec.ts:7:7 窶ｺ ad-analytics.api 窶・API Contract Tests 窶ｺ should return total revenue and breakdown metrics (8.8s)
+  笨・   9 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.api.spec.ts:39:7 窶ｺ ad-export.api 窶・API Contract Tests 窶ｺ I-14: should export shop submission history CSV (5.0s)
+  笨・   8 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee.api.spec.ts:94:7 窶ｺ ad-fee.api 窶・API Contract Tests 窶ｺ should create a valid fee setting and log history (5.7s)
+  笨・  10 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.api.spec.ts:37:7 窶ｺ ad-analytics.api 窶・API Contract Tests 窶ｺ A-10: Month filter recalculation (analytics API with month filter) (5.1s)
+  笨・  11 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.api.spec.ts:65:7 窶ｺ ad-export.api 窶・API Contract Tests 窶ｺ I-15: should export fee history log as CSV (4.9s)
+  笨・  13 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.api.spec.ts:59:7 窶ｺ ad-analytics.api 窶・API Contract Tests 窶ｺ A-14: Drill-down into a specific ad via analytics (5.2s)
+  笨・  12 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee.api.spec.ts:110:7 窶ｺ ad-fee.api 窶・API Contract Tests 窶ｺ should update fee setting and keep historical snapshot (5.9s)
+  笨・  14 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.api.spec.ts:91:7 窶ｺ ad-export.api 窶・API Contract Tests 窶ｺ I-19 + A-16: should export with report-specific filters and audit metadata (5.4s)
+  笨・  15 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee.api.spec.ts:137:7 窶ｺ ad-fee.api 窶・API Contract Tests 窶ｺ should deactivate fee setting without affecting existing ads (5.3s)
+  笨・   1 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:20:9 窶ｺ Admin Revenue Analytics 窶・PCL Normal Scenarios 窶ｺ Page Loading 窶ｺ should display revenue analytics page (26.1s)
+  笨・   3 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.spec.ts:22:9 窶ｺ Admin Export Reports 窶・PCL Normal Scenarios 窶ｺ Page Loading 窶ｺ should display export reports page (29.4s)
+  笨・  17 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.api.spec.ts:171:7 窶ｺ ad-export.api 窶・API Contract Tests 窶ｺ A-16: should reject date ranges over 365 days and non-CSV formats (4.9s)
+  笨・   5 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-packages.spec.ts:21:9 窶ｺ Admin Package & Fee Management 窶・PCL Normal Scenarios 窶ｺ Page Loading 窶ｺ should display package & fee management page (30.2s)
+  笨・   6 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-history.spec.ts:21:9 窶ｺ Admin Fee Change History 窶・PCL Normal Scenarios 窶ｺ Page Loading 窶ｺ should display fee change history page (30.2s)
+  笨・  18 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee.api.spec.ts:156:7 窶ｺ ad-fee.api 窶・API Contract Tests 窶ｺ should return fee history sorted by created time (4.8s)
+  笨・  21 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.api.spec.ts:204:7 窶ｺ ad-export.api 窶・API Contract Tests 窶ｺ B-13: submission-history export preserves each review event (5.6s)
+  笨・  24 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee.api.spec.ts:180:7 窶ｺ ad-fee.api 窶・API Contract Tests 窶ｺ should reactivate a fee setting and log the change (5.5s)
+  笨・  16 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.api.spec.ts:13:7 窶ｺ ad-management.api 窶・API Contract Tests 窶ｺ A-18: backend service continues after a refund failure (16.7s)
+  笨・  26 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee.api.spec.ts:204:7 窶ｺ ad-fee.api 窶・API Contract Tests 窶ｺ should reject deleting an actual current-month fee-history record (6.3s)
+  笨・  27 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.api.spec.ts:90:7 窶ｺ ad-management.api 窶・API Contract Tests 窶ｺ should return paginated ads for admin with filters (7.2s)
+  笨・  28 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee.api.spec.ts:251:7 窶ｺ ad-fee.api 窶・API Contract Tests 窶ｺ should return fee history with filters by calendar month and pagination (8.5s)
+  笨・  22 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-packages.spec.ts:29:9 窶ｺ Admin Package & Fee Management 窶・PCL Normal Scenarios 窶ｺ N-06: Navigate to package fee page and view all fee settings 窶ｺ should load fee settings table with placement, tier, daily rate columns (21.9s)
+  笨・  29 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.api.spec.ts:116:7 窶ｺ ad-management.api 窶・API Contract Tests 窶ｺ should return full detail for a single advertisement (8.2s)
+  笨・  20 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.spec.ts:29:9 窶ｺ Admin Export Reports 窶・PCL Normal Scenarios 窶ｺ N-12: Export ad performance report as CSV 窶ｺ should export ad performance CSV with correct columns (28.1s)
+  笨・  23 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-history.spec.ts:28:9 窶ｺ Admin Fee Change History 窶・PCL Normal Scenarios 窶ｺ N-10: View fee change history 窶ｺ should show history table with date, placement, tier, old/new rates (27.9s)
+  笨・  25 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:35:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ Page Loading 窶ｺ should display ad management page with ad list (21.9s)
+  笨・  31 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.api.spec.ts:145:7 窶ｺ ad-management.api 窶・API Contract Tests 窶ｺ should approve a pending ad and set approval metadata (5.5s)
+  笨・  35 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.api.spec.ts:171:7 窶ｺ ad-management.api 窶・API Contract Tests 窶ｺ should reject a pending ad and trigger refund (6.0s)
+  笨・  36 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.api.spec.ts:200:7 窶ｺ ad-management.api 窶・API Contract Tests 窶ｺ should bulk approve only pending ads within limit (4.5s)
+  笨・  33 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-history.spec.ts:62:9 窶ｺ Admin Fee Change History 窶・PCL Normal Scenarios 窶ｺ N-19: Delete a single history record 窶ｺ should delete a single eligible history record with confirmation (16.5s)
+  笨・  37 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.api.spec.ts:227:7 窶ｺ ad-management.api 窶・API Contract Tests 窶ｺ should bulk reject ads and include refund summary (6.3s)
+  笨・  34 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:43:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ Page Loading 窶ｺ should navigate to Package & Fee Management (19.7s)
+  笨・  32 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.spec.ts:53:9 窶ｺ Admin Export Reports 窶・PCL Normal Scenarios 窶ｺ N-13: Export ads submission history as CSV 窶ｺ should export submission history CSV with review metadata (20.2s)
+  笨・  30 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-packages.spec.ts:36:9 窶ｺ Admin Package & Fee Management 窶・PCL Normal Scenarios 窶ｺ N-07: Create a valid fee setting 窶ｺ should create a new fee setting and log history (27.5s)
+  笨・  38 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-history.spec.ts:70:9 窶ｺ Admin Fee Change History 窶・PCL Normal Scenarios 窶ｺ N-20: Bulk delete multiple history records 窶ｺ should bulk delete multiple previous-month history records (12.4s)
+  笨・  39 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:49:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ Page Loading 窶ｺ should navigate to Fee Change History (18.6s)
+  笨・  40 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.spec.ts:77:9 窶ｺ Admin Export Reports 窶・PCL Normal Scenarios 窶ｺ N-14: Export fee history log as CSV 窶ｺ should export fee history CSV with old/new values and reasons (18.8s)
+  笨・  41 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-packages.spec.ts:83:9 窶ｺ Admin Package & Fee Management 窶・PCL Normal Scenarios 窶ｺ N-07: Create a valid fee setting 窶ｺ should block duplicate active fee setting for same placement/tier (17.5s)
+  笨・  19 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:27:9 窶ｺ Admin Revenue Analytics 窶・PCL Normal Scenarios 窶ｺ N-11: View revenue analytics by placement and tier 窶ｺ should show summary metrics and charts with breakdowns by placement and tier (27.8s)
+  笨・  42 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-history.spec.ts:78:9 窶ｺ Admin Fee Change History 窶・PCL Normal Scenarios 窶ｺ A-15: Batch export fee history 窶ｺ should generate fee history report for batch export (16.5s)
+  笨・  44 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.spec.ts:103:9 窶ｺ Admin Export Reports 窶・PCL Abnormal Scenarios 窶ｺ A-16: Export endpoints reject date ranges over 365 days and non-CSV formats 窶ｺ should reject date range longer than 365 days (18.0s)
+  笨・  43 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:55:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ Page Loading 窶ｺ should navigate to Revenue Analytics (19.9s)
+  笨・  46 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-history.spec.ts:98:9 窶ｺ Admin Fee Change History 窶・PCL Normal Scenarios 窶ｺ A-17: Permission control on Fee Change History 窶ｺ should limit Fee Change History access to authorized admins (16.8s)
+  笨・  45 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-packages.spec.ts:114:9 窶ｺ Admin Package & Fee Management 窶・PCL Normal Scenarios 窶ｺ N-08: Edit an existing fee setting 窶ｺ should update fee setting and log historical snapshot (19.3s)
+  笨・  47 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:45:9 窶ｺ Admin Revenue Analytics 窶・PCL Normal Scenarios 窶ｺ N-27: Export analytics data 窶ｺ should export analytics data with multi-filter aggregation (17.0s)
+  笨・  48 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.spec.ts:124:9 窶ｺ Admin Export Reports 窶・PCL Abnormal Scenarios 窶ｺ A-16: Export endpoints reject date ranges over 365 days and non-CSV formats 窶ｺ should reject export with format other than CSV (12.5s)
+  笨・  49 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:61:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ Page Loading 窶ｺ should navigate to Export Reports (16.9s)
+  笨・  50 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-history.spec.ts:125:9 窶ｺ Admin Fee Change History 窶・PCL Boundary Scenarios 窶ｺ B-11: Concurrent record deletion 窶ｺ should not cause duplicates or errors with concurrent deletion (15.2s)
+  笨・  51 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-packages.spec.ts:190:9 窶ｺ Admin Package & Fee Management 窶・PCL Normal Scenarios 窶ｺ N-09: Deactivate an active fee setting 窶ｺ should deactivate fee setting with reason (15.1s)
+  笨・  53 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.spec.ts:132:9 窶ｺ Admin Export Reports 窶・PCL Abnormal Scenarios 窶ｺ B-14: Concurrent export requests 窶ｺ should complete concurrent export requests without conflicts (15.7s)
+  笨・  52 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:65:9 窶ｺ Admin Revenue Analytics 窶・PCL Normal Scenarios 窶ｺ A-10: Month filter recalculation 窶ｺ should recalculate revenue when month filter changed (15.3s)
+  笨・  55 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-history.spec.ts:132:9 窶ｺ Admin Fee Change History 窶・PCL Boundary Scenarios 窶ｺ B-12: Concurrent fee change generation 窶ｺ should generate sequential history records concurrently (14.1s)
+  笨・  54 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:69:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ N-01: View pending advertisement queue with filters 窶ｺ should filter ad list by status, placement, tier, and shop (17.4s)
+  笨・  56 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-packages.spec.ts:197:9 窶ｺ Admin Package & Fee Management 窶・PCL Normal Scenarios 窶ｺ N-18: Reactivate an inactive fee setting 窶ｺ should reactivate a previously deactivated fee setting (12.5s)
+  笨・  57 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.spec.ts:139:9 窶ｺ Admin Export Reports 窶・PCL Abnormal Scenarios 窶ｺ B-15: Special character handling in export fields 窶ｺ should preserve special characters in exported CSV (12.8s)
+  笨・  58 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:72:9 窶ｺ Admin Revenue Analytics 窶・PCL Normal Scenarios 窶ｺ A-14: Drill-down into a specific ad 窶ｺ should drill down into ad detail from analytics (14.0s)
+  笨・  59 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-history.spec.ts:139:9 窶ｺ Admin Fee Change History 窶・PCL Boundary Scenarios 窶ｺ B-16: Cross-page pagination of fee history 窶ｺ should navigate pages and maintain data consistency (13.2s)
+  笨・  61 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-packages.spec.ts:204:9 窶ｺ Admin Package & Fee Management 窶・PCL Normal Scenarios 窶ｺ N-23: Create disabled at 12 packages 窶ｺ should disable Create Fee Setting when all 12 combos exist (12.7s)
+  笨・  62 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.spec.ts:148:9 窶ｺ Admin Export Reports 窶・PCL Interface Scenarios 窶ｺ N-15: Language toggle works 窶ｺ should update labels on export screen (12.4s)
+  笨・  60 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:93:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ N-01: View pending advertisement queue with filters 窶ｺ should reset all filters and restore default list (18.5s)
+  笨・  63 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:81:9 窶ｺ Admin Revenue Analytics 窶・PCL Abnormal Scenarios 窶ｺ A-10: Month filter recalculation (invalid) 窶ｺ should handle invalid month filter selection (12.3s)
+  笨・  64 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-history.spec.ts:146:9 窶ｺ Admin Fee Change History 窶・PCL Boundary Scenarios 窶ｺ B-11: History deletion boundary by month 窶ｺ should reject current-month deletion, allow previous-month (11.9s)
+  笨・  65 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-packages.spec.ts:212:9 窶ｺ Admin Package & Fee Management 窶・PCL Normal Scenarios 窶ｺ N-24: Keep paid advertisements unchanged when fee setting updated 窶ｺ should not affect existing paid ads when fee updated (11.8s)
+  笨・  66 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.spec.ts:159:9 窶ｺ Admin Export Reports 窶・PCL Interface Scenarios 窶ｺ N-16: Theme toggle works 窶ｺ should switch theme on export screen without break (14.8s)
+  笨・  68 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:87:9 窶ｺ Admin Revenue Analytics 窶・PCL Abnormal Scenarios 窶ｺ A-14: Drill-down data consistency 窶ｺ should return consistent revenue values with same filters (16.0s)
+  笨・  69 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-history.spec.ts:156:9 窶ｺ Admin Fee Change History 窶・PCL Interface Scenarios 窶ｺ N-15: Language toggle works 窶ｺ should update labels when toggling language on fee history screen (15.6s)
+  笨・  70 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-packages.spec.ts:271:9 窶ｺ Admin Package & Fee Management 窶・PCL Abnormal Scenarios 窶ｺ A-06: Search / filter fee settings 窶ｺ should filter fee settings by placement/tier/status (16.5s)
+  笨・  67 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:109:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ N-02: Review a single pending ad and approve it 窶ｺ should open review modal and approve a pending ad (27.0s)
+  笨・  71 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.spec.ts:170:9 窶ｺ Admin Export Reports 窶・PCL Interface Scenarios 窶ｺ N-17: Responsive layout 窶ｺ should be usable at 1280x720 (15.1s)
+  笨・  72 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:96:9 窶ｺ Admin Revenue Analytics 窶・PCL Boundary Scenarios 窶ｺ B-08: Drill-down data consistency 窶ｺ should show same values in list and drill-down with same filters (17.6s)
+  笨・  73 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-history.spec.ts:163:9 窶ｺ Admin Fee Change History 窶・PCL Interface Scenarios 窶ｺ N-16: Theme toggle works 窶ｺ should switch theme on fee history screen without break (18.1s)
+  笨・  74 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-packages.spec.ts:278:9 窶ｺ Admin Package & Fee Management 窶・PCL Abnormal Scenarios 窶ｺ A-07: Permission control on fee settings 窶ｺ should restrict fee setting management to authorized admins (16.2s)
+  笨・  76 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-export.spec.ts:177:9 窶ｺ Admin Export Reports 窶・PCL Interface Scenarios 窶ｺ N-17: Responsive layout 窶ｺ should be usable at 375x667 (17.0s)
+  笨・  77 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:103:9 窶ｺ Admin Revenue Analytics 窶・PCL Boundary Scenarios 窶ｺ B-17: Concurrent analytics requests 窶ｺ should return stable consistent results under concurrent requests (13.2s)
+  笨・  75 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:143:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ N-03: Reject a single pending ad with a valid reason 窶ｺ should reject a pending ad with a valid reason (22.1s)
+  笨・  78 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-history.spec.ts:170:9 窶ｺ Admin Fee Change History 窶・PCL Interface Scenarios 窶ｺ N-17: Responsive layout 窶ｺ should be usable at 1280x720 (13.6s)
+  笨・  79 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-packages.spec.ts:285:9 窶ｺ Admin Package & Fee Management 窶・PCL Abnormal Scenarios 窶ｺ A-08: Editing fee does not affect existing ads 窶ｺ should not change existing ad records when fee setting edited (14.7s)
+  笨・  80 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:110:9 窶ｺ Admin Revenue Analytics 窶・PCL Boundary Scenarios 窶ｺ B-09: Exact date range boundary 窶ｺ should reflect exact single-day range without off-by-one (15.5s)
+  笨・  82 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-history.spec.ts:174:9 窶ｺ Admin Fee Change History 窶・PCL Interface Scenarios 窶ｺ N-17: Responsive layout 窶ｺ should be usable at 375x667 (15.4s)
+  笨・  81 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:173:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ N-04: Bulk approve multiple pending ads 窶ｺ should bulk approve selected pending ads (21.8s)
+  笨・  83 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-packages.spec.ts:292:9 窶ｺ Admin Package & Fee Management 窶・PCL Abnormal Scenarios 窶ｺ B-01: Concurrent editing of fee settings 窶ｺ should handle concurrent edits without conflict (14.1s)
+  笨・  84 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:120:9 窶ｺ Admin Revenue Analytics 窶・PCL Boundary Scenarios 窶ｺ B-17: Revenue analytics with no matching approved ads 窶ｺ should display zero metrics and "No data" state (9.8s)
+  笨・  86 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-packages.spec.ts:299:9 窶ｺ Admin Package & Fee Management 窶・PCL Abnormal Scenarios 窶ｺ B-02: Concurrent activation/deactivation 窶ｺ should resolve to one final state (11.3s)
+  笨・  87 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:130:9 窶ｺ Admin Revenue Analytics 窶・PCL Interface Scenarios 窶ｺ N-15: Language toggle works 窶ｺ should update labels on analytics screen (10.0s)
+  笨・  85 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:214:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ N-05: Bulk reject multiple pending ads with one reason 窶ｺ should bulk reject selected pending ads with common reason (16.8s)
+  笨・  89 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:136:9 窶ｺ Admin Revenue Analytics 窶・PCL Interface Scenarios 窶ｺ N-16: Theme toggle works 窶ｺ should switch theme without breaking analytics layout (9.2s)
+  笨・  88 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-packages.spec.ts:306:9 窶ｺ Admin Package & Fee Management 窶・PCL Abnormal Scenarios 窶ｺ B-10: Deactivate fee in use 窶ｺ should not break existing ad data when deactivating in-use fee (10.0s)
+  笨・  90 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:265:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ N-21: Open a newly submitted ad from an admin notification 窶ｺ should navigate from notification highlight and highlight ad (10.3s)
+  笨・  91 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:142:9 窶ｺ Admin Revenue Analytics 窶・PCL Interface Scenarios 窶ｺ N-17: Responsive layout 窶ｺ should be usable at 1280x720 (8.2s)
+  笨・  93 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:146:9 窶ｺ Admin Revenue Analytics 窶・PCL Interface Scenarios 窶ｺ N-17: Responsive layout 窶ｺ should be usable at 375x667 (8.7s)
+  笨・  92 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:274:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ N-26: Navigate to and highlight an ad from a later page opened by notification 窶ｺ should navigate to and highlight an ad from a later page opened by notification (11.5s)
+  笨・  94 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:296:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ N-25: Select and undo all eligible ads on the current table page 窶ｺ should select pending ads via header checkbox and clear selection (8.2s)
+  笨・  95 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:308:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ A-01: Attempt to approve or reject without admin role 窶ｺ should deny a buyer attempting ad moderation (8.2s)
+  笨・  96 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:328:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ A-09: Search ads with no matching result 窶ｺ should show empty state when shop search has no match (7.3s)
+  笨・  97 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:337:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ A-11: Access ad management routes without authentication 窶ｺ should redirect unauthenticated user from ad management routes (7.0s)
+  笨・  98 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:351:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ B-03: Double-click submit prevention 窶ｺ should not create duplicate moderation actions on double-click (6.2s)
+  笨・  99 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:358:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ B-04: Special characters in fields 窶ｺ should enforce character boundaries in moderation fields (6.5s)
+  笨・ 100 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:365:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ B-05/B-06: Empty required fields and concurrent status change 窶ｺ should show validation error when submitting with empty required fields (7.3s)
+  笨・ 101 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:369:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ B-05/B-06: Empty required fields and concurrent status change 窶ｺ should handle concurrent status change by another admin (7.3s)
+  笨・ 102 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:376:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ B-07: Audit log recording 窶ｺ should record status change in audit log (7.3s)
+  笨・ 103 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:383:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ B-18: High-frequency operations 窶ｺ should stay responsive under repeated moderation operations (7.3s)
+  笨・ 104 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:390:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ B-19: Large dataset rendering 窶ｺ should render and paginate correctly with large dataset (8.7s)
+  笨・ 105 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:397:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ N-18: Reactivate an inactive fee setting 窶ｺ should reactivate an inactive fee setting (6.5s)
+  笨・ 106 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:404:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ N-23: Create disabled at 12 packages 窶ｺ should show Create Fee Setting button disabled when all 12 packages exist (6.6s)
+  笨・ 107 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:412:9 窶ｺ Admin Ad Management 窶・PCL Normal Scenarios 窶ｺ N-24: Keep paid advertisements unchanged when fee setting updated 窶ｺ should not affect existing paid ads when fee setting updated (7.5s)
+  笨・ 108 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:422:9 窶ｺ Admin Ad Management 窶・PCL Abnormal Scenarios 窶ｺ A-02: Reject a pending ad without a reason 窶ｺ should show validation error when rejection reason is blank (8.7s)
+  笨・ 109 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:442:9 窶ｺ Admin Ad Management 窶・PCL Abnormal Scenarios 窶ｺ A-03: Attempt to approve or reject an ad that is no longer pending 窶ｺ should reject a second approval after the ad is no longer pending (5.7s)
+  笨・ 110 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:465:9 窶ｺ Admin Ad Management 窶・PCL Abnormal Scenarios 窶ｺ A-04: Bulk approve more than 50 ads 窶ｺ should block bulk operation when more than 50 ads are submitted (4.9s)
+  笨・ 111 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:483:9 窶ｺ Admin Ad Management 窶・PCL Abnormal Scenarios 窶ｺ A-05: Edit rights on ad moderation 窶ｺ should allow editing ad fields with proper rights (7.1s)
+  笨・ 112 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:490:9 窶ｺ Admin Ad Management 窶・PCL Abnormal Scenarios 窶ｺ A-12: Review list excludes draft ads pending payment 窶ｺ should not show a draft ad while payment is pending (7.4s)
+  笨・ 113 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:503:9 窶ｺ Admin Ad Management 窶・PCL Abnormal Scenarios 窶ｺ A-13: Reject an ad that has no completed payment 窶ｺ should reject an unpaid pending ad without changing its payment status (5.0s)
+  笨・ 114 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:533:9 窶ｺ Admin Ad Management 窶・PCL Abnormal Scenarios 窶ｺ A-19: Ad list rejects invalid filters and pagination 窶ｺ should reject invalid status filter (4.9s)
+  笨・ 115 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:540:9 窶ｺ Admin Ad Management 窶・PCL Abnormal Scenarios 窶ｺ A-19: Ad list rejects invalid filters and pagination 窶ｺ should reject invalid status, pagination, and long shop filters (4.8s)
+  笨・ 116 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:560:9 窶ｺ Admin Ad Management 窶・PCL Abnormal Scenarios 窶ｺ A-20: Ad list rejects a reversed date range 窶ｺ should reject dateFrom later than dateTo (4.5s)
+  笨・ 117 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:578:9 窶ｺ Admin Ad Management 窶・PCL Abnormal Scenarios 窶ｺ A-21: Bulk moderation rejects mixed valid and missing ids 窶ｺ should reject the whole request and leave the pending ad unchanged (5.9s)
+  笨・ 118 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:607:9 窶ｺ Admin Ad Management 窶・PCL Boundary Scenarios 窶ｺ B-01: Fee setting at minimum values 窶ｺ should create fee setting with minimum valid values (9.2s)
+  笨・ 119 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:624:9 窶ｺ Admin Ad Management 窶・PCL Boundary Scenarios 窶ｺ B-02: Fee setting at maximum reasonable values 窶ｺ should accept upper-limit fee setting values (10.5s)
+  笨・ 120 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:641:9 窶ｺ Admin Ad Management 窶・PCL Boundary Scenarios 窶ｺ B-03: Rejection reason at maximum length (1000 chars) 窶ｺ should accept exactly 1000 characters in rejection reason (7.3s)
+  笨・ 121 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:657:9 窶ｺ Admin Ad Management 窶・PCL Boundary Scenarios 窶ｺ B-04: Rejection reason beyond maximum length 窶ｺ should block rejection reason exceeding 1000 characters (8.1s)
+  笨・ 122 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:674:9 窶ｺ Admin Ad Management 窶・PCL Boundary Scenarios 窶ｺ B-08: Analytics exact date range boundary 窶ｺ should reflect exact single-day date range in analytics (6.5s)
+  笨・ 123 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:689:9 窶ｺ Admin Ad Management 窶・PCL Boundary Scenarios 窶ｺ B-09: Search shop name with very long input 窶ｺ should accept long shop name and filter correctly (6.9s)
+  笨・ 124 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:699:9 窶ｺ Admin Ad Management 窶・PCL Boundary Scenarios 窶ｺ B-10: Fee setting reactivation boundary 窶ｺ should reactivate once, then block second reactivation (7.4s)
+  笨・ 125 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:709:9 窶ｺ Admin Ad Management 窶・PCL Boundary Scenarios 窶ｺ B-11: History deletion boundary by month 窶ｺ should reject current-month deletion, allow previous-month (7.6s)
+  笨・ 126 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:719:9 窶ｺ Admin Ad Management 窶・PCL Boundary Scenarios 窶ｺ B-12: Fee-history bulk deletion limit at 50 and 51 records 窶ｺ should allow deleting exactly 50 records (6.7s)
+  笨・ 127 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:723:9 窶ｺ Admin Ad Management 窶・PCL Boundary Scenarios 窶ｺ B-12: Fee-history bulk deletion limit at 50 and 51 records 窶ｺ should block 51-record bulk deletion (7.1s)
+  笨・ 128 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:730:9 窶ｺ Admin Ad Management 窶・PCL Boundary Scenarios 窶ｺ B-17: Revenue analytics with no matching approved ads 窶ｺ should display zero metrics and "No data" when no ads match (7.3s)
+  笨・ 129 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:740:9 窶ｺ Admin Ad Management 窶・PCL Interface Scenarios 窶ｺ N-15: Language toggle works on admin ad management screens 窶ｺ should update all labels when toggling to Japanese (6.6s)
+  笨・ 130 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:746:9 窶ｺ Admin Ad Management 窶・PCL Interface Scenarios 窶ｺ N-15: Language toggle works on admin ad management screens 窶ｺ should update all labels when toggling to Myanmar (6.6s)
+  笨・ 131 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:751:9 窶ｺ Admin Ad Management 窶・PCL Interface Scenarios 窶ｺ N-15: Language toggle works on admin ad management screens 窶ｺ should return to English default (6.5s)
+  笨・ 132 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:759:9 窶ｺ Admin Ad Management 窶・PCL Interface Scenarios 窶ｺ N-16: Theme toggle works on admin ad management screens 窶ｺ should switch to dark mode without breaking layout (6.5s)
+  笨・ 133 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:764:9 窶ｺ Admin Ad Management 窶・PCL Interface Scenarios 窶ｺ N-16: Theme toggle works on admin ad management screens 窶ｺ should switch back to light mode (7.0s)
+  笨・ 134 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:771:9 窶ｺ Admin Ad Management 窶・PCL Interface Scenarios 窶ｺ N-17: Responsive layout on desktop and mobile viewports 窶ｺ should remain usable at 1280x720 viewport (6.6s)
+  笨・ 135 [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts:776:9 窶ｺ Admin Ad Management 窶・PCL Interface Scenarios 窶ｺ N-17: Responsive layout on desktop and mobile viewports 窶ｺ should remain usable at 375x667 viewport (7.9s)
+
+
+  1) [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:27:9 窶ｺ Admin Revenue Analytics 窶・PCL Normal Scenarios 窶ｺ N-11: View revenue analytics by placement and tier 窶ｺ should show summary metrics and charts with breakdowns by placement and tier 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 400
+
+      32 |         headers: await adminHeaders(request),
+      33 |       });
+    > 34 |       expect(analyticsResponse.status()).toBe(200);
+         |                                          ^
+      35 |       const analyticsBody = await analyticsResponse.json();
+      36 |       expect(analyticsBody.data.summary).toBeDefined();
+      37 |       expect(analyticsBody.data.summary.totalRevenue).toBeDefined();
+        at C:\AI Agent\skin-analysis\e2e\tests\Ad_Management_Screen\ad-analytics.spec.ts:34:42
+
+    attachment #1: screenshot (image/png) 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
+    test-results\.artifacts\Ad_Management_Screen-ad-an-40b21-downs-by-placement-and-tier-chromium\test-failed-2.png
+    笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
+
+    attachment #2: screenshot (image/png) 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
+    test-results\.artifacts\Ad_Management_Screen-ad-an-40b21-downs-by-placement-and-tier-chromium\test-failed-1.png
+    笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
+
+    Error Context: test-results\.artifacts\Ad_Management_Screen-ad-an-40b21-downs-by-placement-and-tier-chromium\error-context.md
+
+  2) [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:45:9 窶ｺ Admin Revenue Analytics 窶・PCL Normal Scenarios 窶ｺ N-27: Export analytics data 窶ｺ should export analytics data with multi-filter aggregation 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 400
+
+      50 |         headers: await adminHeaders(request),
+      51 |       });
+    > 52 |       expect(analyticsResponse.status()).toBe(200);
+         |                                          ^
+      53 |       const analyticsBody = await analyticsResponse.json();
+      54 |       // Verify summary metrics and breakdowns returned for the selected filters
+      55 |       expect(analyticsBody.data.summary).toBeDefined();
+        at C:\AI Agent\skin-analysis\e2e\tests\Ad_Management_Screen\ad-analytics.spec.ts:52:42
+
+    attachment #1: screenshot (image/png) 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
+    test-results\.artifacts\Ad_Management_Screen-ad-an-d5fd4-th-multi-filter-aggregation-chromium\test-failed-1.png
+    笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
+
+    attachment #2: screenshot (image/png) 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
+    test-results\.artifacts\Ad_Management_Screen-ad-an-d5fd4-th-multi-filter-aggregation-chromium\test-failed-2.png
+    笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
+
+    Error Context: test-results\.artifacts\Ad_Management_Screen-ad-an-d5fd4-th-multi-filter-aggregation-chromium\error-context.md
+
+  3) [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-packages.spec.ts:114:9 窶ｺ Admin Package & Fee Management 窶・PCL Normal Scenarios 窶ｺ N-08: Edit an existing fee setting 窶ｺ should update fee setting and log historical snapshot 
+
+    TypeError: Cannot read properties of undefined (reading 'dailyRate')
+
+      153 |       });
+      154 |       const updatedBody = await updatedDetail.json();
+    > 155 |       expect(Number(updatedBody.data.dailyRate)).toBe(9.99);
+          |                                      ^
+      156 |       expect(updatedBody.data.durationDays).toBe(90);
+      157 |       // DB verification: historical snapshot logged in fee_history
+      158 |       const historyResponse = await request.get(`${API_BASE_URL}/admin/ad-fees/history`, {
+        at C:\AI Agent\skin-analysis\e2e\tests\Ad_Management_Screen\ad-fee-packages.spec.ts:155:38
+
+    attachment #1: screenshot (image/png) 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
+    test-results\.artifacts\Ad_Management_Screen-ad-fe-c1300-and-log-historical-snapshot-chromium\test-failed-2.png
+    笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
+
+    attachment #2: screenshot (image/png) 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
+    test-results\.artifacts\Ad_Management_Screen-ad-fe-c1300-and-log-historical-snapshot-chromium\test-failed-1.png
+    笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
+
+    Error Context: test-results\.artifacts\Ad_Management_Screen-ad-fe-c1300-and-log-historical-snapshot-chromium\error-context.md
+
+  Slow test file: [chromium] 窶ｺ tests\Ad_Management_Screen\ad-management.spec.ts (8.9m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  3 failed
+    [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:27:9 窶ｺ Admin Revenue Analytics 窶・PCL Normal Scenarios 窶ｺ N-11: View revenue analytics by placement and tier 窶ｺ should show summary metrics and charts with breakdowns by placement and tier 
+    [chromium] 窶ｺ tests\Ad_Management_Screen\ad-analytics.spec.ts:45:9 窶ｺ Admin Revenue Analytics 窶・PCL Normal Scenarios 窶ｺ N-27: Export analytics data 窶ｺ should export analytics data with multi-filter aggregation 
+    [chromium] 窶ｺ tests\Ad_Management_Screen\ad-fee-packages.spec.ts:114:9 窶ｺ Admin Package & Fee Management 窶・PCL Normal Scenarios 窶ｺ N-08: Edit an existing fee setting 窶ｺ should update fee setting and log historical snapshot 
+  132 passed (9.7m)

@@ -4,6 +4,7 @@ import { API_BASE_URL } from '../../utils/constants';
 import { adminHeaders } from '../../utils/api-auth';
 import { createPendingAds, deleteAds, prepareFeeCombination } from '../../utils/ad-test-data';
 import { captureFinalTestScreenshot } from '../../utils/screenshot';
+import { captureFeeSettingDbEvidence } from '../../utils/db-evidence';
 
 let feePage: AdFeePackagesPage;
 
@@ -33,7 +34,7 @@ test.describe('Admin Package & Fee Management — PCL Normal Scenarios', () => {
   });
 
   test.describe('N-07: Create a valid fee setting', () => {
-    test('should create a new fee setting and log history', async ({ adminPage, request }) => {
+    test('should create a new fee setting and log history', async ({ adminPage, page, request }) => {
       const combination = await prepareFeeCombination(request, await adminHeaders(request));
       await feePage.goto();
       await feePage.openCreateFeeModal();
@@ -47,6 +48,44 @@ test.describe('Admin Package & Fee Management — PCL Normal Scenarios', () => {
       await feePage.feeModal.getByRole('button', { name: 'Create Fee Setting' }).click();
       await expect(feePage.feeModal).toBeHidden();
       await feePage.captureCreateSuccess();
+      // DB verification: new fee row is active
+      const feeList = await request.get(`${API_BASE_URL}/admin/ad-fees`, {
+        headers: await adminHeaders(request),
+      });
+      expect(feeList.status()).toBe(200);
+      const listBody = await feeList.json();
+      const allSettings = (listBody.data?.data ?? listBody.data ?? []) as Array<{
+        id: string;
+        placement: string;
+        tier: string;
+        isActive: boolean;
+        dailyRate: string;
+      }>;
+      const createdSetting = allSettings.find(
+        (s) => s.placement === combination.placement && s.tier === combination.tier,
+      );
+      expect(createdSetting).toBeDefined();
+      expect(createdSetting?.isActive).toBe(true);
+      expect(Number(createdSetting?.dailyRate)).toBe(1.5);
+      // DB verification: fee history record created
+      const feeHistory = await request.get(`${API_BASE_URL}/admin/ad-fees/history`, {
+        headers: await adminHeaders(request),
+      });
+      expect(feeHistory.status()).toBe(200);
+      const historyBody = await feeHistory.json();
+      const initialHistory = historyBody.data?.data ?? historyBody.data ?? [];
+      const createdHistory = initialHistory.find(
+        (h: any) => h.changeReason === 'Initial fee setting',
+      );
+      expect(createdHistory).toBeDefined();
+      expect(createdHistory?.changedBy).toBeDefined();
+      // Live Database Verification (.png and .json)
+      await captureFeeSettingDbEvidence(
+        page,
+        'N-07_2_fee_created_in_db',
+        createdSetting!.id,
+        'DB query ad_fee_settings row after creation shows is_active = true, correct placement/tier/daily_rate'
+      );
     });
 
     test('should block duplicate active fee setting for same placement/tier', async ({ adminPage, request }) => {
@@ -80,10 +119,77 @@ test.describe('Admin Package & Fee Management — PCL Normal Scenarios', () => {
   });
 
   test.describe('N-08: Edit an existing fee setting', () => {
-    test('should update fee setting and log historical snapshot', async ({ page }) => {
+    test('should update fee setting and log historical snapshot', async ({ adminPage, request }) => {
       await feePage.goto();
-      // Find an active fee setting and edit it
-      await feePage.captureEditValidation();
+      // Find an active fee setting and get its current values
+      const listResponse = await request.get(`${API_BASE_URL}/admin/ad-fees`, {
+        headers: await adminHeaders(request),
+      });
+      const listBody = await listResponse.json();
+      const settings = (listBody.data?.data ?? listBody.data) as Array<{
+        id: string;
+        placement: string;
+        tier: string;
+        dailyRate: string;
+        durationDays: number;
+        maxAds: number;
+        isActive: boolean;
+      }>;
+      const activeSetting = settings.find((s) => s.isActive);
+      if (!activeSetting) {
+        throw new Error('An active fee setting is required for the N-08 edit test');
+      }
+      const settingId = activeSetting.id;
+      const originalDailyRate = activeSetting.dailyRate;
+      const originalDuration = activeSetting.durationDays;
+      const originalMaxAds = activeSetting.maxAds;
+      // Edit the fee setting
+      const update = await request.put(`${API_BASE_URL}/admin/ad-fees/${settingId}`, {
+        headers: await adminHeaders(request),
+        data: {
+          daily_rate: 9.99,
+          duration_days: 90,
+          max_ads: 200,
+          effective_from: new Date().toISOString().slice(0, 10),
+          change_reason: 'E2E fee setting edit',
+        },
+      });
+      expect(update.status()).toBe(200);
+      // DB verification: fee setting updated (PUT returns the updated entity;
+      // there is no GET /admin/ad-fees/:id route)
+      const updateBody = await update.json();
+      const updatedSetting = updateBody.data ?? updateBody;
+      expect(Number(updatedSetting.dailyRate)).toBe(9.99);
+      expect(updatedSetting.durationDays).toBe(90);
+      // DB verification: historical snapshot logged in fee_history
+      const historyResponse = await request.get(`${API_BASE_URL}/admin/ad-fees/history`, {
+        headers: await adminHeaders(request),
+      });
+      const historyBody = await historyResponse.json();
+      const historyRecords = (historyBody.data?.data ?? historyBody.data ?? []) as Array<{
+        changeReason: string;
+        changedBy: string;
+        oldDailyRate: string | null;
+        newDailyRate: string;
+      }>;
+      const editHistory = historyRecords.find(
+        (h: any) => h.changeReason === 'E2E fee setting edit',
+      );
+      expect(editHistory).toBeDefined();
+      expect(Number(editHistory?.oldDailyRate)).toBe(Number(originalDailyRate));
+      expect(Number(editHistory?.newDailyRate)).toBe(9.99);
+      // Restore the original values so seed data stays stable for later tests
+      const restore = await request.put(`${API_BASE_URL}/admin/ad-fees/${settingId}`, {
+        headers: await adminHeaders(request),
+        data: {
+          daily_rate: Number(originalDailyRate),
+          duration_days: originalDuration,
+          max_ads: originalMaxAds,
+          effective_from: new Date().toISOString().slice(0, 10),
+          change_reason: 'E2E fee setting restore',
+        },
+      });
+      expect(restore.status()).toBe(200);
     });
   });
 

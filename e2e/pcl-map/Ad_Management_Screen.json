@@ -8,6 +8,7 @@
     "e2e/tests/Ad_Management_Screen/ad-fee-history.spec.ts",
     "e2e/tests/Ad_Management_Screen/ad-analytics.spec.ts",
     "e2e/tests/Ad_Management_Screen/ad-export.spec.ts",
+    "e2e/tests/Ad_Management_Screen/ad-language.spec.ts",
     "e2e/tests/Ad_Management_Screen/ad-management.api.spec.ts",
     "e2e/tests/Ad_Management_Screen/ad-fee.api.spec.ts",
     "e2e/tests/Ad_Management_Screen/ad-analytics.api.spec.ts",
@@ -104,8 +105,16 @@
     ],
     "N-15": [
       {
-        "file": "e2e/tests/Ad_Management_Screen/ad-export.spec.ts",
-        "title": "should update labels on export screen"
+        "file": "e2e/tests/Ad_Management_Screen/ad-language.spec.ts",
+        "title": "translates pages, tables, and dialogs in en"
+      },
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-language.spec.ts",
+        "title": "translates pages, tables, and dialogs in my"
+      },
+      {
+        "file": "e2e/tests/Ad_Management_Screen/ad-language.spec.ts",
+        "title": "translates pages, tables, and dialogs in ja"
       }
     ],
     "N-16": [

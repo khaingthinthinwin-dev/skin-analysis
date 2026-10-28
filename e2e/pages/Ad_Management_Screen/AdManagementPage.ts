@@ -90,7 +90,34 @@ export class AdManagementPage {
     this.toast = page.getByRole('status').first();
   }
 
-  /** Navigate to the ad list page and wait for the heading. */
+  /** Navigate to the review modal for a pending ad by title. */
+  async openReviewModal(title?: string): Promise<void> {
+    if (title) {
+      await this.reviewButtonByTitle(title).click();
+    } else {
+      // Open the first review button if no title specified
+      if (await this.reviewButtons.first().isVisible()) {
+        await this.reviewButtons.first().click();
+      }
+    }
+    await this.reviewModal.waitFor({ state: 'visible', timeout: 5000 });
+  }
+
+  /** Click Approve inside the open review modal (approve flow needs no reason). */
+  async approveInReviewModal(): Promise<void> {
+    await this.reviewModal.getByRole('button', { name: 'Approve', exact: true }).click();
+    await this.reviewModal.waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
+  }
+
+  /** Reject flow: reveal the reason input, fill it, then confirm. */
+  async rejectInReviewModal(reason: string): Promise<void> {
+    await this.reviewModal.getByRole('button', { name: 'Reject', exact: true }).click();
+    await this.rejectTextarea.waitFor({ state: 'visible' });
+    await this.rejectTextarea.fill(reason);
+    await this.confirmRejectButton.click();
+    await this.reviewModal.waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
+  }
+
   async goto(): Promise<void> {
     await this.page.goto('/admin/ads');
     await this.heading.waitFor({ state: 'visible' });
@@ -218,18 +245,38 @@ export class AdManagementPage {
   }
 
   /**
-   * Select the first `n` pending ads via their row checkboxes
-   * (only pending rows have selectable checkboxes).
+   * Select exactly the first `n` pending ads via their row checkboxes
+   * (only pending rows have selectable checkboxes). Boxes beyond `n` are
+   * unchecked so `selectPendingAds(0)` clears the selection.
+   *
+   * When n=0, the BulkActionBar's "Clear" button is used to reliably reset
+   * the selectedIds React state in a single action, avoiding any race
+   * condition from sequentially unchecking individual checkboxes.
    */
   async selectPendingAds(n: number): Promise<void> {
+    if (n === 0) {
+      // Use the BulkActionBar Clear button when available – it calls
+      // setSelectedIds([]) in one synchronous React state update, which is
+      // more reliable than unchecking boxes one-by-one.
+      const clearButton = this.page.getByRole('button', { name: 'Clear' });
+      if (await clearButton.isVisible()) {
+        await clearButton.click();
+        return;
+      }
+      // Fall through to individual uncheck if the bar isn't visible yet
+    }
     const boxes = this.page
       .locator('tbody tr')
       .filter({ has: this.page.locator('input[type="checkbox"]:not([disabled])') })
       .locator('input[type="checkbox"]');
-    const count = Math.min(n, await boxes.count());
+    const count = await boxes.count();
     for (let i = 0; i < count; i++) {
-      if (!(await boxes.nth(i).isChecked())) {
-        await boxes.nth(i).check();
+      if (i < n) {
+        if (!(await boxes.nth(i).isChecked())) {
+          await boxes.nth(i).check();
+        }
+      } else if (await boxes.nth(i).isChecked()) {
+        await boxes.nth(i).uncheck();
       }
     }
   }
@@ -263,24 +310,6 @@ export class AdManagementPage {
     );
   }
 
-  /** Capture search filter evidence (N-02). */
-  async captureSearchFilter(): Promise<void> {
-    await captureScreenshot(
-      this.page,
-      'N-02_1_search_filter',
-      'Admin enters shop name in search input and list is filtered',
-    );
-  }
-
-  /** Capture status filter evidence (N-03). */
-  async captureStatusFilter(): Promise<void> {
-    await captureScreenshot(
-      this.page,
-      'N-03_1_status_filter',
-      'Admin selects status option and list is filtered accordingly',
-    );
-  }
-
   /** Capture placement filter evidence (N-04). */
   async capturePlacementFilter(): Promise<void> {
     await captureScreenshot(
@@ -296,15 +325,6 @@ export class AdManagementPage {
       this.page,
       'N-05_1_tier_filter',
       'Admin selects tier option and list is filtered',
-    );
-  }
-
-  /** Capture review modal evidence (N-21). */
-  async captureReviewModal(): Promise<void> {
-    await captureScreenshot(
-      this.page,
-      'N-21_1_review_modal',
-      'Admin opens review modal and edits status, placement, tier, dates, comment',
     );
   }
 

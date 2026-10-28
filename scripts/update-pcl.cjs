@@ -129,43 +129,16 @@ function buildEvidenceLines(moduleName, pclId, refs, statusLookup) {
     const lines = ['  - **Evidence**:'];
     const descIndex = loadScreenshotIndex(moduleName);
     const testKeys = new Set(refs.map(ref => resultKey(ref.file, ref.title)));
-
-    const shots = listScreenshots(moduleName, pclId);
-    const withMeta = shots.map(shot => ({
+    const shots = listScreenshots(moduleName, pclId).map(shot => ({
         shot,
         meta: normalizeIndexEntry(descIndex[shot]),
     }));
-    let shown = withMeta.filter(
-        ({ meta }) => !meta.test || testKeys.size === 0 || testKeys.has(meta.test)
-    );
-    if (shown.length === 0 && withMeta.length > 0) {
-        shown = withMeta;
-    }
+    let shown = shots.filter(({ meta }) => !meta.test || testKeys.size === 0 || testKeys.has(meta.test));
+    if (shown.length === 0 && shots.length > 0) shown = shots;
 
     if (shown.length === 0) {
         lines.push('    - Screenshots: (none captured)');
     } else {
-        const shots = listScreenshots(moduleName, pclId);
-        const withMeta = shots.map(shot => ({
-            shot,
-            meta: normalizeIndexEntry(descIndex[shot]),
-        }));
-        let shown = withMeta.filter(
-            ({ meta }) => !meta.test || refKeys.includes(meta.test)
-        );
-        if (shown.length === 0 && withMeta.length > 0) {
-            shown = withMeta;
-        }
-
-        if (shown.length === 0) {
-            lines.push('    - Screenshots: (none captured)');
-        } else {
-            for (const { shot, meta } of shown) {
-                if (meta.description) {
-                    lines.push(`    - ${meta.description} \u2192 \`${shot}\``);
-                } else {
-                    lines.push(`    - \`${shot}\``);
-                }
         for (const { shot, meta } of shown) {
             if (meta.description) {
                 lines.push(`    - ${meta.description} \u2192 \`${shot}\``);
@@ -179,14 +152,8 @@ function buildEvidenceLines(moduleName, pclId, refs, statusLookup) {
         const status = statusLookup.get(resultKey(ref.file, ref.title)) || 'missing';
         lines.push(`    - Test: ${ref.file} \u203a "${ref.title}" \u2014 ${status}`);
     }
-
     return lines;
 }
-
-/**
- * New PCL-ID-keyed format: mappings[pclId] = [{ file, title }, ...]
- * Ticks only when ALL refs passed. Writes/replaces a multi-line Evidence block under the item.
- */
 function updatePCLNew(moduleName, pclFilePath, results, mappings, markAllWhenSuitePasses = false) {
     const fullPath = path.join(ROOT_DIR, pclFilePath);
     if (!fs.existsSync(fullPath)) {
@@ -377,8 +344,7 @@ for (const moduleName of modules) {
             allMissingItems.push(...res.missingItems.map(m => `${moduleName}:${m}`));
         }
         modulesProcessed++;
-
-        const status = failed > 0 ? '⚠️' : '✅';
+        const status = failed > 0 ? '[FAIL]' : '[PASS]';
         console.log(`${status} ${moduleName}: ${passed} passed, ${failed} failed, ${updated} PCL items marked`);
         if (res.gaps.length) {
             console.log(`   ⚠️  Known gaps (left unchecked): ${res.gaps.join(', ')}`);
@@ -390,8 +356,7 @@ for (const moduleName of modules) {
         const res = updatePCLLegacy(config.pclFile, results, config.mappings);
         updated = res.updated;
         modulesProcessed++;
-
-        const status = failed > 0 ? '⚠️' : '✅';
+        const status = failed > 0 ? '[FAIL]' : '[PASS]';
         console.log(`${status} ${moduleName}: ${passed} passed, ${failed} failed, ${updated} PCL items marked (legacy title-keyed)`);
     }
 
@@ -399,16 +364,16 @@ for (const moduleName of modules) {
 }
 
 console.log('');
-console.log('═══════════════════════════════════════');
-console.log(`📊 Summary:`);
+console.log('------------------------------------------------------------');
+console.log('Summary:');
 console.log(`   Modules processed: ${modulesProcessed}/${modules.length}`);
-console.log(`   ✅ Total passed:   ${totalPassed}`);
-console.log(`   ❌ Total failed:   ${totalFailed}`);
-console.log(`   📝 PCL items marked: ${totalUpdated}`);
+console.log(`   Total passed:   ${totalPassed}`);
+console.log(`   Total failed:   ${totalFailed}`);
+console.log(`   PCL items marked: ${totalUpdated}`);
 if (allGaps.length) {
-    console.log(`   ⚠️  Known gaps: ${allGaps.join(', ')}`);
+    console.log(`   Known gaps: ${allGaps.join(', ')}`);
 }
 if (allMissingItems.length) {
-    console.log(`   ❌ Missing PCL IDs in files: ${allMissingItems.join(', ')}`);
+    console.log(`   Missing PCL IDs in files: ${allMissingItems.join(', ')}`);
 }
-console.log('═══════════════════════════════════════');
+console.log('------------------------------------------------------------');

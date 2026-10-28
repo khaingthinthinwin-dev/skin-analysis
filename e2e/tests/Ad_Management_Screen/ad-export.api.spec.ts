@@ -28,7 +28,7 @@ test.describe('ad-export.api — API Contract Tests', () => {
     // Should exclude sensitive fields
     await captureApiEvidence(
       page,
-      'I-13',
+      'I-13_1_export_performance_csv',
       'POST',
       '/admin/ads/export/ad-performance',
       res.status(),
@@ -54,7 +54,7 @@ test.describe('ad-export.api — API Contract Tests', () => {
     // Should include submission status and outcomes
     await captureApiEvidence(
       page,
-      'I-14',
+      'I-14_1_export_submission_history_csv',
       'POST',
       '/admin/ads/export/submission-history',
       res.status(),
@@ -80,7 +80,7 @@ test.describe('ad-export.api — API Contract Tests', () => {
     // Should contain fee change records with reasons
     await captureApiEvidence(
       page,
-      'I-15',
+      'I-15_1_export_fee_history_csv',
       'POST',
       '/admin/ads/export/fee-history',
       res.status(),
@@ -160,7 +160,7 @@ test.describe('ad-export.api — API Contract Tests', () => {
     expect(feeAudit).toBeDefined();
     await captureApiEvidence(
       page,
-      'I-19',
+      'I-19_1_export_report_filters_audit',
       'POST',
       '/admin/ads/export/* (report-specific filters)',
       res3.status(),
@@ -193,7 +193,7 @@ test.describe('ad-export.api — API Contract Tests', () => {
     expect(res2.status()).toBe(400);
     await captureApiEvidence(
       page,
-      'A-16',
+      'A-16_1_invalid_range_and_format',
       'POST',
       '/admin/ads/export/ad-performance (invalid range and format)',
       res2.status(),
@@ -221,7 +221,7 @@ test.describe('ad-export.api — API Contract Tests', () => {
       expect(matchingRows[1]).toContain(',approved,');
       await captureApiEvidence(
         page,
-        'B-13',
+        'B-13_1_submission_history_events',
         'POST',
         '/admin/ads/export/submission-history',
         response.status(),
