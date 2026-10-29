@@ -50,7 +50,7 @@
       "duration": 713
     },
     {
-      "title": "should log in as merchant and navigate to merchant dashboard",
+      "title": "should log in as merchant and land on product management",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
       "duration": 3795
@@ -80,7 +80,7 @@
       "duration": 2541
     },
     {
-      "title": "should login as buyer and redirect to buyer dashboard",
+      "title": "should login as buyer and redirect to the buyer search screen",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
       "status": "passed",
       "duration": 6034
@@ -146,7 +146,7 @@
       "duration": 2109
     },
     {
-      "title": "should redirect to login when accessing buyer dashboard without authentication",
+      "title": "should redirect to login when accessing the buyer area without authentication",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
       "duration": 1623
@@ -404,7 +404,7 @@
       "duration": 2715
     },
     {
-      "title": "should redirect to dashboard if already logged in",
+      "title": "should redirect to the landing page if already logged in",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
       "status": "passed",
       "duration": 5213
@@ -686,7 +686,7 @@
       "duration": 3640
     },
     {
-      "title": "should redirect to dashboard if already logged in",
+      "title": "should redirect to the landing page if already logged in",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
       "duration": 2586

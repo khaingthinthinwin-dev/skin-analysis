@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { roleNavConfigs, type UserRole, type NavItem } from '@/lib/navConfig'
+import { getDashboardRoute } from '@/lib/constants'
 import { useAuth } from '@/hooks/useAuth'
 import { useNotifications } from '@/features/shared/notifications/hooks/useNotifications'
 
@@ -120,7 +121,7 @@ export function Sidebar({
       {/* Sidebar Header / Brand Section */}
       <div className="flex h-16 items-center justify-between border-b border-border/60 px-4">
         <Link
-          to={activeRole === 'admin' || activeRole === 'super_admin' ? '/admin' : activeRole === 'merchant' ? '/merchant' : '/buyer'}
+          to={getDashboardRoute(activeRole)}
           className="flex items-center gap-3 overflow-hidden"
           onClick={onClose}
         >

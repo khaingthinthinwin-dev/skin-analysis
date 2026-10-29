@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { LogOut, User, Settings, LayoutDashboard } from 'lucide-react'
+import { LogOut, User, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuth } from '@/hooks/useAuth'
-import { ROUTES, getDashboardRoute } from '@/lib/constants'
+import { ROUTES } from '@/lib/constants'
 
 export function UserNav() {
   const { t } = useTranslation()
@@ -51,12 +51,6 @@ export function UserNav() {
           </span>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to={getDashboardRoute(user.role)} className="flex items-center gap-2 font-semibold text-primary">
-            <LayoutDashboard className="h-4 w-4" />
-            {t('nav.dashboard', 'Dashboard')}
-          </Link>
-        </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link to={ROUTES.PROFILE} className="flex items-center gap-2">
             <User className="h-4 w-4" />

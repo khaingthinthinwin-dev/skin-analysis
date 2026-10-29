@@ -22,8 +22,8 @@ export const ROUTES = {
   PROFILE: '/dashboard/profile',
   SETTINGS: '/dashboard/settings',
   BUYER_DASHBOARD: '/buyer/search',
-  MERCHANT_DASHBOARD: '/merchant',
-  ADMIN_DASHBOARD: '/admin',
+  MERCHANT_DASHBOARD: '/merchant/products',
+  ADMIN_DASHBOARD: '/admin/users',
   ADMIN_CREATE_ADMIN: '/admin/create-admin',
 } as const
 

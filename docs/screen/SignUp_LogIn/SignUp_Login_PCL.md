@@ -60,20 +60,20 @@
 - [x] **N-03**: Login with valid credentials
   - **Evidence**:
     - Screenshot of the Login page with valid email and password entered (before Sign In) → `N-03_1_login_form_filled.png`
-    - Screenshot of the buyer dashboard after successful login → `N-03_2_buyer_dashboard_after_login.png`
-    - Test: login.spec.ts › "should login as buyer and redirect to buyer dashboard" — passed
+    - Screenshot of the buyer search screen after successful login → `N-03_2_buyer_search_after_login.png`
+    - Test: login.spec.ts › "should login as buyer and redirect to the buyer search screen" — passed
   - **Precondition**: User has existing account
   - **Steps**:
     1. Navigate to `/login`
     2. Enter valid email and password
     3. Click "Sign In"
-  - **Expected Result**: Success — logged in, show “Logged in successfully”, redirect to home / buyer dashboard
+  - **Expected Result**: Success — logged in, show “Logged in successfully”, redirect to the buyer search screen (`/buyer/search`)
   - **Business Rules**: BR-AUTH-006, BR-AUTH-007
   - **API**: `POST /api/v1/auth/login`
 
 - [x] **N-04**: Logout successfully
   - **Evidence**:
-    - Screenshot of buyer dashboard before logout → `N-04_1_dashboard_before_logout.png`
+    - Screenshot of the buyer search screen before logout → `N-04_1_search_before_logout.png`
     - Screenshot of home page after logout → `N-04_2_after_logout_redirect.png`
     - Test: auth.spec.ts › "should log out buyer and clear session" — passed
   - **Precondition**: User is authenticated
@@ -373,7 +373,7 @@
 - [x] **N-25**: Login with valid credentials in Myanmar language UI
   - **Evidence**:
     - Login page rendered in Myanmar with all labels verified → `N-25_1_myanmar_login_form.png`
-    - Buyer dashboard reached with Myanmar success toast after Myanmar-language login → `N-25_2_myanmar_login_success.png`
+    - Buyer search screen reached with Myanmar success toast after Myanmar-language login → `N-25_2_myanmar_login_success.png`
     - Test: login.spec.ts › "N-25: should login successfully in Myanmar language" — passed
   - **Precondition**: User has an existing account; UI language is set to Myanmar
   - **Steps**:
@@ -382,7 +382,7 @@
     3. Verify page heading, field labels, "Sign In" button, "Forgot password?" and "Create one" links are displayed in Myanmar
     4. Enter valid email and password
     5. Click the Myanmar-labelled "Sign In" button
-  - **Expected Result**: Success — logged in, success toast appears in Myanmar, redirect to home / buyer dashboard
+  - **Expected Result**: Success — logged in, success toast appears in Myanmar, redirect to the buyer search screen
   - **Business Rules**: BR-AUTH-006, BR-AUTH-007
   - **API**: `POST /api/v1/auth/login`
 
@@ -434,28 +434,28 @@
 
 - [x] **N-29**: Success toast is shown after login
   - **Evidence**:
-    - Success toast notification displayed after login redirects to the dashboard → `N-29_1_success_toast.png`
+    - Success toast notification displayed after login redirects to the search screen → `N-29_1_success_toast.png`
     - Test: login.spec.ts › "should show toast notification on successful login" — passed
   - **Precondition**: User has an existing account
   - **Steps**:
     1. Navigate to `/login`
     2. Enter valid email and password
     3. Click "Sign In"
-    4. Observe the toast area after the dashboard renders
-  - **Expected Result**: Toast "Logged in successfully" is displayed on top of the buyer dashboard
+    4. Observe the toast area after the search screen renders
+  - **Expected Result**: Toast "Logged in successfully" is displayed on top of the buyer search screen
   - **Business Rules**: BR-AUTH-006
   - **API**: `POST /api/v1/auth/login`
 
-- [x] **N-30**: Login as merchant and land on the merchant dashboard
+- [x] **N-30**: Login as merchant and land on Product Management
   - **Evidence**:
-    - Merchant Portal dashboard after merchant login → `N-30_1_merchant_dashboard.png`
-    - Test: auth.spec.ts › "should log in as merchant and navigate to merchant dashboard" — passed
+    - Product Management screen after merchant login → `N-30_1_merchant_product_management.png`
+    - Test: auth.spec.ts › "should log in as merchant and land on product management" — passed
   - **Precondition**: User has an existing merchant account (license approved)
   - **Steps**:
     1. Navigate to `/login`
     2. Enter merchant email and password
     3. Click "Sign In"
-  - **Expected Result**: Redirected to the merchant dashboard; "Merchant Portal" is visible
+  - **Expected Result**: Redirected to `/merchant/products`; the Products page heading is visible
   - **Business Rules**: BR-AUTH-006, BR-AUTH-007
   - **API**: `POST /api/v1/auth/login`
 
@@ -512,16 +512,16 @@
 
 - [x] **N-35**: Authenticated users are redirected away from /login and /register
   - **Evidence**:
-    - Final state when an already-authenticated user visits /login (redirected to the dashboard) → `N-35_1_already_authenticated_redirect.png`
-    - Test: login.spec.ts › "should redirect to dashboard if already logged in" — passed
+    - Final state when an already-authenticated user visits /login (redirected to the role landing page) → `N-35_1_already_authenticated_redirect.png`
+    - Test: login.spec.ts › "should redirect to the landing page if already logged in" — passed
   - **Precondition**: User is already logged in (buyer session)
   - **Steps**:
     1. With an active session, navigate to `/login`
-    2. Verify the URL is no longer `/login` (buyer/merchant/admin dashboard renders)
+    2. Verify the URL is no longer `/login` (the role landing page renders: buyer → `/buyer/search`, merchant → `/merchant/products`, admin → `/admin/users`)
     3. Repeat for `/register`
-  - **Expected Result**: Neither auth form is shown — the user is taken straight to their dashboard
+  - **Expected Result**: Neither auth form is shown — the user is taken straight to their role landing page
   - **Business Rules**: None (auth guard)
-  - **Note**: Register-side assertion is covered by `register.spec.ts › "should redirect to dashboard if already logged in"`.
+  - **Note**: Register-side assertion is covered by `register.spec.ts › "should redirect to the landing page if already logged in"`.
 
 - [x] **N-36**: Submit a valid 6-digit verification code and reach the Reset Password page
   - **Evidence**:

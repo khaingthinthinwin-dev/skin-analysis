@@ -8,7 +8,7 @@
   "durationMs": 308882,
   "tests": [
     {
-      "title": "N-01: navigates from the admin dashboard to the Commission tab",
+      "title": "N-01: navigates from the admin landing page to the Commission tab",
       "file": "C:\\PyaePhyoHein\\AI team\\skin-analysis-PPH1\\e2e\\tests\\Commission_Revenue\\commission-revenue.spec.ts",
       "status": "passed",
       "duration": 3295

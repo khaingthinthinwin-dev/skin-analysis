@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router'
+import { createBrowserRouter, Navigate } from 'react-router'
 import { lazy, Suspense } from 'react'
 import { MainLayout } from '@/layouts/MainLayout'
 import { AuthLayout } from '@/layouts/AuthLayout'
@@ -22,7 +22,6 @@ const Settings = lazy(() => import('@/pages/Settings'))
 const NotFound = lazy(() => import('@/pages/NotFound'))
 const Unauthorized = lazy(() => import('@/pages/Unauthorized'))
 
-const AdminDashboard = lazy(() => import('@/pages/admin/Dashboard'))
 const AdminUserManagement = lazy(() => import('@/pages/admin/UserManagement'))
 const AdminMerchantManagement = lazy(() => import('@/pages/admin/MerchantManagement'))
 const AdminAdsIndex = lazy(() => import('@/pages/admin/ads/index'))
@@ -39,7 +38,6 @@ const AdminOrdersPage = lazy(() => import('@/pages/order-insights/AdminOrdersPag
 const AdminOrderDetailPage = lazy(() => import('@/pages/order-insights/AdminOrderDetailPage'))
 const AdminMasterData = lazy(() => import('@/pages/admin/MasterData'))
 
-const BuyerDashboard = lazy(() => import('@/pages/buyer/Dashboard'))
 const BuyerSearchFilter = lazy(() => import('@/pages/buyer/Products'))
 const BuyerProductDetail = lazy(() => import('@/pages/buyer/ProductDetail'))
 const BuyerWishlist = lazy(() => import('@/pages/buyer/Wishlist'))
@@ -59,7 +57,6 @@ const BuyerSkinAnalysis = lazy(() => import('@/pages/buyer/SkinAnalysisPage'))
 const BuyerSkinAnalysisHistory = lazy(() => import('@/pages/buyer/SkinAnalysisHistoryPage'))
 const BuyerMatchingRecommendations = lazy(() => import('@/pages/buyer/MatchingRecommendations'))
 
-const MerchantDashboard = lazy(() => import('@/pages/merchant/Dashboard'))
 const MerchantProductManagement = lazy(() => import('@/pages/merchant/ProductManagement'))
 const MerchantProductReview = lazy(() => import('@/pages/merchant/ProductReview'))
 const MerchantProductCreate = lazy(() => import('@/pages/merchant/ProductCreate'))
@@ -155,11 +152,7 @@ export const router = createBrowserRouter([
             children: [
               {
                 index: true,
-                element: (
-                  <SuspenseWrapper>
-                    <AdminDashboard />
-                  </SuspenseWrapper>
-                ),
+                element: <Navigate to="/admin/users" replace />,
               },
               {
                 path: 'users',
@@ -315,11 +308,7 @@ export const router = createBrowserRouter([
             children: [
               {
                 index: true,
-                element: (
-                  <SuspenseWrapper>
-                    <BuyerDashboard />
-                  </SuspenseWrapper>
-                ),
+                element: <Navigate to="/buyer/search" replace />,
               },
               {
                 path: 'search',
@@ -473,11 +462,7 @@ export const router = createBrowserRouter([
             children: [
               {
                 index: true,
-                element: (
-                  <SuspenseWrapper>
-                    <MerchantDashboard />
-                  </SuspenseWrapper>
-                ),
+                element: <Navigate to="/merchant/products" replace />,
               },
               {
                 path: 'products',

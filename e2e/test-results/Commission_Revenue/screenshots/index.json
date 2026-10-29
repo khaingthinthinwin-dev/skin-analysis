@@ -1,6 +1,6 @@
 {
   "N-01_1_ui_commission_tab_loaded.png": {
-    "test": "commission-revenue.spec.ts::N-01: navigates from the admin dashboard to the Commission tab"
+    "test": "commission-revenue.spec.ts::N-01: navigates from the admin landing page to the Commission tab"
   },
   "commission_revenue_page_loaded.png": {
     "test": "commission-revenue.spec.ts::I-23: delete endpoint returns success, conflict, not-found, and validation responses"
@@ -466,5 +466,8 @@
   "I-19_api_call.png": {
     "description": "API request and response evidence for I-19: denies commission access to buyer and merchant accounts",
     "test": "commission-revenue.spec.ts::I-19: denies commission access to buyer and merchant accounts"
+  },
+  "N-01_0_admin_users_landing.png": {
+    "test": "commission-revenue.spec.ts::N-01: navigates from the admin landing page to the Commission tab"
   }
 }
