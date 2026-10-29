@@ -362,18 +362,18 @@ The review status is stored in `reviews.status` as a 3-value string enum — **n
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-01 | Page Title | Text | `admin.reviews.title` | Yes | "Review & Report Management" |
+| EL-01 | Page Title | Text | `admin.reviews.title` | Yes | "Review & Report Management" with subtitle "Moderate product reviews and reports" |
 | EL-02 | Screen Tabs | Tab Group | `admin.reviews.screenTabs` | Yes | Tabs: Reviews, Reports |
 | EL-03 | Filter Tabs | Tab Group | `admin.reviews.tabs` | Yes | Tabs: All, Pending, Approved, Rejected |
 | EL-04 | Search Input | Input (text) | `admin.reviews.search` | No | Search reviews by user name, product name, or content |
 | EL-05 | Sort Dropdown | Select | `admin.reviews.sort` | No | Sort by: Newest, Oldest, Rating (High-Low), Rating (Low-High) |
-| EL-06 | Reviews Table | Table | — | Yes | Displays: checkbox, user avatar, user name, product name, rating stars, review title, status badge, created date, actions |
+| EL-06 | Reviews Table | Table | — | Yes | Displays: checkbox, user avatar (initials), user name, email, product thumbnail, product name, price, rating stars, title, status badge, date, actions (Eye: View Detail, Trash: Delete); sorted newest first, 10 rows per page |
 | EL-07 | Review Status Badge | Badge | — | Yes | Green (Approved), Red (Rejected), Amber (Pending) |
 | EL-08 | Rating Display | Star Rating | — | Yes | 1-5 star display with Beauty Pink (#EC4899) color |
-| EL-09 | Actions Dropdown | Dropdown Menu | — | Yes | Options: View Detail, Approve, Reject, Delete |
+| EL-09 | Row Actions | Dropdown Menu | — | Yes | Eye: View Detail (opens Review Detail modal); Trash: Delete; Approve and Reject actions are performed inside the Review Detail modal |
 | EL-10 | Bulk Actions | Button Group | — | No | Approve Selected, Reject Selected, Delete Selected |
-| EL-11 | Pagination | Pagination | — | Yes | Page navigation with page size selector (20/50/100) |
-| EL-12 | Stats Bar | Stats Display | — | No | Shows: Total Reviews, Pending Count, Approved Count, Rejected Count |
+| EL-11 | Pagination | Pagination | — | Yes | Page navigation with page size selector (10/20/50/100, default 10); changing page size resets to page 1 |
+| EL-12 | Stats Bar | Stats Display | — | No | Shows server totals: Total Reviews, Pending Count, Approved Count, Rejected Count; each card acts as a status filter |
 
 **Review Detail Modal:**
 
@@ -396,14 +396,14 @@ The review status is stored in `reviews.status` as a 3-value string enum — **n
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-23 | Filter Tabs | Tab Group | `admin.reports.tabs` | Yes | Tabs: All, Pending, Reviewed, Resolved, Rejected |
+| EL-23 | Filter Tabs | Tab Group | `admin.reports.tabs` | Yes | Tabs: All, Pending, Reviewed, Resolved, Rejected; tab badge shows total |
 | EL-24 | Search Input | Input (text) | `admin.reports.search` | No | Search by reporter name, review content |
-| EL-25 | Reports Table | Table | — | Yes | Displays: checkbox, reporter name, review body excerpt, reason badge, status badge, reported date, actions |
-| EL-26 | Report Status Badge | Badge | — | Yes | Amber (Pending), Blue (Reviewed), Green (Resolved), Red (Rejected) |
-| EL-27 | Report Reason Badge | Badge | — | Yes | Reason category display (spam/inappropriate/fake/other) |
+| EL-25 | Reports Table | Table | — | Yes | Displays: checkbox, reporter (avatar + email), review excerpt (fallback to title, then "-"), reason badge (spam=orange, inappropriate=red, fake=yellow, other=purple), status badge (pending=amber, reviewed=blue, resolved=emerald, rejected=red), reported date, actions; Trash action hidden for resolved reports |
+| EL-26 | Report Status Badge | Badge | — | Yes | Amber (Pending), Blue (Reviewed), Emerald (Resolved), Red (Rejected) |
+| EL-27 | Report Reason Badge | Badge | — | Yes | Reason category with color: spam=orange, inappropriate=red, fake=yellow, other=purple |
 | EL-28 | Actions Dropdown | Dropdown Menu | — | Yes | Options: View Detail, Reject, Resolve |
 | EL-29 | Bulk Actions | Button Group | — | No | Reject Selected, Resolve Selected |
-| EL-30 | Pagination | Pagination | — | Yes | Page navigation with page size selector (20/50/100) |
+| EL-30 | Pagination | Pagination | — | Yes | Page navigation with page size selector (10/20/50/100, default 10) |
 | EL-31 | Stats Bar | Stats Display | — | No | Shows: Total Reports, Pending Count, Reviewed Count, Resolved Count, Rejected Count |
 
 **Report Detail Modal:**
@@ -415,8 +415,8 @@ The review status is stored in `reviews.status` as a 3-value string enum — **n
 | EL-34 | Report Reason Display | Text | — | Yes | Selected reason category |
 | EL-35 | Report Detail Text | Text | — | No | Reporter's additional explanation |
 | EL-36 | Target Review Actions | Button Group | — | Yes | Approve/Reject/Delete buttons for the target review |
-| EL-37 | Admin Note Input | Textarea | `admin.reports.adminNote` | No | Optional admin note |
-| EL-38 | Reject Button | Button (destructive) | `admin.reports.reject` | Yes | Reject report |
+| EL-37 | Admin Note Input | Textarea | `admin.reports.adminNote` | No | Label "Admin Note *"; placeholder "Add internal resolution notes..."; section hidden once report is resolved |
+| EL-38 | Reject Button | Button (destructive) | `admin.reports.reject` | Yes | Reject report; disabled until admin note is non-empty |
 | EL-39 | Resolve Button | Button (primary) | `admin.reports.resolve` | Yes | Resolve report (auto-reject target review) |
 | EL-40 | Delete Button | Button (destructive) | `admin.reports.delete` | Yes | Delete report |
 | EL-41 | Close Button | Button (outline) | — | Yes | Close modal |
@@ -434,7 +434,7 @@ The review status is stored in `reviews.status` as a 3-value string enum — **n
 | EL-42 | Page Title | Text | `admin.merchants.title` | Yes | "Merchant Management" |
 | EL-43 | Filter Tabs | Tab Group | `admin.merchants.tabs` | Yes | Tabs: All, Pending Approval, Approved, Rejected |
 | EL-44 | Search Input | Input (text) | `admin.merchants.search` | No | Search by merchant name, user email |
-| EL-45 | Merchants Table | Table | — | Yes | Displays: checkbox, shop logo, shop name, user name, registration date, status badge, actions |
+| EL-45 | Merchants Table | Table | — | Yes | Displays: checkbox, shop logo, shop name, owner name/email, registration date, license status badge, actions; sorted newest first, 10 rows per page |
 | EL-46 | Merchant Status Badge | Badge | — | Yes | Green (Approved), Amber (Pending), Red (Rejected) |
 | EL-47 | Actions Dropdown | Dropdown Menu | — | Yes | Options: View Detail, Approve, Reject |
 | EL-48 | Pagination | Pagination | — | Yes | Page navigation |
@@ -451,6 +451,77 @@ The review status is stored in `reviews.status` as a 3-value string enum — **n
 | EL-54 | Reject Button | Button (destructive) | `admin.merchant.reject` | Yes | Reject merchant |
 | EL-55 | Close Button | Button (outline) | — | Yes | Close modal |
 
+### 5.3 Screen: Product Content Moderation (`/admin/content`)
+
+**Purpose:** Allow administrators to view, deactivate, and reactivate products for content moderation.
+
+#### 5.3.1 UI Elements
+
+**Products Table View:**
+
+| Element ID | Element Name | Element Type | i18n Key | Required | Description |
+|------------|--------------|--------------|----------|:--------:|-------------|
+| EL-56 | Page Title | Text | `admin.content.title` | Yes | "Product Content Moderation" |
+| EL-57 | Subtitle | Text | `admin.content.subtitle` | Yes | "Review and moderate product content" |
+| EL-58 | Stats Bar | Stats Display | — | No | 3 stat cards: Total Products, Active Count, Inactive Count; each card acts as a status filter |
+| EL-59 | Filter Tabs | Tab Group | `admin.content.tabs` | Yes | Tabs: All, Active, Inactive |
+| EL-60 | Search Input | Input (text) | `admin.content.search` | No | Search products by name or shop |
+| EL-61 | Sort Dropdown | Select | `admin.content.sort` | No | Sort by: Newest, Oldest, Price (High-Low), Price (Low-High), Name (A-Z), Name (Z-A) |
+| EL-62 | Products Table | Table | — | Yes | Displays: checkbox, product thumbnail, name (truncated), category, shop (shopName or "N/A", owner name), price ($x.xx), status badge (Active=emerald / Inactive=red), created date, actions |
+| EL-63 | Product Status Badge | Badge | — | Yes | Emerald (Active), Red (Inactive) |
+| EL-64 | Row Actions | Dropdown Menu | — | Yes | Eye: View Detail; Ban/Deactivate (when active); CheckCircle/Reactivate (when inactive) |
+| EL-65 | Bulk Actions | Button Group | — | No | Deactivate All, Activate All |
+| EL-66 | Pagination | Pagination | — | Yes | Page navigation with page size selector (10/20/50/100, default 10) |
+| EL-67 | Pending-Order Guard | Tooltip | — | Yes | Ban/Deactivate disabled with tooltip "Cannot deactivate until the order delivery is completed." when `hasPendingOrders` is true |
+
+**Product Detail Dialog:**
+
+| Element ID | Element Name | Element Type | i18n Key | Required | Description |
+|------------|--------------|--------------|----------|:--------:|-------------|
+| EL-68 | Product Information | Card | — | Yes | Product image, name, "price · category" |
+| EL-69 | Shop Card | Card | — | Yes | Initials circle + shop name |
+| EL-70 | Status and Created Cards | Card | — | Yes | Status badge, created date |
+| EL-71 | Product Images | Image Grid | — | No | Product images; missing images render gracefully; relative URLs prefixed with API host |
+| EL-72 | Deactivation Reason | Textarea | `admin.content.deactivateReason` | Conditional | Placeholder "Enter deactivation reason (required, max 500 characters)..."; required when deactivating |
+| EL-73 | Deactivate Button | Button (destructive) | `admin.content.deactivate` | Yes | Deactivate product (enabled once reason non-empty; disabled when `hasPendingOrders`) |
+| EL-74 | Reactivate Button | Button (primary) | `admin.content.reactivate` | Yes | Reactivate product (no reason field) |
+| EL-75 | Cancel Button | Button (outline) | — | Yes | Close dialog |
+
+#### 5.3.2 Bulk Dialogs
+
+| Element ID | Element Name | Element Type | Description |
+|------------|--------------|--------------|-------------|
+| EL-76 | Bulk Deactivate Dialog | Dialog | "The selected products will be deactivated and hidden from the storefront. This can be undone later." Reason required. Toast "{{count}} products deactivated" |
+| EL-77 | Bulk Activate Dialog | Dialog | Confirm activate; toast "{{count}} products activated" |
+
+### 5.4 Screen: User Management (`/admin/users`)
+
+**Purpose:** Allow administrators to view, activate, and deactivate user accounts.
+
+#### 5.4.1 UI Elements
+
+**Users Table View:**
+
+| Element ID | Element Name | Element Type | i18n Key | Required | Description |
+|------------|--------------|--------------|----------|:--------:|-------------|
+| EL-78 | Page Title | Text | `admin.users.title` | Yes | "User Management" |
+| EL-79 | Stats Bar | Stats Display | — | No | 4 stat cards: Total Users, Active Count, Inactive Count, Admin Count |
+| EL-80 | Search Input | Input (text) | `admin.users.search` | No | Search users by name or email |
+| EL-81 | Status Filter | Card Group | `admin.users.status` | Yes | Cards: Total, Active, Inactive, Admin; each filters the list and resets page to 1 |
+| EL-82 | Sort Dropdown | Select | `admin.users.sort` | No | Sort by: Newest, Oldest, Name (A-Z), Name (Z-A) |
+| EL-83 | Users Table | Table | — | Yes | Displays: avatar/initials, name, email, role, status badge, actions |
+| EL-84 | User Actions | Dropdown Menu | — | Yes | View Details; Activate (when inactive) / Deactivate (when active, with reason) |
+| EL-85 | Pagination | Pagination | — | Yes | Page navigation with page size selector (10/20/50/100) |
+
+**User Detail Modal:**
+
+| Element ID | Element Name | Element Type | i18n Key | Required | Description |
+|------------|--------------|--------------|----------|:--------:|-------------|
+| EL-86 | User Profile | Card | — | Yes | Avatar, name, email, phone, role, active status, joined date, user ID |
+| EL-87 | Deactivation Reason | Textarea | `admin.users.deactivateReason` | Conditional | Required when deactivating |
+| EL-88 | Activate Button | Button (primary) | `admin.users.activate` | Yes | Reactivate account |
+| EL-89 | Deactivate Button | Button (destructive) | `admin.users.deactivate` | Yes | Deactivate account with reason (disabled for admin self) |
+
 ---
 
 ## 6. Functional Operation Specification
@@ -461,9 +532,9 @@ The review status is stored in `reviews.status` as a 3-value string enum — **n
 |-----------|---------------|
 | **Trigger** | Admin navigates to /admin/reviews or changes the review status filter |
 | **API Endpoint** | `GET /api/v1/admin/reviews` |
-| **Request Query Parameters** | `page` (default: 1), `limit` (default: 20), `sort` (default: `createdAt`), `order` (default: `desc`), `status` (`pending`/`approved`/`rejected`/omitted for all), `search` (searches `title`, `body`, user name, product name) |
+| **Request Query Parameters** | `page` (default: 1), `limit` (default: 10), `sort` (default: `createdAt`), `order` (default: `desc`), `status` (`pending`/`approved`/`rejected`/omitted for all), `search` (searches `title`, `body`, user name, product name) |
 | **Pre-Submission Validation** | JWT access token validated. Admin role verified. |
-| **Processing Steps** | 1. Validate JWT access token. 2. Verify admin role via RolesGuard. 3. Build `where` clause filtering `reviews.status`. 4. If `search` provided, apply OR filter across `title`, `body`, `user.name`, `product.name`. 5. Join with `users` (id, name, email, avatarUrl) and `products` (id, name, images, slug, price). 6. Apply pagination and ordering. 7. Return `{ items, total, page, limit, totalPages }`. |
+| **Processing Steps** | 1. Validate JWT access token. 2. Verify admin role via RolesGuard. 3. Build `where` clause filtering `reviews.status`. 4. If `search` provided, apply OR filter across `title`, `body`, `user.name`, `product.name`. 5. Join with `users` (id, name, email, avatarUrl) and `products` (id, name, images, slug, price). 6. Apply pagination and ordering. 7. Return `{ data: { items }, meta: { page, limit, total, totalPages } }`. |
 | **Success Response** | 200 OK with paginated review data |
 | **Post-Action** | Display reviews table with moderation actions |
 
@@ -632,7 +703,7 @@ The review status is stored in `reviews.status` as a 3-value string enum — **n
 |-----------|---------------|
 | **Trigger** | Admin navigates to /admin/reports or changes the report status filter |
 | **API Endpoint** | `GET /api/v1/admin/reports` |
-| **Request Query Parameters** | `page` (default: 1), `limit` (default: 20), `sort` (default: `createdAt`), `order` (default: `desc`), `status` (`pending`/`reviewed`/`resolved`/`rejected`/omitted for all), `search` (searches reporter name, reporter email, review body) |
+| **Request Query Parameters** | `page` (default: 1), `limit` (default: 10), `sort` (default: `createdAt`), `order` (default: `desc`), `status` (`pending`/`reviewed`/`resolved`/`rejected`/omitted for all), `search` (searches reporter name, reporter email, review body) |
 | **Pre-Submission Validation** | JWT access token validated. Admin role verified. |
 | **Processing Steps** | 1. Validate JWT access token. 2. Verify admin role via RolesGuard. 3. Query `review_reports` table with optional status filter. 4. Include `review` (with nested `user` and `product`), `reporter` (id, name, email, avatarUrl), `resolver` (id, name). 5. Apply pagination. 6. Return `{ items, total, page, limit, totalPages }`. |
 | **Success Response** | 200 OK with paginated report data |
@@ -712,6 +783,13 @@ The review status is stored in `reviews.status` as a 3-value string enum — **n
 | `isActive` | boolean | Yes | `@IsBoolean()`, `@IsNotEmpty()` |
 | `reason` | VARCHAR(500) | No | `@IsOptional()`, `@MaxLength(500)` |
 
+`ModerateProductDto`:
+
+| Field | Display Name (EN) | Data Type & Length | Required | Input Control | Validation |
+|-------|-------------------|-------------------|:--------:|---------------|------------|
+| `isActive` | Active Status | BOOLEAN | Yes | Toggle | `@IsBoolean()`, `@IsNotEmpty()` |
+| `reason` | Moderation Reason | VARCHAR(500) | Conditional | Textarea | `@IsOptional()`, `@IsString()`, `@MaxLength(500)`; non-empty enforced at service layer when `isActive = false` |
+
 ### 7.4 Input Specification — Review Report (入力定義)
 
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
@@ -781,6 +859,34 @@ The review status is stored in `reviews.status` as a 3-value string enum — **n
 | `resolvedAt` | `review_reports.resolved_at` | ISO 8601 timestamp or "—" |
 | `createdAt` | `review_reports.created_at` | ISO 8601 timestamp |
 
+### 7.8 Output Specification — Product List (出力定義)
+
+| Field | Data Source | Display Format |
+|-------|-------------|----------------|
+| `id` | `products.id` | UUID string |
+| `name` | `products.name` | String (truncated in table) |
+| `price` | `products.price` | Decimal string ($x.xx) |
+| `images` | `products.images` | Array of image URLs |
+| `isActive` | `products.is_active` | Status badge (Active=emerald / Inactive=red) |
+| `hasPendingOrders` | computed from orders | Boolean; gates deactivation |
+| `createdAt` | `products.created_at` | ISO 8601 timestamp |
+| `merchant.shopName` | `merchants.shop_name` / `shops.name` | String or "N/A" |
+| `merchant.user.name` | `users.name` | Owner name |
+
+### 7.9 Output Specification — User List (出力定義)
+
+| Field | Data Source | Display Format |
+|-------|-------------|----------------|
+| `id` | `users.id` | UUID string |
+| `name` | `users.name` | String |
+| `email` | `users.email` | String |
+| `roleCode` | `users.role_code` | Role badge |
+| `isActive` | `users.is_active` | Status badge (Active/Inactive) |
+| `avatarUrl` | `users.avatar_url` | URL or initials |
+| `phone` | `users.phone` | String or "—" |
+| `createdAt` | `users.created_at` | ISO 8601 timestamp |
+| `merchantProfile.licenseStatus` | `merchants.license_status` | License status (merchant users only) |
+
 ---
 
 ## 8. Input Validation Rules
@@ -806,7 +912,14 @@ The review status is stored in `reviews.status` as a 3-value string enum — **n
 | `isActive` | Required, `@IsBoolean()` | "Active status must be a boolean" | "有効ステータスはブール値である必要があります" |
 | `reason` | `@MaxLength(500)` at DTO; non-empty enforced at service layer when `isActive = false` | "Deactivation reason is required" | "無効化理由は必須です" |
 
-### 8.4 Report Validation (Strict Mode)
+### 8.4 Product Moderation Validation (Strict Mode)
+
+| Field | Validation Rule | Error Message (EN) | Error Message (JA) |
+|-------|-----------------|--------------------|--------------------|
+| `isActive` | Required, `@IsBoolean()` | "Active status must be a boolean" | "有効ステータスはブール値である必要があります" |
+| `reason` | `@MaxLength(500)` at DTO; non-empty enforced at service layer when `isActive = false` | "Deactivation reason is required" | "無効化理由は必須です" |
+
+### 8.5 Report Validation (Strict Mode)
 
 `ReportReviewDto` (create report via `POST /admin/reviews/:id/report`):
 
@@ -817,14 +930,14 @@ The review status is stored in `reviews.status` as a 3-value string enum — **n
 
 > **Note:** `reviewId` is passed as a path parameter (`/admin/reviews/:id/report`), not as a body field.
 
-### 8.4.1 Report Status Update Validation
+### 8.5.1 Report Status Update Validation
 
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
 | `status` | Required, valid ENUM value | "Status must be one of: reviewed, resolved, rejected" | "ステータスは次のいずれかである必要があります: reviewed, resolved, rejected" |
 | `adminNote` | Optional, max 1000 chars | "Admin note must not exceed 1000 characters" | "管理者メモは1000文字以下である必要があります" |
 
-### 8.5 Validation Enforcement Layers
+### 8.6 Validation Enforcement Layers
 
 1. **Frontend (Client)**: React Hook Form + Zod schema validation with real-time feedback.
 2. **Backend (Server)**: NestJS ValidationPipe + class-validator DTOs on all endpoints.
@@ -900,7 +1013,27 @@ Collection with pagination:
 | `409` | `CONFLICT` | Merchant already in target status | "Merchant is already approved/rejected" |
 | `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong. Please try again" |
 
-### 9.4 Error Classification Table — Report Management
+### 9.4 Error Classification Table — Product Content Moderation
+
+| HTTP Status | Error Code | Scenario | User-Facing Behavior |
+|-------------|------------|----------|---------------------|
+| `400` | `BAD_REQUEST` | Validation failures; deactivation with pending orders; reactivation with inactive merchant | Field-level inline errors; "Cannot deactivate until the order delivery is completed." |
+| `403` | `FORBIDDEN` | Non-admin user | "You do not have permission" |
+| `404` | `NOT_FOUND` | Product not found | "Product not found" |
+| `409` | `CONFLICT` | Product already active/inactive | "Product is already active/inactive" |
+| `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong. Please try again" |
+
+### 9.5 Error Classification Table — User Management
+
+| HTTP Status | Error Code | Scenario | User-Facing Behavior |
+|-------------|------------|----------|---------------------|
+| `400` | `BAD_REQUEST` | Validation failures; self-deactivation; unapproved merchant license; pending orders | Field-level inline errors |
+| `403` | `FORBIDDEN` | Non-admin user | "You do not have permission" |
+| `404` | `NOT_FOUND` | User not found | "User not found" |
+| `409` | `CONFLICT` | User already active/inactive | "User is already active/inactive" |
+| `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong. Please try again" |
+
+### 9.6 Error Classification Table — Report Management
 
 | HTTP Status | Error Code | Scenario | User-Facing Behavior |
 |-------------|------------|----------|---------------------|
@@ -910,7 +1043,7 @@ Collection with pagination:
 | `409` | `CONFLICT` | Attempting to change an already resolved/rejected report | "This report has already been resolved" |
 | `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong. Please try again" |
 
-### 9.5 Frontend Error Display Behavior
+### 9.7 Frontend Error Display Behavior
 
 - **Field-Level Validation**: Red border and inline text below invalid input.
 - **Form-Level Summary**: Alert banner at top of form listing all errors.
@@ -961,6 +1094,8 @@ Collection with pagination:
 | `buyer` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
 | `merchant` | Own products only | ✗ | ✗ | ✗ | ✗ | ✗ |
 | `admin` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+> **Note:** The frontend `ProtectedRoute` allows `super_admin` to access admin pages, but the backend `RolesGuard` requires `roleCode === 'admin'`, so `super_admin` requests return 403 "Insufficient permissions". This frontend/backend role mismatch is pending a product decision (see PCL A-03).
 
 ### 10.4 Security Audit Logging
 
@@ -1023,6 +1158,8 @@ After moderation action, relevant parties are notified via the `notifications` t
 - `isRead`: Boolean (default false)
 - `readAt`: Timestamp when read (nullable)
 
+> **Note:** On report resolution, the frontend additionally fires a best-effort `POST /admin/reviews/:reviewId/moderate { action: 'reject', reason: 'Report resolved — review rejected' }`; errors are swallowed because the backend already auto-rejects the target review (typically 409s silently). (PCL N-14)
+
 ---
 
 ## 12. Screen Transition Specification
@@ -1034,7 +1171,8 @@ After moderation action, relevant parties are notified via the `notifications` t
 | Admin Dashboard | `/admin/reviews` | Clicking "Reviews" card or sidebar link |
 | Admin Dashboard | `/admin/merchants` | Clicking "Pending Approvals" card or sidebar link |
 | Admin Dashboard | `/admin/reports` | Clicking "Reports" card or sidebar link |
-| Admin Dashboard | `/admin/products` | Clicking "Products" card or sidebar link |
+| Admin Dashboard | `/admin/content` | Clicking "Products" card or sidebar link |
+| Admin Dashboard | `/admin/users` | Clicking "Users" card or sidebar link |
 | Any admin page | `/admin/reviews` | Direct URL navigation |
 
 ### 12.2 Internal Navigation
@@ -1044,6 +1182,8 @@ After moderation action, relevant parties are notified via the `notifications` t
 | `/admin/reviews` | Review Detail Modal | Click "View Detail" or row click |
 | `/admin/merchants` | Merchant Detail Modal | Click "View Detail" or row click |
 | `/admin/reports` | Report Detail Modal | Click "View Detail" or row click |
+| `/admin/content` | Product Detail Dialog | Click "View Detail" (Eye) or row click |
+| `/admin/users` | User Detail Modal | Click "View Details" or row click |
 | `/admin/reviews` | `/admin/merchants` | Sidebar navigation |
 | `/admin/merchants` | `/admin/reviews` | Sidebar navigation |
 | `/admin/reports` | `/admin/reviews` | Sidebar navigation |
@@ -1055,6 +1195,9 @@ After moderation action, relevant parties are notified via the `notifications` t
 | `/admin/reviews` | `/products/:slug` | Click "View Product" link in review detail |
 | `/admin/merchants` | `/admin/reviews` | After merchant approval, navigate to their reviews |
 | `/admin/reports` | `/admin/reviews` | After report resolution, navigate to target review |
+| `/admin/reviews` | `/admin/reviews?tab=reviews&highlight=<reviewId>` | Click review-created notification; target row highlighted with purple border and "From notification" badge (N-17) |
+| `/admin/reviews` | `/admin/reviews?tab=reports&highlight=<reportId>` | Click report-reported notification; target row highlighted (N-17) |
+| `/admin/merchants` | `/admin/merchants?merchantId=<merchantId>` | Click `MERCHANT_REGISTERED` notification; target row highlighted and scrolled into view (N-42) |
 | Any admin page | `/admin/dashboard` | Click "Back to Dashboard" |
 
 ### 12.4 Error Navigation
@@ -1119,7 +1262,7 @@ Defined via `.env` configuration:
 | Definition Key | Default Value | Description |
 |----------------|---------------|-------------|
 | `ADMIN_RATE_LIMIT` | `100` | Max admin API requests per minute |
-| `REVIEW_DEFAULT_PAGE_SIZE` | `20` | Default reviews per page |
+| `REVIEW_DEFAULT_PAGE_SIZE` | `10` | Default reviews per page |
 | `REVIEW_MAX_PAGE_SIZE` | `100` | Maximum reviews per page |
 | `PRODUCT_CACHE_TTL` | `300` | Product cache TTL in seconds (5 min) |
 | `AUDIT_LOG_RETENTION_DAYS` | `730` | Admin audit log retention (2 years) |
@@ -1142,6 +1285,7 @@ Defined via `.env` configuration:
 | A-CONT-004 | Admin can remove violating content | UC-MOD-004, UC-MOD-008, Sec 6.5 |
 | A-REPORT-001 | Buyer can report a review | UC-MOD-007, BR-MOD-050~055 |
 | A-REPORT-002 | Admin can review/resolve reports | UC-MOD-007, BR-MOD-053~055, Sec 6.8~6.9 |
+| A-USER-001 | Admin can activate/deactivate user accounts | UC-MOD-006, BR-MOD-040~042, Sec 6.7 |
 
 ### 15.2 Database Design Traceability
 
@@ -1176,9 +1320,9 @@ Defined via `.env` configuration:
 | `GET /admin/content/:id` | GET | View single product | A-CONT-004 |
 | `PATCH /admin/content/bulk/status` | PATCH | Bulk product moderation | A-CONT-004 |
 | `PATCH /admin/content/:id/status` | PATCH | Single product moderation | A-CONT-004 |
-| `GET /admin/users` | GET | View users | A-CONT-002 |
-| `GET /admin/users/:id` | GET | View single user | A-CONT-002 |
-| `PATCH /admin/users/:id/status` | PATCH | Activate/deactivate user | A-CONT-002 |
+| `GET /admin/users` | GET | View users | A-USER-001 |
+| `GET /admin/users/:id` | GET | View single user | A-USER-001 |
+| `PATCH /admin/users/:id/status` | PATCH | Activate/deactivate user | A-USER-001 |
 | `GET /admin/reports` | GET | View reports | A-REPORT-001 |
 | `GET /admin/reports/:id` | GET | View single report | A-REPORT-002 |
 | `PATCH /admin/reports/:id/status` | PATCH | Report status update | A-REPORT-002 |

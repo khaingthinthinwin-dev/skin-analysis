@@ -34,6 +34,7 @@
 | 6.2 | 2026-08-24 | Senior System Engineer | Changed review display approach from hybrid to admin-moderated: ALL reviews now require admin approval before being shown to buyers (`is_approved = false` by default). Updated Section 2.3 Core Functions, Section 2.4 Review Display Flow diagram, Section 4.2 pending count SQL, Section 4.5 status badge description. |
 | 6.3 | 2026-08-24 | Senior System Engineer | Combined Reviews and Reports into single screen with tab navigation (`/admin/reviews`). Removed separate Reports page. Added Screen Tabs element (EL-02). Renumbered Reports tab elements EL-23~EL-41. Renumbered Merchants elements EL-42~EL-55. Removed "Report" action from Reviews tab (admin reporting removed). |
 | 6.4 | 2026-10-21 | Senior System Engineer | Aligned with FDS v2.3 (2026-10-21): Changed review status from boolean `is_approved` to 3-value string enum `status` (`pending`/`approved`/`rejected`). Updated all DB mappings, API responses, status badges, filter tabs, and i18n keys. Added missing API endpoints: `GET /admin/dashboard-stats`, detail GET endpoints (`/admin/reviews/:id`, `/admin/merchants/:id`, `/admin/content/:id`, `/admin/users/:id`, `/admin/reports/:id`), bulk review moderation (`POST /admin/reviews/bulk/moderate`), bulk review deletion (`DELETE /api/v1/admin/reviews/bulk`), bulk product moderation (`PATCH /admin/content/bulk/status`). Corrected notification types, audit log entityType casing (lowercase), merchant rejection flow (products not auto-deactivated), report status update uses `adminNote` (camelCase). |
+| 6.5 | 2026-10-24 | Senior System Engineer | Aligned with PCL v1.1 (SKM-PCL-MOD-001): Default page size changed from 20 to 10 (page-size options 10/20/50/100); Reviews table Actions column now shows Eye (View Detail) + Trash (Delete) only, with Approve/Reject performed inside the Review Detail modal; removed `statReportedCount` from Reviews stats (4 cards: Total/Pending/Approved/Rejected); Reviews header title updated to "Review & Report Management" with subtitle "Moderate product reviews and reports"; added numbered item definitions for Reports tab (stats, filter tabs, search, table columns, pagination); updated API call limits from `limit=20` to `limit=10`; updated i18n title and placeholders to match PCL; added Reports-tab stat cards client-side computed note. |
 
 ### 1.2 Related Documents
 
@@ -127,7 +128,8 @@ Buyer sees suspicious review
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [A] PAGE HEADER                     │   │
-│  │   Page Title: "Review & Report Management"       │   │
+│  │   Page Title: "Review & Report Management"      │   │
+│  │   Subtitle: "Moderate product reviews and reports"│   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
@@ -158,7 +160,7 @@ Buyer sees suspicious review
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [G] PAGINATION                      │   │
-│  │   < 1 2 3 ... 10 >    Page Size: [20]            │   │
+│  │   < 1 2 3 ... 10 >    Page Size: [10]            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -230,7 +232,7 @@ Buyer sees suspicious review
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [F] PAGINATION                      │   │
-│  │   < 1 2 3 ... 10 >    Page Size: [20]            │   │
+│  │   < 1 2 3 ... 10 >    Page Size: [10]            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -299,7 +301,7 @@ Buyer sees suspicious review
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [F] PAGINATION                      │   │
-│  │   < 1 2 3 ... 10 >    Page Size: [20]            │   │
+│  │   < 1 2 3 ... 10 >    Page Size: [10]            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -375,7 +377,7 @@ Buyer sees suspicious review
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [F] PAGINATION                      │   │
-│  │   < 1 2 3 ... 10 >    Page Size: [20]            │   │
+│  │   < 1 2 3 ... 10 >    Page Size: [10]            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -421,7 +423,7 @@ Buyer sees suspicious review
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 1 | `lblReviewsTitle` | Page Title | Static Label (`<h1>`) | String | — | Visible. Text: "Review Moderation" | — | i18n key: `admin.reviews.title` | Tailwind: `text-2xl font-bold`. |
+| 1 | `lblReviewsTitle` | Page Title | Static Label (`<h1>`) | String | — | Visible. Text: "Review & Report Management" (subtitle: "Moderate product reviews and reports") | — | i18n key: `admin.reviews.title` | Tailwind: `text-2xl font-bold`. |
 
 ### 4.2 Section [B]: Stats Bar — Reviews (統計バー — レビュー)
 
@@ -431,7 +433,6 @@ Buyer sees suspicious review
 | 3 | `statPendingCount` | Pending Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE status = 'pending')` | Amber badge. Awaiting admin approval. |
 | 4 | `statApprovedCount` | Approved Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE status = 'approved')` | Green badge. |
 | 5 | `statRejectedCount` | Rejected Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE status = 'rejected')` | Red badge. |
-| 6 | `statReportedCount` | Reported Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE id IN (SELECT review_id FROM review_reports))` | Amber badge. |
 
 ### 4.3 Section [C]: Filter Tabs — Reviews (フィルタタブ — レビュー)
 
@@ -458,17 +459,19 @@ Buyer sees suspicious review
 | 14 | `imgUserAvatar` | User Avatar | Avatar | URL | — | User avatar or default placeholder | — | `users.avatar_url` | `h-8 w-8 rounded-full`. |
 | 15 | `lblUserName` | User Name | Static Label | String | — | Populated from DB | — | `users.name` | `font-medium text-sm`. |
 | 16 | `lblProductName` | Product Name | Static Label | String | — | Populated from DB | — | `products.name` | `text-sm text-muted-foreground`. |
-| 17 | `ratingStars` | Rating Display | Star Rating | Integer (1-5) | — | Populated from DB | — | `reviews.rating` | 1-5 star display with Beauty Pink (#EC4899). |
-| 18 | `lblReviewTitle` | Review Title | Static Label | String | — | Populated from DB or "—" | — | `reviews.title` | Truncated at 50 chars. |
-| 19 | `badgeReviewStatus` | Review Status Badge | Badge | Enum | — | Green (Approved), Red (Rejected), Amber (Pending) | — | `reviews.status` | Standard status badge colors. All reviews start as `pending` until admin approval. |
-| 20 | `lblCreatedDate` | Created Date | Static Label | DateTime | — | ISO 8601 formatted | — | `reviews.created_at` | Localized date format via i18n. |
-| 21 | `ddlReviewActions` | Actions Dropdown | Dropdown Menu | — | — | Collapsed | Options: View Detail, Approve, Reject, Delete | — | Destructive actions show confirmation. "Report" action removed (buyer-initiated only). |
+| 17 | `lblProductPrice` | Product Price | Static Label | Decimal | — | Formatted with currency | — | `products.price` | Localized currency format. |
+| 18 | `lblUserEmail` | User Email | Static Label | String | — | Populated from DB | — | `users.email` | `text-sm text-muted-foreground`. |
+| 19 | `ratingStars` | Rating Display | Star Rating | Integer (1-5) | — | Populated from DB | — | `reviews.rating` | 1-5 star display with Beauty Pink (#EC4899). |
+| 20 | `lblReviewTitle` | Review Title | Static Label | String | — | Populated from DB or "—" | — | `reviews.title` | Truncated at 50 chars. |
+| 21 | `badgeReviewStatus` | Review Status Badge | Badge | Enum | — | Green (Approved), Red (Rejected), Amber (Pending) | — | `reviews.status` | Standard status badge colors. All reviews start as `pending` until admin approval. |
+| 22 | `lblCreatedDate` | Created Date | Static Label | DateTime | — | ISO 8601 formatted | — | `reviews.created_at` | Localized date format via i18n. |
+| 23 | `ddlReviewActions` | Actions Dropdown | Dropdown Menu | — | — | Collapsed | Options: View Detail, Delete | — | Destructive actions show confirmation. Approve/Reject actions are performed inside the Review Detail modal (not as row actions). |
 
 ### 4.6 Section [F]: Pagination — Reviews (ページネーション — レビュー)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 22 | `pagReviews` | Reviews Pagination | Pagination | — | — | Page 1, Total pages from API | — | API response `meta.totalPages` | Page size selector: 20, 50, 100. |
+| 22 | `pagReviews` | Reviews Pagination | Pagination | — | — | Page 1, Total pages from API | — | API response `meta.totalPages` | Page size selector: 10, 20, 50, 100 (default 10). |
 
 ### 4.7 Section [A]: Review Detail Modal Header (レビューモーダルヘッダー)
 
@@ -552,7 +555,7 @@ Buyer sees suspicious review
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 53 | `pagMerchants` | Merchants Pagination | Pagination | — | — | Page 1, Total pages from API | — | API response `meta.totalPages` | Page size selector: 20, 50, 100. |
+| 53 | `pagMerchants` | Merchants Pagination | Pagination | — | — | Page 1, Total pages from API | — | API response `meta.totalPages` | Page size selector: 10, 20, 50, 100 (default 10). |
 
 ### 4.23 Section [A]: Shop Info Card in Merchant Modal (出品者モーダル内ショップカード)
 
@@ -642,7 +645,7 @@ Buyer sees suspicious review
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 88 | `pagProducts` | Products Pagination | Pagination | — | — | Page 1, Total pages from API | — | API response `meta.totalPages` | Page size selector: 20, 50, 100. |
+| 88 | `pagProducts` | Products Pagination | Pagination | — | — | Page 1, Total pages from API | — | API response `meta.totalPages` | Page size selector: 10, 20, 50, 100 (default 10). |
 
 ### 4.34 Section [A]: Product Moderation Modal Header (製品モデレーションモーダルヘッダー)
 
@@ -742,7 +745,7 @@ Buyer sees suspicious review
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 123 | `pagUsers` | Users Pagination | Pagination | — | — | Page 1, Total pages from API | — | API response `meta.totalPages` | Page size selector: 20, 50, 100. |
+| 123 | `pagUsers` | Users Pagination | Pagination | — | — | Page 1, Total pages from API | — | API response `meta.totalPages` | Page size selector: 10, 20, 50, 100 (default 10). |
 
 ### 4.47 Section [A]: User Detail Modal Header (ユーザーモーダルヘッダー)
 
@@ -776,7 +779,52 @@ Buyer sees suspicious review
 | 135 | `btnDeactivateUser` | Deactivate Button | Button (`destructive`) | — | — | Visible when user is active. Text: "Deactivate" | — | — | i18n key: `admin.users.deactivate`. Requires confirmation. Hidden for current admin (BR-MOD-042). |
 | 136 | `btnReactivateUser` | Reactivate Button | Button (`default`) | — | — | Visible when user is inactive. Text: "Reactivate" | — | — | i18n key: `admin.users.reactivate`. |
 
-### 4.51 Reports Tab Layout (within `/admin/reviews`)
+### 4.51 Section [B]: Stats Bar — Reports (統計バー — レポート)
+
+> **Note:** Reports-tab stat cards (Total / Pending / Reviewed / Resolved / Rejected) are computed client-side from the current page rows only, **not** server totals.
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 137 | `statTotalReports` | Total Reports Count | Stats Card | Integer | — | Computed from current page rows | — | — | Client-side count of rows on current page. |
+| 138 | `statPendingReports` | Pending Reports Count | Stats Card | Integer | — | Computed from current page rows | — | — | Client-side count; Amber badge. |
+| 139 | `statReviewedReports` | Reviewed Reports Count | Stats Card | Integer | — | Computed from current page rows | — | — | Client-side count; Blue badge. |
+| 140 | `statResolvedReports` | Resolved Reports Count | Stats Card | Integer | — | Computed from current page rows | — | — | Client-side count; Emerald badge. |
+| 141 | `statRejectedReports` | Rejected Reports Count | Stats Card | Integer | — | Computed from current page rows | — | — | Client-side count; Red badge. |
+
+### 4.52 Section [C]: Filter Tabs — Reports (フィルタタブ — レポート)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 142 | `tabFilterReports` | Filter Tabs | Tab Group | Enum | — | Default: "All" | Options: All, Pending, Reviewed, Resolved, Rejected | — | i18n key: `admin.reports.tabs`. Tab badge shows total. Updates query params on change. |
+
+### 4.53 Section [D]: Search Bar — Reports (検索バー — レポート)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 143 | `txtReportSearch` | Search Reports Input | Input (`text`) | String(255) | No | Empty. Placeholder: "Search reports..." | MaxLength: 255 | — | i18n key: `admin.reports.search`. Debounced (300ms). Searches reporter name, reviewer email, review body. |
+
+### 4.54 Section [E]: Reports Table (レポートテーブル)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 144 | `chkSelectAllReports` | Select All Checkbox | Checkbox | Boolean | No | Unchecked | — | — | Toggles all row checkboxes on current page. |
+| 145 | `chkSelectReport` | Select Report Checkbox | Checkbox | Boolean | No | Per-row. Unchecked | — | — | Enables bulk action buttons. |
+| 146 | `imgReporterAvatar` | Reporter Avatar | Avatar | URL | — | User avatar or default placeholder | — | `review_reports.reporter.avatar_url` | `h-8 w-8 rounded-full`. |
+| 147 | `lblReporterName` | Reporter Name | Static Label | String | — | Populated from DB | — | `review_reports.reporter.name` | `font-medium text-sm`. |
+| 148 | `lblReporterEmail` | Reporter Email | Static Label | String | — | Populated from DB | — | `review_reports.reporter.email` | `text-sm text-muted-foreground`. |
+| 149 | `lblReviewExcerpt` | Review Excerpt | Static Label | String(100) | — | First 100 chars of review body; fallback to title, then "—" | Truncated at 100 chars | `review_reports.review.body` | `text-sm text-muted-foreground`. |
+| 150 | `badgeReportReason` | Report Reason Badge | Badge | Enum | — | Color by category: spam=orange, inappropriate=red, fake=yellow, other=purple | — | `review_reports.reason` | i18n key: `admin.reports.reason.{reason}`. |
+| 151 | `badgeReportStatus` | Report Status Badge | Badge | Enum | — | pending=amber, reviewed=blue, resolved=emerald, rejected=red | — | `review_reports.status` | Standard status badge colors. |
+| 152 | `lblReportCreatedDate` | Created Date | Static Label | DateTime | — | ISO 8601 formatted | — | `review_reports.created_at` | Localized date format via i18n. |
+| 153 | `ddlReportActions` | Actions Dropdown | Dropdown Menu | — | — | Collapsed | Options: View Detail, Reject, Resolve, Delete | — | Delete hidden for `resolved` reports. Reject/Resolve disabled for `resolved` reports. |
+
+### 4.55 Section [F]: Pagination — Reports (ページネーション — レポート)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 154 | `pagReports` | Reports Pagination | Pagination | — | — | Page 1, Total pages from API | — | API response `meta.totalPages` | Page size selector: 10, 20, 50, 100 (default 10). |
+
+### 4.56 Reports Tab Layout (within `/admin/reviews`)
 
 **Purpose:** Allow platform administrators to view, moderate, and manage user-submitted review reports.
 
@@ -803,7 +851,7 @@ Buyer sees suspicious review
 │  Created | Actions                                       │
 ├──────────────────────────────────────────────────────────┤
 │  [F] PAGINATION                                          │
-│  < 1 2 3 ... 5 >    Page Size: [20]                     │
+│  < 1 2 3 ... 5 >    Page Size: [10]                     │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -830,7 +878,7 @@ Buyer sees suspicious review
 - Fake: `bg-yellow-100 text-yellow-800`
 - Other: `bg-purple-100 text-purple-800`
 
-### 4.52 Report Detail Modal Layout
+### 4.57 Report Detail Modal Layout
 
 **Purpose:** Display full report details and allow moderator to take action.
 
@@ -897,7 +945,7 @@ Buyer sees suspicious review
 - **Processing Logic:**
   1. Update URL query parameter `?status=pending|approved|rejected` or remove `status` for All.
   2. Reset pagination to page 1.
-  3. Fetch filtered reviews from `GET /api/v1/admin/reviews?status={status}&page=1&limit=20`.
+  3. Fetch filtered reviews from `GET /api/v1/admin/reviews?status={status}&page=1&limit=10`.
   4. Re-render reviews table with new data.
 - **Exception Handling:** Network error: Show toast "Failed to load reviews. Please try again."
 
@@ -994,7 +1042,7 @@ Buyer sees suspicious review
 - **Processing Logic:**
   1. Update URL query parameter `?status=pending|approved|rejected`.
   2. Reset pagination to page 1.
-  3. Fetch filtered merchants from `GET /api/v1/admin/merchants?status={status}&page=1&limit=20`.
+  3. Fetch filtered merchants from `GET /api/v1/admin/merchants?status={status}&page=1&limit=10`.
   4. Re-render merchants table.
 - **Exception Handling:** Network error: Show toast error.
 
@@ -1069,7 +1117,7 @@ Buyer sees suspicious review
 - **Processing Logic:**
   1. Update URL query parameter `?status=active|inactive`.
   2. Reset pagination to page 1.
-  3. Fetch filtered products from `GET /api/v1/admin/content?status={status}&page=1&limit=20`.
+  3. Fetch filtered products from `GET /api/v1/admin/content?status={status}&page=1&limit=10`.
   4. Re-render products table with new data.
 - **Exception Handling:** Network error: Show toast "Failed to load products. Please try again."
 
@@ -1159,7 +1207,7 @@ Buyer sees suspicious review
 - **Processing Logic:**
   1. Update URL query parameter `?status=active|inactive|admin`.
   2. Reset pagination to page 1.
-  3. Fetch filtered users from `GET /api/v1/admin/users?status={status}&page=1&limit=20`.
+  3. Fetch filtered users from `GET /api/v1/admin/users?status={status}&page=1&limit=10`.
   4. Re-render users table with new data.
 - **Exception Handling:** Network error: Show toast "Failed to load users. Please try again."
 
@@ -1655,12 +1703,13 @@ Buyer sees suspicious review
 
 | Key | Value |
 | :--- | :--- |
-| `admin.reviews.title` | "Review Moderation" |
+| `admin.reviews.title` | "Review & Report Management" |
+| `admin.reviews.subtitle` | "Moderate product reviews and reports" |
 | `admin.reviews.tabs.all` | "All" |
 | `admin.reviews.tabs.pending` | "Pending" |
 | `admin.reviews.tabs.approved` | "Approved" |
 | `admin.reviews.tabs.rejected` | "Rejected" |
-| `admin.reviews.search` | "Search reviews..." |
+| `admin.reviews.search` | "Search reviews by user, product, or content..." |
 | `admin.reviews.sort.newest` | "Newest" |
 | `admin.reviews.sort.oldest` | "Oldest" |
 | `admin.reviews.sort.ratingHigh` | "Rating (High-Low)" |
@@ -1671,7 +1720,7 @@ Buyer sees suspicious review
 | `admin.reviews.stats.approved` | "Approved" |
 | `admin.reviews.stats.rejected` | "Rejected" |
 | `admin.moderation.reason` | "Reason for Rejection" |
-| `admin.moderation.reasonPlaceholder` | "Enter reason for rejection..." |
+| `admin.moderation.reasonPlaceholder` | "Enter rejection reason (required)..." |
 | `admin.moderation.approve` | "Approve" |
 | `admin.moderation.reject` | "Reject" |
 | `admin.moderation.delete` | "Delete" |
@@ -2041,12 +2090,12 @@ Buyer sees suspicious review
 
 ### 12.1 Reviews Dashboard Tests
 
-- [ ] Page loads with correct title "Review Moderation"
+- [ ] Page loads with correct title "Review & Report Management"
 - [ ] Stats bar displays correct counts
 - [ ] Filter tabs filter reviews correctly (All, Pending, Approved, Rejected)
 - [ ] Search input filters reviews by user name, product name, content
 - [ ] Sort dropdown sorts reviews correctly
-- [ ] Pagination works with page size selector (20, 50, 100)
+- [ ] Pagination works with page size selector (10, 20, 50, 100)
 - [ ] Select all checkbox toggles all row checkboxes
 - [ ] Bulk action buttons enable when selections made
 - [ ] Bulk action buttons disable when no selections
@@ -2094,7 +2143,7 @@ Buyer sees suspicious review
 - [ ] Filter tabs filter products correctly (All, Active, Inactive)
 - [ ] Search input filters products by name, shop name
 - [ ] Sort dropdown sorts products correctly (Newest, Oldest, Price, Name)
-- [ ] Pagination works with page size selector (20, 50, 100)
+- [ ] Pagination works with page size selector (10, 20, 50, 100)
 - [ ] Select all checkbox toggles all row checkboxes
 - [ ] Bulk action buttons enable when selections made
 - [ ] Bulk action buttons disable when no selections
@@ -2131,7 +2180,7 @@ Buyer sees suspicious review
 - [ ] Stats bar displays correct counts (Total, Active, Inactive, Admin)
 - [ ] Filter tabs filter users correctly (All, Active, Inactive, Admin)
 - [ ] Search input filters users by name, email
-- [ ] Pagination works with page size selector (20, 50, 100)
+- [ ] Pagination works with page size selector (10, 20, 50, 100)
 - [ ] Status badges display correct colors (Green=Active, Red=Inactive)
 - [ ] Role labels display correctly (buyer, merchant, admin)
 - [ ] Actions dropdown shows View Detail, Deactivate, Reactivate
