@@ -33,7 +33,7 @@
   - **Evidence**:
     - `N-02_1_create_form_filled.png`
     - `N-02_2_list_after_create.png`
-    - Product row after successful creation → `N-02_3_db_promotion.json`
+    - Product row after successful creation → `N-02_3_db_product.json`
     - Test: Product_Management.spec.ts › "N-02: should create a new product with valid data" — passed
   - **Precondition**: User is authenticated as an approved merchant
   - **Steps**:
@@ -48,8 +48,8 @@
   - **Evidence**:
     - `N-03_1_edit_form_filled.png`
     - `N-03_2_list_after_edit.png`
-    - Product row after successful update → `N-03_3_db_promotion.json`
-    - Product row after successful update → `N-03_3_db_promotion.png`
+    - Product row after successful update → `N-03_3_db_product.json`
+    - Product row after successful update → `N-03_3_db_product.png`
     - Test: Product_Management.spec.ts › "N-03: should edit an existing product" — passed
   - **Precondition**: User is authenticated as an approved merchant with products in the table
   - **Steps**:
@@ -63,8 +63,8 @@
 - [x] **N-04**: Toggle product active status (Active ⇄ Inactive)
   - **Evidence**:
     - `N-04_1_active_status_toggled.png`
-    - Product row after status toggle → `N-04_2_db_promotion.png`
-    - Product row after status toggle → `N-04_2_db_promotion.json`
+    - Product row after status toggle → `N-04_2_db_product.png`
+    - Product row after status toggle → `N-04_2_db_product.json`
     - Test: Product_Management.spec.ts › "N-04: should toggle product active status" — passed
   - **Precondition**: User is authenticated as an approved merchant with existing products
   - **Steps**:
@@ -77,8 +77,8 @@
 - [x] **N-05**: Toggle product featured status
   - **Evidence**:
     - `N-05_1_featured_status_toggled.png`
-    - Product row after featured status toggle → `N-05_2_db_promotion.png`
-    - Product row after featured status toggle → `N-05_2_db_promotion.json`
+    - Product row after featured status toggle → `N-05_2_db_product.png`
+    - Product row after featured status toggle → `N-05_2_db_product.json`
     - Test: Product_Management.spec.ts › "N-05: should toggle product featured status" — passed
   - **Precondition**: User is authenticated as an approved merchant with existing products
   - **Steps**:
@@ -91,8 +91,8 @@
 - [x] **N-06**: Update stock quantity inline via editor
   - **Evidence**:
     - `N-06_1_stock_updated.png`
-    - Product row after stock update → `N-06_2_db_promotion.png`
-    - Product row after stock update → `N-06_2_db_promotion.json`
+    - Product row after stock update → `N-06_2_db_product.png`
+    - Product row after stock update → `N-06_2_db_product.json`
     - Test: Product_Management.spec.ts › "N-06: should update stock quantity inline" — passed
   - **Precondition**: User is authenticated as an approved merchant with existing products
   - **Steps**:
@@ -107,8 +107,8 @@
 - [x] **N-07**: Cancel inline stock update without saving
   - **Evidence**:
     - `N-07_1_stock_update_cancelled.png`
-    - Product row after stock update → `N-07_2_db_promotion.png`
-    - Product row after stock update → `N-07_2_db_promotion.json`
+    - Product row after stock update → `N-07_2_db_product.png`
+    - Product row after stock update → `N-07_2_db_product.json`
     - Test: Product_Management.spec.ts › "N-07: should cancel inline stock update without saving" — passed
   - **Precondition**: Inline stock editor is currently open on a product row
   - **Steps**:
@@ -185,8 +185,8 @@
   - **Evidence**:
     - `N-13_1_delete_all_confirmation.png`
     - `N-13_2_delete_all_confirmed.png`
-    - Product row after successful deletion → `N-13_3_db_promotion.png`
-    - Product row after successful deletion → `N-13_3_db_promotion.json`
+    - Product row after successful deletion → `N-13_3_db_product.png`
+    - Product row after successful deletion → `N-13_3_db_product.json`
     - Test: Product_Management.spec.ts › "N-13: should delete all products with confirmation breakdown" — passed
   - **Precondition**: Merchant has products in catalog and no checkboxes are selected (`selectedIds.length === 0`)
   - **Steps**:
@@ -237,6 +237,8 @@
 - [x] **N-17**: Language toggle updates screen text
   - **Evidence**:
     - `N-17_1_language_toggled.png`
+    - `N-17_2_language_toggled.png`
+    - `N-17_3_language_toggled.png`
     - Test: Product_Management.spec.ts › "N-17: should language toggle updates screen text" — passed
   - **Precondition**: User is on `/merchant/products`
   - **Steps**:
@@ -271,8 +273,8 @@
     - `N-20_1_product_form_filled.png`
     - `N-20_2_images_uploaded.png`
     - `N-20_3_success_redirect.png`
-    - Product row after successful creation with full form → `N-20_4_db_promotion.png`
-    - Product row after successful creation with full form → `N-20_4_db_promotion.json`
+    - Product row after successful creation with full form → `N-20_4_db_product.png`
+    - Product row after successful creation with full form → `N-20_4_db_product.json`
     - Test: Product_Management.spec.ts › "N-20: should create product with full form" — passed
   - **Precondition**: User is authenticated as an approved merchant on `/merchant/products/new`
   - **Steps**:
@@ -289,8 +291,8 @@
   - **Evidence**:
     - `N-21_1_form_modified.png`
     - `N-21_2_list_after_edit.png`
-    - Product row after successful update with image retention → `N-21_3_db_promotion.png`
-    - Product row after successful update with image retention → `N-21_3_db_promotion.json`
+    - Product row after successful update with image retention → `N-21_3_db_product.png`
+    - Product row after successful update with image retention → `N-21_3_db_product.json`
     - Test: Product_Management.spec.ts › "N-21: should edit product with pre-filled form and image retention" — passed
   - **Precondition**: User is authenticated as an approved merchant on `/merchant/products/:id/edit`
   - **Steps**:
@@ -376,7 +378,8 @@
 
 - [x] **A-06**: Inline stock editor rejects negative or non-numeric input
   - **Evidence**:
-    - `A-06_1_negative_stock_rejected.png`
+    - `A-06_1_negative_stock_input.png`
+    - `A-06_2_negative_stock_rejected.png`
     - Test: Product_Management.spec.ts › "A-06: should reject negative stock input" — passed
   - **Precondition**: Inline stock editor is open on a product row
   - **Steps**:
