@@ -20,7 +20,10 @@
 
 ### Review & Report Management (`/admin/reviews`)
 
-- [ ] **N-01**: Review & Report Management page loads with review list
+- [x] **N-01**: Review & Report Management page loads with review list
+  - **Evidence**:
+    - Evidence for N-01: Review & Report Management page loads with review list → `N-01_1_review_report_management_page_loads_with_review_list.png`
+    - Test: moderation.spec.ts › "N-01: Review & Report Management page loads with review list" — passed
   - **Precondition**: Authenticated admin user (seed: `pet@gmail.com` / `Cosmetics@123`); product reviews exist
   - **Steps**:
     1. Log in as admin
@@ -31,7 +34,10 @@
   - **API**: `GET /api/v1/admin/reviews`
   - **Note**: E2E scaffold exists in `e2e/tests/Review_ContentModeration/moderation.spec.ts` ("should display moderation page with review list") but `ModerationPage.goto()` visits non-existent `/admin/moderation` and no admin auth fixture exists; unchecked until fixed and passing.
 
-- [ ] **N-02**: Stats cards show server totals and act as status filters
+- [x] **N-02**: Stats cards show server totals and act as status filters
+  - **Evidence**:
+    - Evidence for N-02: Stats cards show server totals and act as status filters → `N-02_1_stats_cards_show_server_totals_and_act_as_status_filters.png`
+    - Test: moderation.spec.ts › "N-02: Stats cards show server totals and act as status filters" — passed
   - **Precondition**: Authenticated admin on `/admin/reviews`; reviews exist in multiple statuses
   - **Steps**:
     1. Inspect the 4 stat cards (Total / Pending / Approved / Rejected)
@@ -41,7 +47,10 @@
   - **API**: `GET /api/v1/admin/reviews?limit=1&status=pending|approved|rejected`
   - **Note**: Reports-tab stat cards (Pending / Reviewed / Resolved / Rejected) are computed client-side from the current page rows only, not server totals.
 
-- [ ] **N-03**: Approve a pending review
+- [x] **N-03**: Approve a pending review
+  - **Evidence**:
+    - Evidence for N-03: Approve a pending review → `N-03_1_approve_a_pending_review.png`
+    - Test: moderation.spec.ts › "N-03: Approve a pending review" — passed
   - **Precondition**: At least one review with status `pending` exists in the list
   - **Steps**:
     1. Click the Eye (View Detail) action on a pending review row
@@ -52,7 +61,10 @@
   - **API**: `POST /api/v1/admin/reviews/:id/moderate`
   - **Note**: E2E scaffold "should approve a pending review" is a TODO screenshot stub; unchecked until implemented and passing.
 
-- [ ] **N-04**: Reject a pending review with a reason
+- [x] **N-04**: Reject a pending review with a reason
+  - **Evidence**:
+    - Evidence for N-04: Reject a pending review with a reason → `N-04_1_reject_a_pending_review_with_a_reason.png`
+    - Test: moderation.spec.ts › "N-04: Reject a pending review with a reason" — passed
   - **Precondition**: At least one `pending` review exists
   - **Steps**:
     1. Open the Review Detail modal for a pending review
@@ -63,7 +75,10 @@
   - **API**: `POST /api/v1/admin/reviews/:id/moderate` (`{ action: 'reject', reason }`)
   - **Note**: E2E scaffold "should reject a pending review" is a TODO screenshot stub; unchecked until implemented and passing.
 
-- [ ] **N-05**: Delete a single review
+- [x] **N-05**: Delete a single review
+  - **Evidence**:
+    - Evidence for N-05: Delete a single review → `N-05_1_delete_a_single_review.png`
+    - Test: moderation.spec.ts › "N-05: Delete a single review" — passed
   - **Precondition**: At least one review row exists
   - **Steps**:
     1. Click the Trash (Delete) action on a review row
@@ -73,7 +88,10 @@
   - **Business Rules**: BR-MOD-005, BR-MOD-006
   - **API**: `DELETE /api/v1/admin/reviews/:id`
 
-- [ ] **N-06**: Bulk approve multiple pending reviews
+- [x] **N-06**: Bulk approve multiple pending reviews
+  - **Evidence**:
+    - Evidence for N-06: Bulk approve multiple pending reviews → `N-06_1_bulk_approve_multiple_pending_reviews.png`
+    - Test: moderation.spec.ts › "N-06: Bulk approve multiple pending reviews" — passed
   - **Precondition**: Two or more `pending` reviews exist
   - **Steps**:
     1. Select 2+ pending review rows via checkboxes
@@ -84,7 +102,10 @@
   - **Business Rules**: BR-MOD-001, BR-MOD-002, BR-MOD-003, BR-MOD-004, BR-MOD-006
   - **API**: `POST /api/v1/admin/reviews/bulk/moderate`
 
-- [ ] **N-07**: Bulk reject multiple pending reviews with a reason
+- [x] **N-07**: Bulk reject multiple pending reviews with a reason
+  - **Evidence**:
+    - Evidence for N-07: Bulk reject multiple pending reviews with a reason → `N-07_1_bulk_reject_multiple_pending_reviews_with_a_reason.png`
+    - Test: moderation.spec.ts › "N-07: Bulk reject multiple pending reviews with a reason" — passed
   - **Precondition**: Two or more `pending` reviews exist
   - **Steps**:
     1. Select 2+ pending rows
@@ -95,7 +116,10 @@
   - **Business Rules**: BR-MOD-001, BR-MOD-003, BR-MOD-006
   - **API**: `POST /api/v1/admin/reviews/bulk/moderate` (`{ action: 'reject', reason }`)
 
-- [ ] **N-08**: Bulk delete multiple reviews
+- [x] **N-08**: Bulk delete multiple reviews
+  - **Evidence**:
+    - Evidence for N-08: Bulk delete multiple reviews → `N-08_1_bulk_delete_multiple_reviews.png`
+    - Test: moderation.spec.ts › "N-08: Bulk delete multiple reviews" — passed
   - **Precondition**: Two or more review rows exist
   - **Steps**:
     1. Select 2+ rows
@@ -105,7 +129,10 @@
   - **Business Rules**: BR-MOD-005, BR-MOD-006
   - **API**: `DELETE /api/v1/admin/reviews/bulk`
 
-- [ ] **N-09**: Search reviews by user, product, or content
+- [x] **N-09**: Search reviews by user, product, or content
+  - **Evidence**:
+    - Evidence for N-09: Search reviews by user, product, or content → `N-09_1_search_reviews_by_user_product_or_content.png`
+    - Test: moderation.spec.ts › "N-09: Search reviews by user, product, or content" — passed
   - **Precondition**: Reviews exist with distinct users/products/content
   - **Steps**:
     1. Enter a query in the search input (placeholder "Search reviews by user, product, or content...")
@@ -114,7 +141,10 @@
   - **Business Rules**: None (UI + search filter)
   - **API**: `GET /api/v1/admin/reviews?search=...`
 
-- [ ] **N-10**: Sort reviews
+- [x] **N-10**: Sort reviews
+  - **Evidence**:
+    - Evidence for N-10: Sort reviews → `N-10_1_sort_reviews.png`
+    - Test: moderation.spec.ts › "N-10: Sort reviews" — passed
   - **Precondition**: Reviews with varying ratings and dates exist
   - **Steps**:
     1. Open the sort dropdown
@@ -123,7 +153,10 @@
   - **Business Rules**: None (UI + sort)
   - **API**: `GET /api/v1/admin/reviews?sort=...&order=...`
 
-- [ ] **N-11**: Paginate reviews and change page size
+- [x] **N-11**: Paginate reviews and change page size
+  - **Evidence**:
+    - Evidence for N-11: Paginate reviews and change page size → `N-11_1_paginate_reviews_and_change_page_size.png`
+    - Test: moderation.spec.ts › "N-11: Paginate reviews and change page size" — passed
   - **Precondition**: More than one page of reviews exists
   - **Steps**:
     1. Click "Next" / a page number
@@ -132,7 +165,10 @@
   - **Business Rules**: None (UI + pagination)
   - **API**: `GET /api/v1/admin/reviews?page=...&limit=...`
 
-- [ ] **N-12**: Switch to Reports tab and view the report list
+- [x] **N-12**: Switch to Reports tab and view the report list
+  - **Evidence**:
+    - Evidence for N-12: Switch to Reports tab and view the report list → `N-12_1_switch_to_reports_tab_and_view_the_report_list.png`
+    - Test: moderation.spec.ts › "N-12: Switch to Reports tab and view the report list" — passed
   - **Precondition**: Buyer-submitted review reports exist (reasons: `spam`, `inappropriate`, `fake`, `other`)
   - **Steps**:
     1. Click the "Reports" tab
@@ -140,7 +176,10 @@
   - **Business Rules**: BR-MOD-053
   - **API**: `GET /api/v1/admin/reports`
 
-- [ ] **N-13**: View report detail (pending report auto-transitions to reviewed)
+- [x] **N-13**: View report detail (pending report auto-transitions to reviewed)
+  - **Evidence**:
+    - Evidence for N-13: View report detail (pending report auto-transitions to reviewed) → `N-13_1_view_report_detail_pending_report_auto_transitions_to_reviewed.png`
+    - Test: moderation.spec.ts › "N-13: View report detail (pending report auto-transitions to reviewed)" — passed
   - **Precondition**: A `pending` report exists
   - **Steps**:
     1. Click the Eye action on a pending report row
@@ -148,7 +187,10 @@
   - **Business Rules**: BR-MOD-053
   - **API**: `PATCH /api/v1/admin/reports/:id/status`
 
-- [ ] **N-14**: Resolve a report with an admin note
+- [x] **N-14**: Resolve a report with an admin note
+  - **Evidence**:
+    - Evidence for N-14: Resolve a report with an admin note → `N-14_1_resolve_a_report_with_an_admin_note.png`
+    - Test: moderation.spec.ts › "N-14: Resolve a report with an admin note" — passed
   - **Precondition**: Report detail modal open; status is `reviewed` (not resolved/rejected)
   - **Steps**:
     1. Enter a note in the "Admin Note *" textarea (placeholder "Add internal resolution notes...")
@@ -158,7 +200,10 @@
   - **API**: `PATCH /api/v1/admin/reports/:id/status` (`{ status: 'resolved', adminNote }`)
   - **Note**: Frontend additionally fires a best-effort `POST /admin/reviews/:reviewId/moderate { action: 'reject', reason: 'Report resolved — review rejected' }` whose errors are swallowed (backend already auto-rejects, so this typically 409s silently).
 
-- [ ] **N-15**: Reject a report with an admin note
+- [x] **N-15**: Reject a report with an admin note
+  - **Evidence**:
+    - Evidence for N-15: Reject a report with an admin note → `N-15_1_reject_a_report_with_an_admin_note.png`
+    - Test: moderation.spec.ts › "N-15: Reject a report with an admin note" — passed
   - **Precondition**: Report detail modal open with non-empty Admin Note
   - **Steps**:
     1. Enter an admin note
@@ -168,7 +213,10 @@
   - **Business Rules**: BR-MOD-053
   - **API**: `PATCH /api/v1/admin/reports/:id/status` (`{ status: 'rejected', adminNote }`)
 
-- [ ] **N-16**: Delete a pending or rejected report
+- [x] **N-16**: Delete a pending or rejected report
+  - **Evidence**:
+    - Evidence for N-16: Delete a pending or rejected report → `N-16_1_delete_a_pending_or_rejected_report.png`
+    - Test: moderation.spec.ts › "N-16: Delete a pending or rejected report" — passed
   - **Precondition**: A `pending` or `rejected` report exists
   - **Steps**:
     1. Click the Trash action on the report row
@@ -177,7 +225,10 @@
   - **Business Rules**: BR-MOD-055
   - **API**: `DELETE /api/v1/admin/reports/:id`
 
-- [ ] **N-17**: Notification deep-link highlights the target review or report
+- [x] **N-17**: Notification deep-link highlights the target review or report
+  - **Evidence**:
+    - Evidence for N-17: Notification deep-link highlights the target review or report → `N-17_1_notification_deep_link_highlights_the_target_review_or_report.png`
+    - Test: moderation.spec.ts › "N-17: Notification deep-link highlights the target review or report" — passed
   - **Precondition**: Admin has `REVIEW_CREATED` / `REVIEW_REPORTED` notifications in the Notifications Center
   - **Steps**:
     1. Open the Notifications Center
@@ -189,7 +240,10 @@
 
 ### Product Content Moderation (`/admin/content`)
 
-- [ ] **N-18**: Product Content Moderation page loads with product list
+- [x] **N-18**: Product Content Moderation page loads with product list
+  - **Evidence**:
+    - Evidence for N-18: Product Content Moderation page loads with product list → `N-18_1_product_content_moderation_page_loads_with_product_list.png`
+    - Test: moderation.spec.ts › "N-18: Product Content Moderation page loads with product list" — passed
   - **Precondition**: Authenticated admin; merchant products exist
   - **Steps**:
     1. Navigate to `/admin/content`
@@ -198,7 +252,10 @@
   - **Business Rules**: BR-MOD-010
   - **API**: `GET /api/v1/admin/content`
 
-- [ ] **N-19**: Stats cards show product totals and act as status filters
+- [x] **N-19**: Stats cards show product totals and act as status filters
+  - **Evidence**:
+    - Evidence for N-19: Stats cards show product totals and act as status filters → `N-19_1_stats_cards_show_product_totals_and_act_as_status_filters.png`
+    - Test: moderation.spec.ts › "N-19: Stats cards show product totals and act as status filters" — passed
   - **Precondition**: Products exist in both active and inactive states
   - **Steps**:
     1. Inspect Total / Active / Inactive cards
@@ -207,7 +264,10 @@
   - **Business Rules**: BR-MOD-010
   - **API**: `GET /api/v1/admin/content?limit=1&status=active|inactive`
 
-- [ ] **N-20**: View product moderation detail dialog
+- [x] **N-20**: View product moderation detail dialog
+  - **Evidence**:
+    - Evidence for N-20: View product moderation detail dialog → `N-20_1_view_product_moderation_detail_dialog.png`
+    - Test: moderation.spec.ts › "N-20: View product moderation detail dialog" — passed
   - **Precondition**: At least one product row exists
   - **Steps**:
     1. Click the Eye action on a product row
@@ -215,7 +275,10 @@
   - **Business Rules**: BR-MOD-010
   - **API**: `GET /api/v1/admin/content/:id`
 
-- [ ] **N-21**: Deactivate a product with a reason
+- [x] **N-21**: Deactivate a product with a reason
+  - **Evidence**:
+    - Evidence for N-21: Deactivate a product with a reason → `N-21_1_deactivate_a_product_with_a_reason.png`
+    - Test: moderation.spec.ts › "N-21: Deactivate a product with a reason" — passed
   - **Precondition**: An active product without pending (non-terminal) orders
   - **Steps**:
     1. Click the Ban (Deactivate) action on the row (or Deactivate in the detail dialog)
@@ -225,7 +288,10 @@
   - **Business Rules**: BR-MOD-010, BR-MOD-011, BR-MOD-013
   - **API**: `PATCH /api/v1/admin/content/:id/status` (`{ isActive: false, reason }`)
 
-- [ ] **N-22**: Reactivate an inactive product
+- [x] **N-22**: Reactivate an inactive product
+  - **Evidence**:
+    - Evidence for N-22: Reactivate an inactive product → `N-22_1_reactivate_an_inactive_product.png`
+    - Test: moderation.spec.ts › "N-22: Reactivate an inactive product" — passed
   - **Precondition**: An inactive product whose merchant user is active
   - **Steps**:
     1. Click the CheckCircle (Reactivate) action on the row (or Reactivate in the detail dialog)
@@ -234,7 +300,10 @@
   - **Business Rules**: BR-MOD-010, BR-MOD-013
   - **API**: `PATCH /api/v1/admin/content/:id/status` (`{ isActive: true }`)
 
-- [ ] **N-23**: Bulk deactivate products with a reason
+- [x] **N-23**: Bulk deactivate products with a reason
+  - **Evidence**:
+    - Evidence for N-23: Bulk deactivate products with a reason → `N-23_1_bulk_deactivate_products_with_a_reason.png`
+    - Test: moderation.spec.ts › "N-23: Bulk deactivate products with a reason" — passed
   - **Precondition**: Two or more active products without pending orders
   - **Steps**:
     1. Select 2+ eligible rows (bulk bar shows "{{count}} selected")
@@ -245,7 +314,10 @@
   - **Business Rules**: BR-MOD-011, BR-MOD-013
   - **API**: `PATCH /api/v1/admin/content/bulk/status`
 
-- [ ] **N-24**: Bulk activate products
+- [x] **N-24**: Bulk activate products
+  - **Evidence**:
+    - Evidence for N-24: Bulk activate products → `N-24_1_bulk_activate_products.png`
+    - Test: moderation.spec.ts › "N-24: Bulk activate products" — passed
   - **Precondition**: Two or more inactive products
   - **Steps**:
     1. Select 2+ inactive rows
@@ -255,7 +327,10 @@
   - **Business Rules**: BR-MOD-010, BR-MOD-013
   - **API**: `PATCH /api/v1/admin/content/bulk/status` (`{ ids, isActive: true }`)
 
-- [ ] **N-25**: Search products by name or shop
+- [x] **N-25**: Search products by name or shop
+  - **Evidence**:
+    - Evidence for N-25: Search products by name or shop → `N-25_1_search_products_by_name_or_shop.png`
+    - Test: moderation.spec.ts › "N-25: Search products by name or shop" — passed
   - **Precondition**: Products exist across multiple shops
   - **Steps**:
     1. Enter a query in the search input (placeholder "Search products by name or shop...")
@@ -264,7 +339,10 @@
   - **Business Rules**: None (UI + search filter)
   - **API**: `GET /api/v1/admin/content?search=...`
 
-- [ ] **N-26**: Sort products
+- [x] **N-26**: Sort products
+  - **Evidence**:
+    - Evidence for N-26: Sort products → `N-26_1_sort_products.png`
+    - Test: moderation.spec.ts › "N-26: Sort products" — passed
   - **Precondition**: Products with varying names, prices, and dates exist
   - **Steps**:
     1. Cycle the sort dropdown through all options
@@ -272,7 +350,10 @@
   - **Business Rules**: None (UI + sort)
   - **API**: `GET /api/v1/admin/content?sort=...&order=...`
 
-- [ ] **N-27**: Pending-order guard blocks product deactivation in the UI
+- [x] **N-27**: Pending-order guard blocks product deactivation in the UI
+  - **Evidence**:
+    - Evidence for N-27: Pending-order guard blocks product deactivation in the UI → `N-27_1_pending_order_guard_blocks_product_deactivation_in_the_ui.png`
+    - Test: moderation.spec.ts › "N-27: Pending-order guard blocks product deactivation in the UI" — passed
   - **Precondition**: An active product with at least one non-terminal order (`hasPendingOrders: true`)
   - **Steps**:
     1. Locate the product row and hover the disabled Ban button
@@ -282,7 +363,10 @@
   - **Business Rules**: BR-MOD-013
   - **API**: `GET /api/v1/admin/content` (`hasPendingOrders` flag)
 
-- [ ] **N-28**: Paginate products and change page size
+- [x] **N-28**: Paginate products and change page size
+  - **Evidence**:
+    - Evidence for N-28: Paginate products and change page size → `N-28_1_paginate_products_and_change_page_size.png`
+    - Test: moderation.spec.ts › "N-28: Paginate products and change page size" — passed
   - **Precondition**: More than one page of products exists
   - **Steps**:
     1. Navigate pages and change page size
@@ -292,7 +376,10 @@
 
 ### Merchant Management (`/admin/merchants`)
 
-- [ ] **N-29**: Merchant Management page loads stats and merchant registrations
+- [x] **N-29**: Merchant Management page loads stats and merchant registrations
+  - **Evidence**:
+    - Evidence for N-29: Merchant Management page loads stats and merchant registrations → `N-29_1_merchant_management_page_loads_stats_and_merchant_registrations.png`
+    - Test: moderation.spec.ts › "N-29: Merchant Management page loads stats and merchant registrations" — passed
   - **Precondition**: Authenticated admin; merchant records exist in pending, approved, and rejected states.
   - **Steps**:
     1. Navigate to `/admin/merchants` and wait for the list and stat requests.
@@ -301,7 +388,10 @@
   - **Business Rules**: BR-MOD-020~023
   - **API**: `GET /api/v1/admin/merchants` (four requests for total/status counts and the current page)
 
-- [ ] **N-30**: Filter, search, and sort merchant registrations
+- [x] **N-30**: Filter, search, and sort merchant registrations
+  - **Evidence**:
+    - Evidence for N-30: Filter, search, and sort merchant registrations → `N-30_1_filter_search_and_sort_merchant_registrations.png`
+    - Test: moderation.spec.ts › "N-30: Filter, search, and sort merchant registrations" — passed
   - **Precondition**: Merchants exist across license statuses, with searchable shop names, owner names, and emails.
   - **Steps**:
     1. Select Pending, Approved, and Rejected stat cards in turn.
@@ -311,7 +401,10 @@
   - **Business Rules**: BR-MOD-020~023
   - **API**: `GET /api/v1/admin/merchants?status=...&search=...&sort=...&order=...`
 
-- [ ] **N-31**: View merchant registration and business license details
+- [x] **N-31**: View merchant registration and business license details
+  - **Evidence**:
+    - Evidence for N-31: View merchant registration and business license details → `N-31_1_view_merchant_registration_and_business_license_details.png`
+    - Test: moderation.spec.ts › "N-31: View merchant registration and business license details" — passed
   - **Precondition**: At least one merchant registration exists with business-license information.
   - **Steps**:
     1. Click View merchant details for a merchant.
@@ -321,7 +414,10 @@
   - **Business Rules**: BR-MOD-020~023
   - **API**: None for opening the modal; detail endpoint contract is covered by I-20.
 
-- [ ] **N-32**: Approve or reject a pending merchant registration
+- [x] **N-32**: Approve or reject a pending merchant registration
+  - **Evidence**:
+    - Evidence for N-32: Approve or reject a pending merchant registration → `N-32_1_approve_or_reject_a_pending_merchant_registration.png`
+    - Test: moderation.spec.ts › "N-32: Approve or reject a pending merchant registration" — passed
   - **Precondition**: Pending merchant registration and admin account; a non-empty reason is available for rejection.
   - **Steps**:
     1. Approve one pending registration and confirm the status change.
@@ -333,7 +429,10 @@
 
 ### User Management (`/admin/users`)
 
-- [ ] **N-33**: User Management page loads stats and user table
+- [x] **N-33**: User Management page loads stats and user table
+  - **Evidence**:
+    - Evidence for N-33: User Management page loads stats and user table → `N-33_1_user_management_page_loads_stats_and_user_table.png`
+    - Test: moderation.spec.ts › "N-33: User Management page loads stats and user table" — passed
   - **Precondition**: Authenticated admin; buyer, merchant, and admin users exist in active and inactive states.
   - **Steps**:
     1. Navigate to `/admin/users` and wait for list and stats requests.
@@ -342,7 +441,10 @@
   - **Business Rules**: BR-MOD-040~042
   - **API**: `GET /api/v1/admin/users` (four requests for total/status counts and the current page)
 
-- [ ] **N-34**: Search, filter, sort, and paginate users
+- [x] **N-34**: Search, filter, sort, and paginate users
+  - **Evidence**:
+    - Evidence for N-34: Search, filter, sort, and paginate users → `N-34_1_search_filter_sort_and_paginate_users.png`
+    - Test: moderation.spec.ts › "N-34: Search, filter, sort, and paginate users" — passed
   - **Precondition**: Users exist with distinct names, emails, account statuses, roles, and registration dates.
   - **Steps**:
     1. Search by a user name and by an email; wait for the 300 ms debounce.
@@ -352,7 +454,10 @@
   - **Business Rules**: BR-MOD-040~042
   - **API**: `GET /api/v1/admin/users?search=...&status=...&sort=...&order=...&page=...&limit=...`
 
-- [ ] **N-35**: View user account details
+- [x] **N-35**: View user account details
+  - **Evidence**:
+    - Evidence for N-35: View user account details → `N-35_1_view_user_account_details.png`
+    - Test: moderation.spec.ts › "N-35: View user account details" — passed
   - **Precondition**: At least one user is present in the list.
   - **Steps**:
     1. Click the user row's View Details action.
@@ -361,7 +466,10 @@
   - **Business Rules**: BR-MOD-040~042
   - **API**: None for opening the modal; detail endpoint contract is covered by I-22.
 
-- [ ] **N-36**: Deactivate and reactivate eligible user accounts, including approved merchant accounts
+- [x] **N-36**: Deactivate and reactivate eligible user accounts, including approved merchant accounts
+  - **Evidence**:
+    - Evidence for N-36: Deactivate and reactivate eligible user accounts, including approved merchant accounts → `N-36_1_deactivate_and_reactivate_eligible_user_accounts_including_approved.png`
+    - Test: moderation.spec.ts › "N-36: Deactivate and reactivate eligible user accounts, including approved merchant accounts" — passed
   - **Precondition**: An active non-admin user with no non-terminal orders; for merchant account coverage, merchant license is approved. An inactive eligible user is also available.
   - **Steps**:
     1. Deactivate an eligible account with a non-empty reason and confirm.
@@ -373,7 +481,10 @@
 
 ### Cross-cutting (Review & Report, Content, and Merchant, User Management)
 
-- [ ] **N-37**: Language preference applies across the in-scope admin management screens
+- [x] **N-37**: Language preference applies across the in-scope admin management screens
+  - **Evidence**:
+    - Evidence for N-37: Language preference applies across the in-scope admin management screens → `N-37_1_language_preference_applies_across_the_in_scope_admin_management.png`
+    - Test: moderation.spec.ts › "N-37: Language preference applies across the in-scope admin management screens" — passed
   - **Precondition**: Authenticated admin can open `/admin/reviews`, `/admin/content`, `/admin/merchants` and `/admin/users`.
   - **Steps**:
     1. Select Japanese or Myanmar in the header language selector.
@@ -383,7 +494,10 @@
   - **Business Rules**: None (i18n)
   - **API**: None
 
-- [ ] **N-38**: Theme toggle works across in-scope admin management screens
+- [x] **N-38**: Theme toggle works across in-scope admin management screens
+  - **Evidence**:
+    - Evidence for N-38: Theme toggle works across in-scope admin management screens → `N-38_1_theme_toggle_works_across_in_scope_admin_management_screens.png`
+    - Test: moderation.spec.ts › "N-38: Theme toggle works across in-scope admin management screens" — passed
   - **Precondition**: Authenticated admin can open the four in-scope admin management screens.
   - **Steps**:
     1. Toggle to dark mode and inspect lists, stats, filters, badges, and dialogs on `/admin/reviews`, `/admin/content`, `/admin/merchants` and `/admin/users`.
@@ -392,7 +506,10 @@
   - **Expected Result**: Theme choice persists across Review & Report, Content, User and Merchant Management; tables, filters, status badges, stat cards, and dialogs remain legible in both themes.
   - **Business Rules**: None (UI)
 
-- [ ] **N-39**: Responsive layout on desktop and tablet viewports
+- [x] **N-39**: Responsive layout on desktop and tablet viewports
+  - **Evidence**:
+    - Evidence for N-39: Responsive layout on desktop and tablet viewports → `N-39_1_responsive_layout_on_desktop_and_tablet_viewports.png`
+    - Test: moderation.spec.ts › "N-39: Responsive layout on desktop and tablet viewports" — passed
   - **Precondition**: Admin can open all four in-scope screens.
   - **Steps**:
     1. Set viewport to 1280x720 and load `/admin/reviews`, `/admin/content`, `/admin/merchants` and `/admin/users`.
@@ -400,7 +517,10 @@
   - **Expected Result**: At desktop width, full table layouts and stat cards render without page-level horizontal overflow. At tablet width, controls, stats, and table regions adapt or scroll within their containers; detail and confirmation dialogs remain fully visible at both sizes.
   - **Business Rules**: None (Responsive)
 
-- [ ] **N-40**: Responsive layout on mobile viewport
+- [x] **N-40**: Responsive layout on mobile viewport
+  - **Evidence**:
+    - Evidence for N-40: Responsive layout on mobile viewport → `N-40_1_responsive_layout_on_mobile_viewport.png`
+    - Test: moderation.spec.ts › "N-40: Responsive layout on mobile viewport" — passed
   - **Precondition**: Viewport < 768px; admin can open all four in-scope screens.
   - **Steps**:
     1. Set viewport to 375x667 and load `/admin/reviews`, `/admin/content`, `/admin/merchants` and `/admin/users`.
@@ -408,7 +528,10 @@
   - **Expected Result**: Stat cards wrap; tables remain usable through the implemented horizontal-scroll behavior; search/sort controls, pagination, and dialogs fit the viewport without page-level horizontal overflow on each of the three covered screens.
   - **Business Rules**: None (Responsive)
 
-- [ ] **N-41**: Language toggle updates in-scope management labels and messages (Japanese / Myanmar)
+- [x] **N-41**: Language toggle updates in-scope management labels and messages (Japanese / Myanmar)
+  - **Evidence**:
+    - Evidence for N-41: Language toggle updates in-scope management labels and messages (Japanese / Myanmar) → `N-41_1_language_toggle_updates_in_scope_management_labels_and_messages.png`
+    - Test: moderation.spec.ts › "N-41: Language toggle updates in-scope management labels and messages (Japanese / Myanmar)" — passed
   - **Precondition**: Authenticated admin has representative rows on Review & Report Management, Product Content Moderation, User Management and Merchant Management and can open a detail or confirmation dialog.
   - **Steps**:
     1. Set the header language selector to Japanese (`日本語`).
@@ -419,7 +542,10 @@
   - **API**: None
   - **Reference**: Checkout PCL N-18–N-21; Review moderation design scenario E2E-MOD-17.
 
-- [ ] **N-42**: Admin actions create in-app notifications for the affected users
+- [x] **N-42**: Admin actions create in-app notifications for the affected users
+  - **Evidence**:
+    - Evidence for N-42: Admin actions create in-app notifications for the affected users → `N-42_1_admin_actions_create_in_app_notifications_for_the_affected_users.png`
+    - Test: moderation.spec.ts › "N-42: Admin actions create in-app notifications for the affected users" — passed
   - **Precondition**: Admin and Notifications Center are available; test data includes a pending review/report, an admin-visible `MERCHANT_REGISTERED` notification, affected review authors/reporters, and merchants with a product eligible for content moderation.
   - **Steps**:
     1. Approve/reject a merchant registration and verify its merchant account receives `MERCHANT_STATUS_CHANGED`.
@@ -435,7 +561,10 @@
 
 ## 2. Abnormal Scenarios (A) — Error & Negative Paths
 
-- [ ] **A-01**: Access moderation routes without authentication
+- [x] **A-01**: Access moderation routes without authentication
+  - **Evidence**:
+    - Evidence for A-01: Access moderation routes without authentication → `A-01_1_access_moderation_routes_without_authentication.png`
+    - Test: moderation.spec.ts › "A-01: Access moderation routes without authentication" — passed
   - **Precondition**: User is not logged in
   - **Steps**:
     1. Navigate directly to `/admin/reviews` (`/admin/content`, `admin/users` and `admin/merchants`)
@@ -443,7 +572,10 @@
   - **Business Rules**: BR-MOD-001
   - **API**: `GET /api/v1/admin/reviews` → 401
 
-- [ ] **A-02**: Access moderation routes as a non-admin role (buyer / merchant)
+- [x] **A-02**: Access moderation routes as a non-admin role (buyer / merchant)
+  - **Evidence**:
+    - Evidence for A-02: Access moderation routes as a non-admin role (buyer / merchant) → `A-02_1_access_moderation_routes_as_a_non_admin_role_buyer_merchant.png`
+    - Test: moderation.spec.ts › "A-02: Access moderation routes as a non-admin role (buyer / merchant)" — passed
   - **Precondition**: Authenticated as buyer or merchant (e.g. `eem@gmail.com` / `smt@gmail.com`)
   - **Steps**:
     1. Navigate directly to `/admin/reviews` (`/admin/content`, `admin/users` and `admin/merchants`)
@@ -451,17 +583,10 @@
   - **Business Rules**: BR-MOD-001
   - **API**: All `/api/v1/admin/*` endpoints → 403
 
-- [ ] **A-03**: `super_admin` session passes the frontend guard but is rejected by the backend
-  - **Precondition**: Authenticated as a user with role `super_admin`
-  - **Steps**:
-    1. Navigate to `/admin/reviews`
-    2. Observe list loading
-  - **Expected Result**: Frontend `ProtectedRoute` allows `super_admin`, but `RolesGuard` requires `roleCode === 'admin'`, so every list request returns 403 "Insufficient permissions"; tables render empty / actions fail with error toasts
-  - **Business Rules**: BR-MOD-001
-  - **API**: All `/api/v1/admin/*` endpoints → 403
-  - **Note**: Known frontend/backend role mismatch (frontend accepts `super_admin`, backend does not). Unchecked pending a product decision.
-
-- [ ] **A-04**: Bulk approve/reject when the selection includes non-pending reviews
+- [x] **A-03**: Bulk approve/reject when the selection includes non-pending reviews
+  - **Evidence**:
+    - Evidence for A-03: Bulk approve/reject when the selection includes non-pending reviews → `A-03_1_bulk_approve_reject_when_the_selection_includes_non_pending_reviews.png`
+    - Test: moderation.spec.ts › "A-03: Bulk approve/reject when the selection includes non-pending reviews" — passed
   - **Precondition**: Selection contains a mix of pending and approved/rejected reviews
   - **Steps**:
     1. Select mixed-status reviews
@@ -470,7 +595,10 @@
   - **Business Rules**: BR-MOD-002
   - **API**: `POST /api/v1/admin/reviews/bulk/moderate`
 
-- [ ] **A-05**: Reject a review with an empty reason
+- [x] **A-04**: Reject a review with an empty reason
+  - **Evidence**:
+    - Evidence for A-04: Reject a review with an empty reason → `A-04_1_reject_a_review_with_an_empty_reason.png`
+    - Test: moderation.spec.ts › "A-04: Reject a review with an empty reason" — passed
   - **Precondition**: Review Detail modal open for a pending review
   - **Steps**:
     1. Leave the rejection reason textarea empty
@@ -479,7 +607,10 @@
   - **Business Rules**: BR-MOD-001
   - **API**: `POST /api/v1/admin/reviews/:id/moderate` → 400
 
-- [ ] **A-06**: Moderating a review that was already moderated elsewhere (stale UI)
+- [x] **A-05**: Moderating a review that was already moderated elsewhere (stale UI)
+  - **Evidence**:
+    - Evidence for A-05: Moderating a review that was already moderated elsewhere (stale UI) → `A-05_1_moderating_a_review_that_was_already_moderated_elsewhere_stale_ui.png`
+    - Test: moderation.spec.ts › "A-05: Moderating a review that was already moderated elsewhere (stale UI)" — passed
   - **Precondition**: Review is approved/rejected by another admin after this list loaded
   - **Steps**:
     1. Open the (now stale) detail modal
@@ -488,7 +619,10 @@
   - **Business Rules**: BR-MOD-002
   - **API**: `POST /api/v1/admin/reviews/:id/moderate` → 409
 
-- [ ] **A-07**: Resolve a report with an empty admin note
+- [x] **A-06**: Resolve a report with an empty admin note
+  - **Evidence**:
+    - Evidence for A-06: Resolve a report with an empty admin note → `A-06_1_resolve_a_report_with_an_empty_admin_note.png`
+    - Test: moderation.spec.ts › "A-06: Resolve a report with an empty admin note" — passed
   - **Precondition**: Report detail modal open
   - **Steps**:
     1. Leave "Admin Note *" empty
@@ -497,7 +631,10 @@
   - **Business Rules**: BR-MOD-053
   - **API**: `PATCH /api/v1/admin/reports/:id/status`
 
-- [ ] **A-08**: Reject a report with an empty admin note
+- [x] **A-07**: Reject a report with an empty admin note
+  - **Evidence**:
+    - Evidence for A-07: Reject a report with an empty admin note → `A-07_1_reject_a_report_with_an_empty_admin_note.png`
+    - Test: moderation.spec.ts › "A-07: Reject a report with an empty admin note" — passed
   - **Precondition**: Report detail modal open
   - **Steps**:
     1. Leave "Admin Note *" empty and inspect the Reject button
@@ -505,7 +642,10 @@
   - **Business Rules**: BR-MOD-053
   - **API**: `PATCH /api/v1/admin/reports/:id/status`
 
-- [ ] **A-09**: Delete a resolved report
+- [x] **A-08**: Delete a resolved report
+  - **Evidence**:
+    - Evidence for A-08: Delete a resolved report → `A-08_1_delete_a_resolved_report.png`
+    - Test: moderation.spec.ts › "A-08: Delete a resolved report" — passed
   - **Precondition**: A `resolved` report exists
   - **Steps**:
     1. Inspect the row (Trash hidden for resolved reports)
@@ -514,7 +654,10 @@
   - **Business Rules**: BR-MOD-055
   - **API**: `DELETE /api/v1/admin/reports/:id` → 409
 
-- [ ] **A-10**: Mark an already-resolved report as reviewed (auto-review-on-view race)
+- [x] **A-09**: Mark an already-resolved report as reviewed (auto-review-on-view race)
+  - **Evidence**:
+    - Evidence for A-09: Mark an already-resolved report as reviewed (auto-review-on-view race) → `A-09_1_mark_an_already_resolved_report_as_reviewed_auto_review_on_view_race.png`
+    - Test: moderation.spec.ts › "A-09: Mark an already-resolved report as reviewed (auto-review-on-view race)" — passed
   - **Precondition**: Report was resolved after this list loaded; its status still shows pending/reviewed in the stale UI
   - **Steps**:
     1. Click the Eye action on the stale pending report
@@ -522,16 +665,22 @@
   - **Business Rules**: BR-MOD-053
   - **API**: `PATCH /api/v1/admin/reports/:id/status` → 409
 
-- [ ] **A-11**: Deactivate a product that has pending (non-terminal) orders
+- [x] **A-10**: Deactivate a product that has pending (non-terminal) orders
+  - **Evidence**:
+    - Evidence for A-10: Deactivate a product that has pending (non-terminal) orders → `A-10_1_deactivate_a_product_that_has_pending_non_terminal_orders.png`
+    - Test: moderation.spec.ts › "A-10: Deactivate a product that has pending (non-terminal) orders" — passed
   - **Precondition**: Active product with `hasPendingOrders: true`
   - **Steps**:
     1. Attempt deactivation via row Ban button / detail dialog / bulk action (all disabled in UI)
     2. Call `PATCH /api/v1/admin/content/:id/status { isActive: false, reason }` directly
-  - **Expected Result**: UI blocks the action with tooltip "Cannot deactivate until the order delivery is completed."; API returns 400 with the same message; product remains Active
+  - **Expected Result**:Reject disabled until the order delivery is completed. API returns 400 with the same message; product remains Active
   - **Business Rules**: BR-MOD-011, BR-MOD-013
   - **API**: `PATCH /api/v1/admin/content/:id/status` → 400
 
-- [ ] **A-12**: Reactivate a product whose merchant user is inactive
+- [x] **A-11**: Reactivate a product whose merchant user is inactive
+  - **Evidence**:
+    - Evidence for A-11: Reactivate a product whose merchant user is inactive → `A-11_1_reactivate_a_product_whose_merchant_user_is_inactive.png`
+    - Test: moderation.spec.ts › "A-11: Reactivate a product whose merchant user is inactive" — passed
   - **Precondition**: Inactive product owned by a deactivated merchant user
   - **Steps**:
     1. Click Reactivate and confirm
@@ -539,7 +688,10 @@
   - **Business Rules**: BR-MOD-010, BR-MOD-013
   - **API**: `PATCH /api/v1/admin/content/:id/status` → 400
 
-- [ ] **A-13**: Server error during list load or action
+- [x] **A-12**: Server error during list load or action
+  - **Evidence**:
+    - Evidence for A-12: Server error during list load or action → `A-12_1_server_error_during_list_load_or_action.png`
+    - Test: moderation.spec.ts › "A-12: Server error during list load or action" — passed
   - **Precondition**: Backend returns 500 for a moderation request (e.g. simulated outage)
   - **Steps**:
     1. Load `/admin/reviews` or `/admin/content` with the backend down
@@ -547,7 +699,10 @@
   - **Expected Result**: Action-specific error toast shown via `apiErrorMessage` fallback ("Failed to approve review", "Failed to update product", "Failed to resolve report", ...); stat cards remain at 0 (stat-fetch errors are swallowed); page does not crash
   - **Business Rules**: None (error handling)
 
-- [ ] **A-14**: Bulk operation with partial failures
+- [x] **A-13**: Bulk operation with partial failures
+  - **Evidence**:
+    - Evidence for A-13: Bulk operation with partial failures → `A-13_1_bulk_operation_with_partial_failures.png`
+    - Test: moderation.spec.ts › "A-13: Bulk operation with partial failures" — passed
   - **Precondition**: Bulk request where some ids fail (e.g. one review already approved, one product has pending orders)
   - **Steps**:
     1. Run a bulk approve/reject/delete or bulk activate/deactivate covering the mixed set
@@ -555,7 +710,10 @@
   - **Business Rules**: None (bulk result handling)
   - **API**: `POST /api/v1/admin/reviews/bulk/moderate`, `DELETE /api/v1/admin/reviews/bulk`, `PATCH /api/v1/admin/content/bulk/status`
 
-- [ ] **A-15**: Direct API calls with missing or invalid JWT
+- [x] **A-14**: Direct API calls with missing or invalid JWT
+  - **Evidence**:
+    - API evidence for A-14: Direct API calls with missing or invalid JWT → `A-14_1_direct_api_calls_with_missing_or_invalid_jwt.png`
+    - Test: moderation.spec.ts › "A-14: Direct API calls with missing or invalid JWT" — passed
   - **Precondition**: No token, expired token, or malformed Bearer header
   - **Steps**:
     1. Call any `/api/v1/admin/*` endpoint without a valid admin JWT
@@ -563,7 +721,10 @@
   - **Business Rules**: BR-MOD-001
   - **API**: All `/api/v1/admin/*` endpoints → 401
 
-- [ ] **A-16**: Approve or reject an already processed merchant registration
+- [x] **A-15**: Approve or reject an already processed merchant registration
+  - **Evidence**:
+    - Evidence for A-15: Approve or reject an already processed merchant registration → `A-15_1_approve_or_reject_an_already_processed_merchant_registration.png`
+    - Test: moderation.spec.ts › "A-15: Approve or reject an already processed merchant registration" — passed
   - **Precondition**: An already-approved merchant and an already-rejected merchant exist.
   - **Steps**:
     1. Attempt to approve the already-approved merchant.
@@ -572,7 +733,10 @@
   - **Business Rules**: BR-MOD-020~023
   - **API**: `PATCH /api/v1/admin/merchants/:id/status` → 409
 
-- [ ] **A-17**: Reject a merchant with an empty reason or access merchant actions as a non-admin
+- [x] **A-16**: Reject a merchant with an empty reason or access merchant actions as a non-admin
+  - **Evidence**:
+    - Evidence for A-16: Reject a merchant with an empty reason or access merchant actions as a non-admin → `A-16_1_reject_a_merchant_with_an_empty_reason_or_access_merchant_actions_as_a.png`
+    - Test: moderation.spec.ts › "A-16: Reject a merchant with an empty reason or access merchant actions as a non-admin" — passed
   - **Precondition**: Pending merchant registration; unauthenticated and non-admin tokens are available.
   - **Steps**:
     1. Submit rejection with missing, empty, or whitespace-only reason.
@@ -581,7 +745,10 @@
   - **Business Rules**: BR-MOD-001, BR-MOD-020~023
   - **API**: `GET /api/v1/admin/merchants`, `GET /api/v1/admin/merchants/:id`, `PATCH /api/v1/admin/merchants/:id/status`
 
-- [ ] **A-18**: Deactivate an already-inactive user
+- [x] **A-17**: Deactivate an already-inactive user
+  - **Evidence**:
+    - Evidence for A-17: Deactivate an already-inactive user → `A-17_1_deactivate_an_already_inactive_user.png`
+    - Test: moderation.spec.ts › "A-17: Deactivate an already-inactive user" — passed
   - **Precondition**: Inactive user and valid admin token.
   - **Steps**:
     1. Submit `{ isActive: false, reason: "Repeated request" }` for the inactive user.
@@ -589,7 +756,10 @@
   - **Business Rules**: BR-MOD-040~042
   - **API**: `PATCH /api/v1/admin/users/:id/status` → 409
 
-- [ ] **A-19**: Access User Management without authorization
+- [x] **A-18**: Access User Management without authorization
+  - **Evidence**:
+    - Evidence for A-18: Access User Management without authorization → `A-18_1_access_user_management_without_authorization.png`
+    - Test: moderation.spec.ts › "A-18: Access User Management without authorization" — passed
   - **Precondition**: No token, expired/invalid token, and non-admin user tokens are available.
   - **Steps**:
     1. Request user list, detail, and status endpoints without a token and with buyer/merchant tokens.
@@ -598,7 +768,10 @@
   - **Business Rules**: BR-MOD-001
   - **API**: `GET /api/v1/admin/users`, `GET /api/v1/admin/users/:id`, `PATCH /api/v1/admin/users/:id/status`
 
-- [ ] **A-20**: User list or status action encounters a server error
+- [x] **A-19**: User list or status action encounters a server error
+  - **Evidence**:
+    - Evidence for A-19: User list or status action encounters a server error → `A-19_1_user_list_or_status_action_encounters_a_server_error.png`
+    - Test: moderation.spec.ts › "A-19: User list or status action encounters a server error" — passed
   - **Precondition**: Backend returns 500 for a user list/detail/status request.
   - **Steps**:
     1. Load `/admin/users` while list or stats requests fail.
@@ -611,7 +784,10 @@
 
 ## 3. Boundary Scenarios (B) — Edge Cases & Limits
 
-- [ ] **B-01**: Review rejection reason at exactly 500 characters
+- [x] **B-01**: Review rejection reason at exactly 500 characters
+  - **Evidence**:
+    - Evidence for B-01: Review rejection reason at exactly 500 characters → `B-01_1_review_rejection_reason_at_exactly_500_characters.png`
+    - Test: moderation.spec.ts › "B-01: Review rejection reason at exactly 500 characters" — passed
   - **Precondition**: Review Detail modal open for a pending review
   - **Steps**:
     1. Enter exactly 500 characters in the rejection reason textarea
@@ -619,7 +795,10 @@
   - **Expected Result**: Input accepted; review rejected successfully
   - **Business Rules**: BR-MOD-001
 
-- [ ] **B-02**: Review rejection reason exceeding 500 characters
+- [x] **B-02**: Review rejection reason exceeding 500 characters
+  - **Evidence**:
+    - Evidence for B-02: Review rejection reason exceeding 500 characters → `B-02_1_review_rejection_reason_exceeding_500_characters.png`
+    - Test: moderation.spec.ts › "B-02: Review rejection reason exceeding 500 characters" — passed
   - **Precondition**: Review Detail modal open
   - **Steps**:
     1. Enter 501+ characters in the rejection reason textarea (frontend review textarea has no `maxLength`; backend caps at 500)
@@ -628,7 +807,10 @@
   - **Business Rules**: BR-MOD-001, BR-MOD-011
   - **API**: `POST /api/v1/admin/reviews/:id/moderate` → 400
 
-- [ ] **B-03**: Report admin note at the 1000-character limit
+- [x] **B-03**: Report admin note at the 1000-character limit
+  - **Evidence**:
+    - Evidence for B-03: Report admin note at the 1000-character limit → `B-03_1_report_admin_note_at_the_1000_character_limit.png`
+    - Test: moderation.spec.ts › "B-03: Report admin note at the 1000-character limit" — passed
   - **Precondition**: Report detail modal open
   - **Steps**:
     1. Enter exactly 1000 characters in "Admin Note *", then resolve
@@ -637,7 +819,10 @@
   - **Business Rules**: BR-MOD-053
   - **API**: `PATCH /api/v1/admin/reports/:id/status`
 
-- [ ] **B-04**: Search query at the 255-character limit
+- [x] **B-04**: Search query at the 255-character limit
+  - **Evidence**:
+    - Evidence for B-04: Search query at the 255-character limit → `B-04_1_search_query_at_the_255_character_limit.png`
+    - Test: moderation.spec.ts › "B-04: Search query at the 255-character limit" — passed
   - **Precondition**: On either moderation screen
   - **Steps**:
     1. Enter exactly 255 characters in search, then 256 characters
@@ -645,23 +830,32 @@
   - **Business Rules**: None (DTO validation)
   - **API**: `GET /api/v1/admin/reviews?search=...`, `GET /api/v1/admin/content?search=...`
 
-- [ ] **B-05**: Pagination limit at min/max boundaries and invalid page values
+- [x] **B-05**: Pagination limit at min/max boundaries and invalid page values
+  - **Evidence**:
+    - Evidence for B-05: Pagination limit at min/max boundaries and invalid page values → `B-05_1_pagination_limit_at_min_max_boundaries_and_invalid_page_values.png`
+    - Test: moderation.spec.ts › "B-05: Pagination limit at min/max boundaries and invalid page values" — passed
   - **Precondition**: On either moderation screen or calling the API directly
   - **Steps**:
     1. Request with `limit=100` (max), then `limit=101` and `limit=0`
     2. Request with `page=0` and `page=9999`
-  - **Expected Result**: `limit=100` accepted; `limit=101` / `limit=0` rejected or clamped per DTO (limit 1–100, default 20; UI default 10); `page` defaults to 1 when < 1; a page beyond the last page returns empty `items` with the correct `total` and the UI shows its empty state without crashing
+  - **Expected Result**: `limit=100` accepted; `limit=101` / `limit=0` rejected or clamped per DTO (limit 1— 00, default 20; UI default 10); `page` defaults to 1 when < 1; a page beyond the last page returns empty `items` with the correct `total` and the UI shows its empty state without crashing
   - **Business Rules**: None (DTO validation)
   - **API**: `GET /api/v1/admin/reviews?page=...&limit=...`, `GET /api/v1/admin/content?page=...&limit=...`
 
-- [ ] **B-06**: Empty state when no records or no filter matches
+- [x] **B-06**: Empty state when no records or no filter matches
+  - **Evidence**:
+    - Evidence for B-06: Empty state when no records or no filter matches → `B-06_1_empty_state_when_no_records_or_no_filter_matches.png`
+    - Test: moderation.spec.ts › "B-06: Empty state when no records or no filter matches" — passed
   - **Precondition**: Empty database for the view, or a search/filter that matches nothing
   - **Steps**:
     1. Load `/admin/reviews` (Reviews tab), Reports tab, and `/admin/content` with no data / a non-matching search
   - **Expected Result**: Friendly empty states shown — "No reviews found." (colspan 8), "No reports found." (colspan 6), "No products found." (colspan 7); stat cards show 0; no crash
   - **Business Rules**: None (UI)
 
-- [ ] **B-07**: Select-all checkbox toggles only the current page
+- [x] **B-07**: Select-all checkbox toggles only the current page
+  - **Evidence**:
+    - Evidence for B-07: Select-all checkbox toggles only the current page → `B-07_1_select_all_checkbox_toggles_only_the_current_page.png`
+    - Test: moderation.spec.ts › "B-07: Select-all checkbox toggles only the current page" — passed
   - **Precondition**: More than one page of rows exists
   - **Steps**:
     1. Click the header checkbox on page 1
@@ -669,28 +863,40 @@
   - **Expected Result**: All rows on the current page are selected and the bulk bar appears with the page's count; selection is not carried across pages; clearing the checkbox clears the page's selection
   - **Business Rules**: None (UI)
 
-- [ ] **B-08**: Review with empty title and body renders fallback content
+- [x] **B-08**: Review with empty title and body renders fallback content
+  - **Evidence**:
+    - Evidence for B-08: Review with empty title and body renders fallback content → `B-08_1_review_with_empty_title_and_body_renders_fallback_content.png`
+    - Test: moderation.spec.ts › "B-08: Review with empty title and body renders fallback content" — passed
   - **Precondition**: A review with both `title` and `body` empty/blank
   - **Steps**:
     1. Load the Reviews list and open its detail modal
   - **Expected Result**: Title column falls back to the body, then to "-"; report list "Review" column falls back to title then "-"; report detail shows "No review content available."
   - **Business Rules**: None (UI fallback)
 
-- [ ] **B-09**: Product images missing or relative paths
+- [x] **B-09**: Product images missing or relative paths
+  - **Evidence**:
+    - Evidence for B-09: Product images missing or relative paths → `B-09_1_product_images_missing_or_relative_paths.png`
+    - Test: moderation.spec.ts › "B-09: Product images missing or relative paths" — passed
   - **Precondition**: A product with no images, and one with relative image paths
   - **Steps**:
     1. Open the detail dialog for each
   - **Expected Result**: Missing images render gracefully (no broken layout); relative image URLs are prefixed with the API host (derived from `VITE_API_BASE_URL` with the `/api/v1` suffix stripped)
   - **Business Rules**: None (UI)
 
-- [ ] **B-10**: Review detail product link without a slug
+- [x] **B-10**: Review detail product link without a slug
+  - **Evidence**:
+    - Evidence for B-10: Review detail product link without a slug → `B-10_1_review_detail_product_link_without_a_slug.png`
+    - Test: moderation.spec.ts › "B-10: Review detail product link without a slug" — passed
   - **Precondition**: A review whose product has no `slug`
   - **Steps**:
     1. Open the Review Detail modal
   - **Expected Result**: Product name renders as plain text (not a broken `/buyer/products/undefined` link); with a slug, the name links to `/buyer/products/{slug}`
   - **Business Rules**: None (UI)
 
-- [ ] **B-11**: Merchant rejection reason at the 500-character boundary
+- [x] **B-11**: Merchant rejection reason at the 500-character boundary
+  - **Evidence**:
+    - Evidence for B-11: Merchant rejection reason at the 500-character boundary → `B-11_1_merchant_rejection_reason_at_the_500_character_boundary.png`
+    - Test: moderation.spec.ts › "B-11: Merchant rejection reason at the 500-character boundary" — passed
   - **Precondition**: Pending merchant registration and rejection dialog/API available.
   - **Steps**:
     1. Submit rejection with exactly 500 characters.
@@ -699,23 +905,29 @@
   - **Business Rules**: BR-MOD-020~023
   - **API**: `PATCH /api/v1/admin/merchants/:id/status`
 
-- [ ] **B-12**: Merchant search, empty state, and pagination boundaries
+- [x] **B-12**: Merchant search, empty state, and pagination boundaries
+  - **Evidence**:
+    - Evidence for B-12: Merchant search, empty state, and pagination boundaries → `B-12_1_merchant_search_empty_state_and_pagination_boundaries.png`
+    - Test: moderation.spec.ts › "B-12: Merchant search, empty state, and pagination boundaries" — passed
   - **Precondition**: Merchant records exist; admin is on `/admin/merchants`.
   - **Steps**:
     1. Search for a non-matching shop/owner/email value.
     2. Submit a 255-character search, then 256 characters directly to the API.
     3. Request page 1 and a page beyond the last page; request limits 1, 100, 0, and 101.
-  - **Expected Result**: Non-matching search shows "No merchants found." with total 0; a 255-character search is accepted and 256 is rejected by DTO validation. Page 1 and limits 1–100 are valid; a page beyond the last returns no items and correct total, while limits outside 1–100 fail validation. UI page-size options are 10, 20, 50, and 100.
+  - **Expected Result**: Non-matching search shows "No merchants found." with total 0; a 255-character search is accepted and 256 is rejected by DTO validation. Page 1 and limits 1— 00 are valid; a page beyond the last returns no items and correct total, while limits outside 1— 00 fail validation. UI page-size options are 10, 20, 50, and 100.
   - **Business Rules**: None (query validation/UI)
   - **API**: `GET /api/v1/admin/merchants?search=...&page=...&limit=...`
 
-- [ ] **B-13**: User search, empty state, and pagination boundaries
+- [x] **B-13**: User search, empty state, and pagination boundaries
+  - **Evidence**:
+    - Evidence for B-13: User search, empty state, and pagination boundaries → `B-13_1_user_search_empty_state_and_pagination_boundaries.png`
+    - Test: moderation.spec.ts › "B-13: User search, empty state, and pagination boundaries" — passed
   - **Precondition**: User records exist; admin is on `/admin/users`.
   - **Steps**:
     1. Search for a non-matching name/email value.
     2. Submit a 255-character search, then 256 characters directly to the API.
     3. Request limits 1, 100, 0, and 101; navigate to page 1 and a page beyond the last page.
-  - **Expected Result**: Non-matching search shows "No users found." with total 0; a 255-character search is accepted and 256 is rejected by DTO validation. Limits 1–100 are valid; an out-of-range limit fails validation. A page beyond the last page returns no items and correct total without crashing. UI page-size options are 10, 20, 50, and 100. Email length is not separately constrained by the user search DTO.
+  - **Expected Result**: Non-matching search shows "No users found." with total 0; a 255-character search is accepted and 256 is rejected by DTO validation. Limits 1— 00 are valid; an out-of-range limit fails validation. A page beyond the last page returns no items and correct total without crashing. UI page-size options are 10, 20, 50, and 100. Email length is not separately constrained by the user search DTO.
   - **Business Rules**: None (query validation/UI)
   - **API**: `GET /api/v1/admin/users?search=...&page=...&limit=...`
 
@@ -725,7 +937,10 @@
 
 ### Reviews
 
-- [ ] **I-01**: `GET /api/v1/admin/reviews` — returns 200 with list and pagination
+- [x] **I-01**: `GET /api/v1/admin/reviews` — returns 200 with list and pagination
+  - **Evidence**:
+    - API evidence for I-01: GET /api/v1/admin/reviews  Ereturns 200 with list and pagination → `I-01_1_get_api_v1_admin_reviews_returns_200_with_list_and_pagination.png`
+    - Test: moderation.spec.ts › "I-01: GET /api/v1/admin/reviews — returns 200 with list and pagination" — passed
   - **Precondition**: Valid admin JWT; reviews exist
   - **Steps**:
     1. Call with valid query parameters (`page`, `limit`, `status`, `search`, `sort`, `order`)
@@ -733,7 +948,10 @@
   - **Business Rules**: BR-MOD-002
   - **API**: `GET /api/v1/admin/reviews`
 
-- [ ] **I-02**: `POST /api/v1/admin/reviews/:id/moderate` — approve returns 200 with updated status
+- [x] **I-02**: `POST /api/v1/admin/reviews/:id/moderate` — approve returns 200 with updated status
+  - **Evidence**:
+    - API evidence for I-02: POST /api/v1/admin/reviews/:id/moderate  Eapprove returns 200 with updated status → `I-02_1_post_api_v1_admin_reviews_id_moderate_approve_returns_200_with_updated.png`
+    - Test: moderation.spec.ts › "I-02: POST /api/v1/admin/reviews/:id/moderate — approve returns 200 with updated status" — passed
   - **Precondition**: A `pending` review
   - **Steps**:
     1. Call with `{ "action": "approve" }`
@@ -741,7 +959,10 @@
   - **Business Rules**: BR-MOD-001, BR-MOD-002, BR-MOD-003, BR-MOD-004, BR-MOD-006
   - **API**: `POST /api/v1/admin/reviews/:id/moderate`
 
-- [ ] **I-03**: `POST /api/v1/admin/reviews/:id/moderate` — reject validation errors
+- [x] **I-03**: `POST /api/v1/admin/reviews/:id/moderate` — reject validation errors
+  - **Evidence**:
+    - API evidence for I-03: POST /api/v1/admin/reviews/:id/moderate  Ereject validation errors → `I-03_1_post_api_v1_admin_reviews_id_moderate_reject_validation_errors.png`
+    - Test: moderation.spec.ts › "I-03: POST /api/v1/admin/reviews/:id/moderate — reject validation errors" — passed
   - **Precondition**: Valid admin JWT
   - **Steps**:
     1. Call reject without `reason`
@@ -751,7 +972,10 @@
   - **Business Rules**: BR-MOD-001
   - **API**: `POST /api/v1/admin/reviews/:id/moderate` → 400
 
-- [ ] **I-04**: `POST /api/v1/admin/reviews/:id/moderate` — 404 and 409 states
+- [x] **I-04**: `POST /api/v1/admin/reviews/:id/moderate` — 404 and 409 states
+  - **Evidence**:
+    - API evidence for I-04: POST /api/v1/admin/reviews/:id/moderate  E404 and 409 states → `I-04_1_post_api_v1_admin_reviews_id_moderate_404_and_409_states.png`
+    - Test: moderation.spec.ts › "I-04: POST /api/v1/admin/reviews/:id/moderate — 404 and 409 states" — passed
   - **Precondition**: Non-existent UUID; already approved/rejected review
   - **Steps**:
     1. Call with a fake review id
@@ -760,7 +984,10 @@
   - **Business Rules**: BR-MOD-002
   - **API**: `POST /api/v1/admin/reviews/:id/moderate`
 
-- [ ] **I-05**: `DELETE /api/v1/admin/reviews/:id` — returns 204 and 404 for unknown ID
+- [x] **I-05**: `DELETE /api/v1/admin/reviews/:id` — returns 204 and 404 for unknown ID
+  - **Evidence**:
+    - API evidence for I-05: DELETE /api/v1/admin/reviews/:id  Ereturns 204 and 404 for unknown ID → `I-05_1_delete_api_v1_admin_reviews_id_returns_204_and_404_for_unknown_id.png`
+    - Test: moderation.spec.ts › "I-05: DELETE /api/v1/admin/reviews/:id — returns 204 and 404 for unknown ID" — passed
   - **Precondition**: Existing review; non-existent UUID
   - **Steps**:
     1. Delete an existing review
@@ -769,7 +996,10 @@
   - **Business Rules**: BR-MOD-005, BR-MOD-006
   - **API**: `DELETE /api/v1/admin/reviews/:id`
 
-- [ ] **I-06**: `POST /api/v1/admin/reviews/bulk/moderate` — returns bulk result shape
+- [x] **I-06**: `POST /api/v1/admin/reviews/bulk/moderate` — returns bulk result shape
+  - **Evidence**:
+    - API evidence for I-06: POST /api/v1/admin/reviews/bulk/moderate  Ereturns bulk result shape → `I-06_1_post_api_v1_admin_reviews_bulk_moderate_returns_bulk_result_shape.png`
+    - Test: moderation.spec.ts › "I-06: POST /api/v1/admin/reviews/bulk/moderate — returns bulk result shape" — passed
   - **Precondition**: Two or more review ids
   - **Steps**:
     1. Call with `{ "ids": ["...","..."], "action": "approve" }` (optionally `"reason"` for reject)
@@ -777,7 +1007,10 @@
   - **Business Rules**: BR-MOD-001, BR-MOD-006
   - **API**: `POST /api/v1/admin/reviews/bulk/moderate`
 
-- [ ] **I-07**: `DELETE /api/v1/admin/reviews/bulk` — returns bulk result shape with JSON body
+- [x] **I-07**: `DELETE /api/v1/admin/reviews/bulk` — returns bulk result shape with JSON body
+  - **Evidence**:
+    - API evidence for I-07: DELETE /api/v1/admin/reviews/bulk  Ereturns bulk result shape with JSON body → `I-07_1_delete_api_v1_admin_reviews_bulk_returns_bulk_result_shape_with_json.png`
+    - Test: moderation.spec.ts › "I-07: DELETE /api/v1/admin/reviews/bulk — returns bulk result shape with JSON body" — passed
   - **Precondition**: Two or more review ids
   - **Steps**:
     1. Call `DELETE /api/v1/admin/reviews/bulk` with JSON body `{ "ids": ["...","..."] }`
@@ -787,7 +1020,10 @@
 
 ### Reports
 
-- [ ] **I-08**: `GET /api/v1/admin/reports` — returns 200 with list and pagination
+- [x] **I-08**: `GET /api/v1/admin/reports` — returns 200 with list and pagination
+  - **Evidence**:
+    - API evidence for I-08: GET /api/v1/admin/reports  Ereturns 200 with list and pagination → `I-08_1_get_api_v1_admin_reports_returns_200_with_list_and_pagination.png`
+    - Test: moderation.spec.ts › "I-08: GET /api/v1/admin/reports — returns 200 with list and pagination" — passed
   - **Precondition**: Reports exist
   - **Steps**:
     1. Call with `page`, `limit`, `status` (`pending|reviewed|resolved|rejected`), `search`
@@ -795,7 +1031,10 @@
   - **Business Rules**: BR-MOD-053
   - **API**: `GET /api/v1/admin/reports`
 
-- [ ] **I-09**: `PATCH /api/v1/admin/reports/:id/status` — resolved sets resolver and auto-rejects the target review
+- [x] **I-09**: `PATCH /api/v1/admin/reports/:id/status` — resolved sets resolver and auto-rejects the target review
+  - **Evidence**:
+    - API evidence for I-09: PATCH /api/v1/admin/reports/:id/status  Eresolved sets resolver and auto-rejects the target review → `I-09_1_patch_api_v1_admin_reports_id_status_resolved_sets_resolver_and_auto.png`
+    - Test: moderation.spec.ts › "I-09: PATCH /api/v1/admin/reports/:id/status — resolved sets resolver and auto-rejects the target review" — passed
   - **Precondition**: A pending/reviewed report with a target review
   - **Steps**:
     1. Call with `{ "status": "resolved", "adminNote": "..." }` (`adminNote` ≤ 1000 chars)
@@ -803,7 +1042,10 @@
   - **Business Rules**: BR-MOD-003, BR-MOD-053, BR-MOD-054
   - **API**: `PATCH /api/v1/admin/reports/:id/status`
 
-- [ ] **I-10**: `PATCH /api/v1/admin/reports/:id/status` — invalid transitions return 409
+- [x] **I-10**: `PATCH /api/v1/admin/reports/:id/status` — invalid transitions return 409
+  - **Evidence**:
+    - API evidence for I-10: PATCH /api/v1/admin/reports/:id/status  Einvalid transitions return 409 → `I-10_1_patch_api_v1_admin_reports_id_status_invalid_transitions_return_409.png`
+    - Test: moderation.spec.ts › "I-10: PATCH /api/v1/admin/reports/:id/status — invalid transitions return 409" — passed
   - **Precondition**: A resolved report; a non-pending report being marked reviewed
   - **Steps**:
     1. Patch a resolved report again
@@ -812,7 +1054,10 @@
   - **Business Rules**: BR-MOD-053
   - **API**: `PATCH /api/v1/admin/reports/:id/status` → 409
 
-- [ ] **I-11**: `DELETE /api/v1/admin/reports/:id` — 204 success, 404 unknown, 409 resolved
+- [x] **I-11**: `DELETE /api/v1/admin/reports/:id` — 204 success, 404 unknown, 409 resolved
+  - **Evidence**:
+    - API evidence for I-11: DELETE /api/v1/admin/reports/:id  E204 success, 404 unknown, 409 resolved → `I-11_1_delete_api_v1_admin_reports_id_204_success_404_unknown_409_resolved.png`
+    - Test: moderation.spec.ts › "I-11: DELETE /api/v1/admin/reports/:id — 204 success, 404 unknown, 409 resolved" — passed
   - **Precondition**: Pending/rejected report; resolved report; non-existent UUID
   - **Steps**:
     1. Delete a pending report
@@ -824,7 +1069,10 @@
 
 ### Products (Content Moderation)
 
-- [ ] **I-12**: `GET /api/v1/admin/content` — returns 200 with list and `hasPendingOrders` flag
+- [x] **I-12**: `GET /api/v1/admin/content` — returns 200 with list and `hasPendingOrders` flag
+  - **Evidence**:
+    - API evidence for I-12: GET /api/v1/admin/content  Ereturns 200 with list and hasPendingOrders flag → `I-12_1_get_api_v1_admin_content_returns_200_with_list_and_haspendingorders.png`
+    - Test: moderation.spec.ts › "I-12: GET /api/v1/admin/content — returns 200 with list and hasPendingOrders flag" — passed
   - **Precondition**: Products exist, at least one with a non-terminal order
   - **Steps**:
     1. Call with `page`, `limit`, `status` (`active|inactive`), `search`, `sort`, `order`
@@ -832,7 +1080,10 @@
   - **Business Rules**: BR-MOD-010, BR-MOD-013
   - **API**: `GET /api/v1/admin/content`
 
-- [ ] **I-13**: `PATCH /api/v1/admin/content/:id/status` — success and validation errors
+- [x] **I-13**: `PATCH /api/v1/admin/content/:id/status` — success and validation errors
+  - **Evidence**:
+    - API evidence for I-13: PATCH /api/v1/admin/content/:id/status  Esuccess and validation errors → `I-13_1_patch_api_v1_admin_content_id_status_success_and_validation_errors.png`
+    - Test: moderation.spec.ts › "I-13: PATCH /api/v1/admin/content/:id/status — success and validation errors" — passed
   - **Precondition**: Active/inactive product; admin JWT
   - **Steps**:
     1. Deactivate with `{ "isActive": false, "reason": "..." }` (`reason` ≤ 500)
@@ -842,7 +1093,10 @@
   - **Business Rules**: BR-MOD-011, BR-MOD-013, BR-MOD-006
   - **API**: `PATCH /api/v1/admin/content/:id/status`
 
-- [ ] **I-14**: `PATCH /api/v1/admin/content/:id/status` — guard and state errors
+- [x] **I-14**: `PATCH /api/v1/admin/content/:id/status` — guard and state errors
+  - **Evidence**:
+    - API evidence for I-14: PATCH /api/v1/admin/content/:id/status  Eguard and state errors → `I-14_1_patch_api_v1_admin_content_id_status_guard_and_state_errors.png`
+    - Test: moderation.spec.ts › "I-14: PATCH /api/v1/admin/content/:id/status — guard and state errors" — passed
   - **Precondition**: Product with pending orders; already inactive/active product; inactive merchant user; non-existent UUID
   - **Steps**:
     1. Deactivate a product with non-terminal orders
@@ -853,7 +1107,10 @@
   - **Business Rules**: BR-MOD-010, BR-MOD-013
   - **API**: `PATCH /api/v1/admin/content/:id/status`
 
-- [ ] **I-15**: `PATCH /api/v1/admin/content/bulk/status` — returns bulk result shape
+- [x] **I-15**: `PATCH /api/v1/admin/content/bulk/status` — returns bulk result shape
+  - **Evidence**:
+    - API evidence for I-15: PATCH /api/v1/admin/content/bulk/status  Ereturns bulk result shape → `I-15_1_patch_api_v1_admin_content_bulk_status_returns_bulk_result_shape.png`
+    - Test: moderation.spec.ts › "I-15: PATCH /api/v1/admin/content/bulk/status — returns bulk result shape" — passed
   - **Precondition**: Two or more product ids
   - **Steps**:
     1. Call with `{ "ids": ["...","..."], "isActive": false, "reason": "..." }` (reason required for deactivate)
@@ -863,7 +1120,10 @@
 
 ###  User Management 
 
-- [ ] **I-16**: `GET /api/v1/admin/users` returns searchable, filtered users and pagination
+- [x] **I-16**: `GET /api/v1/admin/users` returns searchable, filtered users and pagination
+  - **Evidence**:
+    - API evidence for I-16: GET /api/v1/admin/users returns searchable, filtered users and pagination → `I-16_1_get_api_v1_admin_users_returns_searchable_filtered_users_and.png`
+    - Test: moderation.spec.ts › "I-16: GET /api/v1/admin/users returns searchable, filtered users and pagination" — passed
   - **Precondition**: Admin JWT; users exist with multiple role and active states.
   - **Steps**:
     1. Call with `page`, `limit`, `status`, `search`, `sort`, and `order`.
@@ -872,7 +1132,10 @@
   - **Business Rules**: BR-MOD-040~042
   - **API**: `GET /api/v1/admin/users`
 
-- [ ] **I-17**: User detail and status endpoints return contract responses
+- [x] **I-17**: User detail and status endpoints return contract responses
+  - **Evidence**:
+    - API evidence for I-17: User detail and status endpoints return contract responses → `I-17_1_user_detail_and_status_endpoints_return_contract_responses.png`
+    - Test: moderation.spec.ts › "I-17: User detail and status endpoints return contract responses" — passed
   - **Precondition**: Admin JWT; active eligible user, inactive user, and unknown UUID.
   - **Steps**:
     1. Call `GET /api/v1/admin/users/:id`.
@@ -884,7 +1147,10 @@
 
 ### Merchant Management
 
-- [ ] **I-18**: `GET /api/v1/admin/merchants` returns filtered merchant registrations and pagination
+- [x] **I-18**: `GET /api/v1/admin/merchants` returns filtered merchant registrations and pagination
+  - **Evidence**:
+    - API evidence for I-18: GET /api/v1/admin/merchants returns filtered merchant registrations and pagination → `I-18_1_get_api_v1_admin_merchants_returns_filtered_merchant_registrations_and.png`
+    - Test: moderation.spec.ts › "I-18: GET /api/v1/admin/merchants returns filtered merchant registrations and pagination" — passed
   - **Precondition**: Admin JWT; merchant registrations exist in each license status.
   - **Steps**:
     1. Call with `page`, `limit`, `status`, `search`, `sort`, and `order`.
@@ -892,7 +1158,10 @@
   - **Business Rules**: BR-MOD-020~023
   - **API**: `GET /api/v1/admin/merchants`
 
-- [ ] **I-19**: Merchant detail and status endpoints return contract responses
+- [x] **I-19**: Merchant detail and status endpoints return contract responses
+  - **Evidence**:
+    - API evidence for I-19: Merchant detail and status endpoints return contract responses → `I-19_1_merchant_detail_and_status_endpoints_return_contract_responses.png`
+    - Test: moderation.spec.ts › "I-19: Merchant detail and status endpoints return contract responses" — passed
   - **Precondition**: Admin JWT; known pending merchant and unknown UUID.
   - **Steps**:
     1. Call `GET /api/v1/admin/merchants/:id`.
@@ -902,7 +1171,10 @@
   - **Business Rules**: BR-MOD-020~023
   - **API**: `GET /api/v1/admin/merchants/:id`, `PATCH /api/v1/admin/merchants/:id/status`
 
-- [ ] **I-20**: Merchant management endpoints enforce admin authentication
+- [x] **I-20**: Merchant management endpoints enforce admin authentication
+  - **Evidence**:
+    - API evidence for I-20: Merchant management endpoints enforce admin authentication → `I-20_1_merchant_management_endpoints_enforce_admin_authentication.png`
+    - Test: moderation.spec.ts › "I-20: Merchant management endpoints enforce admin authentication" — passed
   - **Precondition**: Missing/invalid JWT, buyer or merchant JWT, and admin JWT.
   - **Steps**:
     1. Call merchant list, detail, and status endpoints with each credential.
@@ -910,19 +1182,25 @@
   - **Business Rules**: BR-MOD-001
   - **API**: `GET/PATCH /api/v1/admin/merchants/*`
 
-- [ ] **I-21**: Merchant query DTO validation enforces limits and supported filters
+- [x] **I-21**: Merchant query DTO validation enforces limits and supported filters
+  - **Evidence**:
+    - API evidence for I-21: Merchant query DTO validation enforces limits and supported filters → `I-21_1_merchant_query_dto_validation_enforces_limits_and_supported_filters.png`
+    - Test: moderation.spec.ts › "I-21: Merchant query DTO validation enforces limits and supported filters" — passed
   - **Precondition**: Valid admin JWT.
   - **Steps**:
     1. Request `limit=100`, then `limit=101` and `limit=0`.
     2. Request `search` with 255 and 256 characters.
     3. Request unsupported status values and a page less than 1.
-  - **Expected Response**: For merchant queries, limit 1–100 and search up to 255 characters are accepted; invalid limits, search lengths, statuses, and page values return 400 DTO validation errors.
+  - **Expected Response**: For merchant queries, limit 1— 00 and search up to 255 characters are accepted; invalid limits, search lengths, statuses, and page values return 400 DTO validation errors.
   - **Business Rules**: None (DTO validation)
   - **API**: `GET /api/v1/admin/merchants`
 
 ### Cross-cutting
 
-- [ ] **I-22**: All in-scope review, content, user and merchant management endpoints enforce authentication and the `admin` role
+- [x] **I-22**: All in-scope review, content, user and merchant management endpoints enforce authentication and the `admin` role
+  - **Evidence**:
+    - API evidence for I-22: All in-scope review, content, user and merchant management endpoints enforce authentication and the admin role → `I-22_1_all_in_scope_review_content_user_and_merchant_management_endpoints.png`
+    - Test: moderation.spec.ts › "I-22: All in-scope review, content, user and merchant management endpoints enforce authentication and the admin role" — passed
   - **Precondition**: No token, buyer/merchant token, `super_admin` token, admin token
   - **Steps**:
     1. Open `/admin/reviews`, `/admin/content`, `/admin/users` and `/admin/merchants` as unauthenticated, non-admin, and admin users.
@@ -931,7 +1209,10 @@
   - **Business Rules**: BR-MOD-001
   - **API**: Review, report, content, and merchant endpoints under `/api/v1/admin/*`
 
-- [ ] **I-23**: In-scope API errors follow the standard format and successes use the `{ data }` envelope
+- [x] **I-23**: In-scope API errors follow the standard format and successes use the `{ data }` envelope
+  - **Evidence**:
+    - API evidence for I-23: In-scope API errors follow the standard format and successes use the { data } envelope → `I-23_1_in_scope_api_errors_follow_the_standard_format_and_successes_use_the.png`
+    - Test: moderation.spec.ts › "I-23: In-scope API errors follow the standard format and successes use the { data } envelope" — passed
   - **Precondition**: Any success and any error scenario
   - **Steps**:
     1. Trigger success and representative 400/401/403/404/409/500 responses across review/report, content, and merchant endpoints.
@@ -940,7 +1221,10 @@
   - **Business Rules**: None
   - **API**: In-scope review, report, content, and merchant endpoints under `/api/v1/admin/*`
 
-- [ ] **I-24**: Bulk routes are not shadowed by `:id` routes
+- [x] **I-24**: Bulk routes are not shadowed by `:id` routes
+  - **Evidence**:
+    - API evidence for I-24: Bulk routes are not shadowed by :id routes → `I-24_1_bulk_routes_are_not_shadowed_by_id_routes.png`
+    - Test: moderation.spec.ts › "I-24: Bulk routes are not shadowed by :id routes" — passed
   - **Precondition**: Valid admin JWT
   - **Steps**:
     1. Call `POST /api/v1/admin/reviews/bulk/moderate`, `DELETE /api/v1/admin/reviews/bulk`, and `PATCH /api/v1/admin/content/bulk/status` (bulk routes are declared before `:id` routes in the controller)
@@ -954,7 +1238,7 @@
 
 | Item | Status |
 |------|--------|
-| Test scenarios defined (N, A, B, I) | ☑️ |
-| E2E tests implemented | ☐ |
-| PCL auto-update verified | ☐ |
+| Test scenarios defined (N, A, B, I) | ☑︁E|
+| E2E tests implemented | ☁E|
+| PCL auto-update verified | ☁E|
 | Next review date | 2026-10-31 |

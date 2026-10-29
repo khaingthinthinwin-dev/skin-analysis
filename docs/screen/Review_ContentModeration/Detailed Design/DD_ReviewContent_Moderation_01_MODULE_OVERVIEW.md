@@ -1,7 +1,7 @@
 # DD_MOD_01 — Module Overview
 
-> **Doc ID:** SKM-DD-MOD-01 | **Version:** 1.3 | **Status:** Released  
-> **Last Updated:** 2026-10-21
+> **Doc ID:** SKM-DD-MOD-01 | **Version:** 1.5 | **Status:** Released  
+> **Last Updated:** 2026-10-24
 
 ---
 
@@ -14,6 +14,7 @@
 | 1.2 | 2026-08-22 | Software Architect | Aligned with FDS v2.0 and screen items v6.0: updated report state machine from COMPLETED to RESOLVED, added REVIEWED state, added UC-MOD-008 (Product Content Moderation), added buyer report flow, updated audit log events, added reject/report review endpoints. |
 | 1.3 | 2026-08-24 | Software Architect | Changed review display approach from hybrid to admin-moderated: ALL reviews now require admin approval before being shown to buyers. Updated UC-MOD-001 description, state machine, and BR-MOD-002 reference. |
 | 1.4 | 2026-10-21 | Software Architect | Aligned with FDS v2.3 (2026-10-21): (1) Review status changed from boolean `is_approved` to 3-value string enum `status` (`pending`/`approved`/`rejected`) stored in `reviews.status`. (2) Product content moderation base path corrected to `/admin/content`. (3) Added missing API endpoints: `GET /admin/dashboard-stats`, detail GET endpoints, bulk operations. (4) Corrected notification types. (5) Corrected audit log `entityType` casing to lowercase. (6) Corrected merchant rejection flow: products not auto-deactivated. (7) Fixed `isApproved` → `status` in output specification. |
+| 1.5 | 2026-10-24 | Software Architect | Aligned with PCL v1.1 (SKM-PCL-MOD-001): Default page size 10 (page-size options 10/20/50/100); Reviews table row Actions show Eye (View Detail) + Trash (Delete) only with Approve/Reject inside the Review Detail modal; Reviews header title "Review & Report Management" with subtitle "Moderate product reviews and reports"; Reviews stats reduced to 4 cards (Total/Pending/Approved/Rejected, `statReportedCount` removed); Reports-tab stat cards computed client-side from current page rows only; API call limits updated from `limit=20` to `limit=10`; added numbered item definitions for Reports tab; updated i18n title/placeholders to match PCL. Known issues documented: `super_admin` frontend/backend role mismatch (A-03), pending-order guard on product deactivation (N-27/A-11/A-12), bulk partial-failure handling (A-14), report auto-review-on-view and best-effort frontend reject (N-13/N-14). |
 
 ---
 
@@ -31,7 +32,7 @@ The **Review & Content Moderation Module** (レビュー・コンテンツ管理
 | UC-MOD-002 | Moderate Review (Approve/Reject) | Admin approves or rejects a review. Updates `reviews.status` to `'approved'` or `'rejected'`. Product `avg_rating` and `review_count` are recalculated from approved reviews only. Product cache is invalidated. |
 | UC-MOD-003 | Delete Inappropriate Review | Admin permanently deletes a review. Product statistics are recalculated from remaining approved reviews. |
 | UC-MOD-004 | Remove Violating Content | Admin deactivates products that violate platform policy by setting `is_active = false`. Products are soft-deleted to preserve order history integrity. |
-| UC-MOD-005 | Approve/Reject Merchant Registration | Admin approves or rejects a merchant. `merchants.license_status` is updated and `shops.is_approved` is synchronized. On rejection, merchant's products are deactivated. Website notification is created. |
+| UC-MOD-005 | Approve/Reject Merchant Registration | Admin approves or rejects a merchant. `merchants.license_status` is updated and `shops.is_approved` is synchronized. Website notification is created. |
 | UC-MOD-006 | Activate/Deactivate User Account | Admin activates or deactivates user accounts. Deactivation revokes all active sessions (refresh tokens). Admin cannot deactivate their own account. |
 | UC-MOD-007 | Manage Review Reports | Admin processes reported reviews: reviews, rejects, or resolves reports. When a report is resolved, the target review is automatically rejected. Reports start with `pending` status. Resolved reports cannot be changed. |
 | UC-MOD-008 | Product Content Moderation | Admin deactivates (`is_active = false`) or reactivates products. Audit log recorded. |

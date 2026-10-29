@@ -1,0 +1,394 @@
+{
+  "N-01_1_review_report_management_page_loads_with_review_list.png": {
+    "description": "Evidence for N-01: Review & Report Management page loads with review list",
+    "test": "moderation.spec.ts::N-01: Review & Report Management page loads with review list"
+  },
+  "N-02_1_stats_cards_show_server_totals_and_act_as_status_filters.png": {
+    "description": "Evidence for N-02: Stats cards show server totals and act as status filters",
+    "test": "moderation.spec.ts::N-02: Stats cards show server totals and act as status filters"
+  },
+  "N-03_1_approve_a_pending_review.png": {
+    "description": "Evidence for N-03: Approve a pending review",
+    "test": "moderation.spec.ts::N-03: Approve a pending review"
+  },
+  "N-04_1_reject_a_pending_review_with_a_reason.png": {
+    "description": "Evidence for N-04: Reject a pending review with a reason",
+    "test": "moderation.spec.ts::N-04: Reject a pending review with a reason"
+  },
+  "N-05_1_delete_a_single_review.png": {
+    "description": "Evidence for N-05: Delete a single review",
+    "test": "moderation.spec.ts::N-05: Delete a single review"
+  },
+  "N-06_1_bulk_approve_multiple_pending_reviews.png": {
+    "description": "Evidence for N-06: Bulk approve multiple pending reviews",
+    "test": "moderation.spec.ts::N-06: Bulk approve multiple pending reviews"
+  },
+  "N-07_1_bulk_reject_multiple_pending_reviews_with_a_reason.png": {
+    "description": "Evidence for N-07: Bulk reject multiple pending reviews with a reason",
+    "test": "moderation.spec.ts::N-07: Bulk reject multiple pending reviews with a reason"
+  },
+  "N-08_1_bulk_delete_multiple_reviews.png": {
+    "description": "Evidence for N-08: Bulk delete multiple reviews",
+    "test": "moderation.spec.ts::N-08: Bulk delete multiple reviews"
+  },
+  "N-09_1_search_reviews_by_user_product_or_content.png": {
+    "description": "Evidence for N-09: Search reviews by user, product, or content",
+    "test": "moderation.spec.ts::N-09: Search reviews by user, product, or content"
+  },
+  "N-10_1_sort_reviews.png": {
+    "description": "Evidence for N-10: Sort reviews",
+    "test": "moderation.spec.ts::N-10: Sort reviews"
+  },
+  "N-11_1_paginate_reviews_and_change_page_size.png": {
+    "description": "Evidence for N-11: Paginate reviews and change page size",
+    "test": "moderation.spec.ts::N-11: Paginate reviews and change page size"
+  },
+  "N-12_1_switch_to_reports_tab_and_view_the_report_list.png": {
+    "description": "Evidence for N-12: Switch to Reports tab and view the report list",
+    "test": "moderation.spec.ts::N-12: Switch to Reports tab and view the report list"
+  },
+  "N-13_1_view_report_detail_pending_report_auto_transitions_to_reviewed.png": {
+    "description": "Evidence for N-13: View report detail (pending report auto-transitions to reviewed)",
+    "test": "moderation.spec.ts::N-13: View report detail (pending report auto-transitions to reviewed)"
+  },
+  "N-14_1_resolve_a_report_with_an_admin_note.png": {
+    "description": "Evidence for N-14: Resolve a report with an admin note",
+    "test": "moderation.spec.ts::N-14: Resolve a report with an admin note"
+  },
+  "N-15_1_reject_a_report_with_an_admin_note.png": {
+    "description": "Evidence for N-15: Reject a report with an admin note",
+    "test": "moderation.spec.ts::N-15: Reject a report with an admin note"
+  },
+  "N-16_1_delete_a_pending_or_rejected_report.png": {
+    "description": "Evidence for N-16: Delete a pending or rejected report",
+    "test": "moderation.spec.ts::N-16: Delete a pending or rejected report"
+  },
+  "N-17_1_notification_deep_link_highlights_the_target_review_or_report.png": {
+    "description": "Evidence for N-17: Notification deep-link highlights the target review or report",
+    "test": "moderation.spec.ts::N-17: Notification deep-link highlights the target review or report"
+  },
+  "N-18_1_product_content_moderation_page_loads_with_product_list.png": {
+    "description": "Evidence for N-18: Product Content Moderation page loads with product list",
+    "test": "moderation.spec.ts::N-18: Product Content Moderation page loads with product list"
+  },
+  "N-19_1_stats_cards_show_product_totals_and_act_as_status_filters.png": {
+    "description": "Evidence for N-19: Stats cards show product totals and act as status filters",
+    "test": "moderation.spec.ts::N-19: Stats cards show product totals and act as status filters"
+  },
+  "N-20_1_view_product_moderation_detail_dialog.png": {
+    "description": "Evidence for N-20: View product moderation detail dialog",
+    "test": "moderation.spec.ts::N-20: View product moderation detail dialog"
+  },
+  "N-21_1_deactivate_a_product_with_a_reason.png": {
+    "description": "Evidence for N-21: Deactivate a product with a reason",
+    "test": "moderation.spec.ts::N-21: Deactivate a product with a reason"
+  },
+  "N-22_1_reactivate_an_inactive_product.png": {
+    "description": "Evidence for N-22: Reactivate an inactive product",
+    "test": "moderation.spec.ts::N-22: Reactivate an inactive product"
+  },
+  "N-23_1_bulk_deactivate_products_with_a_reason.png": {
+    "description": "Evidence for N-23: Bulk deactivate products with a reason",
+    "test": "moderation.spec.ts::N-23: Bulk deactivate products with a reason"
+  },
+  "N-24_1_bulk_activate_products.png": {
+    "description": "Evidence for N-24: Bulk activate products",
+    "test": "moderation.spec.ts::N-24: Bulk activate products"
+  },
+  "N-25_1_search_products_by_name_or_shop.png": {
+    "description": "Evidence for N-25: Search products by name or shop",
+    "test": "moderation.spec.ts::N-25: Search products by name or shop"
+  },
+  "N-26_1_sort_products.png": {
+    "description": "Evidence for N-26: Sort products",
+    "test": "moderation.spec.ts::N-26: Sort products"
+  },
+  "N-27_1_pending_order_guard_blocks_product_deactivation_in_the_ui.png": {
+    "description": "Evidence for N-27: Pending-order guard blocks product deactivation in the UI",
+    "test": "moderation.spec.ts::N-27: Pending-order guard blocks product deactivation in the UI"
+  },
+  "N-28_1_paginate_products_and_change_page_size.png": {
+    "description": "Evidence for N-28: Paginate products and change page size",
+    "test": "moderation.spec.ts::N-28: Paginate products and change page size"
+  },
+  "N-29_1_merchant_management_page_loads_stats_and_merchant_registrations.png": {
+    "description": "Evidence for N-29: Merchant Management page loads stats and merchant registrations",
+    "test": "moderation.spec.ts::N-29: Merchant Management page loads stats and merchant registrations"
+  },
+  "N-30_1_filter_search_and_sort_merchant_registrations.png": {
+    "description": "Evidence for N-30: Filter, search, and sort merchant registrations",
+    "test": "moderation.spec.ts::N-30: Filter, search, and sort merchant registrations"
+  },
+  "N-31_1_view_merchant_registration_and_business_license_details.png": {
+    "description": "Evidence for N-31: View merchant registration and business license details",
+    "test": "moderation.spec.ts::N-31: View merchant registration and business license details"
+  },
+  "N-32_1_approve_or_reject_a_pending_merchant_registration.png": {
+    "description": "Evidence for N-32: Approve or reject a pending merchant registration",
+    "test": "moderation.spec.ts::N-32: Approve or reject a pending merchant registration"
+  },
+  "N-33_1_user_management_page_loads_stats_and_user_table.png": {
+    "description": "Evidence for N-33: User Management page loads stats and user table",
+    "test": "moderation.spec.ts::N-33: User Management page loads stats and user table"
+  },
+  "N-34_1_search_filter_sort_and_paginate_users.png": {
+    "description": "Evidence for N-34: Search, filter, sort, and paginate users",
+    "test": "moderation.spec.ts::N-34: Search, filter, sort, and paginate users"
+  },
+  "N-35_1_view_user_account_details.png": {
+    "description": "Evidence for N-35: View user account details",
+    "test": "moderation.spec.ts::N-35: View user account details"
+  },
+  "N-36_1_deactivate_and_reactivate_eligible_user_accounts_including_approved.png": {
+    "description": "Evidence for N-36: Deactivate and reactivate eligible user accounts, including approved merchant accounts",
+    "test": "moderation.spec.ts::N-36: Deactivate and reactivate eligible user accounts, including approved merchant accounts"
+  },
+  "N-37_1_language_preference_applies_across_the_in_scope_admin_management.png": {
+    "description": "Evidence for N-37: Language preference applies across the in-scope admin management screens",
+    "test": "moderation.spec.ts::N-37: Language preference applies across the in-scope admin management screens"
+  },
+  "N-38_1_theme_toggle_works_across_in_scope_admin_management_screens.png": {
+    "description": "Evidence for N-38: Theme toggle works across in-scope admin management screens",
+    "test": "moderation.spec.ts::N-38: Theme toggle works across in-scope admin management screens"
+  },
+  "N-39_1_responsive_layout_on_desktop_and_tablet_viewports.png": {
+    "description": "Evidence for N-39: Responsive layout on desktop and tablet viewports",
+    "test": "moderation.spec.ts::N-39: Responsive layout on desktop and tablet viewports"
+  },
+  "N-40_1_responsive_layout_on_mobile_viewport.png": {
+    "description": "Evidence for N-40: Responsive layout on mobile viewport",
+    "test": "moderation.spec.ts::N-40: Responsive layout on mobile viewport"
+  },
+  "N-41_1_language_toggle_updates_in_scope_management_labels_and_messages.png": {
+    "description": "Evidence for N-41: Language toggle updates in-scope management labels and messages (Japanese / Myanmar)",
+    "test": "moderation.spec.ts::N-41: Language toggle updates in-scope management labels and messages (Japanese / Myanmar)"
+  },
+  "N-42_1_admin_actions_create_in_app_notifications_for_the_affected_users.png": {
+    "description": "Evidence for N-42: Admin actions create in-app notifications for the affected users",
+    "test": "moderation.spec.ts::N-42: Admin actions create in-app notifications for the affected users"
+  },
+  "A-01_1_access_moderation_routes_without_authentication.png": {
+    "description": "Evidence for A-01: Access moderation routes without authentication",
+    "test": "moderation.spec.ts::A-01: Access moderation routes without authentication"
+  },
+  "A-02_1_access_moderation_routes_as_a_non_admin_role_buyer_merchant.png": {
+    "description": "Evidence for A-02: Access moderation routes as a non-admin role (buyer / merchant)",
+    "test": "moderation.spec.ts::A-02: Access moderation routes as a non-admin role (buyer / merchant)"
+  },
+  "A-03_1_bulk_approve_reject_when_the_selection_includes_non_pending_reviews.png": {
+    "description": "Evidence for A-03: Bulk approve/reject when the selection includes non-pending reviews",
+    "test": "moderation.spec.ts::A-03: Bulk approve/reject when the selection includes non-pending reviews"
+  },
+  "A-04_1_reject_a_review_with_an_empty_reason.png": {
+    "description": "Evidence for A-04: Reject a review with an empty reason",
+    "test": "moderation.spec.ts::A-04: Reject a review with an empty reason"
+  },
+  "A-05_1_moderating_a_review_that_was_already_moderated_elsewhere_stale_ui.png": {
+    "description": "Evidence for A-05: Moderating a review that was already moderated elsewhere (stale UI)",
+    "test": "moderation.spec.ts::A-05: Moderating a review that was already moderated elsewhere (stale UI)"
+  },
+  "A-06_1_resolve_a_report_with_an_empty_admin_note.png": {
+    "description": "Evidence for A-06: Resolve a report with an empty admin note",
+    "test": "moderation.spec.ts::A-06: Resolve a report with an empty admin note"
+  },
+  "A-07_1_reject_a_report_with_an_empty_admin_note.png": {
+    "description": "Evidence for A-07: Reject a report with an empty admin note",
+    "test": "moderation.spec.ts::A-07: Reject a report with an empty admin note"
+  },
+  "A-08_1_delete_a_resolved_report.png": {
+    "description": "Evidence for A-08: Delete a resolved report",
+    "test": "moderation.spec.ts::A-08: Delete a resolved report"
+  },
+  "A-09_1_mark_an_already_resolved_report_as_reviewed_auto_review_on_view_race.png": {
+    "description": "Evidence for A-09: Mark an already-resolved report as reviewed (auto-review-on-view race)",
+    "test": "moderation.spec.ts::A-09: Mark an already-resolved report as reviewed (auto-review-on-view race)"
+  },
+  "A-10_1_deactivate_a_product_that_has_pending_non_terminal_orders.png": {
+    "description": "Evidence for A-10: Deactivate a product that has pending (non-terminal) orders",
+    "test": "moderation.spec.ts::A-10: Deactivate a product that has pending (non-terminal) orders"
+  },
+  "A-11_1_reactivate_a_product_whose_merchant_user_is_inactive.png": {
+    "description": "Evidence for A-11: Reactivate a product whose merchant user is inactive",
+    "test": "moderation.spec.ts::A-11: Reactivate a product whose merchant user is inactive"
+  },
+  "A-12_1_server_error_during_list_load_or_action.png": {
+    "description": "Evidence for A-12: Server error during list load or action",
+    "test": "moderation.spec.ts::A-12: Server error during list load or action"
+  },
+  "A-13_1_bulk_operation_with_partial_failures.png": {
+    "description": "Evidence for A-13: Bulk operation with partial failures",
+    "test": "moderation.spec.ts::A-13: Bulk operation with partial failures"
+  },
+  "A-14_1_direct_api_calls_with_missing_or_invalid_jwt.png": {
+    "description": "API evidence for A-14: Direct API calls with missing or invalid JWT",
+    "test": "moderation.spec.ts::A-14: Direct API calls with missing or invalid JWT"
+  },
+  "A-15_1_approve_or_reject_an_already_processed_merchant_registration.png": {
+    "description": "Evidence for A-15: Approve or reject an already processed merchant registration",
+    "test": "moderation.spec.ts::A-15: Approve or reject an already processed merchant registration"
+  },
+  "A-16_1_reject_a_merchant_with_an_empty_reason_or_access_merchant_actions_as_a.png": {
+    "description": "Evidence for A-16: Reject a merchant with an empty reason or access merchant actions as a non-admin",
+    "test": "moderation.spec.ts::A-16: Reject a merchant with an empty reason or access merchant actions as a non-admin"
+  },
+  "A-17_1_deactivate_an_already_inactive_user.png": {
+    "description": "Evidence for A-17: Deactivate an already-inactive user",
+    "test": "moderation.spec.ts::A-17: Deactivate an already-inactive user"
+  },
+  "A-18_1_access_user_management_without_authorization.png": {
+    "description": "Evidence for A-18: Access User Management without authorization",
+    "test": "moderation.spec.ts::A-18: Access User Management without authorization"
+  },
+  "A-19_1_user_list_or_status_action_encounters_a_server_error.png": {
+    "description": "Evidence for A-19: User list or status action encounters a server error",
+    "test": "moderation.spec.ts::A-19: User list or status action encounters a server error"
+  },
+  "B-01_1_review_rejection_reason_at_exactly_500_characters.png": {
+    "description": "Evidence for B-01: Review rejection reason at exactly 500 characters",
+    "test": "moderation.spec.ts::B-01: Review rejection reason at exactly 500 characters"
+  },
+  "B-02_1_review_rejection_reason_exceeding_500_characters.png": {
+    "description": "Evidence for B-02: Review rejection reason exceeding 500 characters",
+    "test": "moderation.spec.ts::B-02: Review rejection reason exceeding 500 characters"
+  },
+  "B-03_1_report_admin_note_at_the_1000_character_limit.png": {
+    "description": "Evidence for B-03: Report admin note at the 1000-character limit",
+    "test": "moderation.spec.ts::B-03: Report admin note at the 1000-character limit"
+  },
+  "B-04_1_search_query_at_the_255_character_limit.png": {
+    "description": "Evidence for B-04: Search query at the 255-character limit",
+    "test": "moderation.spec.ts::B-04: Search query at the 255-character limit"
+  },
+  "B-05_1_pagination_limit_at_min_max_boundaries_and_invalid_page_values.png": {
+    "description": "Evidence for B-05: Pagination limit at min/max boundaries and invalid page values",
+    "test": "moderation.spec.ts::B-05: Pagination limit at min/max boundaries and invalid page values"
+  },
+  "B-06_1_empty_state_when_no_records_or_no_filter_matches.png": {
+    "description": "Evidence for B-06: Empty state when no records or no filter matches",
+    "test": "moderation.spec.ts::B-06: Empty state when no records or no filter matches"
+  },
+  "B-07_1_select_all_checkbox_toggles_only_the_current_page.png": {
+    "description": "Evidence for B-07: Select-all checkbox toggles only the current page",
+    "test": "moderation.spec.ts::B-07: Select-all checkbox toggles only the current page"
+  },
+  "B-08_1_review_with_empty_title_and_body_renders_fallback_content.png": {
+    "description": "Evidence for B-08: Review with empty title and body renders fallback content",
+    "test": "moderation.spec.ts::B-08: Review with empty title and body renders fallback content"
+  },
+  "B-09_1_product_images_missing_or_relative_paths.png": {
+    "description": "Evidence for B-09: Product images missing or relative paths",
+    "test": "moderation.spec.ts::B-09: Product images missing or relative paths"
+  },
+  "B-10_1_review_detail_product_link_without_a_slug.png": {
+    "description": "Evidence for B-10: Review detail product link without a slug",
+    "test": "moderation.spec.ts::B-10: Review detail product link without a slug"
+  },
+  "B-11_1_merchant_rejection_reason_at_the_500_character_boundary.png": {
+    "description": "Evidence for B-11: Merchant rejection reason at the 500-character boundary",
+    "test": "moderation.spec.ts::B-11: Merchant rejection reason at the 500-character boundary"
+  },
+  "B-12_1_merchant_search_empty_state_and_pagination_boundaries.png": {
+    "description": "Evidence for B-12: Merchant search, empty state, and pagination boundaries",
+    "test": "moderation.spec.ts::B-12: Merchant search, empty state, and pagination boundaries"
+  },
+  "B-13_1_user_search_empty_state_and_pagination_boundaries.png": {
+    "description": "Evidence for B-13: User search, empty state, and pagination boundaries",
+    "test": "moderation.spec.ts::B-13: User search, empty state, and pagination boundaries"
+  },
+  "I-01_1_get_api_v1_admin_reviews_returns_200_with_list_and_pagination.png": {
+    "description": "API evidence for I-01: GET /api/v1/admin/reviews  Ereturns 200 with list and pagination",
+    "test": "moderation.spec.ts::I-01: GET /api/v1/admin/reviews  Ereturns 200 with list and pagination"
+  },
+  "I-02_1_post_api_v1_admin_reviews_id_moderate_approve_returns_200_with_updated.png": {
+    "description": "API evidence for I-02: POST /api/v1/admin/reviews/:id/moderate  Eapprove returns 200 with updated status",
+    "test": "moderation.spec.ts::I-02: POST /api/v1/admin/reviews/:id/moderate  Eapprove returns 200 with updated status"
+  },
+  "I-03_1_post_api_v1_admin_reviews_id_moderate_reject_validation_errors.png": {
+    "description": "API evidence for I-03: POST /api/v1/admin/reviews/:id/moderate  Ereject validation errors",
+    "test": "moderation.spec.ts::I-03: POST /api/v1/admin/reviews/:id/moderate  Ereject validation errors"
+  },
+  "I-04_1_post_api_v1_admin_reviews_id_moderate_404_and_409_states.png": {
+    "description": "API evidence for I-04: POST /api/v1/admin/reviews/:id/moderate  E404 and 409 states",
+    "test": "moderation.spec.ts::I-04: POST /api/v1/admin/reviews/:id/moderate  E404 and 409 states"
+  },
+  "I-05_1_delete_api_v1_admin_reviews_id_returns_204_and_404_for_unknown_id.png": {
+    "description": "API evidence for I-05: DELETE /api/v1/admin/reviews/:id  Ereturns 204 and 404 for unknown ID",
+    "test": "moderation.spec.ts::I-05: DELETE /api/v1/admin/reviews/:id  Ereturns 204 and 404 for unknown ID"
+  },
+  "I-06_1_post_api_v1_admin_reviews_bulk_moderate_returns_bulk_result_shape.png": {
+    "description": "API evidence for I-06: POST /api/v1/admin/reviews/bulk/moderate  Ereturns bulk result shape",
+    "test": "moderation.spec.ts::I-06: POST /api/v1/admin/reviews/bulk/moderate  Ereturns bulk result shape"
+  },
+  "I-07_1_delete_api_v1_admin_reviews_bulk_returns_bulk_result_shape_with_json.png": {
+    "description": "API evidence for I-07: DELETE /api/v1/admin/reviews/bulk  Ereturns bulk result shape with JSON body",
+    "test": "moderation.spec.ts::I-07: DELETE /api/v1/admin/reviews/bulk  Ereturns bulk result shape with JSON body"
+  },
+  "I-08_1_get_api_v1_admin_reports_returns_200_with_list_and_pagination.png": {
+    "description": "API evidence for I-08: GET /api/v1/admin/reports  Ereturns 200 with list and pagination",
+    "test": "moderation.spec.ts::I-08: GET /api/v1/admin/reports  Ereturns 200 with list and pagination"
+  },
+  "I-09_1_patch_api_v1_admin_reports_id_status_resolved_sets_resolver_and_auto.png": {
+    "description": "API evidence for I-09: PATCH /api/v1/admin/reports/:id/status  Eresolved sets resolver and auto-rejects the target review",
+    "test": "moderation.spec.ts::I-09: PATCH /api/v1/admin/reports/:id/status  Eresolved sets resolver and auto-rejects the target review"
+  },
+  "I-10_1_patch_api_v1_admin_reports_id_status_invalid_transitions_return_409.png": {
+    "description": "API evidence for I-10: PATCH /api/v1/admin/reports/:id/status  Einvalid transitions return 409",
+    "test": "moderation.spec.ts::I-10: PATCH /api/v1/admin/reports/:id/status  Einvalid transitions return 409"
+  },
+  "I-11_1_delete_api_v1_admin_reports_id_204_success_404_unknown_409_resolved.png": {
+    "description": "API evidence for I-11: DELETE /api/v1/admin/reports/:id  E204 success, 404 unknown, 409 resolved",
+    "test": "moderation.spec.ts::I-11: DELETE /api/v1/admin/reports/:id  E204 success, 404 unknown, 409 resolved"
+  },
+  "I-12_1_get_api_v1_admin_content_returns_200_with_list_and_haspendingorders.png": {
+    "description": "API evidence for I-12: GET /api/v1/admin/content  Ereturns 200 with list and hasPendingOrders flag",
+    "test": "moderation.spec.ts::I-12: GET /api/v1/admin/content  Ereturns 200 with list and hasPendingOrders flag"
+  },
+  "I-13_1_patch_api_v1_admin_content_id_status_success_and_validation_errors.png": {
+    "description": "API evidence for I-13: PATCH /api/v1/admin/content/:id/status  Esuccess and validation errors",
+    "test": "moderation.spec.ts::I-13: PATCH /api/v1/admin/content/:id/status  Esuccess and validation errors"
+  },
+  "I-14_1_patch_api_v1_admin_content_id_status_guard_and_state_errors.png": {
+    "description": "API evidence for I-14: PATCH /api/v1/admin/content/:id/status  Eguard and state errors",
+    "test": "moderation.spec.ts::I-14: PATCH /api/v1/admin/content/:id/status  Eguard and state errors"
+  },
+  "I-15_1_patch_api_v1_admin_content_bulk_status_returns_bulk_result_shape.png": {
+    "description": "API evidence for I-15: PATCH /api/v1/admin/content/bulk/status  Ereturns bulk result shape",
+    "test": "moderation.spec.ts::I-15: PATCH /api/v1/admin/content/bulk/status  Ereturns bulk result shape"
+  },
+  "I-16_1_get_api_v1_admin_users_returns_searchable_filtered_users_and.png": {
+    "description": "API evidence for I-16: GET /api/v1/admin/users returns searchable, filtered users and pagination",
+    "test": "moderation.spec.ts::I-16: GET /api/v1/admin/users returns searchable, filtered users and pagination"
+  },
+  "I-17_1_user_detail_and_status_endpoints_return_contract_responses.png": {
+    "description": "API evidence for I-17: User detail and status endpoints return contract responses",
+    "test": "moderation.spec.ts::I-17: User detail and status endpoints return contract responses"
+  },
+  "I-18_1_get_api_v1_admin_merchants_returns_filtered_merchant_registrations_and.png": {
+    "description": "API evidence for I-18: GET /api/v1/admin/merchants returns filtered merchant registrations and pagination",
+    "test": "moderation.spec.ts::I-18: GET /api/v1/admin/merchants returns filtered merchant registrations and pagination"
+  },
+  "I-19_1_merchant_detail_and_status_endpoints_return_contract_responses.png": {
+    "description": "API evidence for I-19: Merchant detail and status endpoints return contract responses",
+    "test": "moderation.spec.ts::I-19: Merchant detail and status endpoints return contract responses"
+  },
+  "I-20_1_merchant_management_endpoints_enforce_admin_authentication.png": {
+    "description": "API evidence for I-20: Merchant management endpoints enforce admin authentication",
+    "test": "moderation.spec.ts::I-20: Merchant management endpoints enforce admin authentication"
+  },
+  "I-21_1_merchant_query_dto_validation_enforces_limits_and_supported_filters.png": {
+    "description": "API evidence for I-21: Merchant query DTO validation enforces limits and supported filters",
+    "test": "moderation.spec.ts::I-21: Merchant query DTO validation enforces limits and supported filters"
+  },
+  "I-22_1_all_in_scope_review_content_user_and_merchant_management_endpoints.png": {
+    "description": "API evidence for I-22: All in-scope review, content, user and merchant management endpoints enforce authentication and the admin role",
+    "test": "moderation.spec.ts::I-22: All in-scope review, content, user and merchant management endpoints enforce authentication and the admin role"
+  },
+  "I-23_1_in_scope_api_errors_follow_the_standard_format_and_successes_use_the.png": {
+    "description": "API evidence for I-23: In-scope API errors follow the standard format and successes use the { data } envelope",
+    "test": "moderation.spec.ts::I-23: In-scope API errors follow the standard format and successes use the { data } envelope"
+  },
+  "I-24_1_bulk_routes_are_not_shadowed_by_id_routes.png": {
+    "description": "API evidence for I-24: Bulk routes are not shadowed by :id routes",
+    "test": "moderation.spec.ts::I-24: Bulk routes are not shadowed by :id routes"
+  }
+}

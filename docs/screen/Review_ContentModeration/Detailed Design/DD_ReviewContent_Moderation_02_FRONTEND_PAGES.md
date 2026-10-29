@@ -1,7 +1,7 @@
 # DD_MOD_02 — Frontend Pages (Review & Content Moderation)
 
-> **Doc ID:** SKM-DD-MOD-02 | **Version:** 1.4 | **Status:** Released  
-> **Last Updated:** 2026-10-21
+> **Doc ID:** SKM-DD-MOD-02 | **Version:** 1.5 | **Status:** Released  
+> **Last Updated:** 2026-10-24
 
 ---
 
@@ -14,6 +14,7 @@
 | 1.2 | 2026-08-22 | Senior System Engineer | Removed admin sidebar from individual page layouts (shared component). Renumbered all layout section labels to start from [A] per page/modal. Added Pending and Reported status to Reviews page (stats bar + filter tabs). Added Report button to Review Detail Modal action buttons. Added Report Review Modal layout (section 2.3). |
 | 1.3 | 2026-08-24 | Senior System Engineer | Combined Reviews and Reports into single screen with tab navigation (`/admin/reviews`). Removed separate Reports page (`/admin/reports`). Added Screen Tabs element. Removed "Report" action from Reviews tab. |
 | 1.4 | 2026-10-21 | Senior System Engineer | Aligned with FDS v2.3 (2026-10-21): (1) Review status changed from boolean `isApproved` to 3-value string enum `status` (`pending`/`approved`/`rejected`). Updated all lookup data, status badges, filter tabs, and Zod schemas. (2) Product content moderation base path confirmed as `/admin/content`. (3) Removed "Report" action from Review Detail Modal (buyer-initiated only). (4) Updated Zod schemas: `moderateReviewSchema` uses `status` field, `moderateUserSchema` adds optional `reason` field. (5) Updated Report Detail Modal: report actions use `rejected`/`resolved` (not `completed`), `adminNote` field (camelCase). (6) Updated lookup data enums to match backend. |
+| 1.5 | 2026-10-24 | Senior System Engineer | Aligned with PCL v1.1 (SKM-PCL-MOD-001): Default page size changed from 20 to 10 (page-size options 10/20/50/100); Reviews table Actions column now shows Eye (View Detail) + Trash (Delete) only, with Approve/Reject performed inside the Review Detail modal; removed `statReportedCount` from Reviews stats (4 cards: Total/Pending/Approved/Rejected); Reviews header title "Review & Report Management" with subtitle "Moderate product reviews and reports"; added numbered item definitions for Reports tab; updated API call limits from `limit=20` to `limit=10`; updated i18n title/placeholders to match PCL. |
 
 ---
 
@@ -74,7 +75,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [G] PAGINATION                      │   │
-│  │   < 1 2 3 ... 10 >    Page Size: [20]            │   │
+│  │   < 1 2 3 ... 10 >    Page Size: [10]            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -245,7 +246,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [F] PAGINATION                      │   │
-│  │   < 1 2 3 ... 10 >    Page Size: [20]            │   │
+│  │   < 1 2 3 ... 10 >    Page Size: [10]            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -323,7 +324,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [F] PAGINATION                      │   │
-│  │   < 1 2 3 ... 10 >    Page Size: [20]            │   │
+│  │   < 1 2 3 ... 10 >    Page Size: [10]            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -389,7 +390,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [F] PAGINATION                      │   │
-│  │   < 1 2 3 ... 10 >    Page Size: [20]            │   │
+│  │   < 1 2 3 ... 10 >    Page Size: [10]            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -571,7 +572,7 @@ export function useModerateProduct() {
 - **File Path:** `frontend/src/features/admin/components/ReviewsTable.tsx`
 - Renders DataTable with columns: checkbox, avatar, user name, product name, rating stars, title, status badge, created date, actions dropdown
 - Select-all checkbox toggles all row checkboxes
-- Actions dropdown: View Detail, Approve, Reject, Delete
+- Actions dropdown: View Detail, Delete (Approve/Reject are performed inside the Review Detail modal)
 - Bulk action buttons enable when selections are made
 
 ### 4.2 ReviewDetailModal Component

@@ -1,0 +1,599 @@
+{
+  "module": "Review_ContentModeration",
+  "timestamp": "2026-10-29T05:01:02.266Z",
+  "total": 98,
+  "passed": 98,
+  "failed": 0,
+  "skipped": 0,
+  "durationMs": 420445,
+  "tests": [
+    {
+      "title": "N-01: Review & Report Management page loads with review list",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 5523
+    },
+    {
+      "title": "N-02: Stats cards show server totals and act as status filters",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 5500
+    },
+    {
+      "title": "N-03: Approve a pending review",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 5650
+    },
+    {
+      "title": "N-04: Reject a pending review with a reason",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 6105
+    },
+    {
+      "title": "N-05: Delete a single review",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 5850
+    },
+    {
+      "title": "N-06: Bulk approve multiple pending reviews",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 5094
+    },
+    {
+      "title": "N-07: Bulk reject multiple pending reviews with a reason",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4811
+    },
+    {
+      "title": "N-08: Bulk delete multiple reviews",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4589
+    },
+    {
+      "title": "N-09: Search reviews by user, product, or content",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4447
+    },
+    {
+      "title": "N-10: Sort reviews",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4283
+    },
+    {
+      "title": "N-11: Paginate reviews and change page size",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3680
+    },
+    {
+      "title": "N-12: Switch to Reports tab and view the report list",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4105
+    },
+    {
+      "title": "N-13: View report detail (pending report auto-transitions to reviewed)",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4142
+    },
+    {
+      "title": "N-14: Resolve a report with an admin note",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4153
+    },
+    {
+      "title": "N-15: Reject a report with an admin note",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4182
+    },
+    {
+      "title": "N-16: Delete a pending or rejected report",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3812
+    },
+    {
+      "title": "N-17: Notification deep-link highlights the target review or report",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3948
+    },
+    {
+      "title": "N-18: Product Content Moderation page loads with product list",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3835
+    },
+    {
+      "title": "N-19: Stats cards show product totals and act as status filters",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3916
+    },
+    {
+      "title": "N-20: View product moderation detail dialog",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4049
+    },
+    {
+      "title": "N-21: Deactivate a product with a reason",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4386
+    },
+    {
+      "title": "N-22: Reactivate an inactive product",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4039
+    },
+    {
+      "title": "N-23: Bulk deactivate products with a reason",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4157
+    },
+    {
+      "title": "N-24: Bulk activate products",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4022
+    },
+    {
+      "title": "N-25: Search products by name or shop",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4055
+    },
+    {
+      "title": "N-26: Sort products",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3964
+    },
+    {
+      "title": "N-27: Pending-order guard blocks product deactivation in the UI",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4472
+    },
+    {
+      "title": "N-28: Paginate products and change page size",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4783
+    },
+    {
+      "title": "N-29: Merchant Management page loads stats and merchant registrations",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 5644
+    },
+    {
+      "title": "N-30: Filter, search, and sort merchant registrations",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 6379
+    },
+    {
+      "title": "N-31: View merchant registration and business license details",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 5220
+    },
+    {
+      "title": "N-32: Approve or reject a pending merchant registration",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 5022
+    },
+    {
+      "title": "N-33: User Management page loads stats and user table",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4309
+    },
+    {
+      "title": "N-34: Search, filter, sort, and paginate users",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4558
+    },
+    {
+      "title": "N-35: View user account details",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4407
+    },
+    {
+      "title": "N-36: Deactivate and reactivate eligible user accounts, including approved merchant accounts",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4618
+    },
+    {
+      "title": "N-37: Language preference applies across the in-scope admin management screens",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4650
+    },
+    {
+      "title": "N-38: Theme toggle works across in-scope admin management screens",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4524
+    },
+    {
+      "title": "N-39: Responsive layout on desktop and tablet viewports",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4162
+    },
+    {
+      "title": "N-40: Responsive layout on mobile viewport",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4066
+    },
+    {
+      "title": "N-41: Language toggle updates in-scope management labels and messages (Japanese / Myanmar)",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4140
+    },
+    {
+      "title": "N-42: Admin actions create in-app notifications for the affected users",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4308
+    },
+    {
+      "title": "A-01: Access moderation routes without authentication",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4702
+    },
+    {
+      "title": "A-02: Access moderation routes as a non-admin role (buyer / merchant)",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 5857
+    },
+    {
+      "title": "A-03: Bulk approve/reject when the selection includes non-pending reviews",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 5366
+    },
+    {
+      "title": "A-04: Reject a review with an empty reason",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 5094
+    },
+    {
+      "title": "A-05: Moderating a review that was already moderated elsewhere (stale UI)",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 7081
+    },
+    {
+      "title": "A-06: Resolve a report with an empty admin note",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4386
+    },
+    {
+      "title": "A-07: Reject a report with an empty admin note",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4339
+    },
+    {
+      "title": "A-08: Delete a resolved report",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4034
+    },
+    {
+      "title": "A-09: Mark an already-resolved report as reviewed (auto-review-on-view race)",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 5635
+    },
+    {
+      "title": "A-10: Deactivate a product that has pending (non-terminal) orders",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4167
+    },
+    {
+      "title": "A-11: Reactivate a product whose merchant user is inactive",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4592
+    },
+    {
+      "title": "A-12: Server error during list load or action",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3811
+    },
+    {
+      "title": "A-13: Bulk operation with partial failures",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 6686
+    },
+    {
+      "title": "A-14: Direct API calls with missing or invalid JWT",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 2721
+    },
+    {
+      "title": "A-15: Approve or reject an already processed merchant registration",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4507
+    },
+    {
+      "title": "A-16: Reject a merchant with an empty reason or access merchant actions as a non-admin",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4767
+    },
+    {
+      "title": "A-17: Deactivate an already-inactive user",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4179
+    },
+    {
+      "title": "A-18: Access User Management without authorization",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 5222
+    },
+    {
+      "title": "A-19: User list or status action encounters a server error",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4233
+    },
+    {
+      "title": "B-01: Review rejection reason at exactly 500 characters",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4506
+    },
+    {
+      "title": "B-02: Review rejection reason exceeding 500 characters",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4898
+    },
+    {
+      "title": "B-03: Report admin note at the 1000-character limit",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4467
+    },
+    {
+      "title": "B-04: Search query at the 255-character limit",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4490
+    },
+    {
+      "title": "B-05: Pagination limit at min/max boundaries and invalid page values",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4524
+    },
+    {
+      "title": "B-06: Empty state when no records or no filter matches",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3835
+    },
+    {
+      "title": "B-07: Select-all checkbox toggles only the current page",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 5384
+    },
+    {
+      "title": "B-08: Review with empty title and body renders fallback content",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4122
+    },
+    {
+      "title": "B-09: Product images missing or relative paths",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4949
+    },
+    {
+      "title": "B-10: Review detail product link without a slug",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4163
+    },
+    {
+      "title": "B-11: Merchant rejection reason at the 500-character boundary",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4294
+    },
+    {
+      "title": "B-12: Merchant search, empty state, and pagination boundaries",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 4301
+    },
+    {
+      "title": "B-13: User search, empty state, and pagination boundaries",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3876
+    },
+    {
+      "title": "I-01: GET /api/v1/admin/reviews — returns 200 with list and pagination",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 8498
+    },
+    {
+      "title": "I-02: POST /api/v1/admin/reviews/:id/moderate — approve returns 200 with updated status",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3360
+    },
+    {
+      "title": "I-03: POST /api/v1/admin/reviews/:id/moderate — reject validation errors",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3035
+    },
+    {
+      "title": "I-04: POST /api/v1/admin/reviews/:id/moderate — 404 and 409 states",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3081
+    },
+    {
+      "title": "I-05: DELETE /api/v1/admin/reviews/:id — returns 204 and 404 for unknown ID",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3098
+    },
+    {
+      "title": "I-06: POST /api/v1/admin/reviews/bulk/moderate — returns bulk result shape",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3193
+    },
+    {
+      "title": "I-07: DELETE /api/v1/admin/reviews/bulk — returns bulk result shape with JSON body",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 2967
+    },
+    {
+      "title": "I-08: GET /api/v1/admin/reports — returns 200 with list and pagination",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3190
+    },
+    {
+      "title": "I-09: PATCH /api/v1/admin/reports/:id/status — resolved sets resolver and auto-rejects the target review",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 2905
+    },
+    {
+      "title": "I-10: PATCH /api/v1/admin/reports/:id/status — invalid transitions return 409",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3235
+    },
+    {
+      "title": "I-11: DELETE /api/v1/admin/reports/:id — 204 success, 404 unknown, 409 resolved",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3030
+    },
+    {
+      "title": "I-12: GET /api/v1/admin/content — returns 200 with list and hasPendingOrders flag",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 6004
+    },
+    {
+      "title": "I-13: PATCH /api/v1/admin/content/:id/status — success and validation errors",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3083
+    },
+    {
+      "title": "I-14: PATCH /api/v1/admin/content/:id/status — guard and state errors",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 2804
+    },
+    {
+      "title": "I-15: PATCH /api/v1/admin/content/bulk/status — returns bulk result shape",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3150
+    },
+    {
+      "title": "I-16: GET /api/v1/admin/users returns searchable, filtered users and pagination",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 2910
+    },
+    {
+      "title": "I-17: User detail and status endpoints return contract responses",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 2951
+    },
+    {
+      "title": "I-18: GET /api/v1/admin/merchants returns filtered merchant registrations and pagination",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3031
+    },
+    {
+      "title": "I-19: Merchant detail and status endpoints return contract responses",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 2970
+    },
+    {
+      "title": "I-20: Merchant management endpoints enforce admin authentication",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 2348
+    },
+    {
+      "title": "I-21: Merchant query DTO validation enforces limits and supported filters",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 2825
+    },
+    {
+      "title": "I-22: All in-scope review, content, user and merchant management endpoints enforce authentication and the admin role",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 2389
+    },
+    {
+      "title": "I-23: In-scope API errors follow the standard format and successes use the { data } envelope",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 3013
+    },
+    {
+      "title": "I-24: Bulk routes are not shadowed by :id routes",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Review_ContentModeration\\moderation.spec.ts",
+      "status": "passed",
+      "duration": 2628
+    }
+  ]
+}
