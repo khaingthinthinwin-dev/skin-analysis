@@ -22,8 +22,8 @@
         "evidence": [
           "N-02_1_create_form_filled.png",
           "N-02_2_list_after_create.png",
-          "N-02_3_db_promotion.png",
-          "N-02_3_db_promotion.json"
+          "N-02_3_db_product.png",
+          "N-02_3_db_product.json"
         ]
       }
     ],
@@ -34,8 +34,8 @@
         "evidence": [
           "N-03_1_edit_form_filled.png",
           "N-03_2_list_after_edit.png",
-          "N-03_3_db_promotion.png",
-          "N-03_3_db_promotion.json"
+          "N-03_3_db_product.png",
+          "N-03_3_db_product.json"
         ]
       }
     ],
@@ -164,7 +164,9 @@
         "file": "Product_Management.spec.ts",
         "title": "N-17: Language toggle updates screen text",
         "evidence": [
-          "N-17_1_language_toggled.png"
+          "N-17_1_language_toggled.png",
+          "N-17_2_language_toggled.png",
+          "N-17_3_language_toggled.png"
         ]
       }
     ],
@@ -195,8 +197,8 @@
           "N-20_1_product_form_filled.png",
           "N-20_2_images_uploaded.png",
           "N-20_3_success_redirect.png",
-          "N-20_4_db_promotion.png",
-          "N-20_4_db_promotion.json"
+          "N-20_4_db_product.png",
+          "N-20_4_db_product.json"
         ]
       }
     ],
@@ -207,8 +209,8 @@
         "evidence": [
           "N-21_1_form_modified.png",
           "N-21_2_list_after_edit.png",
-          "N-21_3_db_promotion.png",
-          "N-21_3_db_promotion.json"
+          "N-21_3_db_product.png",
+          "N-21_3_db_product.json"
         ]
       }
     ],
@@ -271,7 +273,8 @@
         "file": "Product_Management.spec.ts",
         "title": "A-06: Inline stock editor rejects negative or non-numeric input",
         "evidence": [
-          "A-06_1_negative_stock_rejected.png"
+          "A-06_1_negative_stock_input.png",
+          "A-06_2_negative_stock_rejected.png"
         ]
       }
     ],
