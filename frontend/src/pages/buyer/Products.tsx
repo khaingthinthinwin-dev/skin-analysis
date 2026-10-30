@@ -18,6 +18,8 @@ import { useWishlist } from '@/features/buyer/wishlist/hooks/useWishlist'
 import { useCart } from '@/features/buyer/cart/hooks/useCart'
 import { useAuth } from '@/providers/AuthProvider'
 import { DuplicateCartAlertDialog } from '@/components/common/DuplicateCartAlertDialog'
+import { AccountDeactivatedDialog } from '@/components/shared/AccountDeactivatedDialog'
+import { isAccountDeactivated } from '@/lib/account-status'
 import {
   Dialog,
   DialogContent,
@@ -46,7 +48,7 @@ export default function Products() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const [view, setView] = useState<ViewMode>(readInitialViewMode)
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const { items: wishlistItems, addToWishlist, removeFromWishlist } = useWishlist()
   const { items: cartItems, addToCart } = useCart()
 
@@ -63,6 +65,7 @@ export default function Products() {
   const [wishlistLoadingId, setWishlistLoadingId] = useState<string | null>(null)
   const [cartLoadingId, setCartLoadingId] = useState<string | null>(null)
   const [cartDuplicateOpen, setCartDuplicateOpen] = useState(false)
+  const [deactivatedOpen, setDeactivatedOpen] = useState(false)
   const [guestLoginOpen, setGuestLoginOpen] = useState(false)
   const [guestLoginMessage, setGuestLoginMessage] = useState('')
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
@@ -76,6 +79,10 @@ export default function Products() {
       if (!isAuthenticated) {
         setGuestLoginMessage(t('buyer.search.guestWishlist', 'Please log in to use the wishlist'))
         setGuestLoginOpen(true)
+        return
+      }
+      if (isAccountDeactivated(user)) {
+        setDeactivatedOpen(true)
         return
       }
       const isInWishlist = wishlistProductIds.has(product.id)
@@ -99,7 +106,7 @@ export default function Products() {
         setWishlistLoadingId(null)
       }
     },
-    [isAuthenticated, wishlistProductIds, addToWishlist, removeFromWishlist, t],
+    [isAuthenticated, user, wishlistProductIds, addToWishlist, removeFromWishlist, t],
   )
 
   const handleAddToCart = useCallback(
@@ -488,6 +495,11 @@ export default function Products() {
       <DuplicateCartAlertDialog
         open={cartDuplicateOpen}
         onClose={() => setCartDuplicateOpen(false)}
+      />
+      <AccountDeactivatedDialog
+        open={deactivatedOpen}
+        onOpenChange={setDeactivatedOpen}
+        deactivationReason={user?.deactivationReason}
       />
     </div>
   )
