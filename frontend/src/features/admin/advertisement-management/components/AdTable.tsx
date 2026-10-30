@@ -223,10 +223,13 @@ export function AdTable({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onView(ad.id)}
                 aria-label={t('admin.ads.list.viewAdvertisement', 'View {{title}}', { title: ad.title })}
+                title={t('admin.ads.list.viewAdvertisement', 'View {{title}}', { title: ad.title })}
+                data-testid="btn-view-ad"
+                className="border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800"
+                onClick={() => onView(ad.id)}
               >
-                <Eye className="h-4 w-4" />
+                <Eye className="h-3.5 w-3.5" />
               </Button>
             )}
           </div>

@@ -572,10 +572,13 @@ export default function ContentModeration() {
                         <Button
                           size="icon"
                           variant="outline"
-                          className="h-8 w-8"
+                          aria-label={t('admin.content.viewDetails', 'View product details')}
+                          title={t('admin.content.viewDetails', 'View product details')}
+                          data-testid="btn-view-product"
+                          className="h-7 w-7 border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800"
                           onClick={() => setDetailProduct(product)}
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-3.5 w-3.5" />
                         </Button>
                         {product.isActive ? (
                           <TooltipProvider>

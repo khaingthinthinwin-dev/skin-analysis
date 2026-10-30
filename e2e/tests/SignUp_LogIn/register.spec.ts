@@ -853,14 +853,10 @@ test.describe('Register Page', () => {
   });
 
   test.describe('Authenticated User Redirect', () => {
-    test('should redirect to dashboard if already logged in', async ({ buyerPage }) => {
+    test('should redirect to the landing page if already logged in', async ({ buyerPage }) => {
       await buyerPage.goto(ROUTES.REGISTER);
-      try {
-        await buyerPage.waitForURL(/\/(buyer|merchant|admin)/, { timeout: 15000 });
-        expect(buyerPage.url()).not.toContain(ROUTES.REGISTER);
-      } catch {
-        expect(buyerPage.url()).toContain(ROUTES.REGISTER);
-      }
+      await buyerPage.waitForURL(/\/buyer\/search/, { timeout: 15000 });
+      expect(buyerPage.url()).not.toContain(ROUTES.REGISTER);
     });
   });
 });

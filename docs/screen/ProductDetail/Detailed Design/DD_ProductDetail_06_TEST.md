@@ -18,6 +18,8 @@
 
 This document defines the testing strategy for the Product Detail module, covering Backend Unit Tests, Frontend Component Tests, and End-to-End (E2E) Scenarios.
 
+> **UI evidence scope:** Product Detail screen-flow and E2E UI evidence use an authenticated buyer session. Backend tests for protected-endpoint authentication remain security contract checks.
+
 - **Backend Framework:** Jest (v30) with `@nestjs/testing`
 - **Frontend Framework:** Vitest (v3.1) with React Testing Library
 - **E2E Framework:** Playwright
@@ -202,12 +204,12 @@ Using Vitest + React Testing Library. Components live under `frontend/src/featur
 | Load More | Increments the page state and **replaces** the visible list with that page (flat `items/page/totalPages`); it does not append |
 | Pending review (own) | Never rendered — the list endpoint returns `status='approved'` only and its `select` omits `status`, so the amber "Pending" badge has no data to bind to |
 | Verified purchase badge | Green "Verified" badge when `isVerifiedPurchase = true` |
-| Unauthenticated user | Login prompt instead of review form |
 | `canReview = false` | Submit button stays enabled; clicking it shows the eligibility message (`not_delivered` / `already_reviewed`) and sends no request |
 | Rating star selection | Clicking star sets rating value |
 | Submit valid review | Calls API, success toast "submitted … awaiting approval", list refreshes |
 | Submit with no rating | Validation error "Rating is required" |
-| Submit with body > 5000 | Validation error shown |
+| Title > 255 characters | Inline limit error shown; submit sends no request until corrected |
+| Body > 5000 characters | Inline limit error and red live counter shown; submit sends no request until corrected |
 | Loading state | Spinner on submit button |
 
 ### 3.5 `ReviewReportDialog.test.tsx`
@@ -216,10 +218,9 @@ Using Vitest + React Testing Library. Components live under `frontend/src/featur
 |----------|------------------|
 | Dialog opens | Reason selector + optional `detail` textarea visible |
 | Submit without reason | Validation error "Reason is required" |
-| Submit with `detail` > 1000 | Validation error shown |
+| Submit with `detail` > 1000 | Over-limit text remains visible, inline error shown, submit disabled |
 | Submit with valid data | Calls `POST /reviews/:id/report`, success toast, dialog closes |
 | Duplicate report | Shows "Already reported" toast (409) |
-| Unauthenticated user | Login prompt / gating |
 
 ### 3.6 `SimilarProducts.test.tsx`
 
@@ -269,9 +270,11 @@ Using Vitest + React Testing Library. Components live under `frontend/src/featur
 
 ## 4. End-to-End (E2E) Scenarios (Playwright)
 
+Screen-flow evidence uses the buyer route `/buyer/products/:id` and an authenticated buyer session, except merchant-preview scenarios.
+
 | Scenario ID | Flow Description |
 |-------------|------------------|
-| **E2E-PROD-01** | **Happy Path: Browse Product Detail**<br>1. Navigate to `/products/:id` (UUID, slug, or SKU).<br>2. Verify name, price (MMK), rating, stock status displayed.<br>3. Verify main image shows `images[0]`.<br>4. Click thumbnail → main image swaps.<br>5. Verify skin type badges rendered.<br>6. Verify "Sold by {shopName}" plain text (no shop link). |
+| **E2E-PROD-01** | **Happy Path: Browse Product Detail**<br>1. As an authenticated buyer, navigate to `/buyer/products/:id` (UUID, slug, or SKU).<br>2. Verify name, price (MMK), rating, stock status displayed.<br>3. Verify main image shows `images[0]`.<br>4. Click thumbnail → main image swaps.<br>5. Verify skin type badges rendered.<br>6. Verify "Sold by {shopName}" plain text (no shop link). |
 | **E2E-PROD-02** | **Browse Reviews**<br>1. Navigate to product detail page.<br>2. Click "Reviews" tab.<br>3. Verify list loads with ratings, titles, bodies.<br>4. Verify verified purchase badges.<br>5. Click "Load More" → next page loads (flat pagination).<br>6. Verify rating summary reflects `ratingBreakdown`. |
 | **E2E-PROD-03** | **Write Review (Authenticated Buyer)**<br>1. Login as buyer with delivered order.<br>2. Navigate to purchased product.<br>3. Click "Reviews" tab.<br>4. Select 5-star rating, enter body.<br>5. Click "Submit Review".<br>6. Verify success toast "awaiting approval".<br>7. Verify review created with `status='pending'`. |
 | **E2E-PROD-04** | **Write Review — Not Delivered**<br>1. Login as buyer without delivered order.<br>2. Navigate to product detail.<br>3. `can-review` returns `not_delivered`.<br>4. Attempt submit → the inline "You can only review products you have purchased and received." message appears and no request is sent. A direct API call returns **400**. |
@@ -283,14 +286,14 @@ Using Vitest + React Testing Library. Components live under `frontend/src/featur
 | **E2E-PROD-10** | **Report Review**<br>1. Login as buyer.<br>2. Navigate to product with reviews.<br>3. Hover review card → Report button appears (hidden for merchant).<br>4. Click Report → dialog opens.<br>5. Select "spam", enter optional `detail`.<br>6. Click "Submit Report" → success toast (201). |
 | **E2E-PROD-11** | **View Promotions**<br>1. Navigate to product with active merchant promotions.<br>2. Verify discount badge from `promotions[0]` ("{code}: {value}% off" / "{amount} off").<br>3. Navigate to product without promotions → badge hidden. |
 | **E2E-PROD-12** | **View Similar Products**<br>1. Navigate to product detail.<br>2. Scroll to "Similar Products".<br>3. Verify up to 8 cards.<br>4. Click a card → navigates to that product. |
-| **E2E-PROD-13** | **Product Not Found**<br>1. Navigate to `/products/nonexistent`.<br>2. Verify 404 EmptyState.<br>3. Verify "Back to products" link → `/products`. |
-| **E2E-PROD-14** | **Unauthenticated User Actions**<br>1. Navigate without login.<br>2. Verify product detail displayed (public).<br>3. Verify review form hidden, login prompt shown.<br>4. Click "Add to Cart" → login gating.<br>5. Click wishlist → login gating. |
+| **E2E-PROD-13** | **Product Not Found**<br>1. As an authenticated buyer, navigate to `/buyer/products/nonexistent`.<br>2. Verify 404 EmptyState.<br>3. Verify "Back to products" link → `/buyer/products`. |
 | **E2E-PROD-15** | **Language Toggle**<br>1. Toggle to Japanese → labels change.<br>2. Toggle to Myanmar → labels change.<br>3. Toggle back to English. |
 | **E2E-PROD-16** | **Theme Toggle**<br>1. Toggle dark mode → dark backgrounds applied.<br>2. Toggle light mode → light backgrounds applied. |
 | **E2E-PROD-17** | **Responsive Layout — Desktop**<br>1. Desktop (≥ 768px `md:`).<br>2. Verify two-column: gallery left, info right.<br>3. Inline purchase actions in Product Info. |
 | **E2E-PROD-18** | **Responsive Layout — Mobile**<br>1. Mobile (< 768px).<br>2. Verify stacked layout.<br>3. Verify sticky CTA bar (`md:hidden`) with quantity + cart + wishlist.<br>4. Thumbnails horizontal scroll. |
 | **E2E-PROD-19** | **View Ad Banners**<br>1. Navigate to product with active `productDetail_page_banner` ads.<br>2. Verify sponsored slider renders ("SPONSORED" badge).<br>3. Verify auto-rotation every 5s.<br>4. Hover → rotation pauses.<br>5. Click ad → **internal** navigation to `/buyer/products/{sku}`.<br>6. Navigate to product with no eligible ads → section hidden. |
 | **E2E-PROD-20** | **Merchant Preview Gating**<br>1. Login as merchant, view own product.<br>2. Verify CTA, ads, promo badge, sold-by, description/ingredients tabs, similar products all hidden. |
+| **E2E-PROD-21** | **Review Title API Limit**<br>1. Login as buyer.<br>2. Send a review request with a 256-character title.<br>3. Verify HTTP 400 from DTO validation (title limit is 255 characters). |
 
 ---
 

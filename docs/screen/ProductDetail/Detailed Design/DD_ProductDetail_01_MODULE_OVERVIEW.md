@@ -11,8 +11,9 @@
 The Product Detail module displays one active product and supports the buyer journey around that product: viewing images and product data, reading reviews, viewing related products and active promotions, viewing sidebar advertisements, adding a product to a wishlist, and requesting an add-to-cart action.
 
 - **Module Path:** `frontend/src/features/buyer/products`
-- **Primary Route:** `/products/:id` (resolved as UUID|slug|SKU via `resolveProduct`)
-- **Primary Actors:** Visitors (read-only) and authenticated buyers (mutations)
+- **Primary Buyer Route:** `/buyer/products/:id` (resolved as UUID|slug|SKU via `resolveProduct`)
+- **Primary Actors:** Authenticated buyers; merchants (read-only preview)
+- **Buyer-side scope:** Product Detail screen flows and UI evidence use an authenticated buyer session. Public read-endpoint access remains defined by the API access controls.
 - **Source Specifications:** `SKM-FDS-PROD-001` and `SKM-SIS-SCR-002`
 
 ---
@@ -38,7 +39,7 @@ The Product Detail module displays one active product and supports the buyer jou
 
 ```mermaid
 stateDiagram-v2
-    [*] --> LOADING : Open /products/:id
+    [*] --> LOADING : Open /buyer/products/:id
     LOADING --> DISPLAYED : Product API 200
     LOADING --> NOT_FOUND : Product API 404
     LOADING --> ERROR : Network or invalid :id

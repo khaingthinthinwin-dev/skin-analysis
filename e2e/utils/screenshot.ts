@@ -68,7 +68,7 @@ function loadScreenshotIndex(screenshotDir: string): ScreenshotIndex {
   }
 }
 
-async function updateScreenshotIndex(
+export async function updateScreenshotIndex(
   screenshotDir: string,
   filename: string,
   description: string | undefined,

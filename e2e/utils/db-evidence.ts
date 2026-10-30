@@ -2,12 +2,9 @@ import { test, type Page } from '@playwright/test';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Client } from 'pg';
-import { getScreenFromFilePath } from './screenshot';
+import { getScreenFromFilePath, updateScreenshotIndex } from './screenshot';
 
 const TEST_RESULTS_ROOT = path.resolve(__dirname, '../test-results');
-
-type IndexEntry = { description?: string; test?: string };
-type ScreenshotIndex = Record<string, string | IndexEntry>;
 
 type QueryResult = {
   label: string;
@@ -25,20 +22,6 @@ function ensureDir(dir: string) {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
-}
-
-function loadIndex(dir: string): ScreenshotIndex {
-  const indexPath = path.join(dir, 'index.json');
-  if (!fs.existsSync(indexPath)) return {};
-  try {
-    return JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
-  } catch {
-    return {};
-  }
-}
-
-function saveIndex(dir: string, index: ScreenshotIndex): void {
-  fs.writeFileSync(path.join(dir, 'index.json'), JSON.stringify(index, null, 2), 'utf-8');
 }
 
 export function loadDatabaseUrl(): string {
@@ -188,24 +171,6 @@ function renderDbHtml(results: QueryResult[], description?: string, productImage
 </html>`;
 }
 
-function upsertIndex(
-  evidenceDir: string,
-  filename: string,
-  description: string | undefined,
-  testKey: string | undefined
-): void {
-  const index = loadIndex(evidenceDir);
-  const existing = index[filename];
-  const prev: IndexEntry =
-    typeof existing === 'string' ? { description: existing } : existing || {};
-  index[filename] = {
-    ...prev,
-    ...(description ? { description } : {}),
-    ...(testKey ? { test: testKey } : {}),
-  };
-  saveIndex(evidenceDir, index);
-}
-
 async function captureHtmlPng(page: Page, html: string, filePath: string): Promise<void> {
   const dbPage = await page.context().newPage();
   try {
@@ -312,8 +277,8 @@ export async function captureDbEvidence(
     const html = renderDbHtml(results, opts.description, productImageUrl);
     await captureHtmlPng(page, html, pngPath);
 
-    upsertIndex(evidenceDir, `${base}.png`, opts.description, testKey);
-    upsertIndex(evidenceDir, `${base}.json`, opts.description, testKey);
+    await updateScreenshotIndex(evidenceDir, `${base}.png`, opts.description, testKey);
+    await updateScreenshotIndex(evidenceDir, `${base}.json`, opts.description, testKey);
 
     return { pngPath, jsonPath };
   } finally {

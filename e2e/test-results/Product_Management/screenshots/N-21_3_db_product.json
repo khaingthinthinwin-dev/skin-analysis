@@ -1,0 +1,26 @@
+{
+  "capturedAt": "2026-10-29T07:55:16.636Z",
+  "description": "Product row after successful update with image retention",
+  "results": [
+    {
+      "label": "Product row after successful update with image retention",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "088f0b5b-9fda-48d8-a603-bb246f324fa0",
+          "merchant_id": "35c44c85-a7f0-4000-b5bd-f377a1077bd0",
+          "name": "Updated Product Name",
+          "slug": "updated-product-name-16",
+          "sku": "SKU_397",
+          "price": "29.99",
+          "compare_at_price": "39.99",
+          "stock_quantity": 100,
+          "is_active": true,
+          "is_featured": true,
+          "category_id": "0cc4845b-22d7-4b4f-bcbd-238f7d043092",
+          "created_at": "2026-10-29T01:25:07.493Z"
+        }
+      ]
+    }
+  ]
+}

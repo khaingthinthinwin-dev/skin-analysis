@@ -49,7 +49,7 @@ test.describe('Login Page', () => {
   });
 
   test.describe('Successful Login', () => {
-    test('should login as buyer and redirect to buyer dashboard', async ({ page }) => {
+    test('should login as buyer and redirect to the buyer search screen', async ({ page }) => {
       await loginPage.goto();
       await loginPage.fillEmail(testEmail);
       await loginPage.fillPassword(testPassword);
@@ -66,8 +66,8 @@ test.describe('Login Page', () => {
       ).toBeVisible({ timeout: 10_000 });
       await captureScreenshot(
         page,
-        'N-03_2_buyer_dashboard_after_login',
-        'Screenshot of the buyer dashboard after successful login'
+        'N-03_2_buyer_search_after_login',
+        'Screenshot of the buyer search screen after successful login'
       );
     });
 
@@ -84,7 +84,7 @@ test.describe('Login Page', () => {
       await captureScreenshot(
         page,
         'N-29_1_success_toast',
-        'Success toast notification displayed after login redirects to the dashboard'
+        'Success toast notification displayed after login redirects to the search screen'
       );
     });
 
@@ -112,7 +112,7 @@ test.describe('Login Page', () => {
       await captureScreenshot(
         page,
         'N-25_2_myanmar_login_success',
-        'Buyer dashboard reached with Myanmar success toast after Myanmar-language login'
+        'Buyer search screen reached with Myanmar success toast after Myanmar-language login'
       );
     });
   });
@@ -283,19 +283,15 @@ test.describe('Login Page', () => {
   });
 
   test.describe('Authenticated User Redirect', () => {
-    test('should redirect to dashboard if already logged in', async ({ buyerPage }) => {
+    test('should redirect to the landing page if already logged in', async ({ buyerPage }) => {
       await buyerPage.goto(ROUTES.LOGIN);
-      try {
-        await buyerPage.waitForURL(/\/(buyer|merchant|admin)/, { timeout: 15000 });
-        expect(buyerPage.url()).not.toContain(ROUTES.LOGIN);
-      } catch {
-        expect(buyerPage.url()).toContain(ROUTES.LOGIN);
-      }
+      await buyerPage.waitForURL(/\/buyer\/search/, { timeout: 15000 });
+      expect(buyerPage.url()).not.toContain(ROUTES.LOGIN);
 
       await captureScreenshot(
         buyerPage,
         'N-35_1_already_authenticated_redirect',
-        'Final state when an already-authenticated user visits /login (redirected to the dashboard)'
+        'Final state when an already-authenticated user visits /login (redirected to the buyer search screen)'
       );
     });
   });

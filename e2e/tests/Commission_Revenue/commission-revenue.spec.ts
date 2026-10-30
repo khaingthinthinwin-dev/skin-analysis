@@ -43,7 +43,7 @@ let apiCaptureTasks: Promise<void>[] = [];
  */
 const LIVE_EVIDENCE_PCL_IDS = new Set(['N-01', 'N-02', 'N-08', 'N-09', 'N-11', 'N-13', 'N-14', 'N-15', 'N-28', 'N-31']);
 const DB_EVIDENCE_TESTS = new Set([
-  "N-01: navigates from the admin dashboard to the Commission tab",
+  "N-01: navigates from the admin landing page to the Commission tab",
   "N-02: updates the commission rate successfully (live stack evidence)",
   "N-08: processes a pending payout after confirmation (live stack evidence)",
   "N-09 and N-11: saves a revenue target and changes its period (live stack evidence)",
@@ -789,7 +789,7 @@ test.describe('Commission & Revenue — live navigation + database evidence', ()
   /* ---------------------------------------------------------------------- *
    * N-01 — the Commission tab loads (1 capture: the loaded screen)
    * ---------------------------------------------------------------------- */
-  test('N-01: navigates from the admin dashboard to the Commission tab', async ({ browser }) => {
+  test('N-01: navigates from the admin landing page to the Commission tab', async ({ browser }) => {
     // A dedicated context is used so the admin signs in through the real login
     // form — the shared `page` already carries an injected admin token.
     const context = await browser.newContext();
@@ -803,10 +803,14 @@ test.describe('Commission & Revenue — live navigation + database evidence', ()
     await navPage.getByPlaceholder('Enter your password').fill(ADMIN.password);
     await navPage.locator('button[type="submit"]').click();
     await navPage.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30_000 });
-    await expect(navPage).toHaveURL(/\/admin(\?.*)?$/);
+    await expect(navPage).toHaveURL(/\/admin\/users(\?.*)?$/);
+    await expect(
+      navPage.getByRole('heading', { level: 1, name: 'User Management' }),
+    ).toBeVisible({ timeout: 10_000 });
+    await captureScreenshot(navPage, 'N-01_0_admin_users_landing');
 
-    // Dashboard card → screen.
-    await navPage.getByRole('link', { name: /view revenue/i }).click();
+    // Sidebar → Commission & Revenue screen.
+    await navPage.getByRole('link', { name: 'Commission & Revenue' }).click();
     await navPage.waitForURL('**/admin/commission-revenue');
     await expect(navPage.getByRole('heading', { name: 'Commission & Revenue' })).toBeVisible();
     await expect(nav.commissionTab).toHaveAttribute('data-state', 'active');

@@ -509,10 +509,13 @@ export default function UserManagement() {
                       <Button
                         size="icon"
                         variant="outline"
-                        className="h-8 w-8"
+                        aria-label={t('admin.users.table.viewDetails', 'View user details')}
+                        title={t('admin.users.table.viewDetails', 'View user details')}
+                        data-testid="btn-view-user"
+                        className="h-7 w-7 border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800"
                         onClick={() => setDetailUser(user)}
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-3.5 w-3.5" />
                       </Button>
                       {user.isActive && (user.id !== currentUserId || isAdminUser(user)) && (
                         <TooltipProvider>

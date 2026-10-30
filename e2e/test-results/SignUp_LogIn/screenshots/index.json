@@ -39,13 +39,9 @@
     "description": "Login with wrong password → HTTP 400/401, generic error message",
     "test": "api-auth.spec.ts::should return 401 for wrong password"
   },
-  "N-30_1_merchant_dashboard.png": {
-    "description": "Merchant Portal dashboard after merchant login",
-    "test": "auth.spec.ts::should log in as merchant and navigate to merchant dashboard"
-  },
   "N-03_1_login_form_filled.png": {
     "description": "Screenshot of the Login page with valid email and password entered (before Sign In)",
-    "test": "login.spec.ts::should login as buyer and redirect to buyer dashboard"
+    "test": "login.spec.ts::should login as buyer and redirect to the buyer search screen"
   },
   "N-12_2_verify_code_page.png": {
     "test": "forgot-password.spec.ts::should submit forgot password form and show success message"
@@ -61,10 +57,6 @@
   "A-32_1_generic_credential_error.png": {
     "description": "Generic credential error shown without revealing whether the account exists",
     "test": "auth.spec.ts::should show generic error for wrong credentials without leaking account existence"
-  },
-  "N-03_2_buyer_dashboard_after_login.png": {
-    "description": "Screenshot of the buyer dashboard after successful login",
-    "test": "login.spec.ts::should login as buyer and redirect to buyer dashboard"
   },
   "N-13_2_back_to_login_link.png": {
     "test": "forgot-password.spec.ts::should have back to login link on forgot password page"
@@ -101,7 +93,7 @@
     "test": "forgot-password.spec.ts::should switch language on forgot password page"
   },
   "N-29_1_success_toast.png": {
-    "description": "Success toast notification displayed after login redirects to the dashboard",
+    "description": "Success toast notification displayed after login redirects to the search screen",
     "test": "login.spec.ts::should show toast notification on successful login"
   },
   "N-21_2_forgot_myanmar.png": {
@@ -120,14 +112,14 @@
     "test": "login.spec.ts::N-25: should login successfully in Myanmar language"
   },
   "A-16_2_buyer_redirect_to_login.png": {
-    "test": "auth.spec.ts::should redirect to login when accessing buyer dashboard without authentication"
+    "test": "auth.spec.ts::should redirect to login when accessing the buyer area without authentication"
   },
   "N-26_1_myanmar_forgot_form_filled.png": {
     "description": "Myanmar-language Forgot Password form filled before submitting",
     "test": "forgot-password.spec.ts::should submit forgot password in Myanmar language"
   },
   "N-25_2_myanmar_login_success.png": {
-    "description": "Buyer dashboard reached with Myanmar success toast after Myanmar-language login",
+    "description": "Buyer search screen reached with Myanmar success toast after Myanmar-language login",
     "test": "login.spec.ts::N-25: should login successfully in Myanmar language"
   },
   "I-10_1_forgot_password_success_message.png": {
@@ -148,10 +140,6 @@
   "I-13_1_reset_password_400_invalid_code.png": {
     "description": "Reset-password with an unissued/expired code → HTTP 400",
     "test": "api-auth.spec.ts::should return 400 for invalid reset token"
-  },
-  "N-04_1_dashboard_before_logout.png": {
-    "description": "Screenshot of buyer dashboard before logout",
-    "test": "auth.spec.ts::should log out buyer and clear session"
   },
   "I-14_1_reset_password_400_weak_password.png": {
     "description": "Reset-password with a weak password → HTTP 400 Bad Request",
@@ -317,8 +305,8 @@
     "test": "reset-password.spec.ts::should reset password with valid verification code and login with new password"
   },
   "N-35_1_already_authenticated_redirect.png": {
-    "description": "Final state when an already-authenticated user visits /login (redirected to the dashboard)",
-    "test": "login.spec.ts::should redirect to dashboard if already logged in"
+    "description": "Final state when an already-authenticated user visits /login (redirected to the buyer search screen)",
+    "test": "login.spec.ts::should redirect to the landing page if already logged in"
   },
   "N-36_1_reached_reset_password.png": {
     "description": "Valid 6-digit code accepted — Reset Password page reached with router state",
@@ -579,5 +567,17 @@
   "N-40_2_verify_code_myanmar.png": {
     "description": "Verification Code page rendered in Myanmar",
     "test": "verify-code.spec.ts::should switch language on verify code page"
+  },
+  "N-30_1_merchant_product_management.png": {
+    "description": "Product Management screen after merchant login",
+    "test": "auth.spec.ts::should log in as merchant and land on product management"
+  },
+  "N-03_2_buyer_search_after_login.png": {
+    "description": "Screenshot of the buyer search screen after successful login",
+    "test": "login.spec.ts::should login as buyer and redirect to the buyer search screen"
+  },
+  "N-04_1_search_before_logout.png": {
+    "description": "Screenshot of the buyer search screen before logout",
+    "test": "auth.spec.ts::should log out buyer and clear session"
   }
 }

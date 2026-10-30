@@ -20,13 +20,14 @@
 
 - [x] **N-01**: Commission tab loads by default with rate card and report table
   - **Evidence**:
+    - Admin landing (User Management) right after admin login → `N-01_0_admin_users_landing.png`
     - `N-01_1_ui_commission_tab_loaded.png`
     - Test: commission-revenue.spec.ts › "N-01: loads the Commission tab by default with rate and reports" — passed
-    - Test: commission-revenue.spec.ts › "N-01: navigates from the admin dashboard to the Commission tab" — passed
+    - Test: commission-revenue.spec.ts › "N-01: navigates from the admin landing page to the Commission tab" — passed
   - **Precondition**: Admin can sign in through the login form.
   - **Steps**:
-    1. Sign in through the login form → the admin lands on `/admin`.
-    2. From the admin dashboard card click "View Revenue" → `/admin/commission-revenue`.
+    1. Sign in through the login form → the admin lands on `/admin/users` (User Management).
+    2. In the sidebar click "Commission & Revenue" → `/admin/commission-revenue`.
     3. Verify the "Commission" tab is active by default, the rate card shows the rate that is persisted in `commission_settings`, and the report table renders the Merchant / Commission Rate / Orders / Revenue / Commission columns.
   - **Expected Result**: The screen renders at `/admin/commission-revenue`; the "Commission" tab is active by default; the rate card shows the saved platform rate as a percentage string; the report table renders its rows. The screen is **read-only** — no database row is written.
 

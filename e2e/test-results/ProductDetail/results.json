@@ -1,467 +1,461 @@
 {
   "module": "ProductDetail",
-  "timestamp": "2026-10-23T08:33:24.546Z",
-  "total": 76,
-  "passed": 76,
+  "timestamp": "2026-10-28T08:42:25.334Z",
+  "total": 75,
+  "passed": 75,
   "failed": 0,
   "skipped": 0,
-  "durationMs": 360086,
+  "durationMs": 382270,
   "tests": [
     {
       "title": "N-01: displays product detail page with all sections",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 13775
+      "duration": 12690
     },
     {
       "title": "N-02: resolves product detail by uuid and sku",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 4119
+      "duration": 3818
     },
     {
       "title": "N-03: shows price in MMK with save amount badge",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 2783
+      "duration": 2567
     },
     {
       "title": "N-04: scrolls to reviews when rating summary is clicked",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 3712
+      "duration": 4050
     },
     {
       "title": "N-05: displays product image gallery",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 3085
+      "duration": 3801
     },
     {
       "title": "N-06: displays in stock status badge",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 2603
+      "duration": 3062
     },
     {
       "title": "N-07: displays skin type badges",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 2620
+      "duration": 3464
     },
     {
       "title": "N-08: displays promotion discount badge",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 2578
+      "duration": 3078
     },
     {
       "title": "N-09: switches between description ingredients and reviews tabs",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 3845
+      "duration": 4503
     },
     {
       "title": "N-10: displays product reviews section",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 3420
+      "duration": 3916
     },
     {
       "title": "N-11: loads more reviews on demand",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 3525
+      "duration": 3716
     },
     {
       "title": "N-12: displays related products",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 3239
+      "duration": 3850
     },
     {
       "title": "N-13: adds product to cart and retains selected quantity",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 4547
+      "duration": 5628
     },
     {
       "title": "N-14: toggles product in wishlist",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 4247
+      "duration": 11595
     },
     {
       "title": "N-15: submits review for eligible buyer",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 5030
+      "duration": 9305
     },
     {
       "title": "N-16: reports a review",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 15002
+      "duration": 17240
     },
     {
       "title": "N-17: displays ad banner with internal navigation",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 8989
+      "duration": 10787
     },
     {
       "title": "N-18: navigates back via back button",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 5385
+      "duration": 5074
     },
     {
       "title": "N-19: opens reviews tab from hash deep link",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 3613
+      "duration": 5130
     },
     {
       "title": "N-20: toggles language on product detail page",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 4502
+      "duration": 5163
     },
     {
       "title": "N-21: toggles theme on product detail page",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 3328
+      "duration": 4322
     },
     {
       "title": "N-22: displays responsive layout on desktop viewport",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 2730
+      "duration": 3429
     },
     {
       "title": "N-23: displays responsive layout with sticky CTA on mobile viewport",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 2876
+      "duration": 3105
     },
     {
       "title": "N-24: hides commerce content in merchant view",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 5386
+      "duration": 6531
     },
     {
       "title": "A-02: shows invalid product message when id param is missing",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 993
+      "duration": 2522
     },
     {
       "title": "A-05: redirects non-buyer user to unauthorized",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 2461
+      "duration": 2090
     },
     {
       "title": "A-10: rejects duplicate review submission with 409",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 5791
+      "duration": 5839
     },
     {
       "title": "A-11: rejects duplicate review report with 409",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 15888
+      "duration": 16727
     },
     {
       "title": "A-14: blocks actions for deactivated account",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 11705
-    },
-    {
-      "title": "A-03: redirects guest user attempting to add to cart",
-      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
-      "status": "passed",
-      "duration": 2871
-    },
-    {
-      "title": "A-04: redirects guest user attempting to add to wishlist",
-      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
-      "status": "passed",
-      "duration": 2704
+      "duration": 12486
     },
     {
       "title": "A-06: blocks review submission without rating",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 4023
+      "duration": 5288
     },
     {
       "title": "A-07: blocks review submission without body",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 4020
+      "duration": 5196
     },
     {
       "title": "A-08: blocks review for buyer without delivered order",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 4228
+      "duration": 4778
     },
     {
       "title": "A-09: blocks review for buyer who already reviewed",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 4424
+      "duration": 4454
     },
     {
       "title": "A-12: disables report submit without reason",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 24131
+      "duration": 23752
     },
     {
       "title": "A-13: disables add to cart for out of stock product",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 4381
+      "duration": 6039
     },
     {
       "title": "A-15: shows an error message when reviews fail to load",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 5563
+      "duration": 7863
     },
     {
       "title": "A-16: shows not found state when product request fails",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 21117
+      "duration": 22629
     },
     {
       "title": "A-01: shows not found state for unknown product",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 24572
+      "duration": 25851
     },
     {
       "title": "B-02: caps quantity at available stock",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 1923
+      "duration": 3012
     },
     {
       "title": "B-04: accepts review title of exactly 255 characters",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 4807
+      "duration": 4231
     },
     {
-      "title": "B-05: caps review title at 255 characters",
+      "title": "B-05: shows an error when review title exceeds 255 characters",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 3942
+      "duration": 3405
     },
     {
       "title": "B-06: accepts review body of exactly 5000 characters",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 4836
+      "duration": 4568
     },
     {
-      "title": "B-07: caps review body at 5000 characters",
+      "title": "B-07: shows an error when review body exceeds 5000 characters",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 3979
+      "duration": 2933
     },
     {
       "title": "B-08: accepts report detail of exactly 1000 characters",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 14717
+      "duration": 14304
     },
     {
-      "title": "B-09: caps report detail at 1000 characters",
+      "title": "B-09: shows an error when report detail exceeds 1000 characters",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 23516
+      "duration": 13291
     },
     {
       "title": "B-10: accepts rating values 1 and 5",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 4259
+      "duration": 4097
     },
     {
       "title": "B-11: displays empty state when product has no reviews",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 1681
+      "duration": 2555
     },
     {
       "title": "B-12: hides similar products section when no matches",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 2383
+      "duration": 3288
     },
     {
       "title": "B-16: shows low stock badge at threshold",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 1358
+      "duration": 2298
     },
     {
       "title": "B-01: disables decrement at minimum quantity of one",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 1885
+      "duration": 2828
     },
     {
       "title": "B-03: hides save badge when compare at price is null",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 1349
+      "duration": 2290
     },
     {
       "title": "B-13: displays placeholder image when product has no images",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 1246
+      "duration": 2332
     },
     {
       "title": "B-14: displays empty description state",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 1335
+      "duration": 2404
     },
     {
       "title": "B-15: displays empty ingredients state",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 1456
+      "duration": 2637
     },
     {
       "title": "B-17: has no horizontal overflow at a 320px viewport",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 1079
+      "duration": 2311
     },
     {
       "title": "I-01: returns product detail with embedded promotions and rating breakdown",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 472
+      "duration": 376
     },
     {
       "title": "I-02: resolves uuid slug and sku to the same product",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 377
+      "duration": 339
     },
     {
       "title": "I-04: returns paginated reviews with flat shape",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 372
+      "duration": 334
     },
     {
       "title": "I-06: returns 400 for invalid review query parameters",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 410
+      "duration": 404
     },
     {
       "title": "I-03: returns 404 for unknown inactive or unapproved product",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 472
+      "duration": 442
     },
     {
       "title": "I-05: honours sortBy on the reviews endpoint",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 392
+      "duration": 483
     },
     {
       "title": "I-07: returns similar products as a bare array",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 355
+      "duration": 365
     },
     {
       "title": "I-08: returns at most five eligible advertisements",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 361
+      "duration": 343
     },
     {
       "title": "I-09: returns ads for the productDetail_page_banner placement",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 327
+      "duration": 373
     },
     {
       "title": "I-10: returns the review eligibility verdict",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 1940
+      "duration": 1944
     },
     {
       "title": "I-11: rejects can-review without a token or for a non-buyer",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 2353
+      "duration": 1689
     },
     {
       "title": "I-12: creates a review with pending status",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 3253
+      "duration": 2550
     },
     {
       "title": "I-13: rejects review creation without a delivered order",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 3746
+      "duration": 1899
     },
     {
       "title": "I-14: rejects duplicate review creation with 409",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 3485
+      "duration": 2377
     },
     {
       "title": "I-15: rejects review creation without a token or for a non-buyer",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 2651
+      "duration": 1714
     },
     {
       "title": "I-16: creates a review report",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 3283
+      "duration": 2359
     },
     {
       "title": "I-17: rejects duplicate review report with 409",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 3560
+      "duration": 2356
     },
     {
       "title": "I-18: rejects report without a token or for an unknown review",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 2245
+      "duration": 1745
     },
     {
       "title": "I-19: error responses follow standard API error format",
       "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
       "status": "passed",
-      "duration": 470
+      "duration": 347
+    },
+    {
+      "title": "I-20: rejects a review title longer than 255 characters",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\ProductDetail\\product-detail.spec.ts",
+      "status": "passed",
+      "duration": 1709
     }
   ]
 }

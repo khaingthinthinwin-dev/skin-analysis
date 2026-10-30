@@ -51,9 +51,9 @@ export function AdminOrderTable({ rows, loading = false, onSort, currentSort, cu
         label={t('admin.orders.copyOrderNumber', 'Copy order number')}
         className="text-muted-foreground hover:bg-primary/10 hover:text-primary focus-visible:ring-primary/50"
       />
-      <Button asChild variant="ghost" size="icon" className="h-7 w-7" aria-label={t('common.view', 'View')}>
+      <Button asChild variant="outline" size="icon" className="h-7 w-7 border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800" aria-label={t('common.view', 'View')}>
         <Link to={`/admin/orders/${id}`} aria-label={t('common.view', 'View')} title={t('common.view', 'View')}>
-          <Eye className="h-4 w-4" aria-hidden="true" />
+          <Eye className="h-3.5 w-3.5" aria-hidden="true" />
         </Link>
       </Button>
     </div>
@@ -117,9 +117,9 @@ export function AdminOrderTable({ rows, loading = false, onSort, currentSort, cu
               <div><dt className="text-xs text-muted-foreground">{t('orders.table.total', 'Total')}</dt><dd className="font-semibold">{formatAmount(row.totalAmount)}</dd></div>
               <div><dt className="text-xs text-muted-foreground">{t('orders.table.payment', 'Payment')}</dt><dd><PaymentBadge status={row.paymentStatus} /></dd></div>
             </dl>
-            <Button asChild variant="outline" size="sm" className="mt-4 w-full">
+            <Button asChild variant="outline" size="sm" className="mt-4 w-full border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800">
               <Link to={`/admin/orders/${row.id}`} aria-label={t('common.view', 'View')}>
-                <Eye className="mr-1 h-4 w-4" aria-hidden="true" />{t('common.view', 'View')}
+                <Eye className="mr-1 h-3.5 w-3.5" aria-hidden="true" />{t('common.view', 'View')}
               </Link>
             </Button>
           </article>

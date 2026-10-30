@@ -1,125 +1,570 @@
 {
-  "pclFile": "docs/screen/SearchAndFilter/SearchAndFilter_Buyer_PCL.md",
+  "pclFile": "docs/screen/SearchAndFilter/SearchAndFilter_Guest_PCL.md",
   "format": "pcl-id-keyed",
   "specFiles": [
-    "e2e/tests/SearchAndFilter/search-filter.spec.ts"
+    "e2e/tests/SearchAndFilter/search-filter-guest.spec.ts"
   ],
   "mappings": {
     "N-01": [
-      { "file": "search-filter.spec.ts", "title": "N-01: should add a product to the wishlist" }
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-01: should load the default catalog sorted by newest"
+      }
     ],
     "N-02": [
-      { "file": "search-filter.spec.ts", "title": "N-02: should remove a product from the wishlist" }
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-02: should run the keyword query only after the 300ms debounce"
+      }
     ],
     "N-03": [
-      { "file": "search-filter.spec.ts", "title": "N-03: should add a product to the cart" }
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-03: should fire the query immediately when the Search button is clicked"
+      }
     ],
     "N-04": [
       {
-        "file": "search-filter.spec.ts",
-        "title": "N-04: should reflect the saved wishlist state on the product card"
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-04: should reset the keyword and restore the default catalog on Clear Search"
       }
     ],
     "N-05": [
       {
-        "file": "search-filter.spec.ts",
-        "title": "N-05: should disable wishlist and cart buttons while a mutation is pending"
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-05: should narrow the results to a category including its descendants"
       }
     ],
     "N-06": [
-      { "file": "search-filter.spec.ts", "title": "N-06: should flag products already in the cart" }
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-06: should apply skin types with \"all selected\" (hasEvery) semantics"
+      }
     ],
     "N-07": [
       {
-        "file": "search-filter.spec.ts",
-        "title": "N-07: should toggle language on the Search & Filter page"
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-07: should apply ingredients with \"any selected\" (hasSome) semantics"
       }
     ],
     "N-08": [
       {
-        "file": "search-filter.spec.ts",
-        "title": "N-08: should display notification bell badge and open panel"
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-08: should return only products inside the selected price range"
+      }
+    ],
+    "N-09": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-09: should return only products at or above the selected rating"
+      }
+    ],
+    "N-10": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-10: should sort the results by price ascending"
+      }
+    ],
+    "N-11": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-11: should sort the results by price descending"
+      }
+    ],
+    "N-12": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-12: should sort the results by highest rating"
+      }
+    ],
+    "N-13": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-13: should navigate between result pages and keep the previous page while loading"
+      }
+    ],
+    "N-14": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-14: should honour the limit URL parameter"
+      }
+    ],
+    "N-15": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-15: should switch between grid and list view without refetching"
+      }
+    ],
+    "N-16": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-16: should render active filter chips and remove a single chip"
+      }
+    ],
+    "N-17": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-17: should clear every filter on \"Clear all\" in the chip row"
+      }
+    ],
+    "N-18": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-18: should clear every filter on the panel \"Clear All\""
+      }
+    ],
+    "N-19": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-19: should navigate to the product detail and restore the search state on back"
+      }
+    ],
+    "N-20": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-20: should render the sponsored ad slider between the search bar and the filter row"
+      }
+    ],
+    "N-21": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-21: should toggle the language on the guest search page"
+      }
+    ],
+    "N-22": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-22: should switch the theme between dark and light"
+      }
+    ],
+    "N-23": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-23: should render the desktop layout on a wide viewport"
+      }
+    ],
+    "N-24": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-24: should render the mobile layout with a filter drawer"
+      }
+    ],
+    "N-25": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-25: should restore the full search state from a shared URL"
+      }
+    ],
+    "N-26": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-26: should apply tags with \"any selected\" (hasSome) semantics"
+      }
+    ],
+    "N-27": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-27: should collapse the category list to 5 items with View More / View Less"
+      }
+    ],
+    "N-28": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-28: should show the SALE badge and the compare-at price"
+      }
+    ],
+    "N-29": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-29: should show the shop name and the rating on every card"
+      }
+    ],
+    "N-30": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-30: should render at most 3 skin-type badges per card"
+      }
+    ],
+    "N-31": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-31: should fall back to the \"No image\" placeholder"
+      }
+    ],
+    "N-32": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-32: should submit immediately when Enter is pressed in the search input"
+      }
+    ],
+    "N-33": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-33: should clear the category filter when \"All\" is selected"
+      }
+    ],
+    "N-34": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-34: should show the resolved category name on the category chip"
+      }
+    ],
+    "N-35": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-35: should render the numbered pagination with ellipsis and respect the bounds"
+      }
+    ],
+    "N-36": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-36: should format prices with the \"Ks\" suffix and thousands separators"
+      }
+    ],
+    "N-37": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-37: should hide the add-to-cart action for out-of-stock products"
+      }
+    ],
+    "N-38": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-38: should show a spinner while the product list is loading"
+      }
+    ],
+    "N-39": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-39: should auto-advance the ad slider and pause on hover"
+      },
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-39b: should disable the ad auto-advance when reduced motion is requested"
+      }
+    ],
+    "N-40": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-40: should navigate the ad slides with the manual controls"
+      }
+    ],
+    "N-41": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-41: should open the linked destination when a sponsored ad is clicked"
+      }
+    ],
+    "N-42": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-42: should render the ad image placeholder when no image can be loaded"
+      }
+    ],
+    "N-43": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-43: should activate a product card with the keyboard"
+      }
+    ],
+    "N-44": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-44: should clear the filters and close the drawer from the mobile filter sheet"
+      }
+    ],
+    "N-45": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "N-45: should not expose any notification state to a guest"
       }
     ],
     "A-01": [
       {
-        "file": "search-filter.spec.ts",
-        "title": "A-01: should open the Already in Cart dialog for a product already in the cart"
+        "file": "search-filter-guest.spec.ts",
+        "title": "A-01: should reject a keyword longer than 255 characters"
       }
     ],
     "A-02": [
       {
-        "file": "search-filter.spec.ts",
-        "title": "A-02: should open the Already in Cart dialog on server 409 from add-to-cart"
+        "file": "search-filter-guest.spec.ts",
+        "title": "A-02: should reject a minimum price greater than the maximum price"
       }
     ],
     "A-03": [
       {
-        "file": "search-filter.spec.ts",
-        "title": "A-03: should show Already in your wishlist toast on wishlist 409"
+        "file": "search-filter-guest.spec.ts",
+        "title": "A-03: should reject negative price values"
       }
     ],
     "A-04": [
       {
-        "file": "search-filter.spec.ts",
-        "title": "A-04: should show a generic error toast on add-to-cart failure"
+        "file": "search-filter-guest.spec.ts",
+        "title": "A-04: should reject a rating outside the 1-5 range"
       }
     ],
     "A-05": [
       {
-        "file": "search-filter.spec.ts",
-        "title": "A-05: should show a generic error toast on wishlist failure"
+        "file": "search-filter-guest.spec.ts",
+        "title": "A-05: should reject an invalid category UUID"
+      }
+    ],
+    "A-06": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "A-06: should prompt a guest to log in before any shopping action"
+      }
+    ],
+    "A-07": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "A-07: should block the shopping actions for a merchant"
+      }
+    ],
+    "A-08": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "A-08: should show the inline error state when the product list request fails"
+      }
+    ],
+    "A-09": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "A-09: should show the inline error state for a 500 response"
+      }
+    ],
+    "A-10": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "A-10: should surface a rate limit response as an error state"
+      }
+    ],
+    "A-11": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "A-11: should return not-found for a non-existent product slug"
+      }
+    ],
+    "A-12": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "A-12: should show the inline error state instead of the product grid on failure"
+      }
+    ],
+    "A-13": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "A-13: should block the URL and query updates while the price range is invalid"
+      }
+    ],
+    "A-14": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "A-14: should isolate a sponsored ad request failure from the product results"
       }
     ],
     "B-01": [
-      { "file": "search-filter.spec.ts", "title": "B-01: should not issue any cart request for guests" }
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-01: should accept a keyword of exactly 255 characters"
+      }
     ],
     "B-02": [
       {
-        "file": "search-filter.spec.ts",
-        "title": "B-02: should add the first item to an empty cart and guard the duplicate"
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-02: should reject a keyword of 256 characters"
       }
     ],
     "B-03": [
       {
-        "file": "search-filter.spec.ts",
-        "title": "B-03: should serialize rapid repeated cart clicks"
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-03: should accept limit values of 1 and 100"
+      }
+    ],
+    "B-04": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-04: should reject a limit above the maximum of 100"
+      }
+    ],
+    "B-05": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-05: should show the empty state for a page beyond the result range"
+      }
+    ],
+    "B-06": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-06: should show the empty state without a reset button"
+      }
+    ],
+    "B-07": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-07: should render the category group gracefully for an empty category tree"
+      }
+    ],
+    "B-08": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-08: should accept a price bound of 0"
+      }
+    ],
+    "B-09": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-09: should accept rating boundaries of 1 and 5"
+      }
+    ],
+    "B-10": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-10: should list out-of-stock products with the flag applied"
+      }
+    ],
+    "B-11": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-11: should exclude inactive products from the results"
+      }
+    ],
+    "B-12": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-12: should render the built-in fallback ads when no eligible ad is returned"
+      }
+    ],
+    "B-13": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-13: should cap the ad list at 5 entries"
+      }
+    ],
+    "B-14": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-14: should use a default page limit of 12"
+      }
+    ],
+    "B-15": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-15: should expose only rating options from 3.0+ to 4.5+"
+      }
+    ],
+    "B-16": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-16: should show 5 category items and then View More / View Less"
+      }
+    ],
+    "B-17": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-17: should accept an equal minimum and maximum price"
+      }
+    ],
+    "B-18": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-18: should hide View More when exactly 5 category items exist"
+      }
+    ],
+    "B-19": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "B-19: should hide the pagination for a single page of results"
       }
     ],
     "I-01": [
       {
-        "file": "search-filter.spec.ts",
-        "title": "I-01: should return the authenticated buyer cart from GET /cart"
+        "file": "search-filter-guest.spec.ts",
+        "title": "I-01: should return 200 with the product list and pagination meta"
       }
     ],
     "I-02": [
       {
-        "file": "search-filter.spec.ts",
-        "title": "I-02: should send the expected POST /cart/items contract"
+        "file": "search-filter-guest.spec.ts",
+        "title": "I-02: should apply the API defaults when no query params are supplied"
       }
     ],
     "I-03": [
       {
-        "file": "search-filter.spec.ts",
-        "title": "I-03: should return saved items from GET /wishlist"
+        "file": "search-filter-guest.spec.ts",
+        "title": "I-03: should return 400 for invalid query params"
       }
     ],
     "I-04": [
       {
-        "file": "search-filter.spec.ts",
-        "title": "I-04: should send the expected POST /wishlist/:productId contract"
+        "file": "search-filter-guest.spec.ts",
+        "title": "I-04: should keep serving the product list under a request burst"
       }
     ],
     "I-05": [
       {
-        "file": "search-filter.spec.ts",
-        "title": "I-05: should send the expected DELETE /wishlist/:productId contract"
+        "file": "search-filter-guest.spec.ts",
+        "title": "I-05: should return 200 with the nested category tree"
       }
     ],
     "I-06": [
       {
-        "file": "search-filter.spec.ts",
-        "title": "I-06: should not exercise wishlist/cart endpoints outside the Search screen"
+        "file": "search-filter-guest.spec.ts",
+        "title": "I-06: should return 200 with the product detail for a valid slug"
+      }
+    ],
+    "I-07": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "I-07: should return 404 for a non-existent slug"
+      }
+    ],
+    "I-08": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "I-08: should return 200 with the eligible ads for the search placement"
+      }
+    ],
+    "I-09": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "I-09: should return 400 for an invalid ad placement"
+      }
+    ],
+    "I-10": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "I-10: should return errors in the standard API format"
+      }
+    ],
+    "I-11": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "I-11: should cache the product list in Redis with a TTL of at most 120 seconds"
+      }
+    ],
+    "I-12": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "I-12: should call the list endpoint with repeated array params and a wrapped payload"
+      }
+    ],
+    "I-13": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "I-13: should return the recursive category tree used by the screen"
+      }
+    ],
+    "I-14": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "I-14: should issue the ads request with the placement as the only query param"
+      }
+    ],
+    "I-15": [
+      {
+        "file": "search-filter-guest.spec.ts",
+        "title": "I-15: should hydrate ad SKUs through the buyer product endpoint"
       }
     ]
   }

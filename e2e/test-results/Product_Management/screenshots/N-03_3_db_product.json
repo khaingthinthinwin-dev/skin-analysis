@@ -1,0 +1,26 @@
+{
+  "capturedAt": "2026-10-29T07:53:18.095Z",
+  "description": "Product row after successful update",
+  "results": [
+    {
+      "label": "Product row after successful update",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "8eec564a-cb2b-4d4f-a0fb-d6439bf17eb0",
+          "merchant_id": "35c44c85-a7f0-4000-b5bd-f377a1077bd0",
+          "name": "Updated Product Name",
+          "slug": "updated-product-name-16",
+          "sku": "SKU_393",
+          "price": "29.99",
+          "compare_at_price": "39.99",
+          "stock_quantity": 50,
+          "is_active": true,
+          "is_featured": true,
+          "category_id": "0cc4845b-22d7-4b4f-bcbd-238f7d043092",
+          "created_at": "2026-10-29T01:23:07.566Z"
+        }
+      ]
+    }
+  ]
+}

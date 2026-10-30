@@ -1,5 +1,4 @@
 import {
-  LayoutDashboard,
   Sparkles,
   Wand2,
   Heart,
@@ -59,13 +58,6 @@ const adminNavConfig: RoleNavConfig = {
   roleBadgeColor: 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border-rose-200 dark:border-rose-800',
   sections: [
     {
-      title: 'Overview',
-      titleKey: 'nav.menu.overview',
-      items: [
-        { label: 'Dashboard', labelKey: 'nav.dashboard', href: '/admin', icon: LayoutDashboard },
-      ],
-    },
-    {
       title: 'Management',
       titleKey: 'nav.menu.management',
       items: [
@@ -109,7 +101,6 @@ export const roleNavConfigs: Record<UserRole, RoleNavConfig> = {
         title: 'Explore',
         titleKey: 'nav.menu.explore',
         items: [
-          { label: 'Dashboard', labelKey: 'nav.dashboard', href: '/buyer', icon: LayoutDashboard },
           { label: 'Search Products', labelKey: 'nav.menu.searchProducts', href: '/buyer/search', icon: Search },
         ],
       },
@@ -148,13 +139,6 @@ export const roleNavConfigs: Record<UserRole, RoleNavConfig> = {
     roleLabelKey: 'roles.merchant',
     roleBadgeColor: 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border-amber-200 dark:border-amber-800',
     sections: [
-      {
-        title: 'Overview',
-        titleKey: 'nav.menu.overview',
-        items: [
-          { label: 'Dashboard', labelKey: 'nav.dashboard', href: '/merchant', icon: LayoutDashboard },
-        ],
-      },
       {
         title: 'Catalog & Sales',
         titleKey: 'nav.menu.catalogSales',

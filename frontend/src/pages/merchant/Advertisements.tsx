@@ -1081,8 +1081,8 @@ function AdCard({ ad, isDeactivated, highlightAdId, onEdit, onPay, onDelete, onT
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
-              <Button size="sm" variant="outline" className="w-9 px-0" aria-label={t('merchant.advertisements.viewAd')} title={t('merchant.advertisements.view')} onClick={() => onView(ad)}>
-                  <Eye className="h-4 w-4" />
+              <Button size="sm" variant="outline" className="w-9 px-0 border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800" aria-label={t('merchant.advertisements.viewAd')} title={t('merchant.advertisements.view')} onClick={() => onView(ad)}>
+                  <Eye className="h-3.5 w-3.5" />
                 </Button>
             </div>
           </div>
@@ -1121,8 +1121,8 @@ function AdCard({ ad, isDeactivated, highlightAdId, onEdit, onPay, onDelete, onT
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
-              <Button size="sm" variant="outline" className="w-9 px-0" aria-label={t('merchant.advertisements.viewAd')} title={t('merchant.advertisements.view')} onClick={() => onView(ad)}>
-                  <Eye className="h-4 w-4" />
+              <Button size="sm" variant="outline" className="w-9 px-0 border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800" aria-label={t('merchant.advertisements.viewAd')} title={t('merchant.advertisements.view')} onClick={() => onView(ad)}>
+                  <Eye className="h-3.5 w-3.5" />
                 </Button>
             </div>
           </div>

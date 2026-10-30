@@ -1,0 +1,26 @@
+{
+  "capturedAt": "2026-10-29T07:55:08.509Z",
+  "description": "Product row after successful creation with full form",
+  "results": [
+    {
+      "label": "Product row after successful creation with full form",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "088f0b5b-9fda-48d8-a603-bb246f324fa0",
+          "merchant_id": "35c44c85-a7f0-4000-b5bd-f377a1077bd0",
+          "name": "Full Form Product 1793260503122",
+          "slug": "full-form-product-1793260503122",
+          "sku": "SKU_397",
+          "price": "29.99",
+          "compare_at_price": "39.99",
+          "stock_quantity": 100,
+          "is_active": true,
+          "is_featured": true,
+          "category_id": "0cc4845b-22d7-4b4f-bcbd-238f7d043092",
+          "created_at": "2026-10-29T01:25:07.493Z"
+        }
+      ]
+    }
+  ]
+}
