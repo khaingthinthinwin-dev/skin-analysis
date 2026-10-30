@@ -205,9 +205,9 @@ export default function ProductReview() {
                           <TableCell>{product.reviewCount}</TableCell>
                           <TableCell className="text-right">
                             <Button
-                              variant="ghost"
+                              variant="outline"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-7 w-7 border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800"
                               onClick={() =>
                                 navigate(
                                   `/merchant/products/${product.slug || product.id}/view`,
@@ -215,7 +215,7 @@ export default function ProductReview() {
                               }
                               aria-label={`View ${product.name}`}
                             >
-                              <Eye className="h-4 w-4" />
+                              <Eye className="h-3.5 w-3.5" />
                             </Button>
                           </TableCell>
                         </TableRow>
