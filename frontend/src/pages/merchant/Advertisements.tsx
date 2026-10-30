@@ -933,7 +933,7 @@ function AdCard({ ad, isDeactivated, highlightAdId, onEdit, onPay, onDelete, onT
   const state = displayState(ad)
   const isRejected = ad.approvalStatus === 'rejected'
   const canEdit = state === 'draft' || state === 'content_uploaded'
-  const canDelete = isRejected || state === 'draft' || state === 'content_uploaded' || state === 'expired'
+  const canDelete = isRejected || state === 'draft' || state === 'content_uploaded' || state === 'expired' || !ad.isActive
   const canToggle = state !== 'expired' && ad.approvalStatus === 'approved' && ad.paymentStatus === 'completed'
   const isScheduled = state === 'scheduled'
   const packageInfo = ad.package

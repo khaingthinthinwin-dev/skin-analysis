@@ -20,7 +20,11 @@
 
 ## 1. Normal Scenarios (N) — Happy Path
 
-- [ ] **N-01**: Approved merchant loads advertisement management page
+- [x] **N-01**: Approved merchant loads advertisement management page
+  - **Evidence**:
+    - Page header, subtitle, and statistics cards loaded → `N-01_1_page_header_and_stats.png`
+    - Packages catalog grid and merchant advertisements grid loaded → `N-01_2_packages_and_ad_grid.png`
+    - Test: merchant-ads.spec.ts › "N-01: Approved merchant loads advertisement management page" — passed
   - **Precondition**: Authenticated merchant user has an approved shop (`licenseStatus === 'approved'`, not deactivated).
   - **Steps**:
     1. Navigate to `/merchant/advertisements`.
@@ -31,7 +35,13 @@
   - **API**: `GET /api/v1/ads/packages`, `GET /api/v1/ads/my-ads?page=1&limit=3`, `GET /api/v1/ads/my-ads?page=1&limit=100`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-02**: Statistics cards display counts and filter advertisement list on click
+- [x] **N-02**: Statistics cards display counts and filter advertisement list on click
+  - **Evidence**:
+    - Statistics cards with active, pending, expired counts → `N-02_1_stats_cards_initial.png`
+    - Active ads filtered on clicking Active stat card → `N-02_2_filter_active_on_click.png`
+    - Pending ads filtered on clicking Pending stat card → `N-02_3_filter_pending_on_click.png`
+    - Expired ads filtered on clicking Expired stat card → `N-02_4_filter_expired_on_click.png`
+    - Test: merchant-ads.spec.ts › "N-02: Statistics cards display counts and filter advertisement list on click" — passed
   - **Precondition**: Authenticated merchant is on `/merchant/advertisements` with ads across active, pending approval, and expired states.
   - **Steps**:
     1. Verify counts displayed on "Active Ads", "Pending Approval", and "Expired" cards.
@@ -43,7 +53,10 @@
   - **API**: `GET /api/v1/ads/my-ads?page=1&limit=100`, `GET /api/v1/ads/my-ads`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-03**: Browse available advertisement packages catalog
+- [x] **N-03**: Browse available advertisement packages catalog
+  - **Evidence**:
+    - Available advertisement packages catalog with details and action buttons → `N-03_1_packages_catalog_grid.png`
+    - Test: merchant-ads.spec.ts › "N-03: Browse available advertisement packages catalog" — passed
   - **Precondition**: Active admin advertisement packages exist in `ad_fee_settings` with effective dates in the past.
   - **Steps**:
     1. Navigate to `#available-packages` section.
@@ -54,7 +67,10 @@
   - **API**: `GET /api/v1/ads/packages`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-04**: Deep link from package notification highlights package card (?updatedPackage=)
+- [x] **N-04**: Deep link from package notification highlights package card (?updatedPackage=)
+  - **Evidence**:
+    - Package card highlighted with purple ring and Updated badge via deep link → `N-04_1_package_deep_link_highlight.png`
+    - Test: merchant-ads.spec.ts › "N-04: Deep link from package notification highlights package card (?updatedPackage=)" — passed
   - **Precondition**: Merchant receives a notification about a new or updated package with link containing `?updatedPackage={packageId}`.
   - **Steps**:
     1. Navigate to `/merchant/advertisements?updatedPackage={packageId}`.
@@ -64,7 +80,11 @@
   - **API**: `GET /api/v1/ads/packages`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-05**: Select package to create draft advertisement
+- [x] **N-05**: Select package to create draft advertisement
+  - **Evidence**:
+    - Package selection confirmation dialog showing fee and duration details → `N-05_1_package_selection_dialog.png`
+    - Upload Ad Content dialog automatically opened after package selection → `N-05_2_draft_created_content_dialog.png`
+    - Test: merchant-ads.spec.ts › "N-05: Select package to create draft advertisement" — passed
   - **Precondition**: Approved merchant is on `/merchant/advertisements`.
   - **Steps**:
     1. Click "Select Package" on an active package card.
@@ -75,7 +95,11 @@
   - **API**: `POST /api/v1/ads/packages/:feeSettingId/select`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-06**: Upload ad content and set schedule (startsAt >= 3 days)
+- [x] **N-06**: Upload ad content and set schedule (startsAt >= 3 days)
+  - **Evidence**:
+    - Content dialog filled with title, announcement, image, and valid schedule → `N-06_1_ad_content_form_filled.png`
+    - Payment confirmation dialog opened automatically after saving content → `N-06_2_payment_dialog_opened.png`
+    - Test: merchant-ads.spec.ts › "N-06: Upload ad content and set schedule (startsAt >= 3 days)" — passed
   - **Precondition**: Draft advertisement exists and "Upload Ad Content" dialog is open.
   - **Steps**:
     1. Confirm read-only placement and tier display in the dialog header.
@@ -93,7 +117,11 @@
   - **API**: `PATCH /api/v1/ads/:id/content`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-07**: Pay advertising fee and submit ad for admin approval
+- [x] **N-07**: Pay advertising fee and submit ad for admin approval
+  - **Evidence**:
+    - Payment dialog with valid 8+ digit transaction reference entered → `N-07_1_payment_reference_entered.png`
+    - Success toast shown and ad updated to pending review with payment completed → `N-07_2_ad_submitted_for_approval.png`
+    - Test: merchant-ads.spec.ts › "N-07: Pay advertising fee and submit ad for admin approval" — passed
   - **Precondition**: Advertisement content is uploaded (`content_uploaded` state), Payment Confirmation dialog is open (or opened via "Pay fee" card button).
   - **Steps**:
     1. Verify displayed advertising fee amount and formula ("N days × X KS/day").
@@ -104,7 +132,10 @@
   - **API**: `POST /api/v1/ads/:id/pay`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-08**: View own advertisements grid with 3 cards per page
+- [x] **N-08**: View own advertisements grid with 3 cards per page
+  - **Evidence**:
+    - Grid displaying ad cards with thumbnail, metadata, and contextual buttons → `N-08_1_advertisement_cards_grid.png`
+    - Test: merchant-ads.spec.ts › "N-08: View own advertisements grid with 3 cards per page" — passed
   - **Precondition**: Merchant has multiple advertisements.
   - **Steps**:
     1. Scroll to the "Your Advertisements" section.
@@ -115,7 +146,10 @@
   - **API**: `GET /api/v1/ads/my-ads?page=1&limit=3`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-09**: Search advertisements by title (debounced 300ms)
+- [x] **N-09**: Search advertisements by title (debounced 300ms)
+  - **Evidence**:
+    - Ad grid filtered after typing Radiant in search with 300ms debounce → `N-09_1_search_debounced_results.png`
+    - Test: merchant-ads.spec.ts › "N-09: Search advertisements by title (debounced 300ms)" — passed
   - **Precondition**: Merchant is on `/merchant/advertisements`.
   - **Steps**:
     1. Type a search query into the search input (e.g. "Radiant").
@@ -125,7 +159,12 @@
   - **API**: `GET /api/v1/ads/my-ads?page=1&limit=3&search=Radiant`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-10**: Filter advertisements by status (All, Active, Inactive, Expired)
+- [x] **N-10**: Filter advertisements by status (All, Active, Inactive, Expired)
+  - **Evidence**:
+    - Advertisements filtered by Active status → `N-10_1_status_filter_active.png`
+    - Advertisements filtered by Inactive status → `N-10_2_status_filter_inactive.png`
+    - Advertisements filtered by Expired status → `N-10_3_status_filter_expired.png`
+    - Test: merchant-ads.spec.ts › "N-10: Filter advertisements by status (All, Active, Inactive, Expired)" — passed
   - **Precondition**: Merchant has ads across multiple lifecycle states.
   - **Steps**:
     1. Open the Status filter dropdown.
@@ -135,7 +174,12 @@
   - **API**: `GET /api/v1/ads/my-ads?page=1&limit=3&status={status}`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-11**: Filter advertisements by approval status (All, Pending, Approved, Rejected)
+- [x] **N-11**: Filter advertisements by approval status (All, Pending, Approved, Rejected)
+  - **Evidence**:
+    - Advertisements filtered by Pending approval → `N-11_1_approval_filter_pending.png`
+    - Advertisements filtered by Approved status → `N-11_2_approval_filter_approved.png`
+    - Advertisements filtered by Rejected status → `N-11_3_approval_filter_rejected.png`
+    - Test: merchant-ads.spec.ts › "N-11: Filter advertisements by approval status (All, Pending, Approved, Rejected)" — passed
   - **Precondition**: Merchant has ads in pending, approved, and rejected states.
   - **Steps**:
     1. Open the Approval Status filter dropdown.
@@ -145,7 +189,10 @@
   - **API**: `GET /api/v1/ads/my-ads?page=1&limit=3&approvalStatus={status}`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-12**: Reset filters and reload list via Refresh button
+- [x] **N-12**: Reset filters and reload list via Refresh button
+  - **Evidence**:
+    - Search input and filters cleared after clicking Refresh button → `N-12_1_filters_reset_on_refresh.png`
+    - Test: merchant-ads.spec.ts › "N-12: Reset filters and reload list via Refresh button" — passed
   - **Precondition**: Filters and search are currently active on `/merchant/advertisements`.
   - **Steps**:
     1. Set search text, select a status filter, and select an approval filter.
@@ -155,7 +202,10 @@
   - **API**: `GET /api/v1/ads/my-ads?page=1&limit=3`, `GET /api/v1/ads/my-ads?page=1&limit=100`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-13**: Deep link from approval/rejection notification highlights ad card (?highlightAdId=)
+- [x] **N-13**: Deep link from approval/rejection notification highlights ad card (?highlightAdId=)
+  - **Evidence**:
+    - Target ad highlighted with violet ring outline via notification deep link → `N-13_1_ad_highlight_deep_link.png`
+    - Test: merchant-ads.spec.ts › "N-13: Deep link from approval/rejection notification highlights ad card (?highlightAdId=)" — passed
   - **Precondition**: Merchant clicks a notification linking to `/merchant/advertisements?highlightAdId={adId}`.
   - **Steps**:
     1. Open page with `?highlightAdId={adId}`.
@@ -165,7 +215,10 @@
   - **API**: `GET /api/v1/ads/my-ads`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-14**: View read-only advertisement detail modal (AdViewDialog)
+- [x] **N-14**: View read-only advertisement detail modal (AdViewDialog)
+  - **Evidence**:
+    - Read-only advertisement detail dialog displaying full media, schedule, and fee details → `N-14_1_ad_view_detail_dialog.png`
+    - Test: merchant-ads.spec.ts › "N-14: View read-only advertisement detail modal (AdViewDialog)" — passed
   - **Precondition**: An advertisement exists in the merchant's list.
   - **Steps**:
     1. Click the "View" (eye icon) button on the ad card.
@@ -177,7 +230,11 @@
   - **API**: None (Local component dialog using loaded ad entity)
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-15**: Edit unpaid advertisement content (PATCH /ads/:id)
+- [x] **N-15**: Edit unpaid advertisement content (PATCH /ads/:id)
+  - **Evidence**:
+    - Edit dialog populated and modified with updated title and announcement → `N-15_1_edit_unpaid_content_form.png`
+    - Ad card updated with modified title after saving edits → `N-15_2_edit_unpaid_saved_card.png`
+    - Test: merchant-ads.spec.ts › "N-15: Edit unpaid advertisement content (PATCH /ads/:id)" — passed
   - **Precondition**: An unpaid advertisement exists (`draft` or `content_uploaded` state).
   - **Steps**:
     1. Click the "Edit" (pencil icon) button on the ad card.
@@ -189,7 +246,12 @@
   - **API**: `PATCH /api/v1/ads/:id`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-16**: Edit and resubmit rejected advertisement with fresh schedule and payment
+- [x] **N-16**: Edit and resubmit rejected advertisement with fresh schedule and payment
+  - **Evidence**:
+    - Edit dialog for rejected ad with Save & Pay button and rescheduled dates → `N-16_1_resubmit_dialog_with_fresh_schedule.png`
+    - Payment confirmation dialog opened for resubmission → `N-16_2_resubmit_payment_dialog.png`
+    - Rejected ad successfully resubmitted with pending status and updated payment → `N-16_3_resubmit_completed.png`
+    - Test: merchant-ads.spec.ts › "N-16: Edit and resubmit rejected advertisement with fresh schedule and payment" — passed
   - **Precondition**: An advertisement has `approvalStatus === 'rejected'` with a rejection reason from admin.
   - **Steps**:
     1. Observe the amber rejection reason box and "Edit & Resubmit" button on the ad card.
@@ -204,7 +266,12 @@
   - **API**: `PATCH /api/v1/ads/:id`, `POST /api/v1/ads/:id/pay`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-17**: Toggle active/inactive switch on approved and paid advertisement
+- [x] **N-17**: Toggle active/inactive switch on approved and paid advertisement
+  - **Evidence**:
+    - Approved paid ad with Active switch toggled on → `N-17_1_toggle_active_initial.png`
+    - Ad deactivated; switch turned off → `N-17_2_toggle_deactivated.png`
+    - Ad reactivated; switch turned back on → `N-17_3_toggle_reactivated.png`
+    - Test: merchant-ads.spec.ts › "N-17: Toggle active/inactive switch on approved and paid advertisement" — passed
   - **Precondition**: An advertisement is `approvalStatus === 'approved'`, `paymentStatus === 'completed'`, and not expired (`canToggle === true`).
   - **Steps**:
     1. Locate the Active/Inactive toggle switch on the ad card.
@@ -216,7 +283,11 @@
   - **API**: `PATCH /api/v1/ads/:id/toggle`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-18**: Delete draft or unpaid advertisement (Hard delete)
+- [x] **N-18**: Delete draft or unpaid advertisement (Hard delete)
+  - **Evidence**:
+    - Delete confirmation dialog for unpaid ad indicating permanent removal → `N-18_1_delete_unpaid_confirmation.png`
+    - Ad card permanently removed from list after hard delete → `N-18_2_unpaid_ad_deleted.png`
+    - Test: merchant-ads.spec.ts › "N-18: Delete draft or unpaid advertisement (Hard delete)" — passed
   - **Precondition**: Merchant has a draft or unpaid advertisement (`paymentStatus === 'pending'`).
   - **Steps**:
     1. Click the "Delete" (trash icon) button on the ad card.
@@ -227,7 +298,11 @@
   - **API**: `DELETE /api/v1/ads/:id`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-19**: Delete expired advertisement (Hard delete)
+- [x] **N-19**: Delete expired advertisement (Hard delete)
+  - **Evidence**:
+    - Delete confirmation dialog for expired advertisement → `N-19_1_delete_expired_dialog.png`
+    - Expired ad card permanently removed from list → `N-19_2_expired_ad_deleted.png`
+    - Test: merchant-ads.spec.ts › "N-19: Delete expired advertisement (Hard delete)" — passed
   - **Precondition**: Merchant has an expired advertisement (`expiresAt < now`).
   - **Steps**:
     1. Click "Delete" on the expired ad card.
@@ -238,7 +313,11 @@
   - **API**: `DELETE /api/v1/ads/:id`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-20**: Delete paid inactive advertisement (Soft delete / Deactivate & retain history)
+- [x] **N-20**: Delete paid inactive advertisement (Soft delete / Deactivate & retain history)
+  - **Evidence**:
+    - Delete confirmation indicating soft delete and performance retention → `N-20_1_soft_delete_dialog_message.png`
+    - Inactive ad removed from active grid view while history is retained → `N-20_2_soft_delete_completed.png`
+    - Test: merchant-ads.spec.ts › "N-20: Delete paid inactive advertisement (Soft delete / Deactivate & retain history)" — passed
   - **Precondition**: Merchant has a paid, non-expired advertisement that is inactive (`isActive === false`).
   - **Steps**:
     1. Click "Delete" on the inactive ad card.
@@ -249,7 +328,10 @@
   - **API**: `DELETE /api/v1/ads/:id`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-21**: Expiry warning badges display correctly for ads expiring today or tomorrow
+- [x] **N-21**: Expiry warning badges display correctly for ads expiring today or tomorrow
+  - **Evidence**:
+    - Ad cards displaying amber warning badges for today/tomorrow and red for expired → `N-21_1_expiry_warning_badges.png`
+    - Test: merchant-ads.spec.ts › "N-21: Expiry warning badges display correctly for ads expiring today or tomorrow" — passed
   - **Precondition**: Merchant has ads whose `expiresAt` falls within today and tomorrow.
   - **Steps**:
     1. Inspect an ad whose `expiresAt` is within the next 24 hours (today).
@@ -260,7 +342,11 @@
   - **API**: `GET /api/v1/ads/my-ads`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-22**: Product Image Picker stages selection and commits on Confirm
+- [x] **N-22**: Product Image Picker stages selection and commits on Confirm
+  - **Evidence**:
+    - Product image staged with border and ring highlight → `N-22_1_picker_image_staged.png`
+    - Product image confirmed and rendered in content dialog preview → `N-22_2_picker_selection_confirmed.png`
+    - Test: merchant-ads.spec.ts › "N-22: Product Image Picker stages selection and commits on Confirm" — passed
   - **Precondition**: Merchant has products with images; Content dialog is open.
   - **Steps**:
     1. Click "Choose Image".
@@ -274,7 +360,11 @@
   - **API**: `GET /api/v1/products?page=1&limit=3`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-23**: Draft content persists across cancel/reopen via LocalStorage cache
+- [x] **N-23**: Draft content persists across cancel/reopen via LocalStorage cache
+  - **Evidence**:
+    - Draft values entered in dialog before cancelling → `N-23_1_draft_content_typed.png`
+    - Draft values restored from local storage cache on reopening dialog → `N-23_2_draft_restored_from_cache.png`
+    - Test: merchant-ads.spec.ts › "N-23: Draft content persists across cancel/reopen via LocalStorage cache" — passed
   - **Precondition**: Content dialog is open on an advertisement.
   - **Steps**:
     1. Type a unique title into the Title field.
@@ -286,7 +376,12 @@
   - **API**: None (Local storage)
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-24**: Language toggle works across all Merchant Advertisement UI elements
+- [x] **N-24**: Language toggle works across all Merchant Advertisement UI elements
+  - **Evidence**:
+    - Merchant advertisement management page rendered in Japanese → `N-24_1_language_japanese.png`
+    - Merchant advertisement management page rendered in Myanmar → `N-24_2_language_myanmar.png`
+    - Page restored to English language → `N-24_3_language_english_restored.png`
+    - Test: merchant-ads.spec.ts › "N-24: Language toggle works across all Merchant Advertisement UI elements" — passed
   - **Precondition**: User is on `/merchant/advertisements`.
   - **Steps**:
     1. Switch UI language to Japanese.
@@ -299,7 +394,11 @@
   - **API**: None (Client-side i18next)
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-25**: Theme toggle switches between light and dark modes
+- [x] **N-25**: Theme toggle switches between light and dark modes
+  - **Evidence**:
+    - Dark mode theme activated on Merchant Advertisements page → `N-25_1_theme_dark_mode.png`
+    - Light mode restored cleanly → `N-25_2_theme_light_restored.png`
+    - Test: merchant-ads.spec.ts › "N-25: Theme toggle switches between light and dark modes" — passed
   - **Precondition**: User is on `/merchant/advertisements`.
   - **Steps**:
     1. Toggle theme to dark mode.
@@ -310,7 +409,10 @@
   - **API**: None
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-26**: Responsive layout on desktop viewport (>= 1024px)
+- [x] **N-26**: Responsive layout on desktop viewport (>= 1024px)
+  - **Evidence**:
+    - Full desktop dashboard layout (1280x800) with multi-column grids → `N-26_1_desktop_viewport_layout.png`
+    - Test: merchant-ads.spec.ts › "N-26: Responsive layout on desktop viewport (>= 1024px)" — passed
   - **Precondition**: Viewport set to 1280x800.
   - **Steps**:
     1. Navigate to `/merchant/advertisements`.
@@ -322,7 +424,10 @@
   - **API**: `GET /api/v1/ads/packages`, `GET /api/v1/ads/my-ads`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-27**: Responsive layout on tablet viewport (768px – 1023px)
+- [x] **N-27**: Responsive layout on tablet viewport (768px – 1023px)
+  - **Evidence**:
+    - Tablet layout (768x1024) with 2-column grid and wrapped toolbar → `N-27_1_tablet_viewport_layout.png`
+    - Test: merchant-ads.spec.ts › "N-27: Responsive layout on tablet viewport (768px – 1023px)" — passed
   - **Precondition**: Viewport set to 768x1024.
   - **Steps**:
     1. Navigate to `/merchant/advertisements`.
@@ -332,7 +437,10 @@
   - **API**: None
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-28**: Responsive layout on mobile viewport (< 768px)
+- [x] **N-28**: Responsive layout on mobile viewport (< 768px)
+  - **Evidence**:
+    - Mobile viewport layout (375x667) cleanly stacked with zero horizontal overflow → `N-28_1_mobile_viewport_layout.png`
+    - Test: merchant-ads.spec.ts › "N-28: Responsive layout on mobile viewport (< 768px)" — passed
   - **Precondition**: Viewport set to 375x667 (iPhone SE).
   - **Steps**:
     1. Navigate to `/merchant/advertisements`.
@@ -345,7 +453,10 @@
   - **API**: None
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **N-29**: Public storefront active ads endpoint returns active approved ads
+- [x] **N-29**: Public storefront active ads endpoint returns active approved ads
+  - **Evidence**:
+    - Public active ads verified matching storefront active advertisement endpoint → `N-29_1_public_active_ads_verified.png`
+    - Test: merchant-ads.spec.ts › "N-29: Public storefront active ads endpoint returns active approved ads" — passed
   - **Precondition**: At least one ad has `isActive = true`, `approvalStatus = 'approved'`, `paymentStatus = 'completed'`, and current date within `[startsAt, expiresAt]`.
   - **Steps**:
     1. Call public endpoint `GET /api/v1/ads/active` without authentication headers.
@@ -359,7 +470,10 @@
 
 ## 2. Abnormal Scenarios (A) — Error & Negative Paths
 
-- [ ] **A-01**: Access `/merchant/advertisements` without authentication
+- [x] **A-01**: Access `/merchant/advertisements` without authentication
+  - **Evidence**:
+    - Unauthenticated user redirected to login page → `A-01_1_unauthenticated_redirect.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-01: Access /merchant/advertisements without authentication" — passed
   - **Precondition**: User is not logged in (no JWT token).
   - **Steps**:
     1. Navigate directly to `/merchant/advertisements`.
@@ -368,7 +482,10 @@
   - **API**: None (Client routing guard)
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-02**: Access `/merchant/advertisements` with non-merchant role (e.g. buyer)
+- [x] **A-02**: Access `/merchant/advertisements` with non-merchant role (e.g. buyer)
+  - **Evidence**:
+    - Buyer user blocked from accessing merchant advertisement screen → `A-02_1_buyer_role_blocked.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-02: Access /merchant/advertisements with non-merchant role (e.g. buyer)" — passed
   - **Precondition**: User is authenticated with `buyer` role.
   - **Steps**:
     1. Attempt to navigate to `/merchant/advertisements`.
@@ -377,7 +494,10 @@
   - **API**: `GET /api/v1/ads/my-ads` returns 403 Forbidden
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-03**: Deactivated merchant account shows AccountDeactivatedBanner and disables package selection
+- [x] **A-03**: Deactivated merchant account shows AccountDeactivatedBanner and disables package selection
+  - **Evidence**:
+    - AccountDeactivatedBanner displayed and package selection disabled → `A-03_1_deactivated_banner_displayed.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-03: Deactivated merchant account shows AccountDeactivatedBanner and disables package selection" — passed
   - **Precondition**: Merchant user has `isActive === false` or `status === 'deactivated'`.
   - **Steps**:
     1. Navigate to `/merchant/advertisements`.
@@ -387,7 +507,10 @@
   - **API**: None (UI state check from `useAuth`)
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-04**: Pending license merchant shows warning banner and cannot select packages
+- [x] **A-04**: Pending license merchant shows warning banner and cannot select packages
+  - **Evidence**:
+    - Pending approval warning banner displayed and package selection disabled → `A-04_1_pending_license_banner.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-04: Pending license merchant shows warning banner and cannot select packages" — passed
   - **Precondition**: Merchant user has `licenseStatus === 'pending'`.
   - **Steps**:
     1. Navigate to `/merchant/advertisements`.
@@ -397,7 +520,10 @@
   - **API**: None (UI state check from `useAuth`)
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-05**: Rejected license merchant shows destructive banner and cannot select packages
+- [x] **A-05**: Rejected license merchant shows destructive banner and cannot select packages
+  - **Evidence**:
+    - Rejected license destructive alert displayed and package selection disabled → `A-05_1_rejected_license_banner.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-05: Rejected license merchant shows destructive banner and cannot select packages" — passed
   - **Precondition**: Merchant user has `licenseStatus === 'rejected'`.
   - **Steps**:
     1. Navigate to `/merchant/advertisements`.
@@ -407,7 +533,10 @@
   - **API**: None (UI state check from `useAuth`)
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-06**: Submit upload content form with empty required fields
+- [x] **A-06**: Submit upload content form with empty required fields
+  - **Evidence**:
+    - Inline validation errors shown when submitting empty required ad content fields → `A-06_1_empty_required_fields_errors.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-06: Submit upload content form with empty required fields" — passed
   - **Precondition**: Upload Ad Content dialog is open for a draft ad.
   - **Steps**:
     1. Leave Title blank.
@@ -419,7 +548,10 @@
   - **API**: `PATCH /api/v1/ads/:id/content`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-07**: Submit upload content form with content description exceeding 100 characters
+- [x] **A-07**: Submit upload content form with content description exceeding 100 characters
+  - **Evidence**:
+    - Validation error displayed when content exceeds 100 characters → `A-07_1_content_exceeds_100_error.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-07: Submit upload content form with content description exceeding 100 characters" — passed
   - **Precondition**: Upload Ad Content dialog is open.
   - **Steps**:
     1. Fill required fields with valid data.
@@ -430,7 +562,10 @@
   - **API**: `PATCH /api/v1/ads/:id/content`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-08**: Submit start date violating 3-day lead time rule (< today + 3 days)
+- [x] **A-08**: Submit start date violating 3-day lead time rule (< today + 3 days)
+  - **Evidence**:
+    - Start date min attribute enforced and 3-day lead time violation rejected → `A-08_1_min_start_date_enforced.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-08: Submit start date violating 3-day lead time rule (< today + 3 days)" — passed
   - **Precondition**: Content dialog is open.
   - **Steps**:
     1. Attempt to select today, tomorrow, or 2 days from today in the Start Date picker.
@@ -440,7 +575,10 @@
   - **API**: `PATCH /api/v1/ads/:id/content`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-09**: Select non-existent or inactive package ID
+- [x] **A-09**: Select non-existent or inactive package ID
+  - **Evidence**:
+    - 404 AD_PACKAGE_INVALID returned when attempting to select non-existent package → `A-09_1_invalid_package_rejected.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-09: Select non-existent or inactive package ID" — passed
   - **Precondition**: Merchant user attempts to select a package that does not exist or has been deactivated.
   - **Steps**:
     1. Send `POST /api/v1/ads/packages/{invalidUuid}/select`.
@@ -449,7 +587,10 @@
   - **API**: `POST /api/v1/ads/packages/:feeSettingId/select`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-10**: Select package when shop is not approved
+- [x] **A-10**: Select package when shop is not approved
+  - **Evidence**:
+    - 403 Forbidden returned when user does not have an approved merchant shop → `A-10_1_unapproved_shop_forbidden.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-10: Select package when shop is not approved" — passed
   - **Precondition**: User is a merchant whose shop record has `isApproved = false`.
   - **Steps**:
     1. Send `POST /api/v1/ads/packages/:feeSettingId/select`.
@@ -458,7 +599,10 @@
   - **API**: `POST /api/v1/ads/packages/:feeSettingId/select`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-11**: Upload content to an advertisement not in pending/pending state
+- [x] **A-11**: Upload content to an advertisement not in pending/pending state
+  - **Evidence**:
+    - Content upload rejected with 400 for already approved ad → `A-11_1_upload_content_rejected_on_approved_ad.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-11: Upload content to an advertisement not in pending/pending state" — passed
   - **Precondition**: Advertisement has already been paid (`paymentStatus === 'completed'`) or approved.
   - **Steps**:
     1. Send `PATCH /api/v1/ads/:id/content` for the ad.
@@ -467,7 +611,10 @@
   - **API**: `PATCH /api/v1/ads/:id/content`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-12**: Upload image path not matching any of the merchant's own products
+- [x] **A-12**: Upload image path not matching any of the merchant's own products
+  - **Evidence**:
+    - 400 returned when attempting to submit image not belonging to merchant products → `A-12_1_unowned_image_rejected.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-12: Upload image path not matching any of the merchant's own products" — passed
   - **Precondition**: Merchant attempts to send an arbitrary image URL not belonging to their product catalog.
   - **Steps**:
     1. Send `PATCH /api/v1/ads/:id/content` with `imageUrl = '/uploads/external/malicious.jpg'`.
@@ -476,7 +623,10 @@
   - **API**: `PATCH /api/v1/ads/:id/content`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-13**: Pay fee for an advertisement missing content or schedule
+- [x] **A-13**: Pay fee for an advertisement missing content or schedule
+  - **Evidence**:
+    - 400 returned when attempting to pay fee for ad without content or schedule → `A-13_1_pay_fee_missing_content_rejected.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-13: Pay fee for an advertisement missing content or schedule" — passed
   - **Precondition**: Draft advertisement exists without title, announcement, or schedule.
   - **Steps**:
     1. Call `POST /api/v1/ads/:id/pay`.
@@ -485,7 +635,10 @@
   - **API**: `POST /api/v1/ads/:id/pay`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-14**: Enter invalid payment reference (< 8 digits or non-numeric)
+- [x] **A-14**: Enter invalid payment reference (< 8 digits or non-numeric)
+  - **Evidence**:
+    - Validation error shown and submit disabled for <8 digit payment reference → `A-14_1_invalid_payment_ref_short.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-14: Enter invalid payment reference (< 8 digits or non-numeric)" — passed
   - **Precondition**: Payment Confirmation dialog is open.
   - **Steps**:
     1. Enter "12345" (fewer than 8 digits) into Payment Reference input.
@@ -495,7 +648,10 @@
   - **API**: None (Client-side validation)
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-15**: Attempt to pay fee for already paid advertisement
+- [x] **A-15**: Attempt to pay fee for already paid advertisement
+  - **Evidence**:
+    - 400 returned when attempting to submit payment for already paid advertisement → `A-15_1_pay_already_paid_rejected.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-15: Attempt to pay fee for already paid advertisement" — passed
   - **Precondition**: Advertisement already has `paymentStatus === 'completed'`.
   - **Steps**:
     1. Call `POST /api/v1/ads/:id/pay`.
@@ -504,7 +660,11 @@
   - **API**: `POST /api/v1/ads/:id/pay`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-16**: Attempt to delete an active approved advertisement
+- [x] **A-16**: Attempt to delete an active approved advertisement
+  - **Evidence**:
+    - Delete button is hidden for live active approved advertisement → `A-16_1_delete_button_hidden_for_active_ad.png`
+    - API returns 400 rejecting deletion of active approved advertisement → `A-16_2_api_delete_active_ad_rejected.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-16: Attempt to delete an active approved advertisement" — passed
   - **Precondition**: Advertisement has `approvalStatus === 'approved'`, `isActive === true`, and has not expired.
   - **Steps**:
     1. Confirm Delete button is NOT rendered on the UI for active approved ads.
@@ -514,7 +674,10 @@
   - **API**: `DELETE /api/v1/ads/:id`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-17**: Attempt to toggle active status on non-approved or unpaid advertisement
+- [x] **A-17**: Attempt to toggle active status on non-approved or unpaid advertisement
+  - **Evidence**:
+    - Switch hidden on UI and API returns 400 for toggling unapproved/unpaid ad → `A-17_1_toggle_unapproved_rejected.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-17: Attempt to toggle active status on non-approved or unpaid advertisement" — passed
   - **Precondition**: Advertisement has `approvalStatus !== 'approved'` or `paymentStatus !== 'completed'`.
   - **Steps**:
     1. Confirm switch is not rendered on UI.
@@ -524,7 +687,10 @@
   - **API**: `PATCH /api/v1/ads/:id/toggle`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-18**: Cross-shop access denied when modifying another merchant's advertisement
+- [x] **A-18**: Cross-shop access denied when modifying another merchant's advertisement
+  - **Evidence**:
+    - 403 Forbidden returned when attempting to mutate ad owned by another shop → `A-18_1_cross_shop_access_denied.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-18: Cross-shop access denied when modifying another merchant's advertisement" — passed
   - **Precondition**: Merchant A is authenticated. Ad ID belongs to Merchant B.
   - **Steps**:
     1. Merchant A sends `PATCH /api/v1/ads/:id/content`, `POST /api/v1/ads/:id/pay`, `PATCH /api/v1/ads/:id`, `DELETE /api/v1/ads/:id`, or `PATCH /api/v1/ads/:id/toggle` using Merchant B's ad ID.
@@ -533,7 +699,10 @@
   - **API**: All `/api/v1/ads/:id/*` endpoints
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-19**: Attempt to edit advertisement that is not editable
+- [x] **A-19**: Attempt to edit advertisement that is not editable
+  - **Evidence**:
+    - Edit button hidden and API returns 400 for editing approved advertisement → `A-19_1_edit_approved_ad_rejected.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-19: Attempt to edit advertisement that is not editable" — passed
   - **Precondition**: Advertisement is `approvalStatus === 'approved'` or pending review with payment completed.
   - **Steps**:
     1. Verify Edit button is hidden.
@@ -543,7 +712,10 @@
   - **API**: `PATCH /api/v1/ads/:id`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-20**: Product Image Picker handles empty catalog or products with no images
+- [x] **A-20**: Product Image Picker handles empty catalog or products with no images
+  - **Evidence**:
+    - Product Image Picker displays empty state message and disables Confirm button → `A-20_1_empty_product_images_picker.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-20: Product Image Picker handles empty catalog or products with no images" — passed
   - **Precondition**: Merchant has no products or existing products have empty image arrays.
   - **Steps**:
     1. Open Content dialog and click "Choose Image".
@@ -553,7 +725,10 @@
   - **API**: `GET /api/v1/products?page=1&limit=3`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-21**: Product Image Picker handles product API failure
+- [x] **A-21**: Product Image Picker handles product API failure
+  - **Evidence**:
+    - Destructive error alert displayed when product images API fails → `A-21_1_picker_api_failure_alert.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-21: Product Image Picker handles product API failure" — passed
   - **Precondition**: Server returns 500 when fetching merchant products.
   - **Steps**:
     1. Open Product Image Picker dialog while network fails.
@@ -562,7 +737,10 @@
   - **API**: `GET /api/v1/products?page=1&limit=3`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **A-22**: Package selection fails when package fee setting lacks past effective history
+- [x] **A-22**: Package selection fails when package fee setting lacks past effective history
+  - **Evidence**:
+    - 404 AD_PACKAGE_INVALID returned when package lacks past effective history → `A-22_1_package_future_effective_rejected.png`
+    - Test: merchant-ads-abnormal.spec.ts › "A-22: Package selection fails when package fee setting lacks past effective history" — passed
   - **Precondition**: Admin created a package whose `ad_fee_history` has `effectiveFrom > now`.
   - **Steps**:
     1. Attempt to select this package via `POST /api/v1/ads/packages/:feeSettingId/select`.
@@ -575,7 +753,10 @@
 
 ## 3. Boundary Scenarios (B) — Edge Cases & Limits
 
-- [ ] **B-01**: Submit ad title at minimum allowable length (1 character)
+- [x] **B-01**: Submit ad title at minimum allowable length (1 character)
+  - **Evidence**:
+    - Form saved successfully with 1-character minimum length title → `B-01_1_min_title_length_accepted.png`
+    - Test: merchant-ads-boundary.spec.ts › "B-01: Submit ad title at minimum allowable length (1 character)" — passed
   - **Precondition**: Content dialog is open for draft ad.
   - **Steps**:
     1. Enter a single character (e.g. "A") in Title.
@@ -585,7 +766,10 @@
   - **API**: `PATCH /api/v1/ads/:id/content`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **B-02**: Submit ad title at maximum allowable length (200 characters)
+- [x] **B-02**: Submit ad title at maximum allowable length (200 characters)
+  - **Evidence**:
+    - Form accepted exactly 200 characters title boundary → `B-02_1_max_title_length_accepted.png`
+    - Test: merchant-ads-boundary.spec.ts › "B-02: Submit ad title at maximum allowable length (200 characters)" — passed
   - **Precondition**: Content dialog is open for draft ad.
   - **Steps**:
     1. Enter exactly 200 characters in Title.
@@ -595,7 +779,10 @@
   - **API**: `PATCH /api/v1/ads/:id/content`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **B-03**: Attempt to exceed ad title maximum length (201 characters)
+- [x] **B-03**: Attempt to exceed ad title maximum length (201 characters)
+  - **Evidence**:
+    - Title input capped at 200 characters and API rejects 201 characters with 400 → `B-03_1_title_capped_at_200.png`
+    - Test: merchant-ads-boundary.spec.ts › "B-03: Attempt to exceed ad title maximum length (201 characters)" — passed
   - **Precondition**: Content dialog is open.
   - **Steps**:
     1. Paste 201 characters into Title input.
@@ -604,7 +791,10 @@
   - **API**: `PATCH /api/v1/ads/:id/content`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **B-04**: Submit content description at exact maximum length (100 characters)
+- [x] **B-04**: Submit content description at exact maximum length (100 characters)
+  - **Evidence**:
+    - Content description of exact 100 characters accepted with 100/100 counter → `B-04_1_content_at_exact_100_max.png`
+    - Test: merchant-ads-boundary.spec.ts › "B-04: Submit content description at exact maximum length (100 characters)" — passed
   - **Precondition**: Content dialog is open.
   - **Steps**:
     1. Enter exactly 100 characters into Content textarea.
@@ -615,7 +805,10 @@
   - **API**: `PATCH /api/v1/ads/:id/content`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **B-05**: Submit announcement message at maximum length (500 characters)
+- [x] **B-05**: Submit announcement message at maximum length (500 characters)
+  - **Evidence**:
+    - Announcement message accepted at maximum 500 characters boundary → `B-05_1_announcement_at_500_max.png`
+    - Test: merchant-ads-boundary.spec.ts › "B-05: Submit announcement message at maximum length (500 characters)" — passed
   - **Precondition**: Content dialog is open.
   - **Steps**:
     1. Enter exactly 500 characters into Announcement Message textarea.
@@ -625,7 +818,10 @@
   - **API**: `PATCH /api/v1/ads/:id/content`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **B-06**: Select start date at exact minimum boundary (today + 3 days at UTC 00:00:00)
+- [x] **B-06**: Select start date at exact minimum boundary (today + 3 days at UTC 00:00:00)
+  - **Evidence**:
+    - Start date accepted at exact minimum boundary (today + 3 days) → `B-06_1_exact_min_start_date_accepted.png`
+    - Test: merchant-ads-boundary.spec.ts › "B-06: Select start date at exact minimum boundary (today + 3 days at UTC 00:00:00)" — passed
   - **Precondition**: Content dialog is open.
   - **Steps**:
     1. Calculate `minDate = UTC midnight today + 3 days`.
@@ -636,7 +832,10 @@
   - **API**: `PATCH /api/v1/ads/:id/content`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **B-07**: Payment reference at minimum boundary length (8 digits)
+- [x] **B-07**: Payment reference at minimum boundary length (8 digits)
+  - **Evidence**:
+    - Payment reference of exactly 8 digits accepted and payment submitted → `B-07_1_min_payment_ref_8_digits_accepted.png`
+    - Test: merchant-ads-boundary.spec.ts › "B-07: Payment reference at minimum boundary length (8 digits)" — passed
   - **Precondition**: Payment Confirmation dialog is open.
   - **Steps**:
     1. Enter exactly 8 digits (e.g. "12345678").
@@ -646,7 +845,10 @@
   - **API**: `POST /api/v1/ads/:id/pay`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **B-08**: Payment reference at maximum boundary length (100 digits)
+- [x] **B-08**: Payment reference at maximum boundary length (100 digits)
+  - **Evidence**:
+    - Payment reference of exactly 100 digits accepted without error → `B-08_1_max_payment_ref_100_digits_accepted.png`
+    - Test: merchant-ads-boundary.spec.ts › "B-08: Payment reference at maximum boundary length (100 digits)" — passed
   - **Precondition**: Payment Confirmation dialog is open.
   - **Steps**:
     1. Enter exactly 100 digits into Payment Reference input.
@@ -656,7 +858,10 @@
   - **API**: `POST /api/v1/ads/:id/pay`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **B-09**: Empty advertisements list (Zero state)
+- [x] **B-09**: Empty advertisements list (Zero state)
+  - **Evidence**:
+    - Empty state card displayed when merchant has zero advertisements → `B-09_1_empty_ads_zero_state.png`
+    - Test: merchant-ads-boundary.spec.ts › "B-09: Empty advertisements list (Zero state)" — passed
   - **Precondition**: Merchant has zero advertisements in database.
   - **Steps**:
     1. Navigate to `/merchant/advertisements`.
@@ -666,7 +871,10 @@
   - **API**: `GET /api/v1/ads/my-ads?page=1&limit=3`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **B-10**: Empty package catalog (Zero state)
+- [x] **B-10**: Empty package catalog (Zero state)
+  - **Evidence**:
+    - Empty state message displayed when zero advertisement packages are available → `B-10_1_empty_packages_zero_state.png`
+    - Test: merchant-ads-boundary.spec.ts › "B-10: Empty package catalog (Zero state)" — passed
   - **Precondition**: Database contains zero active packages in `ad_fee_settings`.
   - **Steps**:
     1. Navigate to `/merchant/advertisements`.
@@ -676,7 +884,11 @@
   - **API**: `GET /api/v1/ads/packages`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **B-11**: Pagination boundary with exactly 3 advertisements (1 page) vs 4 advertisements (2 pages)
+- [x] **B-11**: Pagination boundary with exactly 3 advertisements (1 page) vs 4 advertisements (2 pages)
+  - **Evidence**:
+    - Pagination disabled for exactly 3 advertisements (1 single page) → `B-11_1_pagination_3_ads_1_page.png`
+    - Pagination enabled with 2 pages when boundary exceeds 3 items (4 total ads) → `B-11_2_pagination_4_ads_2_pages.png`
+    - Test: merchant-ads-boundary.spec.ts › "B-11: Pagination boundary with exactly 3 advertisements (1 page) vs 4 advertisements (2 pages)" — passed
   - **Precondition**: Test database has 3 ads, then 4 ads.
   - **Steps**:
     1. Load page with 3 ads -> verify `totalPages = 1`, Previous and Next buttons disabled.
@@ -686,7 +898,10 @@
   - **API**: `GET /api/v1/ads/my-ads?page=1&limit=3`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **B-12**: Package catalog pagination boundary with 4 packages (no pagination) vs 5 packages (2 pages)
+- [x] **B-12**: Package catalog pagination boundary with 4 packages (no pagination) vs 5 packages (2 pages)
+  - **Evidence**:
+    - Package catalog pagination bar displayed for 5 packages (boundary >4 items) → `B-12_1_packages_pagination_5_items.png`
+    - Test: merchant-ads-boundary.spec.ts › "B-12: Package catalog pagination boundary with 4 packages (no pagination) vs 5 packages (2 pages)" — passed
   - **Precondition**: Admin has configured 4 active packages, then 5 active packages.
   - **Steps**:
     1. View Available Packages with 4 packages -> verify all 4 render; no pagination bar shown.
@@ -696,7 +911,10 @@
   - **API**: `GET /api/v1/ads/packages`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **B-13**: Search query with no matching advertisements
+- [x] **B-13**: Search query with no matching advertisements
+  - **Evidence**:
+    - Empty state displayed cleanly when search query produces zero results → `B-13_1_search_no_matches_empty_state.png`
+    - Test: merchant-ads-boundary.spec.ts › "B-13: Search query with no matching advertisements" — passed
   - **Precondition**: Merchant has advertisements.
   - **Steps**:
     1. Enter a search query with non-matching characters (e.g. "ZZZ_NONEXISTENT_XYZ").
@@ -705,7 +923,10 @@
   - **API**: `GET /api/v1/ads/my-ads?page=1&limit=3&search=ZZZ_NONEXISTENT_XYZ`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **B-14**: Schedule end date calculation across month and leap year boundaries
+- [x] **B-14**: Schedule end date calculation across month and leap year boundaries
+  - **Evidence**:
+    - Auto-computed end date correctly rolls over month boundary from Jan 28 to Feb 4 → `B-14_1_month_boundary_end_date_computed.png`
+    - Test: merchant-ads-boundary.spec.ts › "B-14: Schedule end date calculation across month and leap year boundaries" — passed
   - **Precondition**: Packages with 7, 15, and 30 day durations exist.
   - **Steps**:
     1. Set `startsAt` to January 28 for a 7-day package -> verify derived `expiresAt` is February 4.
@@ -716,7 +937,10 @@
   - **API**: `PATCH /api/v1/ads/:id/content`
   - **Note**: Awaiting E2E automated test run.
 
-- [ ] **B-15**: Ad lifecycle display state transitions exactly at schedule boundaries
+- [x] **B-15**: Ad lifecycle display state transitions exactly at schedule boundaries
+  - **Evidence**:
+    - Ad cards correctly exhibiting scheduled, active, and expired display states → `B-15_1_lifecycle_state_transitions.png`
+    - Test: merchant-ads-boundary.spec.ts › "B-15: Ad lifecycle display state transitions exactly at schedule boundaries" — passed
   - **Precondition**: Ad has `approvalStatus === 'approved'`, `paymentStatus === 'completed'`, `isActive === true`.
   - **Steps**:
     1. Test when `current_time < startsAt` -> verify `displayState` returns `scheduled` (switch disabled/hidden).
@@ -731,7 +955,10 @@
 
 ## 4. Interface Scenarios (I) — API Contracts & Payloads
 
-- [ ] **I-01**: `GET /api/v1/ads/packages` — returns 200 with active packages catalog
+- [x] **I-01**: `GET /api/v1/ads/packages` — returns 200 with active packages catalog
+  - **Evidence**:
+    - GET /api/v1/ads/packages returned HTTP 200: Returns 200 with active packages catalog array → `I-01_1_packages_list.png`
+    - Test: merchant-ads-api.spec.ts › "I-01: GET /api/v1/ads/packages — returns 200 with active packages catalog" — passed
   - **Precondition**: Valid merchant or admin JWT token. Active packages exist.
   - **Steps**:
     1. Call `GET /api/v1/ads/packages` with `Authorization: Bearer <token>`.
@@ -742,7 +969,10 @@
   - **API**: `GET /api/v1/ads/packages`
   - **Note**: Cached in Redis (`cache:ads:packages` TTL 600s).
 
-- [ ] **I-02**: `POST /api/v1/ads/packages/:feeSettingId/select` — returns 201 with created draft ad
+- [x] **I-02**: `POST /api/v1/ads/packages/:feeSettingId/select` — returns 201 with created draft ad
+  - **Evidence**:
+    - POST /api/v1/ads/packages/ebfba975-8f96-40ce-a781-31eca78c64c6/select returned HTTP 201: Returns 201 with newly created draft advertisement payload → `I-02_1_select_package.png`
+    - Test: merchant-ads-api.spec.ts › "I-02: POST /api/v1/ads/packages/:feeSettingId/select — returns 201 with created draft ad" — passed
   - **Precondition**: Valid merchant JWT token with approved shop. Valid active `feeSettingId`.
   - **Steps**:
     1. Call `POST /api/v1/ads/packages/:feeSettingId/select` with empty body.
@@ -752,7 +982,10 @@
   - **API**: `POST /api/v1/ads/packages/:feeSettingId/select`
   - **Note**: Audits `AD_SELECTED` event in `auditLog`.
 
-- [ ] **I-03**: `GET /api/v1/ads/my-ads` — returns 200 with paginated merchant ads
+- [x] **I-03**: `GET /api/v1/ads/my-ads` — returns 200 with paginated merchant ads
+  - **Evidence**:
+    - GET /api/v1/ads/my-ads?page=1&limit=3&status=active returned HTTP 200: Returns 200 with paginated merchant ads and meta envelope → `I-03_1_list_my_ads.png`
+    - Test: merchant-ads-api.spec.ts › "I-03: GET /api/v1/ads/my-ads — returns 200 with paginated merchant ads" — passed
   - **Precondition**: Valid merchant JWT token.
   - **Steps**:
     1. Call `GET /api/v1/ads/my-ads?page=1&limit=3&status=active`.
@@ -762,7 +995,10 @@
   - **API**: `GET /api/v1/ads/my-ads`
   - **Note**: Controller returns service result directly (no double `{ data }` wrapping).
 
-- [ ] **I-04**: `PATCH /api/v1/ads/:id/content` — returns 200 with saved content & schedule
+- [x] **I-04**: `PATCH /api/v1/ads/:id/content` — returns 200 with saved content & schedule
+  - **Evidence**:
+    - PATCH /api/v1/ads/6c82a93c-33c4-4494-9d79-67a1a4ef9453/content returned HTTP 200: Returns 200 with saved ad content and derived expiresAt → `I-04_1_upload_content.png`
+    - Test: merchant-ads-api.spec.ts › "I-04: PATCH /api/v1/ads/:id/content — returns 200 with saved content & schedule" — passed
   - **Precondition**: Valid merchant JWT token. Ad is in `pending/pending` state and owned by merchant's shop.
   - **Steps**:
     1. Call `PATCH /api/v1/ads/:id/content` with JSON body:
@@ -781,7 +1017,10 @@
   - **API**: `PATCH /api/v1/ads/:id/content`
   - **Note**: Invalidates `cache:ads:active`; audits `AD_CONTENT_UPLOADED`.
 
-- [ ] **I-05**: `POST /api/v1/ads/:id/pay` — returns 201 with paid ad entering admin queue
+- [x] **I-05**: `POST /api/v1/ads/:id/pay` — returns 201 with paid ad entering admin queue
+  - **Evidence**:
+    - POST /api/v1/ads/cbf872db-b3d5-4014-a1b5-2f4bd4d3af60/pay returned HTTP 201: Returns 201 with paid advertisement entering admin review queue → `I-05_1_pay_fee.png`
+    - Test: merchant-ads-api.spec.ts › "I-05: POST /api/v1/ads/:id/pay — returns 201 with paid ad entering admin queue" — passed
   - **Precondition**: Valid merchant JWT. Ad has content uploaded and `paymentStatus === 'pending'`.
   - **Steps**:
     1. Call `POST /api/v1/ads/:id/pay` with JSON body:
@@ -796,7 +1035,10 @@
   - **API**: `POST /api/v1/ads/:id/pay`
   - **Note**: Creates ledger entry in `ad_payments` table; invalidates active ads cache; notifies admins (`AD_SUBMITTED`).
 
-- [ ] **I-06**: `PATCH /api/v1/ads/:id` — returns 200 with updated content
+- [x] **I-06**: `PATCH /api/v1/ads/:id` — returns 200 with updated content
+  - **Evidence**:
+    - PATCH /api/v1/ads/a7367741-7d30-46c9-b137-fc4a985b84db returned HTTP 200: Returns 200 with updated advertisement payload → `I-06_1_update_content.png`
+    - Test: merchant-ads-api.spec.ts › "I-06: PATCH /api/v1/ads/:id — returns 200 with updated content" — passed
   - **Precondition**: Valid merchant JWT. Ad is rejected or pending+unpaid.
   - **Steps**:
     1. Call `PATCH /api/v1/ads/:id` with updated `title`, `announcementMessage`, and optional `startsAt`.
@@ -806,7 +1048,10 @@
   - **API**: `PATCH /api/v1/ads/:id`
   - **Note**: Invalidates `cache:ads:active`; audits `AD_UPDATED`.
 
-- [ ] **I-07**: `DELETE /api/v1/ads/:id` — returns 200 with deletion message
+- [x] **I-07**: `DELETE /api/v1/ads/:id` — returns 200 with deletion message
+  - **Evidence**:
+    - DELETE /api/v1/ads/f11d909b-7bfc-4eed-9132-30711f72a925 returned HTTP 200: Returns 200 with unwrapped {"message": "Advertisement deleted"} → `I-07_1_delete_ad.png`
+    - Test: merchant-ads-api.spec.ts › "I-07: DELETE /api/v1/ads/:id — returns 200 with deletion message" — passed
   - **Precondition**: Valid merchant JWT. Ad is owned by shop and in deletable state (expired or unpaid).
   - **Steps**:
     1. Call `DELETE /api/v1/ads/:id`.
@@ -816,7 +1061,10 @@
   - **API**: `DELETE /api/v1/ads/:id`
   - **Note**: Hard deletes if expired or unpaid; soft deletes (`isActive=false`) if paid and non-expired.
 
-- [ ] **I-08**: `PATCH /api/v1/ads/:id/toggle` — returns 200 with updated isActive state
+- [x] **I-08**: `PATCH /api/v1/ads/:id/toggle` — returns 200 with updated isActive state
+  - **Evidence**:
+    - PATCH /api/v1/ads/c1206dfb-75c4-456b-90f6-521bdedaee49/toggle returned HTTP 200: Returns 200 with updated isActive boolean state → `I-08_1_toggle_ad.png`
+    - Test: merchant-ads-api.spec.ts › "I-08: PATCH /api/v1/ads/:id/toggle — returns 200 with updated isActive state" — passed
   - **Precondition**: Valid merchant JWT. Ad is approved and paid.
   - **Steps**:
     1. Call `PATCH /api/v1/ads/:id/toggle` with body `{ "isActive": false }`.
@@ -826,7 +1074,10 @@
   - **API**: `PATCH /api/v1/ads/:id/toggle`
   - **Note**: Invalidates `cache:ads:active`; audits `AD_TOGGLED`.
 
-- [ ] **I-09**: `GET /api/v1/ads/active` (Public) — returns 200 with array of active ads
+- [x] **I-09**: `GET /api/v1/ads/active` (Public) — returns 200 with array of active ads
+  - **Evidence**:
+    - GET /api/v1/ads/active returned HTTP 200: Public endpoint returns 200 with array of active approved ads without auth header → `I-09_1_active_ads_public.png`
+    - Test: merchant-ads-api.spec.ts › "I-09: GET /api/v1/ads/active (Public) — returns 200 with array of active ads" — passed
   - **Precondition**: No authentication header required (`@Public()`).
   - **Steps**:
     1. Call `GET /api/v1/ads/active`.
@@ -836,7 +1087,10 @@
   - **API**: `GET /api/v1/ads/active`
   - **Note**: Redis cache TTL 300s (`cache:ads:active`).
 
-- [ ] **I-10**: `POST /api/v1/ads/packages/:feeSettingId/select` — returns 403 for unapproved shop
+- [x] **I-10**: `POST /api/v1/ads/packages/:feeSettingId/select` — returns 403 for unapproved shop
+  - **Evidence**:
+    - POST /api/v1/ads/packages/ebfba975-8f96-40ce-a781-31eca78c64c6/select returned HTTP 403: Returns 403 Forbidden with SHOP_NOT_APPROVED when shop is unapproved → `I-10_1_unapproved_shop_forbidden.png`
+    - Test: merchant-ads-api.spec.ts › "I-10: POST /api/v1/ads/packages/:feeSettingId/select — returns 403 for unapproved shop" — passed
   - **Precondition**: Merchant user whose shop has `isApproved = false`.
   - **Steps**:
     1. Call select package endpoint.
@@ -845,7 +1099,10 @@
   - **API**: `POST /api/v1/ads/packages/:feeSettingId/select`
   - **Note**: Tested without database mutation.
 
-- [ ] **I-11**: `PATCH /api/v1/ads/:id/content` — returns 400 for image not belonging to merchant
+- [x] **I-11**: `PATCH /api/v1/ads/:id/content` — returns 400 for image not belonging to merchant
+  - **Evidence**:
+    - PATCH /api/v1/ads/47f7f9a0-3198-4b5e-bac6-a39c75aa321a/content returned HTTP 400: Returns 400 Bad Request when image does not belong to merchant products → `I-11_1_unowned_image_bad_request.png`
+    - Test: merchant-ads-api.spec.ts › "I-11: PATCH /api/v1/ads/:id/content — returns 400 for image not belonging to merchant" — passed
   - **Precondition**: Merchant JWT. Image path is not in any of merchant's products.
   - **Steps**:
     1. Call `PATCH /api/v1/ads/:id/content` with external/unowned image path.
@@ -854,7 +1111,10 @@
   - **API**: `PATCH /api/v1/ads/:id/content`
   - **Note**: Validates product catalog image ownership before persistence.
 
-- [ ] **I-12**: `PATCH /api/v1/ads/:id/content` — returns 400 for start date violating 3-day lead time
+- [x] **I-12**: `PATCH /api/v1/ads/:id/content` — returns 400 for start date violating 3-day lead time
+  - **Evidence**:
+    - PATCH /api/v1/ads/164ce1a6-2e96-4e9b-8cef-f8408d7b8819/content returned HTTP 400: Returns 400 Bad Request when start date is less than 3 days from today → `I-12_1_invalid_schedule_lead_time.png`
+    - Test: merchant-ads-api.spec.ts › "I-12: PATCH /api/v1/ads/:id/content — returns 400 for start date violating 3-day lead time" — passed
   - **Precondition**: Merchant JWT. Start date is less than 3 days from today (UTC).
   - **Steps**:
     1. Call `PATCH /api/v1/ads/:id/content` with `startsAt` set to tomorrow.
@@ -863,7 +1123,10 @@
   - **API**: `PATCH /api/v1/ads/:id/content`
   - **Note**: Enforced at server level via `getSchedule` helper.
 
-- [ ] **I-13**: `DELETE /api/v1/ads/:id` — returns 400 for active approved advertisement
+- [x] **I-13**: `DELETE /api/v1/ads/:id` — returns 400 for active approved advertisement
+  - **Evidence**:
+    - DELETE /api/v1/ads/d61aa015-84b2-4ee1-b1d3-9f27a00f53ba returned HTTP 400: Returns 400 Bad Request when attempting to delete active approved advertisement → `I-13_1_delete_active_ad_bad_request.png`
+    - Test: merchant-ads-api.spec.ts › "I-13: DELETE /api/v1/ads/:id — returns 400 for active approved advertisement" — passed
   - **Precondition**: Merchant JWT. Target ad is approved, active, and within schedule.
   - **Steps**:
     1. Call `DELETE /api/v1/ads/:id`.
@@ -872,7 +1135,10 @@
   - **API**: `DELETE /api/v1/ads/:id`
   - **Note**: Active approved ads must expire or be deactivated before deletion.
 
-- [ ] **I-14**: Cross-shop access mutation returns 403 Forbidden
+- [x] **I-14**: Cross-shop access mutation returns 403 Forbidden
+  - **Evidence**:
+    - PATCH /api/v1/ads/458d6d24-cf51-4287-88b2-3ca7622f315b/content returned HTTP 403: Returns 403 Forbidden for cross-shop mutation attempt → `I-14_1_cross_shop_forbidden.png`
+    - Test: merchant-ads-api.spec.ts › "I-14: Cross-shop access mutation returns 403 Forbidden" — passed
   - **Precondition**: Merchant A attempts to access or mutate Merchant B's advertisement.
   - **Steps**:
     1. Call `PATCH /api/v1/ads/:id/content` with an ad ID owned by another shop.
@@ -881,7 +1147,10 @@
   - **API**: `PATCH /api/v1/ads/:id/content`
   - **Note**: Enforced via shop ownership check in `getOwnedAd`.
 
-- [ ] **I-15**: Error response conforms to standard API contract
+- [x] **I-15**: Error response conforms to standard API contract
+  - **Evidence**:
+    - GET /api/v1/ads/my-ads?status=invalid_enum_status returned HTTP 400: Conforms to standard HTTP exception payload with statusCode, message, error, timestamp, path → `I-15_1_standard_error_format.png`
+    - Test: merchant-ads-api.spec.ts › "I-15: Error response conforms to standard API contract" — passed
   - **Precondition**: Any error condition triggered against `/api/v1/ads/*`.
   - **Steps**:
     1. Trigger a validation or business logic error.
