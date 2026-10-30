@@ -1,0 +1,293 @@
+{
+  "module": "AI_Skin_Analysis",
+  "timestamp": "2026-10-30T09:23:57.101Z",
+  "total": 47,
+  "passed": 47,
+  "failed": 0,
+  "skipped": 0,
+  "durationMs": 86853,
+  "tests": [
+    {
+      "title": "N-02: uploads a skin image and completes analysis (live database evidence)",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 3166
+    },
+    {
+      "title": "N-08: submits product recommendation feedback (live database evidence)",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 3312
+    },
+    {
+      "title": "N-25: deletes selected analysis history records (live database evidence)",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 3156
+    },
+    {
+      "title": "N-22: updates buyer profile name and avatar (live database evidence)",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 2331
+    },
+    {
+      "title": "N-23: changes buyer account password (live database evidence)",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 2827
+    },
+    {
+      "title": "N-01: buyer opens the skin analysis scanner",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1549
+    },
+    {
+      "title": "A-01: rejects unsupported image file formats",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1513
+    },
+    {
+      "title": "N-04: displays completed skin analysis results",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1890
+    },
+    {
+      "title": "N-05: opens analysis history and navigates to a result",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1913
+    },
+    {
+      "title": "N-09: exports an analysis report and the history report",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1420
+    },
+    {
+      "title": "A-02: rejects images larger than 10 MB",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 2548
+    },
+    {
+      "title": "A-04: requires consent before starting a scan",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1563
+    },
+    {
+      "title": "A-09: offers photo upload when camera access is denied",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1629
+    },
+    {
+      "title": "N-13: keeps scanner actions usable on mobile",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1434
+    },
+    {
+      "title": "A-03: blocks a supported image when face detection finds no face",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1489
+    },
+    {
+      "title": "B-01: accepts a supported image exactly at the 10 MB limit",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 2495
+    },
+    {
+      "title": "N-06 and N-16: filters, clears, and changes the analysis history page size",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 2005
+    },
+    {
+      "title": "N-15: shows history summary metrics and row actions",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1257
+    },
+    {
+      "title": "N-17 and A-08: result details are read-only and New Scan returns to the scanner",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 2495
+    },
+    {
+      "title": "N-19: opens the recommended product detail",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1406
+    },
+    {
+      "title": "B-02: displays the empty history state when there are no analyses",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1253
+    },
+    {
+      "title": "A-05: displays an upload error instead of showing a successful analysis",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 2883
+    },
+    {
+      "title": "B-04: displays the daily-quota error when analysis returns HTTP 429",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 3038
+    },
+    {
+      "title": "A-06: rejects unauthenticated and non-buyer access",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 2559
+    },
+    {
+      "title": "N-11 and N-12: exposes language and theme preferences in Settings",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1912
+    },
+    {
+      "title": "N-20, N-21, N-24: views buyer profile and removes avatar",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 2574
+    },
+    {
+      "title": "A-13 and A-15: rejects invalid profile names and password fields",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 2349
+    },
+    {
+      "title": "B-06: accepts profile names at the 2 and 100 character boundaries",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1752
+    },
+    {
+      "title": "B-07: rejects a profile name longer than 100 characters",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1803
+    },
+    {
+      "title": "A-14: rejects a non-image profile avatar file",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1644
+    },
+    {
+      "title": "A-17: displays an error when the buyer profile cannot be loaded",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 4760
+    },
+    {
+      "title": "A-18: rejects a new password that matches the current password",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1827
+    },
+    {
+      "title": "A-16: shows an error when the current password is incorrect",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 3485
+    },
+    {
+      "title": "B-08: enforces new password length boundaries",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1801
+    },
+    {
+      "title": "I-01: POST /api/v1/skin-analysis/upload validates multipart facial scan upload",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 658
+    },
+    {
+      "title": "I-02: POST /api/v1/skin-analysis/analyze starts an AI skin analysis",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1221
+    },
+    {
+      "title": "I-03: GET /api/v1/skin-analysis/:id returns the buyer analysis result",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 793
+    },
+    {
+      "title": "I-04: GET /api/v1/skin-analysis/history returns scoped paginated history",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 734
+    },
+    {
+      "title": "I-05: GET /api/v1/skin-analysis/trends returns trend data for supported range",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 568
+    },
+    {
+      "title": "I-06: POST /api/v1/skin-analysis/compare compares two owned analyses",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 705
+    },
+    {
+      "title": "I-07: GET /api/v1/skin-analysis export endpoints return PDF content",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 751
+    },
+    {
+      "title": "I-08: POST /api/v1/skin-analysis/recommendations/:id/feedback records feedback",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1217
+    },
+    {
+      "title": "I-09: skin analysis API rejects missing authentication and disallowed roles",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 887
+    },
+    {
+      "title": "I-10: GET /api/v1/users/me returns authenticated buyer profile",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 617
+    },
+    {
+      "title": "I-11: PATCH /api/v1/users/me updates buyer profile fields",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1322
+    },
+    {
+      "title": "I-12: POST /api/v1/auth/change-password changes buyer password",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 1834
+    },
+    {
+      "title": "I-13: DELETE /api/v1/skin-analysis/bulk deletes selected history records",
+      "file": "C:\\AIProject\\skin-analysis-TMO\\e2e\\tests\\AI_Skin_Analysis\\skin-analysis.spec.ts",
+      "status": "passed",
+      "duration": 508
+    }
+  ]
+}

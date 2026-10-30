@@ -1,0 +1,20 @@
+{
+  "capturedAt": "2026-10-30T09:22:41.065Z",
+  "description": "DB CHANGES — users table updated with new name and updated_at",
+  "results": [
+    {
+      "label": "users (buyer profile updated)",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "25552be0-75c2-4a8d-aaaa-662cedd89b68",
+          "email": "e2e.skin-analysis.d579191f-2d69-4643-99c5-3b78edc6c545@test.com",
+          "name": "Ei Ei Mon Updated",
+          "role": "buyer",
+          "avatar_url": "",
+          "updated_at": "2026-10-30T02:52:40.743Z"
+        }
+      ]
+    }
+  ]
+}

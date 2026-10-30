@@ -1,0 +1,466 @@
+{
+  "N-02_1_ui_before_upload.png": {
+    "description": "UI before upload — scanner upload mode ready",
+    "test": "skin-analysis.spec.ts::N-02: uploads a skin image and completes analysis (live database evidence)"
+  },
+  "N-02_2_ui_doing_image_uploaded.png": {
+    "description": "UI filling data — image uploaded and consent checked",
+    "test": "skin-analysis.spec.ts::N-02: uploads a skin image and completes analysis (live database evidence)"
+  },
+  "N-02_3_ui_after_analysis_completed.png": {
+    "description": "UI after analysis — completed scores and recommendations displayed",
+    "test": "skin-analysis.spec.ts::N-02: uploads a skin image and completes analysis (live database evidence)"
+  },
+  "N-02_4_db_after_analysis_created.png": {
+    "description": "DB CHANGES — skin analysis record created with conditions and recommendations",
+    "test": "skin-analysis.spec.ts::N-02: uploads a skin image and completes analysis (live database evidence)"
+  },
+  "N-02_4_db_after_analysis_created.json": {
+    "description": "DB CHANGES — skin analysis record created with conditions and recommendations",
+    "test": "skin-analysis.spec.ts::N-02: uploads a skin image and completes analysis (live database evidence)"
+  },
+  "N-08_1_ui_before_feedback.png": {
+    "description": "UI before feedback — recommendation card with unclicked feedback",
+    "test": "skin-analysis.spec.ts::N-08: submits product recommendation feedback (live database evidence)"
+  },
+  "N-08_2_ui_doing_feedback_click.png": {
+    "description": "UI doing — submitting Helpful recommendation feedback",
+    "test": "skin-analysis.spec.ts::N-08: submits product recommendation feedback (live database evidence)"
+  },
+  "N-08_3_ui_after_feedback_saved.png": {
+    "description": "UI after feedback — recommendation marked as helpful",
+    "test": "skin-analysis.spec.ts::N-08: submits product recommendation feedback (live database evidence)"
+  },
+  "N-08_4_db_after_feedback_saved.png": {
+    "description": "DB CHANGES — recommendation feedback recorded in skin_analysis_feedback",
+    "test": "skin-analysis.spec.ts::N-08: submits product recommendation feedback (live database evidence)"
+  },
+  "N-08_4_db_after_feedback_saved.json": {
+    "description": "DB CHANGES — recommendation feedback recorded in skin_analysis_feedback",
+    "test": "skin-analysis.spec.ts::N-08: submits product recommendation feedback (live database evidence)"
+  },
+  "N-25_1_ui_before_delete.png": {
+    "description": "UI before delete — target record visible and unselected",
+    "test": "skin-analysis.spec.ts::N-25: deletes selected analysis history records (live database evidence)"
+  },
+  "N-25_2_ui_selected_record.png": {
+    "description": "UI doing — target analysis history row selected",
+    "test": "skin-analysis.spec.ts::N-25: deletes selected analysis history records (live database evidence)"
+  },
+  "N-25_3_ui_delete_confirmation.png": {
+    "description": "UI doing — delete confirmation modal open",
+    "test": "skin-analysis.spec.ts::N-25: deletes selected analysis history records (live database evidence)"
+  },
+  "N-25_4_ui_after_delete.png": {
+    "description": "UI after delete — record removed from history table",
+    "test": "skin-analysis.spec.ts::N-25: deletes selected analysis history records (live database evidence)"
+  },
+  "N-25_5_db_after_delete.png": {
+    "description": "DB CHANGES — skin analysis record deleted (0 rows in skin_analyses)",
+    "test": "skin-analysis.spec.ts::N-25: deletes selected analysis history records (live database evidence)"
+  },
+  "N-25_5_db_after_delete.json": {
+    "description": "DB CHANGES — skin analysis record deleted (0 rows in skin_analyses)",
+    "test": "skin-analysis.spec.ts::N-25: deletes selected analysis history records (live database evidence)"
+  },
+  "N-22_1_ui_before_profile_edit.png": {
+    "description": "UI before profile edit — current buyer profile displayed",
+    "test": "skin-analysis.spec.ts::N-22: updates buyer profile name and avatar (live database evidence)"
+  },
+  "N-22_2_ui_doing_profile_filled.png": {
+    "description": "UI doing — edit profile form filled with updated name",
+    "test": "skin-analysis.spec.ts::N-22: updates buyer profile name and avatar (live database evidence)"
+  },
+  "N-22_3_ui_after_profile_saved.png": {
+    "description": "UI after profile edit — updated profile saved",
+    "test": "skin-analysis.spec.ts::N-22: updates buyer profile name and avatar (live database evidence)"
+  },
+  "N-22_4_db_after_profile_update.png": {
+    "description": "DB CHANGES — users table updated with new name and updated_at",
+    "test": "skin-analysis.spec.ts::N-22: updates buyer profile name and avatar (live database evidence)"
+  },
+  "N-22_4_db_after_profile_update.json": {
+    "description": "DB CHANGES — users table updated with new name and updated_at",
+    "test": "skin-analysis.spec.ts::N-22: updates buyer profile name and avatar (live database evidence)"
+  },
+  "N-23_1_ui_before_password_change.png": {
+    "description": "UI before password change — change password form loaded",
+    "test": "skin-analysis.spec.ts::N-23: changes buyer account password (live database evidence)"
+  },
+  "N-23_2_ui_doing_password_filled.png": {
+    "description": "UI doing — password inputs filled",
+    "test": "skin-analysis.spec.ts::N-23: changes buyer account password (live database evidence)"
+  },
+  "N-23_3_ui_after_password_changed.png": {
+    "description": "UI after password change — password successfully changed",
+    "test": "skin-analysis.spec.ts::N-23: changes buyer account password (live database evidence)"
+  },
+  "N-23_4_db_after_password_change.png": {
+    "description": "DB CHANGES — users table password changed (updated_at refreshed)",
+    "test": "skin-analysis.spec.ts::N-23: changes buyer account password (live database evidence)"
+  },
+  "N-23_4_db_after_password_change.json": {
+    "description": "DB CHANGES — users table password changed (updated_at refreshed)",
+    "test": "skin-analysis.spec.ts::N-23: changes buyer account password (live database evidence)"
+  },
+  "N-01_1_upload_page.png": {
+    "description": "Scanner screen loaded with live scan and upload controls",
+    "test": "skin-analysis.spec.ts::N-01: buyer opens the skin analysis scanner"
+  },
+  "N-01_final_state.png": {
+    "description": "Final UI state for N-01: buyer opens the skin analysis scanner",
+    "test": "skin-analysis.spec.ts::N-01: buyer opens the skin analysis scanner"
+  },
+  "A-01_1_invalid_format.png": {
+    "description": "Unsupported file format validation error displayed",
+    "test": "skin-analysis.spec.ts::A-01: rejects unsupported image file formats"
+  },
+  "A-01_final_state.png": {
+    "description": "Final UI state for A-01: rejects unsupported image file formats",
+    "test": "skin-analysis.spec.ts::A-01: rejects unsupported image file formats"
+  },
+  "N-04_1_analysis_details.png": {
+    "description": "Completed skin analysis results with health score, hydration, and recommendations",
+    "test": "skin-analysis.spec.ts::N-04: displays completed skin analysis results"
+  },
+  "N-04_final_state.png": {
+    "description": "Final UI state for N-04: displays completed skin analysis results",
+    "test": "skin-analysis.spec.ts::N-04: displays completed skin analysis results"
+  },
+  "N-05_1_history_list.png": {
+    "description": "Analysis history list displaying chronological past analyses",
+    "test": "skin-analysis.spec.ts::N-05: opens analysis history and navigates to a result"
+  },
+  "N-05_final_state.png": {
+    "description": "Final UI state for N-05: opens analysis history and navigates to a result",
+    "test": "skin-analysis.spec.ts::N-05: opens analysis history and navigates to a result"
+  },
+  "N-09_1_export_actions.png": {
+    "description": "Analysis report PDF download triggered successfully",
+    "test": "skin-analysis.spec.ts::N-09: exports an analysis report and the history report"
+  },
+  "N-09_final_state.png": {
+    "description": "Final UI state for N-09: exports an analysis report and the history report",
+    "test": "skin-analysis.spec.ts::N-09: exports an analysis report and the history report"
+  },
+  "A-02_1_file_too_large.png": {
+    "description": "File size limit warning displayed for image over 10 MB",
+    "test": "skin-analysis.spec.ts::A-02: rejects images larger than 10 MB"
+  },
+  "A-02_final_state.png": {
+    "description": "Final UI state for A-02: rejects images larger than 10 MB",
+    "test": "skin-analysis.spec.ts::A-02: rejects images larger than 10 MB"
+  },
+  "A-04_1_consent_required.png": {
+    "description": "Analyze button disabled when consent checkbox is unchecked",
+    "test": "skin-analysis.spec.ts::A-04: requires consent before starting a scan"
+  },
+  "A-04_final_state.png": {
+    "description": "Final UI state for A-04: requires consent before starting a scan",
+    "test": "skin-analysis.spec.ts::A-04: requires consent before starting a scan"
+  },
+  "A-09_1_camera_denied.png": {
+    "description": "Camera permission error message with photo upload fallback",
+    "test": "skin-analysis.spec.ts::A-09: offers photo upload when camera access is denied"
+  },
+  "A-09_final_state.png": {
+    "description": "Final UI state for A-09: offers photo upload when camera access is denied",
+    "test": "skin-analysis.spec.ts::A-09: offers photo upload when camera access is denied"
+  },
+  "N-13_1_mobile_scanner.png": {
+    "description": "Mobile responsive layout of skin analysis scanner",
+    "test": "skin-analysis.spec.ts::N-13: keeps scanner actions usable on mobile"
+  },
+  "N-13_final_state.png": {
+    "description": "Final UI state for N-13: keeps scanner actions usable on mobile",
+    "test": "skin-analysis.spec.ts::N-13: keeps scanner actions usable on mobile"
+  },
+  "A-03_1_no_face_detected.png": {
+    "description": "Face detection validation error for image without face",
+    "test": "skin-analysis.spec.ts::A-03: blocks a supported image when face detection finds no face"
+  },
+  "A-03_final_state.png": {
+    "description": "Final UI state for A-03: blocks a supported image when face detection finds no face",
+    "test": "skin-analysis.spec.ts::A-03: blocks a supported image when face detection finds no face"
+  },
+  "B-01_1_boundary_size.png": {
+    "description": "Valid image exactly at 10 MB limit accepted",
+    "test": "skin-analysis.spec.ts::B-01: accepts a supported image exactly at the 10 MB limit"
+  },
+  "B-01_final_state.png": {
+    "description": "Final UI state for B-01: accepts a supported image exactly at the 10 MB limit",
+    "test": "skin-analysis.spec.ts::B-01: accepts a supported image exactly at the 10 MB limit"
+  },
+  "N-06_1_filters_applied.png": {
+    "description": "History filters applied for date range and skin type",
+    "test": "skin-analysis.spec.ts::N-06 and N-16: filters, clears, and changes the analysis history page size"
+  },
+  "N-16_1_page_size_changed.png": {
+    "description": "History page size changed to 20 rows per page",
+    "test": "skin-analysis.spec.ts::N-06 and N-16: filters, clears, and changes the analysis history page size"
+  },
+  "N-06_final_state.png": {
+    "description": "Final UI state for N-06 and N-16: filters, clears, and changes the analysis history page size",
+    "test": "skin-analysis.spec.ts::N-06 and N-16: filters, clears, and changes the analysis history page size"
+  },
+  "N-16_final_state.png": {
+    "description": "Final UI state for N-06 and N-16: filters, clears, and changes the analysis history page size",
+    "test": "skin-analysis.spec.ts::N-06 and N-16: filters, clears, and changes the analysis history page size"
+  },
+  "N-15_1_summary_metrics.png": {
+    "description": "History summary metrics cards displaying total scans and averages",
+    "test": "skin-analysis.spec.ts::N-15: shows history summary metrics and row actions"
+  },
+  "N-15_final_state.png": {
+    "description": "Final UI state for N-15: shows history summary metrics and row actions",
+    "test": "skin-analysis.spec.ts::N-15: shows history summary metrics and row actions"
+  },
+  "N-17_1_read_only_details.png": {
+    "description": "Read-only results detail screen with no editable fields",
+    "test": "skin-analysis.spec.ts::N-17 and A-08: result details are read-only and New Scan returns to the scanner"
+  },
+  "N-17_final_state.png": {
+    "description": "Final UI state for N-17 and A-08: result details are read-only and New Scan returns to the scanner",
+    "test": "skin-analysis.spec.ts::N-17 and A-08: result details are read-only and New Scan returns to the scanner"
+  },
+  "A-08_final_state.png": {
+    "description": "Final UI state for N-17 and A-08: result details are read-only and New Scan returns to the scanner",
+    "test": "skin-analysis.spec.ts::N-17 and A-08: result details are read-only and New Scan returns to the scanner"
+  },
+  "N-19_1_recommended_product.png": {
+    "description": "Navigated to recommended product detail page",
+    "test": "skin-analysis.spec.ts::N-19: opens the recommended product detail"
+  },
+  "N-19_final_state.png": {
+    "description": "Final UI state for N-19: opens the recommended product detail",
+    "test": "skin-analysis.spec.ts::N-19: opens the recommended product detail"
+  },
+  "B-02_1_empty_history.png": {
+    "description": "Empty analysis history state when buyer has no records",
+    "test": "skin-analysis.spec.ts::B-02: displays the empty history state when there are no analyses"
+  },
+  "B-02_final_state.png": {
+    "description": "Final UI state for B-02: displays the empty history state when there are no analyses",
+    "test": "skin-analysis.spec.ts::B-02: displays the empty history state when there are no analyses"
+  },
+  "A-05_1_upload_error.png": {
+    "description": "Upload service failure message displayed",
+    "test": "skin-analysis.spec.ts::A-05: displays an upload error instead of showing a successful analysis"
+  },
+  "A-05_final_state.png": {
+    "description": "Final UI state for A-05: displays an upload error instead of showing a successful analysis",
+    "test": "skin-analysis.spec.ts::A-05: displays an upload error instead of showing a successful analysis"
+  },
+  "B-04_1_daily_quota_error.png": {
+    "description": "Daily analysis quota limit error message displayed",
+    "test": "skin-analysis.spec.ts::B-04: displays the daily-quota error when analysis returns HTTP 429"
+  },
+  "B-04_final_state.png": {
+    "description": "Final UI state for B-04: displays the daily-quota error when analysis returns HTTP 429",
+    "test": "skin-analysis.spec.ts::B-04: displays the daily-quota error when analysis returns HTTP 429"
+  },
+  "A-06_1_access_denied.png": {
+    "description": "Unauthenticated request redirected to login",
+    "test": "skin-analysis.spec.ts::A-06: rejects unauthenticated and non-buyer access"
+  },
+  "A-06_api_call.png": {
+    "description": "API request and response evidence for A-06: rejects unauthenticated and non-buyer access",
+    "test": "skin-analysis.spec.ts::A-06: rejects unauthenticated and non-buyer access"
+  },
+  "N-11_1_lang_changed.png": {
+    "description": "Language preference options displayed in Settings",
+    "test": "skin-analysis.spec.ts::N-11 and N-12: exposes language and theme preferences in Settings"
+  },
+  "N-12_1_theme_toggled.png": {
+    "description": "Dark/light theme preference toggled",
+    "test": "skin-analysis.spec.ts::N-11 and N-12: exposes language and theme preferences in Settings"
+  },
+  "N-11_final_state.png": {
+    "description": "Final UI state for N-11 and N-12: exposes language and theme preferences in Settings",
+    "test": "skin-analysis.spec.ts::N-11 and N-12: exposes language and theme preferences in Settings"
+  },
+  "N-12_final_state.png": {
+    "description": "Final UI state for N-11 and N-12: exposes language and theme preferences in Settings",
+    "test": "skin-analysis.spec.ts::N-11 and N-12: exposes language and theme preferences in Settings"
+  },
+  "N-20_1_profile_nav.png": {
+    "description": "Buyer navigated from header menu to Profile page",
+    "test": "skin-analysis.spec.ts::N-20, N-21, N-24: views buyer profile and removes avatar"
+  },
+  "N-21_1_profile_info.png": {
+    "description": "Buyer account information displayed in Profile tab",
+    "test": "skin-analysis.spec.ts::N-20, N-21, N-24: views buyer profile and removes avatar"
+  },
+  "N-24_1_remove_avatar.png": {
+    "description": "Avatar removed in Edit Profile tab",
+    "test": "skin-analysis.spec.ts::N-20, N-21, N-24: views buyer profile and removes avatar"
+  },
+  "N-21_final_state.png": {
+    "description": "Final UI state for N-20, N-21, N-24: views buyer profile and removes avatar",
+    "test": "skin-analysis.spec.ts::N-20, N-21, N-24: views buyer profile and removes avatar"
+  },
+  "N-24_final_state.png": {
+    "description": "Final UI state for N-20, N-21, N-24: views buyer profile and removes avatar",
+    "test": "skin-analysis.spec.ts::N-20, N-21, N-24: views buyer profile and removes avatar"
+  },
+  "N-20_final_state.png": {
+    "description": "Final UI state for N-20, N-21, N-24: views buyer profile and removes avatar",
+    "test": "skin-analysis.spec.ts::N-20, N-21, N-24: views buyer profile and removes avatar"
+  },
+  "A-13_1_invalid_name.png": {
+    "description": "Validation error for profile name shorter than 2 characters",
+    "test": "skin-analysis.spec.ts::A-13 and A-15: rejects invalid profile names and password fields"
+  },
+  "A-15_1_invalid_password.png": {
+    "description": "Validation errors for empty password fields",
+    "test": "skin-analysis.spec.ts::A-13 and A-15: rejects invalid profile names and password fields"
+  },
+  "A-13_final_state.png": {
+    "description": "Final UI state for A-13 and A-15: rejects invalid profile names and password fields",
+    "test": "skin-analysis.spec.ts::A-13 and A-15: rejects invalid profile names and password fields"
+  },
+  "A-15_final_state.png": {
+    "description": "Final UI state for A-13 and A-15: rejects invalid profile names and password fields",
+    "test": "skin-analysis.spec.ts::A-13 and A-15: rejects invalid profile names and password fields"
+  },
+  "B-06_1_boundary_name.png": {
+    "description": "Profile name accepted at 2 character boundary",
+    "test": "skin-analysis.spec.ts::B-06: accepts profile names at the 2 and 100 character boundaries"
+  },
+  "B-06_final_state.png": {
+    "description": "Final UI state for B-06: accepts profile names at the 2 and 100 character boundaries",
+    "test": "skin-analysis.spec.ts::B-06: accepts profile names at the 2 and 100 character boundaries"
+  },
+  "B-07_1_name_too_long.png": {
+    "description": "Validation error for profile name exceeding 100 characters",
+    "test": "skin-analysis.spec.ts::B-07: rejects a profile name longer than 100 characters"
+  },
+  "B-07_final_state.png": {
+    "description": "Final UI state for B-07: rejects a profile name longer than 100 characters",
+    "test": "skin-analysis.spec.ts::B-07: rejects a profile name longer than 100 characters"
+  },
+  "A-14_1_invalid_avatar.png": {
+    "description": "Error message for non-image avatar file upload",
+    "test": "skin-analysis.spec.ts::A-14: rejects a non-image profile avatar file"
+  },
+  "A-14_final_state.png": {
+    "description": "Final UI state for A-14: rejects a non-image profile avatar file",
+    "test": "skin-analysis.spec.ts::A-14: rejects a non-image profile avatar file"
+  },
+  "A-17_1_profile_load_error.png": {
+    "description": "Error alert when profile data fails to load",
+    "test": "skin-analysis.spec.ts::A-17: displays an error when the buyer profile cannot be loaded"
+  },
+  "A-17_final_state.png": {
+    "description": "Final UI state for A-17: displays an error when the buyer profile cannot be loaded",
+    "test": "skin-analysis.spec.ts::A-17: displays an error when the buyer profile cannot be loaded"
+  },
+  "A-18_1_same_password.png": {
+    "description": "Validation error when new password matches current password",
+    "test": "skin-analysis.spec.ts::A-18: rejects a new password that matches the current password"
+  },
+  "A-18_final_state.png": {
+    "description": "Final UI state for A-18: rejects a new password that matches the current password",
+    "test": "skin-analysis.spec.ts::A-18: rejects a new password that matches the current password"
+  },
+  "A-16_1_wrong_password.png": {
+    "description": "Error notification when current password is wrong",
+    "test": "skin-analysis.spec.ts::A-16: shows an error when the current password is incorrect"
+  },
+  "A-16_final_state.png": {
+    "description": "Final UI state for A-16: shows an error when the current password is incorrect",
+    "test": "skin-analysis.spec.ts::A-16: shows an error when the current password is incorrect"
+  },
+  "B-08_1_password_length.png": {
+    "description": "Password length minimum boundary validation",
+    "test": "skin-analysis.spec.ts::B-08: enforces new password length boundaries"
+  },
+  "B-08_final_state.png": {
+    "description": "Final UI state for B-08: enforces new password length boundaries",
+    "test": "skin-analysis.spec.ts::B-08: enforces new password length boundaries"
+  },
+  "I-01_api_call.png": {
+    "description": "API request and response evidence for I-01: POST /api/v1/skin-analysis/upload validates multipart facial scan upload",
+    "test": "skin-analysis.spec.ts::I-01: POST /api/v1/skin-analysis/upload validates multipart facial scan upload"
+  },
+  "I-02_db_after_analysis_created.png": {
+    "description": "DB CHANGES — API contract created an analysis with conditions, findings, and recommendations",
+    "test": "skin-analysis.spec.ts::I-02: POST /api/v1/skin-analysis/analyze starts an AI skin analysis"
+  },
+  "I-02_db_after_analysis_created.json": {
+    "description": "DB CHANGES — API contract created an analysis with conditions, findings, and recommendations",
+    "test": "skin-analysis.spec.ts::I-02: POST /api/v1/skin-analysis/analyze starts an AI skin analysis"
+  },
+  "I-02_api_call.png": {
+    "description": "API request and response evidence for I-02: POST /api/v1/skin-analysis/analyze starts an AI skin analysis",
+    "test": "skin-analysis.spec.ts::I-02: POST /api/v1/skin-analysis/analyze starts an AI skin analysis"
+  },
+  "I-03_api_call.png": {
+    "description": "API request and response evidence for I-03: GET /api/v1/skin-analysis/:id returns the buyer analysis result",
+    "test": "skin-analysis.spec.ts::I-03: GET /api/v1/skin-analysis/:id returns the buyer analysis result"
+  },
+  "I-04_api_call.png": {
+    "description": "API request and response evidence for I-04: GET /api/v1/skin-analysis/history returns scoped paginated history",
+    "test": "skin-analysis.spec.ts::I-04: GET /api/v1/skin-analysis/history returns scoped paginated history"
+  },
+  "I-05_api_call.png": {
+    "description": "API request and response evidence for I-05: GET /api/v1/skin-analysis/trends returns trend data for supported range",
+    "test": "skin-analysis.spec.ts::I-05: GET /api/v1/skin-analysis/trends returns trend data for supported range"
+  },
+  "I-06_api_call.png": {
+    "description": "API request and response evidence for I-06: POST /api/v1/skin-analysis/compare compares two owned analyses",
+    "test": "skin-analysis.spec.ts::I-06: POST /api/v1/skin-analysis/compare compares two owned analyses"
+  },
+  "I-07_api_call.png": {
+    "description": "API request and response evidence for I-07: GET /api/v1/skin-analysis export endpoints return PDF content",
+    "test": "skin-analysis.spec.ts::I-07: GET /api/v1/skin-analysis export endpoints return PDF content"
+  },
+  "I-08_db_after_feedback_saved.png": {
+    "description": "DB CHANGES — API contract recorded recommendation feedback",
+    "test": "skin-analysis.spec.ts::I-08: POST /api/v1/skin-analysis/recommendations/:id/feedback records feedback"
+  },
+  "I-08_db_after_feedback_saved.json": {
+    "description": "DB CHANGES — API contract recorded recommendation feedback",
+    "test": "skin-analysis.spec.ts::I-08: POST /api/v1/skin-analysis/recommendations/:id/feedback records feedback"
+  },
+  "I-08_api_call.png": {
+    "description": "API request and response evidence for I-08: POST /api/v1/skin-analysis/recommendations/:id/feedback records feedback",
+    "test": "skin-analysis.spec.ts::I-08: POST /api/v1/skin-analysis/recommendations/:id/feedback records feedback"
+  },
+  "I-09_api_call.png": {
+    "description": "API request and response evidence for I-09: skin analysis API rejects missing authentication and disallowed roles",
+    "test": "skin-analysis.spec.ts::I-09: skin analysis API rejects missing authentication and disallowed roles"
+  },
+  "I-10_api_call.png": {
+    "description": "API request and response evidence for I-10: GET /api/v1/users/me returns authenticated buyer profile",
+    "test": "skin-analysis.spec.ts::I-10: GET /api/v1/users/me returns authenticated buyer profile"
+  },
+  "I-11_db_after_profile_update.png": {
+    "description": "DB CHANGES — API contract updated the buyer profile name",
+    "test": "skin-analysis.spec.ts::I-11: PATCH /api/v1/users/me updates buyer profile fields"
+  },
+  "I-11_db_after_profile_update.json": {
+    "description": "DB CHANGES — API contract updated the buyer profile name",
+    "test": "skin-analysis.spec.ts::I-11: PATCH /api/v1/users/me updates buyer profile fields"
+  },
+  "I-11_api_call.png": {
+    "description": "API request and response evidence for I-11: PATCH /api/v1/users/me updates buyer profile fields",
+    "test": "skin-analysis.spec.ts::I-11: PATCH /api/v1/users/me updates buyer profile fields"
+  },
+  "I-12_db_after_password_change.png": {
+    "description": "DB CHANGES — API contract changed buyer password (password hash is never selected)",
+    "test": "skin-analysis.spec.ts::I-12: POST /api/v1/auth/change-password changes buyer password"
+  },
+  "I-12_db_after_password_change.json": {
+    "description": "DB CHANGES — API contract changed buyer password (password hash is never selected)",
+    "test": "skin-analysis.spec.ts::I-12: POST /api/v1/auth/change-password changes buyer password"
+  },
+  "I-12_api_call.png": {
+    "description": "API request and response evidence for I-12: POST /api/v1/auth/change-password changes buyer password",
+    "test": "skin-analysis.spec.ts::I-12: POST /api/v1/auth/change-password changes buyer password"
+  },
+  "I-13_api_call.png": {
+    "description": "API request and response evidence for I-13: DELETE /api/v1/skin-analysis/bulk deletes selected history records",
+    "test": "skin-analysis.spec.ts::I-13: DELETE /api/v1/skin-analysis/bulk deletes selected history records"
+  }
+}

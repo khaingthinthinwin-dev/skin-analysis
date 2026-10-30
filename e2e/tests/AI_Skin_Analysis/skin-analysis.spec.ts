@@ -1,7 +1,7 @@
 import { test as baseTest, expect } from '../../fixtures/auth.fixture';
 import type { APIRequestContext, APIResponse, Page, Response } from '@playwright/test';
 import { SkinAnalysisPage } from '../../pages/AI_Skin_Analysis/SkinAnalysisPage';
-import { buyerHeaders, loginApi } from '../../utils/api-auth';
+import { authHeaders, loginApi } from '../../utils/api-auth';
 import { API_BASE_URL } from '../../utils/constants';
 import pclMap from '../../pcl-map/AI_Skin_Analysis.json';
 import { captureScreenshot } from '../../utils/screenshot';
@@ -20,6 +20,8 @@ const ANALYSIS_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const SECOND_ANALYSIS_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const RECOMMENDATION_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const PRODUCT_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const LIVE_BUYER_EMAIL = `e2e.skin-analysis.${randomUUID()}@test.com`;
+const LIVE_BUYER_PASSWORD = 'SkinAnalysisE2E!2026';
 const PNG_BYTES = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
   'base64',
@@ -27,7 +29,6 @@ const PNG_BYTES = Buffer.from(
 
 let skinPage: SkinAnalysisPage;
 let evidencePage: Page | undefined;
-let buyerAuth: Record<string, string> | undefined;
 
 type ApiCallEvidence = {
   method: string;
@@ -39,6 +40,32 @@ type ApiCallEvidence = {
 };
 let apiCalls: ApiCallEvidence[] = [];
 let apiCaptureTasks: Promise<void>[] = [];
+let liveBuyerAuth: Promise<Record<string, string>> | undefined;
+
+async function getLiveBuyerAuth(request: APIRequestContext): Promise<Record<string, string>> {
+  if (!liveBuyerAuth) {
+    liveBuyerAuth = (async () => {
+      const registration = await request.post(`${API_BASE_URL}/auth/register`, {
+        multipart: {
+          name: 'E2E Skin Analysis Buyer',
+          email: LIVE_BUYER_EMAIL,
+          password: LIVE_BUYER_PASSWORD,
+          role: 'buyer',
+        },
+      });
+      if (!registration.ok()) {
+        throw new Error(
+          `Unable to register live skin-analysis buyer: ${registration.status()} ${await registration.text()}`,
+        );
+      }
+      return loginApi(request, LIVE_BUYER_EMAIL, LIVE_BUYER_PASSWORD);
+    })().catch((error: unknown) => {
+      liveBuyerAuth = undefined;
+      throw error;
+    });
+  }
+  return liveBuyerAuth;
+}
 
 const LIVE_EVIDENCE_TESTS = new Set([
   'N-02: uploads a skin image and completes analysis (live database evidence)',
@@ -90,12 +117,50 @@ const test = baseTest.extend({
     });
     await use(trackedRequest);
   },
+  buyerPage: async ({ browser, request }, use, testInfo) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.route(/fonts\.(googleapis|gstatic)\.com/, (route) => route.abort());
+
+    if (LIVE_EVIDENCE_TESTS.has(testInfo.title)) {
+      const auth = await getLiveBuyerAuth(request);
+      const token = auth.Authorization.replace(/^Bearer\s+/, '');
+      await page.addInitScript((accessToken) => {
+        localStorage.setItem('accessToken', accessToken);
+      }, token);
+    } else {
+      await page.route('**/api/v1/auth/verify', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            data: {
+              id: '99999999-9999-4999-8999-999999999999',
+              email: 'e2e-buyer@example.test',
+              name: 'E2E Buyer',
+              role: 'buyer',
+              avatar: null,
+              createdAt: '2026-01-01T00:00:00.000Z',
+              updatedAt: '2026-01-01T00:00:00.000Z',
+            },
+          }),
+        }),
+      );
+      await page.addInitScript(() => {
+        localStorage.setItem('accessToken', 'e2e-buyer-token');
+      });
+    }
+
+    await use(page);
+    await context.close();
+  },
 });
 
-test.beforeEach(async ({ buyerPage, request }) => {
+test.beforeEach(async ({ buyerPage }) => {
   apiCalls = [];
   apiCaptureTasks = [];
   evidencePage = buyerPage;
+
   buyerPage.on('response', (response) => {
     const url = response.url();
     if (
@@ -106,12 +171,6 @@ test.beforeEach(async ({ buyerPage, request }) => {
       apiCaptureTasks.push(recordPageApiCall(response));
     }
   });
-
-  buyerAuth ??= await buyerHeaders(request);
-  const token = buyerAuth.Authorization.replace(/^Bearer\s+/, '');
-  await buyerPage.addInitScript((accessToken) => {
-    localStorage.setItem('accessToken', accessToken);
-  }, token);
 
   skinPage = new SkinAnalysisPage(buyerPage);
 });
@@ -564,7 +623,7 @@ async function mockBuyerProfileApi(
 }
 
 test.describe('AI Skin Analysis — Live Evidence Scenarios', () => {
-  test('N-02: uploads a skin image and completes analysis (live database evidence)', async ({ buyerPage, request }) => {
+  test('N-02: uploads a skin image and completes analysis (live database evidence)', async ({ buyerPage }) => {
     await installFaceDetectorStub(buyerPage, true);
     await skinPage.goto();
     await skinPage.uploadModeTab.click();
@@ -582,33 +641,59 @@ test.describe('AI Skin Analysis — Live Evidence Scenarios', () => {
     await expect(skinPage.analyzeButton).toBeEnabled();
     await skinPage.capture('N-02_2_ui_doing_image_uploaded', 'UI filling data — image uploaded and consent checked');
 
-    // Action: click analyze
+    const analyzeResponsePromise = buyerPage.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        response.url().endsWith('/api/v1/skin-analysis/analyze'),
+    );
     await skinPage.analyzeButton.click();
-    await expect(buyerPage).toHaveURL(/\/buyer\/skin-analysis\/[a-f0-9-]+$/);
-    await expect(buyerPage.getByText(/Analysis complete/i)).toBeVisible();
+    const analyzeResponse = await analyzeResponsePromise;
+    expect(analyzeResponse.ok(), `Analysis request failed: ${analyzeResponse.status()} ${await analyzeResponse.text()}`).toBeTruthy();
+    const { data: analysis } = await analyzeResponse.json();
+    expect(analysis.analysisId).toMatch(/^[a-f0-9-]{36}$/i);
+    await expect(buyerPage.getByText('Analysis Complete', { exact: true }).first()).toBeVisible();
 
     // 3. AFTER UI
     await skinPage.capture('N-02_3_ui_after_analysis_completed', 'UI after analysis — completed scores and recommendations displayed');
 
     // 4. DATABASE EVIDENCE & .JSON
-    const createdId = buyerPage.url().split('/').pop()!;
     await captureSkinAnalysisDbEvidence(
       buyerPage,
       'N-02_4_db_after_analysis_created',
-      createdId,
+      analysis.analysisId,
       'DB CHANGES — skin analysis record created with conditions and recommendations',
     );
   });
 
   test('N-08: submits product recommendation feedback (live database evidence)', async ({ buyerPage, request }) => {
-    // Obtain latest analysis with a recommendation
-    const auth = await buyerHeaders(request);
-    const historyRes = await request.get(`${API_BASE_URL}/skin-analysis/history?page=1&limit=5`, { headers: auth });
-    const historyJson = await historyRes.json();
-    let targetAnalysisId = historyJson.data?.items?.[0]?.analysisId || historyJson.data?.items?.[0]?.id;
+    await skinPage.goto();
 
-    if (!targetAnalysisId) {
-      // Create one via API
+    const auth = await authHeaders(buyerPage);
+    expect(auth.Authorization, 'The buyer must be authenticated before reading analysis history').toBeTruthy();
+    const buyerUser = await runDb(async (client) => {
+      const result = await client.query('SELECT id FROM users WHERE email = $1', [LIVE_BUYER_EMAIL]);
+      return result.rows[0] as { id: string };
+    });
+    let recommendation = await runDb(async (client) => {
+      const result = await client.query(
+        `SELECT r.id AS recommendation_id, r.analysis_id
+         FROM skin_analysis_recommendations r
+         JOIN skin_analyses a ON a.id = r.analysis_id
+         JOIN users u ON u.id = a.user_id
+         WHERE u.id = $1
+           AND NOT EXISTS (
+             SELECT 1 FROM skin_analysis_feedback f
+             WHERE f.recommendation_id = r.id AND f.user_id = u.id
+           )
+         ORDER BY a.analysis_date DESC, r.display_order
+         LIMIT 1`,
+        [buyerUser.id],
+      );
+      return result.rows[0] as { recommendation_id: string; analysis_id: string } | undefined;
+    });
+
+    if (!recommendation) {
+      // Create a fresh recommendation so the before-state has no prior feedback.
       const up = await request.post(`${API_BASE_URL}/skin-analysis/upload`, {
         headers: auth,
         multipart: {
@@ -616,54 +701,84 @@ test.describe('AI Skin Analysis — Live Evidence Scenarios', () => {
           consent: 'true',
         },
       });
+      expect(up.ok(), `Image upload failed: ${up.status()} ${await up.text()}`).toBeTruthy();
       const blobUrl = (await up.json()).data.blobUrl;
       const an = await request.post(`${API_BASE_URL}/skin-analysis/analyze`, {
         headers: auth,
         data: { blobUrl },
       });
-      targetAnalysisId = (await an.json()).data.analysisId;
+      expect(an.ok(), `Analysis request failed: ${an.status()} ${await an.text()}`).toBeTruthy();
+      const { data: createdAnalysis } = await an.json();
+      recommendation = await runDb(async (client) => {
+        const result = await client.query(
+          `SELECT id AS recommendation_id, analysis_id
+           FROM skin_analysis_recommendations
+           WHERE analysis_id = $1
+           ORDER BY display_order
+           LIMIT 1`,
+          [createdAnalysis.analysisId],
+        );
+        return result.rows[0] as { recommendation_id: string; analysis_id: string } | undefined;
+      });
+    }
+    if (!recommendation) {
+      throw new Error('A recommendation without prior feedback is required for N-08');
     }
 
-    await skinPage.gotoResult(targetAnalysisId);
+    await skinPage.gotoResult(recommendation.analysis_id);
 
-    // 1. BEFORE UI
+    // 1. BEFORE UI — recommendation has no saved feedback.
     await skinPage.capture('N-08_1_ui_before_feedback', 'UI before feedback — recommendation card with unclicked feedback');
 
     // 2. FILLING DATA / CLICKING
-    const helpfulButton = buyerPage.getByRole('button', { name: 'Helpful', exact: true });
+    const helpfulButton = buyerPage.getByRole('button', { name: 'Helpful', exact: true }).first();
     await expect(helpfulButton).toBeVisible();
     await skinPage.capture('N-08_2_ui_doing_feedback_click', 'UI doing — submitting Helpful recommendation feedback');
 
+    const feedbackResponsePromise = buyerPage.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        /\/api\/v1\/skin-analysis\/recommendations\/[^/]+\/feedback$/.test(response.url()),
+    );
     await helpfulButton.click();
-    await buyerPage.waitForTimeout(500);
+    const feedbackResponse = await feedbackResponsePromise;
+    expect(feedbackResponse.ok(), `Feedback request failed: ${feedbackResponse.status()} ${await feedbackResponse.text()}`).toBeTruthy();
+    const feedbackRecommendationId = feedbackResponse.url().match(/recommendations\/([^/]+)\/feedback$/)?.[1];
+    expect(feedbackRecommendationId).toBe(recommendation.recommendation_id);
+    await expect(helpfulButton).toHaveClass(/bg-emerald-500/);
 
     // 3. AFTER UI
     await skinPage.capture('N-08_3_ui_after_feedback_saved', 'UI after feedback — recommendation marked as helpful');
 
     // 4. DATABASE EVIDENCE & .JSON
     const recRow = await runDb(async (client) => {
-      const r = await client.query('SELECT id, user_id FROM skin_analysis_recommendations WHERE analysis_id = $1 LIMIT 1', [targetAnalysisId]);
+      const r = await client.query(
+        `SELECT r.id, f.user_id
+         FROM skin_analysis_recommendations r
+         JOIN skin_analysis_feedback f ON f.recommendation_id = r.id
+         WHERE r.id = $1 AND f.user_id = $2 AND f.is_helpful = true`,
+        [recommendation.recommendation_id, buyerUser.id],
+      );
       return r.rows[0];
     });
 
-    const buyerUser = await runDb(async (client) => {
-      const r = await client.query('SELECT id FROM users WHERE email = $1', ['eem@gmail.com']);
-      return r.rows[0];
-    });
-
+    expect(recRow, 'The helpful vote should be present in the database').toBeTruthy();
     await captureSkinAnalysisFeedbackDbEvidence(
       buyerPage,
       'N-08_4_db_after_feedback_saved',
-      recRow ? recRow.id : '00000000-0000-4000-8000-000000000000',
+      recRow.id,
       buyerUser.id,
       'DB CHANGES — recommendation feedback recorded in skin_analysis_feedback',
     );
   });
 
-  test('N-25: deletes selected analysis history records (live database evidence)', async ({ buyerPage, request }) => {
-    const auth = await buyerHeaders(request);
+  test('N-25: deletes selected analysis history records (live database evidence)', async ({ buyerPage }) => {
+    await skinPage.goto();
+
+    const auth = await authHeaders(buyerPage);
+    expect(auth.Authorization, 'The buyer must be authenticated before deleting analysis history').toBeTruthy();
     const buyerUser = await runDb(async (client) => {
-      const r = await client.query('SELECT id FROM users WHERE email = $1', ['eem@gmail.com']);
+      const r = await client.query('SELECT id FROM users WHERE email = $1', [LIVE_BUYER_EMAIL]);
       return r.rows[0];
     });
 
@@ -675,38 +790,47 @@ test.describe('AI Skin Analysis — Live Evidence Scenarios', () => {
         VALUES ($1, $2, '/sample-delete.png', 'Combination', 25, 'completed', NOW(), 82, 70)
       `, [sampleId, buyerUser.id]);
     });
-
     await skinPage.gotoHistory();
 
-    // 1. BEFORE UI
-    const targetCheckbox = buyerPage.locator(`input[type="checkbox"][value="${sampleId}"]`).or(
-      buyerPage.getByRole('row').filter({ hasText: 'Combination' }).locator('input[type="checkbox"]').first()
-    ).or(buyerPage.locator('tbody input[type="checkbox"]').first());
+    // 1. BEFORE UI — record is visible and not selected.
+    const targetCheckbox = buyerPage.locator(`#chk-${sampleId}`);
+    await expect(targetCheckbox).toBeVisible();
+    await skinPage.capture('N-25_1_ui_before_delete', 'UI before delete — target record visible and unselected');
+
+    // 2. FILLING DATA — select the record to delete.
     await targetCheckbox.check();
-    await skinPage.capture('N-25_1_ui_before_delete', 'UI before delete — selected analysis history row');
+    await expect(targetCheckbox).toBeChecked();
+    await skinPage.capture('N-25_2_ui_selected_record', 'UI doing — target analysis history row selected');
 
-    // 2. FILLING DATA / CONFIRMATION DIALOG
-    await skinPage.deleteSelectedButton.click();
+    // 3. CONFIRMATION DIALOG
+    await buyerPage.getByRole('button', { name: /Delete (selected|all)/i }).click();
     await expect(skinPage.confirmDeleteButton).toBeVisible();
-    await skinPage.capture('N-25_2_ui_delete_confirmation', 'UI doing — delete confirmation modal open');
+    await skinPage.capture('N-25_3_ui_delete_confirmation', 'UI doing — delete confirmation modal open');
 
-    // 3. AFTER UI
+    // 4. AFTER UI
     await skinPage.confirmDeleteButton.click();
-    await buyerPage.waitForTimeout(1000);
-    await skinPage.capture('N-25_3_ui_after_delete', 'UI after delete — record removed from history table');
+    await expect(targetCheckbox).toHaveCount(0);
+    const remainingRows = await runDb(async (client) => {
+      const result = await client.query('SELECT COUNT(*)::int AS count FROM skin_analyses WHERE id = $1', [
+        sampleId,
+      ]);
+      return Number(result.rows[0].count);
+    });
+    expect(remainingRows).toBe(0);
+    await skinPage.capture('N-25_4_ui_after_delete', 'UI after delete — record removed from history table');
 
-    // 4. DATABASE EVIDENCE & .JSON
+    // 5. DATABASE EVIDENCE & .JSON
     await captureSkinAnalysisDeleteDbEvidence(
       buyerPage,
-      'N-25_4_db_after_delete',
+      'N-25_5_db_after_delete',
       sampleId,
       'DB CHANGES — skin analysis record deleted (0 rows in skin_analyses)',
     );
   });
 
-  test('N-22: updates buyer profile name and avatar (live database evidence)', async ({ buyerPage, request }) => {
+  test('N-22: updates buyer profile name and avatar (live database evidence)', async ({ buyerPage }) => {
     const buyerUser = await runDb(async (client) => {
-      const r = await client.query('SELECT id, name FROM users WHERE email = $1', ['eem@gmail.com']);
+      const r = await client.query('SELECT id, name FROM users WHERE email = $1', [LIVE_BUYER_EMAIL]);
       return r.rows[0];
     });
     const originalName = buyerUser.name || 'Ei Ei Mon';
@@ -721,11 +845,20 @@ test.describe('AI Skin Analysis — Live Evidence Scenarios', () => {
     await buyerPage.getByRole('tab', { name: 'Edit Profile' }).click();
     const nameInput = buyerPage.getByRole('textbox', { name: 'Full Name' });
     await nameInput.fill('Ei Ei Mon Updated');
+    await expect(nameInput).toHaveValue('Ei Ei Mon Updated');
     await captureScreenshot(buyerPage, 'N-22_2_ui_doing_profile_filled', 'UI doing — edit profile form filled with updated name');
 
     // 3. AFTER UI
+    const profileUpdateResponse = buyerPage.waitForResponse(
+      (response) =>
+        response.request().method() === 'PATCH' &&
+        response.url().endsWith('/api/v1/users/me'),
+    );
     await buyerPage.getByRole('button', { name: 'Save Changes' }).click();
-    await buyerPage.waitForTimeout(1000);
+    const updateResponse = await profileUpdateResponse;
+    expect(updateResponse.ok(), `Profile update failed: ${await updateResponse.text()}`).toBeTruthy();
+    await expect(buyerPage.getByText('Profile updated successfully')).toBeVisible();
+    await expect(buyerPage.getByRole('textbox', { name: 'Full Name' })).toHaveValue('Ei Ei Mon Updated');
     await captureScreenshot(buyerPage, 'N-22_3_ui_after_profile_saved', 'UI after profile edit — updated profile saved');
 
     // 4. DATABASE EVIDENCE & .JSON
@@ -743,8 +876,11 @@ test.describe('AI Skin Analysis — Live Evidence Scenarios', () => {
   });
 
   test('N-23: changes buyer account password (live database evidence)', async ({ buyerPage, request }) => {
+    const buyerEmail = LIVE_BUYER_EMAIL;
+    const originalPassword = LIVE_BUYER_PASSWORD;
+    const changedPassword = 'StrongPass123!';
     const buyerUser = await runDb(async (client) => {
-      const r = await client.query('SELECT id FROM users WHERE email = $1', ['eem@gmail.com']);
+      const r = await client.query('SELECT id FROM users WHERE email = $1', [buyerEmail]);
       return r.rows[0];
     });
 
@@ -755,33 +891,50 @@ test.describe('AI Skin Analysis — Live Evidence Scenarios', () => {
     await captureScreenshot(buyerPage, 'N-23_1_ui_before_password_change', 'UI before password change — change password form loaded');
 
     // 2. FILLING DATA
-    await buyerPage.getByPlaceholder('Enter your current password').fill('Cosmetics@123');
-    await buyerPage.getByPlaceholder('Create a new password').fill('StrongPass123!');
-    await buyerPage.getByPlaceholder('Confirm your new password').fill('StrongPass123!');
+    await buyerPage.getByPlaceholder('Enter your current password').fill(originalPassword);
+    await buyerPage.getByPlaceholder('Create a new password').fill(changedPassword);
+    await buyerPage.getByPlaceholder('Confirm your new password').fill(changedPassword);
     await captureScreenshot(buyerPage, 'N-23_2_ui_doing_password_filled', 'UI doing — password inputs filled');
 
     // 3. AFTER UI
-    await buyerPage.getByRole('button', { name: 'Change Password' }).click();
-    await buyerPage.waitForTimeout(1000);
-    await captureScreenshot(buyerPage, 'N-23_3_ui_after_password_changed', 'UI after password change — password successfully changed');
-
-    // 4. DATABASE EVIDENCE & .JSON
-    await captureBuyerPasswordDbEvidence(
-      buyerPage,
-      'N-23_4_db_after_password_change',
-      buyerUser.id,
-      'DB CHANGES — users table password changed (updated_at refreshed)',
+    const passwordChangeResponse = buyerPage.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        response.url().endsWith('/api/v1/auth/change-password'),
     );
+    await buyerPage.getByRole('button', { name: 'Change Password' }).click();
+    const changeResponse = await passwordChangeResponse;
+    expect(changeResponse.ok(), `Password change failed: ${await changeResponse.text()}`).toBeTruthy();
 
-    // Restore original password back to Cosmetics@123
-    const auth = await buyerHeaders(request);
-    await request.post(`${API_BASE_URL}/auth/change-password`, {
-      headers: auth,
-      data: {
-        currentPassword: 'StrongPass123!',
-        newPassword: 'Cosmetics@123',
-      },
-    }).catch(() => {});
+    try {
+      await expect(buyerPage.getByText('Password changed successfully')).toBeVisible();
+      await expect(buyerPage.getByPlaceholder('Enter your current password')).toHaveValue('');
+      await expect(buyerPage.getByPlaceholder('Create a new password')).toHaveValue('');
+      await expect(buyerPage.getByPlaceholder('Confirm your new password')).toHaveValue('');
+      await captureScreenshot(buyerPage, 'N-23_3_ui_after_password_changed', 'UI after password change — password successfully changed');
+
+      // 4. DATABASE EVIDENCE & .JSON
+      await captureBuyerPasswordDbEvidence(
+        buyerPage,
+        'N-23_4_db_after_password_change',
+        buyerUser.id,
+        'DB CHANGES — users table password changed (updated_at refreshed)',
+      );
+    } finally {
+      const auth = await loginApi(request, buyerEmail, changedPassword);
+      const restoreResponse = await request.post(`${API_BASE_URL}/auth/change-password`, {
+        headers: auth,
+        data: {
+          currentPassword: changedPassword,
+          newPassword: originalPassword,
+        },
+      });
+      if (!restoreResponse.ok()) {
+        throw new Error(
+          `Failed to restore the buyer test password: ${restoreResponse.status()} ${await restoreResponse.text()}`,
+        );
+      }
+    }
   });
 });
 
@@ -1206,7 +1359,7 @@ test.describe('AI Skin Analysis — UI Scenarios', () => {
 
 test.describe('AI Skin Analysis — API Contracts', () => {
   test('I-01: POST /api/v1/skin-analysis/upload validates multipart facial scan upload', async ({ request }) => {
-    const auth = await buyerHeaders(request);
+    const auth = await getLiveBuyerAuth(request);
     const response = await request.post(`${API_BASE_URL}/skin-analysis/upload`, {
       headers: auth,
       multipart: {
@@ -1225,7 +1378,7 @@ test.describe('AI Skin Analysis — API Contracts', () => {
   });
 
   test('I-02: POST /api/v1/skin-analysis/analyze starts an AI skin analysis', async ({ request }) => {
-    const auth = await buyerHeaders(request);
+    const auth = await getLiveBuyerAuth(request);
     const uploadRes = await request.post(`${API_BASE_URL}/skin-analysis/upload`, {
       headers: auth,
       multipart: {
@@ -1247,10 +1400,16 @@ test.describe('AI Skin Analysis — API Contracts', () => {
     const body = await response.json();
     expect(body.data).toHaveProperty('analysisId');
     expect(body.data).toHaveProperty('status');
+    await captureSkinAnalysisDbEvidence(
+      evidencePage!,
+      'I-02_db_after_analysis_created',
+      body.data.analysisId,
+      'DB CHANGES — API contract created an analysis with conditions, findings, and recommendations',
+    );
   });
 
   test('I-03: GET /api/v1/skin-analysis/:id returns the buyer analysis result', async ({ request }) => {
-    const auth = await buyerHeaders(request);
+    const auth = await getLiveBuyerAuth(request);
     const historyRes = await request.get(`${API_BASE_URL}/skin-analysis/history?page=1&limit=1`, { headers: auth });
     const history = await historyRes.json();
     let analysisId = history.data?.items?.[0]?.analysisId || history.data?.items?.[0]?.id;
@@ -1277,7 +1436,7 @@ test.describe('AI Skin Analysis — API Contracts', () => {
   });
 
   test('I-04: GET /api/v1/skin-analysis/history returns scoped paginated history', async ({ request }) => {
-    const auth = await buyerHeaders(request);
+    const auth = await getLiveBuyerAuth(request);
     const response = await request.get(`${API_BASE_URL}/skin-analysis/history?page=1&pageSize=10`, { headers: auth });
     expect(response.status()).toBe(200);
     const body = await response.json();
@@ -1287,7 +1446,7 @@ test.describe('AI Skin Analysis — API Contracts', () => {
   });
 
   test('I-05: GET /api/v1/skin-analysis/trends returns trend data for supported range', async ({ request }) => {
-    const auth = await buyerHeaders(request);
+    const auth = await getLiveBuyerAuth(request);
     const response = await request.get(`${API_BASE_URL}/skin-analysis/trends?range=30d`, { headers: auth });
     expect(response.status()).toBe(200);
     const body = await response.json();
@@ -1295,13 +1454,21 @@ test.describe('AI Skin Analysis — API Contracts', () => {
   });
 
   test('I-06: POST /api/v1/skin-analysis/compare compares two owned analyses', async ({ request }) => {
-    const auth = await buyerHeaders(request);
-    const historyRes = await request.get(`${API_BASE_URL}/skin-analysis/history?page=1&limit=5`, { headers: auth });
+    const auth = await getLiveBuyerAuth(request);
+    const historyRes = await request.get(`${API_BASE_URL}/skin-analysis/history?page=1&pageSize=10`, {
+      headers: auth,
+    });
+    expect(historyRes.ok(), `History request failed: ${historyRes.status()} ${await historyRes.text()}`).toBeTruthy();
     const items = (await historyRes.json()).data?.items ?? [];
-    let id1 = items[0]?.analysisId || items[0]?.id;
-    let id2 = items[1]?.analysisId || items[1]?.id;
+    const analysisIds = [
+      ...new Set(
+        items
+          .map((item: { analysisId?: string; id?: string }) => item.analysisId || item.id)
+          .filter((id: string | undefined): id is string => Boolean(id)),
+      ),
+    ];
 
-    if (!id2) {
+    while (analysisIds.length < 2) {
       const up = await request.post(`${API_BASE_URL}/skin-analysis/upload`, {
         headers: auth,
         multipart: {
@@ -1309,40 +1476,97 @@ test.describe('AI Skin Analysis — API Contracts', () => {
           consent: 'true',
         },
       });
-      const an = await request.post(`${API_BASE_URL}/skin-analysis/analyze`, {
+      expect(up.ok(), `Image upload failed: ${up.status()} ${await up.text()}`).toBeTruthy();
+      const analyzeResponse = await request.post(`${API_BASE_URL}/skin-analysis/analyze`, {
         headers: auth,
         data: { blobUrl: (await up.json()).data.blobUrl },
       });
-      id2 = (await an.json()).data.analysisId;
-      id1 ??= id2;
+      expect(
+        analyzeResponse.ok(),
+        `Analysis request failed: ${analyzeResponse.status()} ${await analyzeResponse.text()}`,
+      ).toBeTruthy();
+      const createdId = (await analyzeResponse.json()).data.analysisId;
+      if (!analysisIds.includes(createdId)) {
+        analysisIds.push(createdId);
+      }
     }
+    const [analysisId1, analysisId2] = analysisIds;
+    expect(analysisId1).not.toBe(analysisId2);
 
     const response = await request.post(`${API_BASE_URL}/skin-analysis/compare`, {
       headers: auth,
-      data: { analysisId1: id1, analysisId2: id2 },
+      data: { analysisId1, analysisId2 },
     });
     expect([200, 201]).toContain(response.status());
   });
 
   test('I-07: GET /api/v1/skin-analysis export endpoints return PDF content', async ({ request }) => {
-    const auth = await buyerHeaders(request);
+    const auth = await getLiveBuyerAuth(request);
     const response = await request.get(`${API_BASE_URL}/skin-analysis/export-history`, { headers: auth });
     expect(response.status()).toBe(200);
     expect(response.headers()['content-type']).toContain('application/pdf');
   });
 
   test('I-08: POST /api/v1/skin-analysis/recommendations/:id/feedback records feedback', async ({ request }) => {
-    const auth = await buyerHeaders(request);
-    const recRow = await runDb(async (client) => {
-      const r = await client.query('SELECT id FROM skin_analysis_recommendations LIMIT 1');
+    const auth = await getLiveBuyerAuth(request);
+    let recRow = await runDb(async (client) => {
+      const r = await client.query(
+        `SELECT r.id, u.id AS user_id
+         FROM skin_analysis_recommendations r
+         JOIN skin_analyses a ON a.id = r.analysis_id
+         JOIN users u ON u.id = a.user_id
+         WHERE u.email = $1
+         ORDER BY a.analysis_date DESC
+         LIMIT 1`,
+        [LIVE_BUYER_EMAIL],
+      );
       return r.rows[0];
     });
 
+    if (!recRow) {
+      const upload = await request.post(`${API_BASE_URL}/skin-analysis/upload`, {
+        headers: auth,
+        multipart: {
+          facialImage: { name: 'portrait.png', mimeType: 'image/png', buffer: PNG_BYTES },
+          consent: 'true',
+        },
+      });
+      expect(upload.ok(), `Image upload failed: ${upload.status()} ${await upload.text()}`).toBeTruthy();
+      const { data: uploaded } = await upload.json();
+      const analysis = await request.post(`${API_BASE_URL}/skin-analysis/analyze`, {
+        headers: auth,
+        data: { blobUrl: uploaded.blobUrl },
+      });
+      expect(analysis.ok(), `Analysis request failed: ${analysis.status()} ${await analysis.text()}`).toBeTruthy();
+      const { data: created } = await analysis.json();
+      recRow = await runDb(async (client) => {
+        const r = await client.query(
+          `SELECT r.id, u.id AS user_id
+           FROM skin_analysis_recommendations r
+           JOIN skin_analyses a ON a.id = r.analysis_id
+           JOIN users u ON u.id = a.user_id
+           WHERE r.analysis_id = $1
+           LIMIT 1`,
+          [created.analysisId],
+        );
+        return r.rows[0];
+      });
+    }
+    if (!recRow) {
+      throw new Error('A recommendation for the live buyer is required');
+    }
     const response = await request.post(`${API_BASE_URL}/skin-analysis/recommendations/${recRow.id}/feedback`, {
       headers: auth,
       data: { isHelpful: true },
     });
     expect([200, 201]).toContain(response.status());
+    await captureSkinAnalysisFeedbackDbEvidence(
+      evidencePage!,
+      'I-08_db_after_feedback_saved',
+      recRow.id,
+      recRow.user_id,
+      'DB CHANGES — API contract recorded recommendation feedback',
+    );
   });
 
   test('I-09: skin analysis API rejects missing authentication and disallowed roles', async ({ request }) => {
@@ -1355,38 +1579,84 @@ test.describe('AI Skin Analysis — API Contracts', () => {
   });
 
   test('I-10: GET /api/v1/users/me returns authenticated buyer profile', async ({ request }) => {
-    const auth = await buyerHeaders(request);
+    const auth = await getLiveBuyerAuth(request);
     const response = await request.get(`${API_BASE_URL}/users/me`, { headers: auth });
     expect(response.status()).toBe(200);
     const body = await response.json();
-    expect(body.data).toHaveProperty('email', 'eem@gmail.com');
+    expect(body.data).toHaveProperty('email', LIVE_BUYER_EMAIL);
   });
 
   test('I-11: PATCH /api/v1/users/me updates buyer profile fields', async ({ request }) => {
-    const auth = await buyerHeaders(request);
-    const response = await request.patch(`${API_BASE_URL}/users/me`, {
-      headers: auth,
-      data: { name: 'Ei Ei Mon', avatarUrl: '' },
+    const auth = await getLiveBuyerAuth(request);
+    const buyerUser = await runDb(async (client) => {
+      const result = await client.query('SELECT id, name FROM users WHERE email = $1', [LIVE_BUYER_EMAIL]);
+      return result.rows[0] as { id: string; name: string };
     });
-    expect(response.status()).toBe(200);
-    const body = await response.json();
-    expect(body.data).toHaveProperty('name', 'Ei Ei Mon');
+    try {
+      const response = await request.patch(`${API_BASE_URL}/users/me`, {
+        headers: auth,
+        data: { name: 'API Evidence Buyer', avatarUrl: '' },
+      });
+      expect(response.status()).toBe(200);
+      const body = await response.json();
+      expect(body.data).toHaveProperty('name', 'API Evidence Buyer');
+      await captureBuyerProfileDbEvidence(
+        evidencePage!,
+        'I-11_db_after_profile_update',
+        buyerUser.id,
+        'DB CHANGES — API contract updated the buyer profile name',
+      );
+    } finally {
+      await runDb(async (client) => {
+        await client.query('UPDATE users SET name = $1, updated_at = NOW() WHERE id = $2', [
+          buyerUser.name,
+          buyerUser.id,
+        ]);
+      });
+    }
   });
 
   test('I-12: POST /api/v1/auth/change-password changes buyer password', async ({ request }) => {
-    const auth = await buyerHeaders(request);
+    const auth = await getLiveBuyerAuth(request);
+    const buyerUser = await runDb(async (client) => {
+      const result = await client.query('SELECT id FROM users WHERE email = $1', [LIVE_BUYER_EMAIL]);
+      return result.rows[0] as { id: string };
+    });
+    const changedPassword = `${LIVE_BUYER_PASSWORD}Updated!`;
     const response = await request.post(`${API_BASE_URL}/auth/change-password`, {
       headers: auth,
       data: {
-        currentPassword: 'Cosmetics@123',
-        newPassword: 'Cosmetics@123',
+        currentPassword: LIVE_BUYER_PASSWORD,
+        newPassword: changedPassword,
       },
     });
-    expect([200, 400]).toContain(response.status());
+    expect(response.status()).toBe(201);
+    try {
+      await captureBuyerPasswordDbEvidence(
+        evidencePage!,
+        'I-12_db_after_password_change',
+        buyerUser.id,
+        'DB CHANGES — API contract changed buyer password (password hash is never selected)',
+      );
+    } finally {
+      const changedAuth = await loginApi(request, LIVE_BUYER_EMAIL, changedPassword);
+      const restoreResponse = await request.post(`${API_BASE_URL}/auth/change-password`, {
+        headers: changedAuth,
+        data: {
+          currentPassword: changedPassword,
+          newPassword: LIVE_BUYER_PASSWORD,
+        },
+      });
+      expect(
+        restoreResponse.status(),
+        `Unable to restore the live buyer password: ${restoreResponse.status()} ${await restoreResponse.text()}`,
+      ).toBe(201);
+      liveBuyerAuth = Promise.resolve(await loginApi(request, LIVE_BUYER_EMAIL, LIVE_BUYER_PASSWORD));
+    }
   });
 
   test('I-13: DELETE /api/v1/skin-analysis/bulk deletes selected history records', async ({ request }) => {
-    const auth = await buyerHeaders(request);
+    const auth = await getLiveBuyerAuth(request);
     const response = await request.delete(`${API_BASE_URL}/skin-analysis/bulk`, {
       headers: auth,
       data: { ids: ['00000000-0000-4000-8000-000000000000'] },

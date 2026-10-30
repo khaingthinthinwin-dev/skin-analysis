@@ -1,0 +1,20 @@
+{
+  "capturedAt": "2026-10-30T09:23:50.889Z",
+  "description": "DB CHANGES — API contract recorded recommendation feedback",
+  "results": [
+    {
+      "label": "skin_analysis_feedback (recommendation helpfulness)",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "c2fa5748-263e-47e7-9605-2b76eda56a97",
+          "recommendation_id": "033c31d4-25a4-4ddc-b752-9354aa55baea",
+          "user_id": "25552be0-75c2-4a8d-aaaa-662cedd89b68",
+          "is_helpful": true,
+          "created_at": "2026-10-30T02:53:50.799Z",
+          "updated_at": "2026-10-30T02:53:50.799Z"
+        }
+      ]
+    }
+  ]
+}

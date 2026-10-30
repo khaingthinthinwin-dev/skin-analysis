@@ -1,0 +1,16 @@
+{
+  "capturedAt": "2026-10-30T09:22:38.798Z",
+  "description": "DB CHANGES — skin analysis record deleted (0 rows in skin_analyses)",
+  "results": [
+    {
+      "label": "skin_analyses (deleted analysis record)",
+      "rowCount": 0,
+      "rows": []
+    },
+    {
+      "label": "skin_analysis_conditions (cascaded conditions)",
+      "rowCount": 0,
+      "rows": []
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "capturedAt": "2026-10-30T09:23:53.720Z",
+  "description": "DB CHANGES — API contract updated the buyer profile name",
+  "results": [
+    {
+      "label": "users (buyer profile updated)",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "25552be0-75c2-4a8d-aaaa-662cedd89b68",
+          "email": "e2e.skin-analysis.d579191f-2d69-4643-99c5-3b78edc6c545@test.com",
+          "name": "API Evidence Buyer",
+          "role": "buyer",
+          "avatar_url": "",
+          "updated_at": "2026-10-30T02:53:53.630Z"
+        }
+      ]
+    }
+  ]
+}
