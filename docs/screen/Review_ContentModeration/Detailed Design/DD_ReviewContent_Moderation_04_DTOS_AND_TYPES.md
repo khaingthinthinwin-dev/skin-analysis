@@ -1,7 +1,7 @@
 # DD_MOD_04 — DTOs and Types (Review & Content Moderation)
 
-> **Doc ID:** SKM-DD-MOD-04 | **Version:** 1.3 | **Status:** Released  
-> **Last Updated:** 2026-10-21
+> **Doc ID:** SKM-DD-MOD-04 | **Version:** 1.4 | **Status:** Released  
+> **Last Updated:** 2026-10-24
 
 ---
 
@@ -13,6 +13,7 @@
 | 1.1 | 2026-08-18 | Senior System Engineer | Added Review Reports DTOs: UpdateReportStatusDto, ReportsQueryDto, ReportResponseDto, ReportDetailResponseDto. Added report-related enums (ReportStatus, ReportReason, ReportStatusFilter), entity type, frontend types, and error codes. |
 | 1.2 | 2026-08-22 | Senior System Engineer | Aligned with FDS v2.0 and screen items v6.0: updated ReportStatus enum (COMPLETED→RESOLVED, added REVIEWED), updated ReportReason enum (spam/inappropriate/fake/other), added ReportReviewDto, added UpdateReportStatusDto with adminNote field. |
 | 1.3 | 2026-10-21 | Senior System Engineer | Aligned with FDS v2.3 (2026-10-21): (1) Review status changed from boolean `is_approved` to 3-value string enum `status` (`pending`/`approved`/`rejected`). Updated ReviewEntity, ReviewResponseDto, ReviewDetailResponseDto, ModerateReviewResponseDto, AdminReview frontend type. (2) Added `reason` optional field to `ModerateUserDto`. (3) Corrected `reason` field in `ModerateReviewDto` to `@MaxLength(500)`. (4) Updated `ModerateUserDto` with optional `reason` field. (5) Corrected audit log `entityType` to lowercase. (6) Updated report status enums and `UpdateReportStatusDto` with `adminNote` (camelCase). (7) Added `ADMIN` to `UserStatusFilter`. (8) Updated `ReviewStatusFilter` to include `pending`. |
+| 1.4 | 2026-10-24 | Senior System Engineer | Aligned with PCL v1.1 (SKM-PCL-MOD-001): Default page size changed from 20 to 10 across all query DTOs (`ReviewsQueryDto`, `MerchantsQueryDto`, `ProductsQueryDto`, `UsersQueryDto`, `ReportsQueryDto`); updated `limit` field default from `20` to `10`. |
 
 ---
 
@@ -273,7 +274,7 @@ export class ReviewsQueryDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit?: number = 20;
+  limit?: number = 10;
 
   @IsOptional()
   @IsEnum(ReviewSortField)
@@ -321,7 +322,7 @@ export class MerchantsQueryDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit?: number = 20;
+  limit?: number = 10;
 
   @IsOptional()
   @IsString()
@@ -374,7 +375,7 @@ export class ProductsQueryDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit?: number = 20;
+  limit?: number = 10;
 
   @IsOptional()
   @IsEnum(ProductSortField)
@@ -422,7 +423,7 @@ export class UsersQueryDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit?: number = 20;
+  limit?: number = 10;
 
   @IsOptional()
   @IsString()
@@ -471,7 +472,7 @@ export class ReportsQueryDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit?: number = 20;
+  limit?: number = 10;
 
   @IsOptional()
   @IsString()

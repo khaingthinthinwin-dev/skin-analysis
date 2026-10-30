@@ -5,6 +5,9 @@ import { adminHeaders, loginApi } from '../../utils/api-auth';
 import { API_BASE_URL } from '../../utils/constants';
 import pclMap from '../../pcl-map/Audit_Log.json';
 import { captureScreenshot } from '../../utils/screenshot';
+import { captureDbEvidence, runDb } from '../../utils/db-evidence';
+import * as path from 'node:path';
+import { randomUUID } from 'node:crypto';
 
 let auditPage: AuditLogPage;
 let adminAuth: Record<string, string> | undefined;
@@ -19,6 +22,10 @@ type ApiCallEvidence = {
 };
 let apiCalls: ApiCallEvidence[] = [];
 let apiCaptureTasks: Promise<void>[] = [];
+const LIVE_EVIDENCE_TESTS = new Set([
+  'N-11: deletes only seeded retention sample records (live database evidence)',
+  'N-17: deletes only the selected seeded sample record (live database evidence)',
+]);
 
 const test = baseTest.extend({
   request: async ({ request }, use) => {
@@ -79,6 +86,7 @@ test.afterEach(async ({}, testInfo) => {
   if (!evidencePage) return;
   await Promise.all(apiCaptureTasks);
   if (testInfo.status !== 'passed') return;
+  if (LIVE_EVIDENCE_TESTS.has(testInfo.title)) return;
 
   const pclIds = Object.entries(pclMap.mappings)
     .filter(([, references]) =>
@@ -146,6 +154,11 @@ test.afterEach(async ({}, testInfo) => {
     }
     return;
   }
+
+  if (
+    testInfo.title === 'N-05: exports audit log with UI evidence' ||
+    testInfo.title === 'B-12: accepts an export range that covers a single day'
+  ) return;
 
   for (const pclId of pclIds.filter((id) => !id.startsWith('I-'))) {
     await captureScreenshot(
@@ -297,6 +310,7 @@ function buildAuditRows(count: number): AuditRow[] {
 
 type MockOptions = {
   rows?: number;
+  fixtureRows?: AuditRow[];
   empty?: boolean;
   listStatus?: number;
   detailStatus?: number;
@@ -305,6 +319,7 @@ type MockOptions = {
   exportRowLimit?: number;
   deleteStatus?: number;
   deleteMessage?: string;
+  handleDelete?: (body: Record<string, unknown>) => Promise<number>;
   filters?: { actions: string[]; entityTypes: string[] };
 };
 
@@ -326,7 +341,7 @@ async function mockAuditLogApi(page: Page, options: MockOptions = {}): Promise<M
     exportBodies: [],
     failListRequests: false,
   };
-  const rows = options.empty ? [] : buildAuditRows(options.rows ?? 12);
+  const rows = options.empty ? [] : options.fixtureRows ?? buildAuditRows(options.rows ?? 12);
 
   await page.route('**/api/v1/admin/audit-logs**', async (route) => {
     const request = route.request();
@@ -395,11 +410,14 @@ async function mockAuditLogApi(page: Page, options: MockOptions = {}): Promise<M
           ].join(','),
         ),
       ].join('\r\n');
+      const dateFrom = typeof body.dateFrom === 'string' ? body.dateFrom : '2026-01-01';
+      const dateTo = typeof body.dateTo === 'string' ? body.dateTo : '2026-12-31';
+      const today = new Date().toISOString().slice(0, 10);
       await route.fulfill({
         status: 200,
         contentType: 'text/csv; charset=utf-8',
         headers: {
-          'Content-Disposition': 'attachment; filename="audit-logs-2026-01-01-2026-12-31(2026-10-21).csv"',
+          'Content-Disposition': `attachment; filename="audit-logs-${dateFrom}-${dateTo}(${today}).csv"`,
         },
         body: `﻿${csv}`,
       });
@@ -424,9 +442,20 @@ async function mockAuditLogApi(page: Page, options: MockOptions = {}): Promise<M
         return;
       }
       const recordIds = Array.isArray(body.recordIds) ? (body.recordIds as string[]) : [];
-      const deletedRecords = recordIds.length > 0
-        ? recordIds.length
-        : rows.filter((row) => row.createdAt < '2026-07-01T00:00:00.000Z').length;
+      const deletedRecords = options.handleDelete
+        ? await options.handleDelete(body)
+        : recordIds.length > 0
+          ? recordIds.length
+          : rows.filter((row) => row.createdAt < '2026-07-01T00:00:00.000Z').length;
+      if (options.handleDelete) {
+        const deletedIds = recordIds.length > 0
+          ? recordIds
+          : rows.map((row) => row.id);
+        for (const deletedId of deletedIds) {
+          const index = rows.findIndex((row) => row.id === deletedId);
+          if (index >= 0) rows.splice(index, 1);
+        }
+      }
       await route.fulfill({
         contentType: 'application/json',
         body: JSON.stringify({ data: { deletedRecords, deletedFiles: 0 } }),
@@ -559,6 +588,117 @@ async function callApiThroughPage(page: Page, url: string, method: string, data?
     });
     return { status: response.status, body: await response.json() };
   }, { requestUrl: url, requestMethod: method, requestData: data, accessToken: token });
+}
+
+type SyntheticAuditRecord = {
+  id: string;
+  action: string;
+  createdAt: string;
+};
+
+async function seedSyntheticAuditRecords(records: SyntheticAuditRecord[]): Promise<void> {
+  await runDb(async (client) => {
+    await client.query('BEGIN');
+    try {
+      for (const record of records) {
+        await client.query(
+          `INSERT INTO audit_logs (id, action, entity_type, created_at, ip_address, new_value)
+           VALUES ($1, $2, 'AuditLog', $3, '127.0.0.1', $4::jsonb)`,
+          [record.id, record.action, record.createdAt, JSON.stringify({ synthetic: true })],
+        );
+      }
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    }
+  });
+}
+
+async function removeSyntheticAuditRecords(recordIds: string[], eventIds: string[]): Promise<void> {
+  await runDb((client) =>
+    client.query(
+      'DELETE FROM audit_logs WHERE id = ANY($1::uuid[]) OR id = ANY($2::uuid[])',
+      [recordIds, eventIds],
+    ).then(() => undefined),
+  );
+}
+
+function createSyntheticAuditFixture(record: SyntheticAuditRecord): AuditRow {
+  return {
+    id: record.id,
+    userId: null,
+    userName: null,
+    userEmail: null,
+    userRole: null,
+    action: record.action,
+    entityType: 'AuditLog',
+    entityId: null,
+    summary: `${record.action} synthetic audit record`,
+    ipAddress: '127.0.0.1',
+    createdAt: record.createdAt,
+    oldValue: null,
+    newValue: { synthetic: true },
+    userAgent: 'Audit Log E2E sample fixture',
+  };
+}
+
+function createSyntheticDeleteHandler(
+  sampleIds: string[],
+  eventId: string,
+  runId: string,
+) {
+  return async (body: Record<string, unknown>): Promise<number> => {
+    const olderThanDays = Number(body.olderThanDays);
+    const requestedIds = Array.isArray(body.recordIds)
+      ? body.recordIds.filter((id): id is string => typeof id === 'string')
+      : sampleIds;
+    if (
+      olderThanDays < 90 ||
+      requestedIds.length === 0 ||
+      requestedIds.some((id) => !sampleIds.includes(id))
+    ) {
+      throw new Error('Sample deletion rejected: request exceeded the seeded sample scope.');
+    }
+
+    return runDb(async (client) => {
+      await client.query('BEGIN');
+      try {
+        const deleted = await client.query<{ id: string }>(
+          `DELETE FROM audit_logs
+           WHERE id = ANY($1::uuid[])
+             AND created_at < NOW() - ($2 * INTERVAL '1 day')
+           RETURNING id`,
+          [requestedIds, olderThanDays],
+        );
+        if (deleted.rows.length !== requestedIds.length) {
+          throw new Error(
+            `Sample deletion expected ${requestedIds.length} eligible rows; deleted ${deleted.rows.length}.`,
+          );
+        }
+        await client.query(
+          `INSERT INTO audit_logs (id, action, entity_type, new_value, ip_address)
+           VALUES ($1, 'AUDIT_LOG_DELETE', 'AuditLog', $2::jsonb, '127.0.0.1')`,
+          [
+            eventId,
+            JSON.stringify({
+              synthetic: true,
+              testRunId: runId,
+              deletedRecords: deleted.rows.length,
+              deletedFiles: 0,
+              olderThanDays,
+              recordIds: requestedIds,
+            }),
+          ],
+        );
+        await client.query('COMMIT');
+        return deleted.rows.length;
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      }
+    });
+  };
 }
 
 // ─── Normal scenarios ─────────────────────────────────────────────────────────
@@ -695,10 +835,43 @@ test.describe('Admin Audit Log - Normal Scenarios', () => {
     expect(exportBody.format).toBe('csv');
     expect(exportBody.dateFrom).toBe('2026-01-01');
     expect(exportBody.dateTo).toBe('2026-12-31');
-    await auditPage.capture('N-05_1_export_csv');
   });
 
-  test('N-06 and N-19: combines free-text search with the IP filter and clears the filters', async ({ page }) => {
+  test('N-05: exports audit log with UI evidence', async ({ page }) => {
+    await page.goto('/admin/audit-logs');
+    await page.waitForLoadState('networkidle');
+    await expect(auditPage.title).toBeVisible();
+    await expect(auditPage.tableRows.first()).toBeVisible();
+    await auditPage.capture('N-05_1_ui_before_export');
+
+    await auditPage.exportButton.click();
+    const dialog = auditPage.exportDialog;
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: 'Export CSV' })).toBeVisible();
+
+    const endDate = new Date();
+    const startDate = new Date(endDate);
+    startDate.setDate(startDate.getDate() - 364);
+    const formatDate = (date: Date) => date.toISOString().slice(0, 10);
+    await auditPage.exportDateFrom.fill(formatDate(startDate));
+    await auditPage.exportDateTo.fill(formatDate(endDate));
+    await auditPage.capture('N-05_2_ui_export_dates_filled');
+
+    const download = page.waitForEvent('download');
+    await dialog.getByRole('button', { name: 'Export CSV' }).click();
+    const file = await download;
+    expect(file.suggestedFilename()).toMatch(
+      /^audit-logs-\d{4}-\d{2}-\d{2}-\d{4}-\d{2}-\d{2}\(\d{4}-\d{2}-\d{2}\)\.csv$/,
+    );
+    await expect(page.getByText('CSV export downloaded')).toBeVisible();
+
+    await page.reload();
+    await expect(auditPage.title).toBeVisible();
+    await expect(auditPage.tableRows.first()).toBeVisible();
+    await auditPage.capture('N-05_3_ui_after_export');
+  });
+
+  test('N-06: combines free-text search with the IP filter and clears the filters', async ({ page }) => {
     const state = await mockAuditLogApi(page);
     await auditPage.goto();
 
@@ -738,6 +911,31 @@ test.describe('Admin Audit Log - Normal Scenarios', () => {
     await expect(auditPage.activeFiltersBadge).toHaveCount(0);
     await expect(auditPage.clearFiltersButton).toHaveCount(0);
     await auditPage.capture('N-06_1_filters_cleared');
+  });
+
+  test('N-19: filters audit logs by IP address', async ({ page }) => {
+    const state = await mockAuditLogApi(page);
+    await auditPage.goto();
+
+    await auditPage.ipFilterInput.fill('203.0.113');
+    await expect.poll(() => {
+      const latest = new URL(state.listRequests[state.listRequests.length - 1]);
+      return latest.searchParams.get('ipAddress');
+    }).toBe('203.0.113');
+
+    const filtered = new URL(state.listRequests[state.listRequests.length - 1]);
+    expect(filtered.searchParams.get('ipAddress')).toBe('203.0.113');
+    for (const filter of ['search', 'action', 'entityType', 'dateFrom', 'dateTo', 'userId', 'entityId']) {
+      expect(filtered.searchParams.has(filter)).toBe(false);
+    }
+    await expect(auditPage.searchInput).toHaveValue('');
+    await expect(auditPage.actionFilterButton).toHaveText('Action');
+    await expect(auditPage.entityTypeFilterButton).toHaveText('Entity Type');
+    await expect(auditPage.dateFromInput).toHaveValue('');
+    await expect(auditPage.dateToInput).toHaveValue('');
+    await expect(auditPage.ipFilterInput).toHaveValue('203.0.113');
+    await expect(auditPage.activeFiltersBadge).toContainText('1 active');
+    await auditPage.capture('N-19_1_filters_applied');
   });
 
   test('N-07: paginates the table and changes the page size', async ({ page }) => {
@@ -824,7 +1022,72 @@ test.describe('Admin Audit Log - Normal Scenarios', () => {
     expect(state.deleteBodies[0].recordIds).toBeUndefined();
     await expect(page.getByText(/Deleted \d+ records/)).toBeVisible();
     await expect(dialog).toBeHidden();
-    await auditPage.capture('N-11_1_delete_logs');
+  });
+
+  test('N-11: deletes only seeded retention sample records (live database evidence)', async ({ page }) => {
+    const runId = randomUUID();
+    const action = `E2E_SAMPLE_RETENTION_${runId}`;
+    const sampleId = randomUUID();
+    const deleteEventId = randomUUID();
+    const createdAt = new Date(Date.now() - 91 * 24 * 60 * 60 * 1000).toISOString();
+    const sampleRecord = { id: sampleId, action, createdAt };
+    const sampleIds = [sampleId];
+    const eventIds = [deleteEventId];
+
+    await seedSyntheticAuditRecords([sampleRecord]);
+    try {
+      await mockAuditLogApi(page, {
+        fixtureRows: [createSyntheticAuditFixture(sampleRecord)],
+        handleDelete: createSyntheticDeleteHandler(sampleIds, deleteEventId, runId),
+      });
+      await auditPage.gotoWithQuery(`?search=${encodeURIComponent(action)}`);
+      await expect(auditPage.tableRows).toHaveCount(1);
+      await expect(auditPage.tableRows.first()).toContainText(action);
+      await auditPage.capture('N-11_1_ui_before_delete');
+
+      await auditPage.deleteButton.click();
+      const dialog = auditPage.deleteDialog;
+      await expect(dialog).toBeVisible();
+      await expect(auditPage.retentionInput).toHaveValue('90');
+      await expect(auditPage.deleteScope).toContainText(
+        'Audit log records older than 90 days will be permanently deleted.',
+      );
+      await auditPage.capture('N-11_2_ui_delete_confirmation');
+
+      await dialog.getByRole('button', { name: 'Confirm Delete' }).click();
+      await expect(page.getByText('Deleted 1 records')).toBeVisible();
+      await expect(auditPage.emptyState).toBeVisible();
+      await auditPage.capture('N-11_3_ui_after_delete');
+
+      const sampleQuery = {
+        label: 'synthetic retention sample rows remaining (expected: none)',
+        text: 'SELECT id, action, entity_type, created_at FROM audit_logs WHERE id = ANY($1::uuid[])',
+        values: [sampleIds],
+      };
+      const eventQuery = {
+        label: 'synthetic AUDIT_LOG_DELETE sample event',
+        text: 'SELECT id, action, entity_type, new_value, created_at FROM audit_logs WHERE id = $1 AND action = $2',
+        values: [deleteEventId, 'AUDIT_LOG_DELETE'],
+      };
+      const afterDelete = await runDb(async (client) => ({
+        samples: await client.query(sampleQuery.text, sampleQuery.values),
+        events: await client.query(eventQuery.text, eventQuery.values),
+      }));
+      expect(afterDelete.samples.rowCount).toBe(0);
+      expect(afterDelete.events.rows[0]?.new_value).toMatchObject({
+        synthetic: true,
+        testRunId: runId,
+        deletedRecords: 1,
+      });
+
+      await captureDbEvidence(page, 'N-11_4_db_after_sample_delete', {
+        description:
+          'SAMPLE DATA ONLY — the retention-delete flow was simulated for this test-run sample ID; no pre-existing audit rows were eligible or targeted',
+        queries: [sampleQuery, eventQuery],
+      });
+    } finally {
+      await removeSyntheticAuditRecords(sampleIds, eventIds);
+    }
   });
 
   test('N-12: language toggle works on screen', async ({ page }) => {
@@ -941,7 +1204,86 @@ test.describe('Admin Audit Log - Normal Scenarios', () => {
     expect(Array.isArray(body.recordIds)).toBe(true);
     expect((body.recordIds as string[]).length).toBe(1);
     await expect(page.getByText(/Deleted \d+ records/)).toBeVisible();
-    await auditPage.capture('N-17_1_delete_selection');
+  });
+
+  test('N-17: deletes only the selected seeded sample record (live database evidence)', async ({ page }) => {
+    const runId = randomUUID();
+    const token = `E2E_SAMPLE_SELECTION_${runId}`;
+    const selectedRecord = {
+      id: randomUUID(),
+      action: `${token}_SELECTED`,
+      createdAt: new Date(Date.now() - 91 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+    const preservedRecord = {
+      id: randomUUID(),
+      action: `${token}_PRESERVED`,
+      createdAt: new Date(Date.now() - 91 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+    const sampleIds = [selectedRecord.id, preservedRecord.id];
+    const deleteEventId = randomUUID();
+    const eventIds = [deleteEventId];
+
+    await seedSyntheticAuditRecords([selectedRecord, preservedRecord]);
+    try {
+      await mockAuditLogApi(page, {
+        fixtureRows: [
+          createSyntheticAuditFixture(selectedRecord),
+          createSyntheticAuditFixture(preservedRecord),
+        ],
+        handleDelete: createSyntheticDeleteHandler(sampleIds, deleteEventId, runId),
+      });
+      await auditPage.gotoWithQuery(`?search=${encodeURIComponent(token)}`);
+      await expect(auditPage.tableRows).toHaveCount(2);
+      await expect(auditPage.tableRows.nth(0)).toContainText(selectedRecord.action);
+      await expect(auditPage.tableRows.nth(1)).toContainText(preservedRecord.action);
+      await auditPage.capture('N-17_1_ui_before_selection');
+
+      await auditPage.rowCheckboxes.first().check();
+      await auditPage.deleteButton.click();
+      const dialog = auditPage.deleteDialog;
+      await expect(dialog).toBeVisible();
+      await expect(auditPage.deleteScope).toContainText(
+        '1 selected records older than 90 days will be permanently deleted.',
+      );
+      await auditPage.capture('N-17_2_ui_selected_confirmation');
+
+      await dialog.getByRole('button', { name: 'Confirm Delete' }).click();
+      await expect(page.getByText('Deleted 1 records')).toBeVisible();
+      await expect(auditPage.tableRows).toHaveCount(1);
+      await expect(auditPage.tableRows.first()).toContainText(preservedRecord.action);
+      await auditPage.capture('N-17_3_ui_after_selected_delete');
+
+      const sampleQuery = {
+        label: 'synthetic selection samples remaining (only unselected row expected)',
+        text: 'SELECT id, action, entity_type, created_at FROM audit_logs WHERE id = ANY($1::uuid[]) ORDER BY id',
+        values: [sampleIds],
+      };
+      const eventQuery = {
+        label: 'synthetic AUDIT_LOG_DELETE sample event',
+        text: 'SELECT id, action, entity_type, new_value, created_at FROM audit_logs WHERE id = $1 AND action = $2',
+        values: [deleteEventId, 'AUDIT_LOG_DELETE'],
+      };
+      const afterDelete = await runDb(async (client) => ({
+        samples: await client.query(sampleQuery.text, sampleQuery.values),
+        events: await client.query(eventQuery.text, eventQuery.values),
+      }));
+      expect(afterDelete.samples.rows).toHaveLength(1);
+      expect(afterDelete.samples.rows[0].id).toBe(preservedRecord.id);
+      expect(afterDelete.events.rows[0]?.new_value).toMatchObject({
+        synthetic: true,
+        testRunId: runId,
+        deletedRecords: 1,
+        recordIds: [selectedRecord.id],
+      });
+
+      await captureDbEvidence(page, 'N-17_4_db_after_selected_sample_delete', {
+        description:
+          'SAMPLE DATA ONLY — the selected test-run sample row was deleted while the unselected sample row remains; no pre-existing audit rows were targeted',
+        queries: [sampleQuery, eventQuery],
+      });
+    } finally {
+      await removeSyntheticAuditRecords(sampleIds, eventIds);
+    }
   });
 
   test('N-18: keeps filter, sort, and pagination state in the URL', async ({ page }) => {
@@ -987,10 +1329,16 @@ test.describe('Admin Audit Log - Normal Scenarios', () => {
 
 test.describe('Admin Audit Log - Validation and Boundary Scenarios', () => {
   test('A-01: unauthenticated access redirects to the login page', async ({ page }) => {
-    await page.addInitScript(() => localStorage.removeItem('accessToken'));
+    await page.addInitScript(() => {
+      localStorage.removeItem('accessToken');
+      localStorage.setItem('theme', 'dark');
+      localStorage.setItem('i18nextLng', 'en');
+    });
     await page.goto('/admin/audit-logs');
     await page.waitForURL('**/login');
     await expect(page.getByRole('heading', { name: 'Audit Logs' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
+    await expect.poll(() => page.locator('html').getAttribute('class')).toContain('dark');
   });
 
   test('A-02: buyer and merchant access to the admin route is denied', async ({ buyerPage, merchantPage, request }) => {
@@ -1294,19 +1642,42 @@ test.describe('Admin Audit Log - Validation and Boundary Scenarios', () => {
   });
 
   test('B-12: accepts an export range that covers a single day', async ({ page }) => {
-    const state = await mockAuditLogApi(page);
-    await auditPage.goto();
+    const singleDayRows = buildAuditRows(4)
+      .filter((row) => row.createdAt.startsWith('2026-10-15'))
+      .map((row) => ({ ...row, oldValue: null, newValue: null, userAgent: null }));
+    const state = await mockAuditLogApi(page, { fixtureRows: singleDayRows });
+    await page.goto('/admin/audit-logs');
+    await page.waitForLoadState('networkidle');
+    await expect(auditPage.title).toBeVisible();
+    await auditPage.capture('B-12_1_ui_before_export');
 
     await auditPage.exportButton.click();
     await auditPage.exportDateFrom.fill('2026-10-15');
     await auditPage.exportDateTo.fill('2026-10-15');
+    await auditPage.capture('B-12_2_ui_export_dates_filled');
 
     const download = page.waitForEvent('download');
+    const exportResponsePromise = page.waitForResponse((response) =>
+      response.url().endsWith('/admin/audit-logs/export') &&
+      response.request().method() === 'POST',
+    );
     await auditPage.exportDialog.getByRole('button', { name: 'Export CSV' }).click();
-    await download;
+    const [downloadedFile, exportResponse] = await Promise.all([download, exportResponsePromise]);
     expect(state.exportBodies[state.exportBodies.length - 1].dateFrom).toBe('2026-10-15');
     expect(state.exportBodies[state.exportBodies.length - 1].dateTo).toBe('2026-10-15');
-    await auditPage.capture('B-12_1_single_day_export');
+    expect(exportResponse.status()).toBe(200);
+    expect(exportResponse.headers()['content-type']).toContain('text/csv');
+    const filename = downloadedFile.suggestedFilename();
+    expect(filename).toMatch(/^audit-logs-2026-10-15-2026-10-15\(\d{4}-\d{2}-\d{2}\)\.csv$/);
+
+    const csv = (await exportResponse.text()).replace(/^\uFEFF/, '');
+    const csvLines = csv.split('\r\n').filter(Boolean);
+    expect(csvLines[0]).toBe(CSV_HEADER);
+    expect(csvLines).toHaveLength(singleDayRows.length + 1);
+    expect(csvLines.slice(1).every((line) => line.startsWith('2026-10-15T'))).toBe(true);
+    await expect(page.getByText('CSV export downloaded')).toBeVisible();
+
+    await auditPage.capture('B-12_3_ui_after_export');
   });
 });
 

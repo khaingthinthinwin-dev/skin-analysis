@@ -30,12 +30,23 @@ export const updateProfileSchema = z
         path: ['phone'],
         message: 'Phone number is required for merchant accounts',
       })
-    } else if (phone && !PHONE_REGEX.test(phone)) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['phone'],
-        message: 'Please enter a valid phone number',
-      })
+    } else if (phone) {
+      if (!PHONE_REGEX.test(phone)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['phone'],
+          message: 'Please enter a valid phone number',
+        })
+      } else {
+        const digitCount = phone.replace(/\D/g, '').length
+        if (digitCount < 7 || digitCount > 11) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['phone'],
+            message: 'Phone number must contain between 7 and 11 digits',
+          })
+        }
+      }
     }
 
     if (isMerchant && !address) {

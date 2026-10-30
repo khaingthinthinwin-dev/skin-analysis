@@ -9,21 +9,27 @@
     "N-02": [{ "file": "audit-log.spec.ts", "title": "N-02: filters logs by action type" }],
     "N-03": [{ "file": "audit-log.spec.ts", "title": "N-03: filters logs by date range" }],
     "N-04": [{ "file": "audit-log.spec.ts", "title": "N-04: opens the audit log detail modal" }],
-    "N-05": [{ "file": "audit-log.spec.ts", "title": "N-05: exports the filtered audit log as CSV" }],
-    "N-06": [{ "file": "audit-log.spec.ts", "title": "N-06 and N-19: combines free-text search with the IP filter and clears the filters" }],
+    "N-05": [
+      { "file": "audit-log.spec.ts", "title": "N-05: exports audit log with UI evidence" }
+    ],
+    "N-06": [{ "file": "audit-log.spec.ts", "title": "N-06: combines free-text search with the IP filter and clears the filters" }],
     "N-07": [{ "file": "audit-log.spec.ts", "title": "N-07: paginates the table and changes the page size" }],
     "N-08": [{ "file": "audit-log.spec.ts", "title": "N-08 and N-09: filters the list by user and entity through the URL query string" }],
     "N-09": [{ "file": "audit-log.spec.ts", "title": "N-08 and N-09: filters the list by user and entity through the URL query string" }],
     "N-10": [{ "file": "audit-log.spec.ts", "title": "N-10: polls the list every 30 seconds while auto-refresh is enabled" }],
-    "N-11": [{ "file": "audit-log.spec.ts", "title": "N-11: deletes audit log records at or above the retention threshold" }],
+    "N-11": [
+      { "file": "audit-log.spec.ts", "title": "N-11: deletes only seeded retention sample records (live database evidence)" }
+    ],
     "N-12": [{ "file": "audit-log.spec.ts", "title": "N-12: language toggle works on screen" }],
     "N-13": [{ "file": "audit-log.spec.ts", "title": "N-13: theme toggle works on screen" }],
     "N-14": [{ "file": "audit-log.spec.ts", "title": "N-14 and N-15: keeps the screen usable at desktop and mobile widths" }],
     "N-15": [{ "file": "audit-log.spec.ts", "title": "N-14 and N-15: keeps the screen usable at desktop and mobile widths" }],
     "N-16": [{ "file": "audit-log.spec.ts", "title": "N-16: sorts the table by column" }],
-    "N-17": [{ "file": "audit-log.spec.ts", "title": "N-17: selects rows and deletes only the selection" }],
+    "N-17": [
+      { "file": "audit-log.spec.ts", "title": "N-17: deletes only the selected seeded sample record (live database evidence)" }
+    ],
     "N-18": [{ "file": "audit-log.spec.ts", "title": "N-18: keeps filter, sort, and pagination state in the URL" }],
-    "N-19": [{ "file": "audit-log.spec.ts", "title": "N-06 and N-19: combines free-text search with the IP filter and clears the filters" }],
+    "N-19": [{ "file": "audit-log.spec.ts", "title": "N-19: filters audit logs by IP address" }],
     "N-20": [{ "file": "audit-log.spec.ts", "title": "N-20: offers every recordable action and entity type in the filters" }],
 
     "A-01": [{ "file": "audit-log.spec.ts", "title": "A-01: unauthenticated access redirects to the login page" }],

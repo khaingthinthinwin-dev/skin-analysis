@@ -16,7 +16,7 @@
       { "file": "register.spec.ts", "title": "should show success message after registration" }
     ],
     "N-02": [{ "file": "auth.spec.ts", "title": "should register as merchant with license file upload" }],
-    "N-03": [{ "file": "login.spec.ts", "title": "should login as buyer and redirect to buyer dashboard" }],
+    "N-03": [{ "file": "login.spec.ts", "title": "should login as buyer and redirect to the buyer search screen" }],
     "N-04": [{ "file": "auth.spec.ts", "title": "should log out buyer and clear session" }],
     "N-05": [{ "file": "auth.spec.ts", "title": "should toggle password visibility on login page" }],
     "N-06": [
@@ -61,7 +61,7 @@
     ],
     "N-29": [{ "file": "login.spec.ts", "title": "should show toast notification on successful login" }],
     "N-30": [
-      { "file": "auth.spec.ts", "title": "should log in as merchant and navigate to merchant dashboard" }
+      { "file": "auth.spec.ts", "title": "should log in as merchant and land on product management" }
     ],
     "N-31": [{ "file": "register.spec.ts", "title": "should display register form with all fields" }],
     "N-32": [
@@ -76,8 +76,8 @@
       { "file": "register.spec.ts", "title": "should show strong indicator for complex password" }
     ],
     "N-35": [
-      { "file": "login.spec.ts", "title": "should redirect to dashboard if already logged in" },
-      { "file": "register.spec.ts", "title": "should redirect to dashboard if already logged in" }
+      { "file": "login.spec.ts", "title": "should redirect to the landing page if already logged in" },
+      { "file": "register.spec.ts", "title": "should redirect to the landing page if already logged in" }
     ],
     "N-36": [
       { "file": "verify-code.spec.ts", "title": "should navigate to reset password page with valid 6-digit code" }
@@ -118,7 +118,7 @@
       },
       {
         "file": "auth.spec.ts",
-        "title": "should redirect to login when accessing buyer dashboard without authentication"
+        "title": "should redirect to login when accessing the buyer area without authentication"
       }
     ],
     "A-17": [{ "file": "reset-password.spec.ts", "title": "should show error for password mismatch on reset form" }],

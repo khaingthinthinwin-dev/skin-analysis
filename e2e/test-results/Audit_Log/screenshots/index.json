@@ -1,6 +1,6 @@
 {
   "audit_log_page_loaded.png": {
-    "test": "audit-log.spec.ts::I-08 and I-14: deletes eligible records, ignores file ids, and reports zero deleted files"
+    "test": "audit-log.spec.ts::N-19: filters audit logs by IP address"
   },
   "N-01_1_audit_log_list.png": {
     "test": "audit-log.spec.ts::N-01: loads the audit log list with the default sort and page size"
@@ -30,13 +30,6 @@
     "description": "Final UI state for N-04: opens the audit log detail modal",
     "test": "audit-log.spec.ts::N-04: opens the audit log detail modal"
   },
-  "N-05_1_export_csv.png": {
-    "test": "audit-log.spec.ts::N-05: exports the filtered audit log as CSV"
-  },
-  "N-05_final_state.png": {
-    "description": "Final UI state for N-05: exports the filtered audit log as CSV",
-    "test": "audit-log.spec.ts::N-05: exports the filtered audit log as CSV"
-  },
   "N-06_1_filters_cleared.png": {
     "test": "audit-log.spec.ts::N-06 and N-19: combines free-text search with the IP filter and clears the filters"
   },
@@ -45,8 +38,8 @@
     "test": "audit-log.spec.ts::N-06 and N-19: combines free-text search with the IP filter and clears the filters"
   },
   "N-19_final_state.png": {
-    "description": "Final UI state for N-06 and N-19: combines free-text search with the IP filter and clears the filters",
-    "test": "audit-log.spec.ts::N-06 and N-19: combines free-text search with the IP filter and clears the filters"
+    "description": "Final UI state for N-19: filters audit logs by IP address",
+    "test": "audit-log.spec.ts::N-19: filters audit logs by IP address"
   },
   "N-07_1_pagination.png": {
     "test": "audit-log.spec.ts::N-07: paginates the table and changes the page size"
@@ -79,6 +72,23 @@
   "N-11_final_state.png": {
     "description": "Final UI state for N-11: deletes audit log records at or above the retention threshold",
     "test": "audit-log.spec.ts::N-11: deletes audit log records at or above the retention threshold"
+  },
+  "N-11_1_ui_before_delete.png": {
+    "test": "audit-log.spec.ts::N-11: deletes only seeded retention sample records (live database evidence)"
+  },
+  "N-11_2_ui_delete_confirmation.png": {
+    "test": "audit-log.spec.ts::N-11: deletes only seeded retention sample records (live database evidence)"
+  },
+  "N-11_3_ui_after_delete.png": {
+    "test": "audit-log.spec.ts::N-11: deletes only seeded retention sample records (live database evidence)"
+  },
+  "N-11_4_db_after_sample_delete.png": {
+    "description": "SAMPLE DATA ONLY — only the seeded retention sample row was deleted",
+    "test": "audit-log.spec.ts::N-11: deletes only seeded retention sample records (live database evidence)"
+  },
+  "N-11_4_db_after_sample_delete.json": {
+    "description": "SAMPLE DATA ONLY — only the seeded retention sample row was deleted",
+    "test": "audit-log.spec.ts::N-11: deletes only seeded retention sample records (live database evidence)"
   },
   "N-12_1_lang_ja.png": {
     "test": "audit-log.spec.ts::N-12: language toggle works on screen"
@@ -127,6 +137,23 @@
   "N-17_final_state.png": {
     "description": "Final UI state for N-17: selects rows and deletes only the selection",
     "test": "audit-log.spec.ts::N-17: selects rows and deletes only the selection"
+  },
+  "N-17_1_ui_before_selection.png": {
+    "test": "audit-log.spec.ts::N-17: deletes only the selected seeded sample record (live database evidence)"
+  },
+  "N-17_2_ui_selected_confirmation.png": {
+    "test": "audit-log.spec.ts::N-17: deletes only the selected seeded sample record (live database evidence)"
+  },
+  "N-17_3_ui_after_selected_delete.png": {
+    "test": "audit-log.spec.ts::N-17: deletes only the selected seeded sample record (live database evidence)"
+  },
+  "N-17_4_db_after_selected_sample_delete.png": {
+    "description": "SAMPLE DATA ONLY — the selected test-run sample row was deleted while the unselected sample row remains",
+    "test": "audit-log.spec.ts::N-17: deletes only the selected seeded sample record (live database evidence)"
+  },
+  "N-17_4_db_after_selected_sample_delete.json": {
+    "description": "SAMPLE DATA ONLY — the selected test-run sample row was deleted while the unselected sample row remains",
+    "test": "audit-log.spec.ts::N-17: deletes only the selected seeded sample record (live database evidence)"
   },
   "N-18_1_url_state.png": {
     "test": "audit-log.spec.ts::N-18: keeps filter, sort, and pagination state in the URL"
@@ -285,13 +312,6 @@
     "description": "Final UI state for B-11: matches any value selected in one multi-select and intersects filters",
     "test": "audit-log.spec.ts::B-11: matches any value selected in one multi-select and intersects filters"
   },
-  "B-12_1_single_day_export.png": {
-    "test": "audit-log.spec.ts::B-12: accepts an export range that covers a single day"
-  },
-  "B-12_final_state.png": {
-    "description": "Final UI state for B-12: accepts an export range that covers a single day",
-    "test": "audit-log.spec.ts::B-12: accepts an export range that covers a single day"
-  },
   "I-01_api_call.png": {
     "description": "API request and response evidence for I-01: returns a paginated list without an entity id field",
     "test": "audit-log.spec.ts::I-01: returns a paginated list without an entity id field"
@@ -363,5 +383,26 @@
   "I-15_api_call.png": {
     "description": "API request and response evidence for I-15: honours the entity id filter without returning the field",
     "test": "audit-log.spec.ts::I-15: honours the entity id filter without returning the field"
+  },
+  "N-19_1_filters_applied.png": {
+    "test": "audit-log.spec.ts::N-19: filters audit logs by IP address"
+  },
+  "N-05_1_ui_before_export.png": {
+    "test": "audit-log.spec.ts::N-05: exports audit log with UI evidence"
+  },
+  "N-05_2_ui_export_dates_filled.png": {
+    "test": "audit-log.spec.ts::N-05: exports audit log with UI evidence"
+  },
+  "N-05_3_ui_after_export.png": {
+    "test": "audit-log.spec.ts::N-05: exports audit log with UI evidence"
+  },
+  "B-12_1_ui_before_export.png": {
+    "test": "audit-log.spec.ts::B-12: accepts an export range that covers a single day"
+  },
+  "B-12_2_ui_export_dates_filled.png": {
+    "test": "audit-log.spec.ts::B-12: accepts an export range that covers a single day"
+  },
+  "B-12_3_ui_after_export.png": {
+    "test": "audit-log.spec.ts::B-12: accepts an export range that covers a single day"
   }
 }

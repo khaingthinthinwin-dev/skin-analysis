@@ -70,15 +70,18 @@ test.describe('N-02: Merchant Registration', () => {
 // Extra: Merchant Login (not in PCL)
 // ============================================
 test.describe('Extra: Merchant Login', () => {
-  test('should log in as merchant and navigate to merchant dashboard', async ({ page }) => {
+  test('should log in as merchant and land on product management', async ({ page }) => {
     await loginPage.goto();
     await loginPage.login('smt@gmail.com', 'Cosmetics@123');
     await loginPage.expectRedirectTo(ROUTES.MERCHANT_DASHBOARD);
-    await expect(page.getByText('Merchant Portal')).toBeVisible({ timeout: 10_000 });
+    await expect(page).toHaveURL(/\/merchant\/products/, { timeout: 10_000 });
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/product/i, {
+      timeout: 10_000,
+    });
     await captureScreenshot(
       page,
-      'N-30_1_merchant_dashboard',
-      'Merchant Portal dashboard after merchant login'
+      'N-30_1_merchant_product_management',
+      'Product Management screen after merchant login'
     );
   });
 });
@@ -160,7 +163,7 @@ test.describe('A-16: Access Protected Route Without Auth', () => {
     await captureScreenshot(page, 'A-16_1_redirect_to_login');
   });
 
-  test('should redirect to login when accessing buyer dashboard without authentication', async ({
+  test('should redirect to login when accessing the buyer area without authentication', async ({
     page,
   }) => {
     await page.goto(ROUTES.BUYER_DASHBOARD);
@@ -177,8 +180,10 @@ test.describe('A-16: Access Protected Route Without Auth', () => {
 test.describe('N-04: Logout', () => {
   test('should log out buyer and clear session', async ({ buyerPage }) => {
     await buyerPage.goto(ROUTES.BUYER_DASHBOARD);
-    await expect(buyerPage).toHaveURL(/\/buyer/, { timeout: 10_000 });
-    await expect(buyerPage.getByText(/Welcome back/i)).toBeVisible({ timeout: 10_000 });
+    await expect(buyerPage).toHaveURL(/\/buyer\/search/, { timeout: 10_000 });
+    await expect(
+      buyerPage.getByRole('search', { name: 'Product search' })
+    ).toBeVisible({ timeout: 10_000 });
     await expect(buyerPage.getByRole('button', { name: /log ?out/i })).toBeVisible({
       timeout: 10_000,
     });
@@ -186,8 +191,8 @@ test.describe('N-04: Logout', () => {
     await settlePaint(buyerPage);
     await captureScreenshot(
       buyerPage,
-      'N-04_1_dashboard_before_logout',
-      'Screenshot of buyer dashboard before logout'
+      'N-04_1_search_before_logout',
+      'Screenshot of the buyer search screen before logout'
     );
 
     const logoutBtn = buyerPage.getByRole('button', { name: /log ?out/i }).first();

@@ -1,0 +1,161 @@
+{
+  "module": "Order_Insights_Admin",
+  "timestamp": "2026-10-28T03:31:15.739Z",
+  "total": 25,
+  "passed": 25,
+  "failed": 0,
+  "skipped": 0,
+  "durationMs": 223461,
+  "tests": [
+    {
+      "title": "N-01: admin views platform orders and KPI tiles",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 6307
+    },
+    {
+      "title": "N-06: admin opens order detail and reviews the read-only information",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 6741
+    },
+    {
+      "title": "N-07: admin returns to all orders from detail",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 7969
+    },
+    {
+      "title": "A-01: non-admin and unauthenticated users are denied admin order data",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 4592
+    },
+    {
+      "title": "A-02: admin receives not found for a missing order",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 7445
+    },
+    {
+      "title": "I-01: admin orders API returns platform rows, metadata, and summary",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 6138
+    },
+    {
+      "title": "I-03: admin order detail API returns the admin projection",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 6365
+    },
+    {
+      "title": "I-05: admin tracking API returns the service tracking response",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 6109
+    },
+    {
+      "title": "N-02: admin filters by status, payment status, and date range",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 7408
+    },
+    {
+      "title": "N-03: admin searches and scopes orders by shop and order reference",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 8569
+    },
+    {
+      "title": "N-04: admin sorts, paginates, and changes page size",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 13945
+    },
+    {
+      "title": "N-05: admin clears one active filter and resets all filters",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 8023
+    },
+    {
+      "title": "N-08: admin opens the print-ready order view",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 7343
+    },
+    {
+      "title": "N-09: admin exports matching orders as CSV",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 7682
+    },
+    {
+      "title": "N-10: admin list and detail translate into English, Japanese, and Myanmar",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 17986
+    },
+    {
+      "title": "N-11: admin language preference persists between list, detail, return, and reload",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 10266
+    },
+    {
+      "title": "A-03: admin filter API rejects reversed dates and conflicting merchant/shop scope",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 9293
+    },
+    {
+      "title": "A-04: admin list, detail, and tracking failures show retryable feedback",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 14457
+    },
+    {
+      "title": "A-05: merchant order lifecycle updates do not create admin notifications",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 19486
+    },
+    {
+      "title": "B-01: empty filtered result shows empty state and disables export",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 7771
+    },
+    {
+      "title": "B-02: admin page sizes and API limit boundaries are enforced",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 13326
+    },
+    {
+      "title": "B-03: admin order detail remains usable at 375 by 667",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 6145
+    },
+    {
+      "title": "B-04: admin detail handles unavailable tracking history and missing product images",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 5886
+    },
+    {
+      "title": "I-02: admin list API scopes orders by merchant and shop selectors",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 8504
+    },
+    {
+      "title": "I-04: admin missing order detail API returns 404",
+      "file": "C:\\skin-analysis_HAML\\e2e\\tests\\Order_Insights_Admin\\admin-order-insights.spec.ts",
+      "status": "passed",
+      "duration": 5705
+    }
+  ]
+}

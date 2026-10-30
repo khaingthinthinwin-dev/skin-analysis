@@ -79,9 +79,11 @@
 
 - [x] **N-05**: Export audit log as CSV
   - **Evidence**:
-    - `N-05_1_export_csv.png`
-    - Final UI state for N-05: exports the filtered audit log as CSV → `N-05_final_state.png`
-    - Test: audit-log.spec.ts › "N-05: exports the filtered audit log as CSV" — passed
+    - `N-05_1_ui_before_export.png`
+    - `N-05_2_ui_export_dates_filled.png`
+    - `N-05_3_ui_after_export.png`
+    - Test: audit-log.spec.ts › "N-05: exports audit log with UI evidence" — passed
+    - Regression test: audit-log.spec.ts › "N-05: exports the filtered audit log as CSV" — passed
   - **Precondition**: Authenticated admin user; current filtered list has results (meta.total > 0)
   - **Steps**:
     1. Apply desired filters to the list
@@ -95,8 +97,8 @@
 - [x] **N-06**: Apply combined filters with free-text search and clear them
   - **Evidence**:
     - `N-06_1_filters_cleared.png`
-    - Final UI state for N-06 and N-19: combines free-text search with the IP filter and clears the filters → `N-06_final_state.png`
-    - Test: audit-log.spec.ts › "N-06 and N-19: combines free-text search with the IP filter and clears the filters" — passed
+    - Final UI state for N-06: combines free-text search with the IP filter and clears the filters → `N-06_final_state.png`
+    - Test: audit-log.spec.ts › "N-06: combines free-text search with the IP filter and clears the filters" — passed
   - **Precondition**: Authenticated admin user on `/admin/audit-logs`
   - **Steps**:
     1. Enter a search query in the Search input (debounced 300ms, capped at 255 chars)
@@ -162,9 +164,13 @@
 
 - [x] **N-11**: Manually delete audit log records at or above the 90-day threshold
   - **Evidence**:
-    - `N-11_1_delete_logs.png`
-    - Final UI state for N-11: deletes audit log records at or above the retention threshold → `N-11_final_state.png`
-    - Test: audit-log.spec.ts › "N-11: deletes audit log records at or above the retention threshold" — passed
+    - `N-11_1_ui_before_delete.png`
+    - `N-11_2_ui_delete_confirmation.png`
+    - `N-11_3_ui_after_delete.png`
+    - SAMPLE DATA ONLY — the UI delete request is intercepted by the E2E fixture; the SQL simulation deletes only the seeded eligible row, and its synthetic `AUDIT_LOG_DELETE` event remains → `N-11_4_db_after_sample_delete.png`
+    - Machine-readable database rows → `N-11_4_db_after_sample_delete.json`
+    - Test: audit-log.spec.ts › "N-11: deletes only seeded retention sample records (live database evidence)" — passed
+    - Regression test: audit-log.spec.ts › "N-11: deletes audit log records at or above the retention threshold" — passed
   - **Precondition**: Authenticated admin user; DB contains audit log records aged >= 90 days
   - **Steps**:
     1. (Optional) Select rows via the row checkboxes — selected IDs are sent as `recordIds`
@@ -241,9 +247,13 @@
 
 - [x] **N-17**: Select rows and delete only the selection
   - **Evidence**:
-    - `N-17_1_delete_selection.png`
-    - Final UI state for N-17: selects rows and deletes only the selection → `N-17_final_state.png`
-    - Test: audit-log.spec.ts › "N-17: selects rows and deletes only the selection" — passed
+    - `N-17_1_ui_before_selection.png`
+    - `N-17_2_ui_selected_confirmation.png`
+    - `N-17_3_ui_after_selected_delete.png`
+    - SAMPLE DATA ONLY — the UI delete request is intercepted by the E2E fixture; the SQL simulation deletes only the selected test row while the unselected sample row and synthetic delete event remain → `N-17_4_db_after_selected_sample_delete.png`
+    - Machine-readable database rows → `N-17_4_db_after_selected_sample_delete.json`
+    - Test: audit-log.spec.ts › "N-17: deletes only the selected seeded sample record (live database evidence)" — passed
+    - Regression test: audit-log.spec.ts › "N-17: selects rows and deletes only the selection" — passed
   - **Precondition**: Authenticated admin user; list shows rows of which at least one is older than 90 days
   - **Steps**:
     1. Check one or more row checkboxes (header checkbox selects/deselects all rows on the current page)
@@ -270,14 +280,15 @@
 
 - [x] **N-19**: Filter logs by IP address
   - **Evidence**:
-    - Final UI state for N-06 and N-19: combines free-text search with the IP filter and clears the filters → `N-19_final_state.png`
-    - Test: audit-log.spec.ts › "N-06 and N-19: combines free-text search with the IP filter and clears the filters" — passed
+    - `N-19_1_filters_applied.png`
+    - Final UI state for N-19 with only the IP Address filter filled → `N-19_final_state.png`
+    - Test: audit-log.spec.ts › "N-19: filters audit logs by IP address" — passed
   - **Precondition**: Authenticated admin user on `/admin/audit-logs`; audit records exist with known client IP addresses
   - **Steps**:
-    1. Type a partial IP (e.g. `203.0.113`) into the "IP Address" filter input
-    2. Verify the request and the filtered table
-    3. Clear the input
-  - **Expected Result**: The input applies the filter immediately (no Apply button, no debounce) and the request carries `ipAddress=203.0.113`; the table shows only rows whose stored address contains the value — the server matches the address and its variants (`::ffff:`-prefixed IPv4, IPv4-mapped IPv6) with a partial `contains` match, so a differently written form of the same address is also found; clearing the input removes the filter and the Active Filters badge count drops; the field accepts at most 45 characters
+    1. Leave Search, Action, Entity Type, and Date Range empty
+    2. Type a partial IP (`203.0.113`) into the "IP Address" filter input
+    3. Verify the IP Address is the only populated filter and the request returns the filtered table
+  - **Expected Result**: The input applies the filter immediately (no Apply button, no debounce) and the request carries only `ipAddress=203.0.113` among filter parameters; the table shows only rows whose stored address contains the value — the server matches the address and its variants (`::ffff:`-prefixed IPv4, IPv4-mapped IPv6) with a partial `contains` match, so a differently written form of the same address is also found; clearing the input removes the filter and the Active Filters badge count drops; the field accepts at most 45 characters
   - **Business Rules**: BR-AUDIT-024, BR-AUDIT-026
   - **API**: `GET /api/v1/admin/audit-logs?ipAddress=...`
 
@@ -634,15 +645,17 @@
 
 - [x] **B-12**: Export range covering a single day
   - **Evidence**:
-    - `B-12_1_single_day_export.png`
-    - Final UI state for B-12: accepts an export range that covers a single day → `B-12_final_state.png`
+    - UI before export → `B-12_1_ui_before_export.png`
+    - Export dialog with the single-day range filled → `B-12_2_ui_export_dates_filled.png`
+    - UI after export → `B-12_3_ui_after_export.png`
     - Test: audit-log.spec.ts › "B-12: accepts an export range that covers a single day" — passed
   - **Precondition**: Authenticated admin user; at least one audit record exists on the chosen day
   - **Steps**:
     1. Open the export dialog
-    2. Set the start and end date to the same day
+    2. Set the start and end date to the same day and capture the dialog
     3. Confirm the export
-  - **Expected Result**: A one-day range is accepted by both the dialog validation and the server (the range is measured from 00:00:00.000 to 23:59:59.999 Myanmar Time of that day); the CSV contains only that day's rows
+  - **Expected Result**: The dialog accepts a same-day range and submits the identical start/end dates; the CSV response contains only fixture rows for that day.
+  - **Note**: This boundary test verifies the CSV response using mocked fixture data, but its saved evidence is limited to the three UI screenshots.
   - **Business Rules**: BR-AUDIT-032
   - **API**: `POST /api/v1/admin/audit-logs/export`
 

@@ -221,7 +221,12 @@ export class ProductManagementPage {
 
     // Theme & Language (on /dashboard/settings, not product list)
     this.themeToggle = page.locator('header').getByRole('button', { name: /toggle theme/i }).or(page.getByRole('button', { name: /toggle theme/i }).first());
-    this.languageToggle = page.locator('header').getByRole('button', { name: /change language/i }).or(page.getByRole('button', { name: /change language/i }).first());
+    this.languageToggle = page
+      .locator('header')
+      .getByRole('button')
+      .filter({ has: page.locator('svg.lucide-globe') })
+      .or(page.locator('button').filter({ has: page.locator('svg.lucide-globe') }))
+      .first();
 
     // Low Stock & Status Indicators
     this.lowStockWarning = page.locator('[data-testid="low-stock"], .low-stock, [class*="low-stock"]');

@@ -5,7 +5,7 @@
   ],
   "format": "pcl-id-keyed",
   "mappings": {
-    "N-01": [{ "file": "commission-revenue.spec.ts", "title": "N-01: loads the Commission tab by default with rate and reports" }, { "file": "commission-revenue.spec.ts", "title": "N-01: navigates from the admin dashboard to the Commission tab" }],
+    "N-01": [{ "file": "commission-revenue.spec.ts", "title": "N-01: loads the Commission tab by default with rate and reports" }, { "file": "commission-revenue.spec.ts", "title": "N-01: navigates from the admin landing page to the Commission tab" }],
     "N-02": [{ "file": "commission-revenue.spec.ts", "title": "N-02: updates the commission rate successfully" }, { "file": "commission-revenue.spec.ts", "title": "N-02: updates the commission rate successfully (live stack evidence)" }],
     "N-03": [{ "file": "commission-revenue.spec.ts", "title": "N-03 and N-04: applies and resets commission report date filters" }],
     "N-04": [{ "file": "commission-revenue.spec.ts", "title": "N-03 and N-04: applies and resets commission report date filters" }],

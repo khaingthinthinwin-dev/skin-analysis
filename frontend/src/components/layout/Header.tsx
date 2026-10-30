@@ -11,7 +11,7 @@ import { GuestLoginModal } from '@/components/common/GuestLoginModal'
 import { useAuth } from '@/hooks/useAuth'
 import { useCart } from '@/features/buyer/cart/hooks/useCart'
 import { useWishlist } from '@/features/buyer/wishlist/hooks/useWishlist'
-import { ROUTES, getDashboardRoute } from '@/lib/constants'
+import { ROUTES } from '@/lib/constants'
 
 const navItems = [
   { key: 'home', href: ROUTES.HOME, label: 'Home' },
@@ -21,7 +21,7 @@ const navItems = [
 
 export function Header() {
   const { t } = useTranslation()
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated } = useAuth()
   const location = useLocation()
   const [open, setOpen] = useState(false)
   const [guestModal, setGuestModal] = useState<'wishlist' | 'cart' | null>(null)
@@ -62,14 +62,6 @@ export function Header() {
               {t(`nav.${item.key}`, item.label)}
             </Link>
           ))}
-          {isAuthenticated && user && (
-            <Link
-              to={getDashboardRoute(user.role)}
-              className="text-sm font-semibold text-primary hover:underline flex items-center gap-1"
-            >
-              {t('nav.dashboard', 'Dashboard')}
-            </Link>
-          )}
         </nav>
 
         {/* Desktop Actions */}
@@ -133,15 +125,6 @@ export function Header() {
                   {t(`nav.${item.key}`, item.label)}
                 </Link>
               ))}
-              {isAuthenticated && user && (
-                <Link
-                  to={getDashboardRoute(user.role)}
-                  onClick={() => setOpen(false)}
-                  className="text-sm font-semibold text-primary hover:underline"
-                >
-                  {t('nav.dashboard', 'Dashboard')}
-                </Link>
-              )}
               <div className="my-4 h-px bg-border" />
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="icon" asChild aria-label={t('nav.aria.wishlist', 'Wishlist')}>

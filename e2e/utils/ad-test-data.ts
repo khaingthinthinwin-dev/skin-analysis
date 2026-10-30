@@ -252,8 +252,8 @@ export async function createPendingAd(
   });
   await page.waitForLoadState('networkidle');
 
-  // 2. Go to merchant dashboard → products to get own product images
-  await page.goto('/merchant');
+  // 2. Merchant landing page (product management) — product images come from the API
+  await page.goto('/merchant/products');
   await page.waitForLoadState('networkidle');
 
   // 3. Get product images (merchant's own products) to use as imageUrl

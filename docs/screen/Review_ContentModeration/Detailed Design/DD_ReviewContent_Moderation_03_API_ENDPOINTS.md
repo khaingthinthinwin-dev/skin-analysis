@@ -1,7 +1,7 @@
 # DD_MOD_03  EAPI Endpoints (Review & Content Moderation)
 
-> **Doc ID:** SKM-DD-MOD-03 | **Version:** 1.3 | **Status:** Released  
-> **Last Updated:** 2026-10-21
+> **Doc ID:** SKM-DD-MOD-03 | **Version:** 1.4 | **Status:** Released  
+> **Last Updated:** 2026-10-24
 
 ---
 
@@ -13,6 +13,7 @@
 | 1.1 | 2026-08-18 | Software Architect | Added Review Reports endpoints: GET /admin/reports, PATCH /admin/reports/:id/status, DELETE /admin/reports/:id. Added report-related audit logging events. |
 | 1.2 | 2026-08-22 | Software Architect | Aligned with FDS v2.0 and screen items v6.0: added reject review endpoint, report review endpoint, updated review status filter to include pending/reported, added reviewed status to report status update, updated report reason enums. |
 | 1.3 | 2026-10-21 | Software Architect | Aligned with FDS v2.3 (2026-10-21): (1) Review status changed from boolean `is_approved` to 3-value string enum `status` (`pending`/`approved`/`rejected`). Updated all endpoints, response bodies, and query filters. (2) Product content moderation base path confirmed as `/admin/content`. (3) Added missing API endpoints: `GET /admin/dashboard-stats`, detail GET endpoints (`/admin/reviews/:id`, `/admin/merchants/:id`, `/admin/content/:id`, `/admin/users/:id`, `/admin/reports/:id`), bulk review moderation (`POST /admin/reviews/bulk/moderate`), bulk review deletion (`DELETE /admin/reviews/bulk`), bulk product moderation (`PATCH /admin/content/bulk/status`). (4) Corrected notification type strings to match code. (5) Added `reason` optional field to `ModerateUserDto`. (6) Corrected `reason` field in `ModerateReviewDto` to `@MaxLength(500)`. (7) Added `ADMIN` value to `UserStatusFilter`. (8) Corrected audit log `entityType` casing to lowercase. (9) Corrected merchant rejection flow: products not auto-deactivated. (10) Fixed `isApproved` → `status` in output specification. (11) Report status update uses `adminNote` (camelCase). |
+| 1.4 | 2026-10-24 | Software Architect | Aligned with PCL v1.1 (SKM-PCL-MOD-001): Default page size changed from 20 to 10 (page-size options 10/20/50/100) across all list endpoints (`GET /admin/reviews`, `GET /admin/merchants`, `GET /admin/content`, `GET /admin/users`, `GET /admin/reports`); updated query-parameter `limit` default from `20` to `10` and `meta.limit`/`meta.totalPages` in all response examples accordingly. |
 
 ---
 
@@ -41,7 +42,7 @@ View all reviews with filters, search, sort, and pagination.
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Query Parameters:**
   - `page` (integer, optional, default: `1`)  EPage number
-  - `limit` (integer, optional, default: `20`, max: `100`)  EItems per page
+  - `limit` (integer, optional, default: `10`, max: `100`)  EItems per page
   - `sort` (string, optional, default: `createdAt`)  ESort field: `createdAt`, `rating`
   - `order` (string, optional, default: `desc`)  ESort order: `asc`, `desc`
   - `status` (enum, optional)  EFilter: `pending`, `approved`, `rejected` (omit for all)
@@ -73,9 +74,9 @@ View all reviews with filters, search, sort, and pagination.
     ],
     "meta": {
       "page": 1,
-      "limit": 20,
+      "limit": 10,
       "total": 150,
-      "totalPages": 8
+      "totalPages": 15
     }
   }
   ```
@@ -298,7 +299,7 @@ View all merchants with filters and pagination.
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Query Parameters:**
   - `page` (integer, optional, default: `1`)
-  - `limit` (integer, optional, default: `20`, max: `100`)
+  - `limit` (integer, optional, default: `10`, max: `100`)
   - `sort` (string, optional, default: `createdAt`)
   - `order` (string, optional, default: `desc`)
   - `status` (enum, optional)  EFilter: `pending`, `approved`, `rejected`
@@ -324,9 +325,9 @@ View all merchants with filters and pagination.
     ],
     "meta": {
       "page": 1,
-      "limit": 20,
+      "limit": 10,
       "total": 25,
-      "totalPages": 2
+      "totalPages": 3
     }
   }
   ```
@@ -426,7 +427,7 @@ View all products with filters, search, sort, and pagination.
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Query Parameters:**
   - `page` (integer, optional, default: `1`)
-  - `limit` (integer, optional, default: `20`, max: `100`)
+  - `limit` (integer, optional, default: `10`, max: `100`)
   - `sort` (string, optional, default: `createdAt`)
   - `order` (string, optional, default: `desc`)
   - `status` (enum, optional)  EFilter: `active`, `inactive`
@@ -456,9 +457,9 @@ View all products with filters, search, sort, and pagination.
     ],
     "meta": {
       "page": 1,
-      "limit": 20,
+      "limit": 10,
       "total": 200,
-      "totalPages": 10
+      "totalPages": 20
     }
   }
   ```
@@ -599,7 +600,7 @@ View all users with filters and pagination.
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Query Parameters:**
   - `page` (integer, optional, default: `1`)
-  - `limit` (integer, optional, default: `20`, max: `100`)
+  - `limit` (integer, optional, default: `10`, max: `100`)
   - `sort` (string, optional, default: `createdAt`)
   - `order` (string, optional, default: `desc`)
   - `status` (enum, optional)  EFilter: `active`, `inactive`, `admin`
@@ -620,9 +621,9 @@ View all users with filters and pagination.
     ],
     "meta": {
       "page": 1,
-      "limit": 20,
+      "limit": 10,
       "total": 500,
-      "totalPages": 25
+      "totalPages": 50
     }
   }
   ```
@@ -713,7 +714,7 @@ View all review reports with filters, search, and pagination.
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Query Parameters:**
   - `page` (integer, optional, default: `1`)  EPage number
-  - `limit` (integer, optional, default: `20`, max: `100`)  EItems per page
+  - `limit` (integer, optional, default: `10`, max: `100`)  EItems per page
   - `sort` (string, optional, default: `createdAt`)  ESort field: `createdAt`
   - `order` (string, optional, default: `desc`)  ESort order: `asc`, `desc`
   - `status` (enum, optional)  EFilter: `pending`, `reviewed`, `resolved`, `rejected` (omit for all)
@@ -751,9 +752,9 @@ View all review reports with filters, search, and pagination.
     ],
     "meta": {
       "page": 1,
-      "limit": 20,
+      "limit": 10,
       "total": 45,
-      "totalPages": 3
+      "totalPages": 5
     }
   }
   ```
