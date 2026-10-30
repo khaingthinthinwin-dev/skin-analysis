@@ -1,20 +1,242 @@
 {
-  "I-01_1_cart_get_200.png": {
-    "test": "search-filter.spec.ts::I-01: should return the authenticated buyer cart from GET /cart"
+  "N-01_1_default_catalog.png": {
+    "test": "search-filter-guest.spec.ts::N-01: should load the default catalog sorted by newest"
   },
-  "I-02_1_cart_items_post_contract.png": {
-    "test": "search-filter.spec.ts::I-02: should send the expected POST /cart/items contract"
+  "N-02_1_debounce_keyword_search.png": {
+    "test": "search-filter-guest.spec.ts::N-02: should run the keyword query only after the 300ms debounce"
   },
-  "I-03_1_wishlist_get_200.png": {
-    "test": "search-filter.spec.ts::I-03: should return saved items from GET /wishlist"
+  "N-03_1_search_button_bypasses_debounce.png": {
+    "test": "search-filter-guest.spec.ts::N-03: should fire the query immediately when the Search button is clicked"
   },
-  "I-04_1_wishlist_post_contract.png": {
-    "test": "search-filter.spec.ts::I-04: should send the expected POST /wishlist/:productId contract"
+  "N-04_1_clear_search.png": {
+    "test": "search-filter-guest.spec.ts::N-04: should reset the keyword and restore the default catalog on Clear Search"
   },
-  "I-05_1_wishlist_delete_contract.png": {
-    "test": "search-filter.spec.ts::I-05: should send the expected DELETE /wishlist/:productId contract"
+  "N-05_1_category_includes_descendants.png": {
+    "test": "search-filter-guest.spec.ts::N-05: should narrow the results to a category including its descendants"
   },
-  "I-06_1_endpoints_outside_search.png": {
-    "test": "search-filter.spec.ts::I-06: should not exercise wishlist/cart endpoints outside the Search screen"
+  "N-06_1_skin_type_has_every.png": {
+    "test": "search-filter-guest.spec.ts::N-06: should apply skin types with \"all selected\" (hasEvery) semantics"
+  },
+  "N-07_1_ingredient_has_some.png": {
+    "test": "search-filter-guest.spec.ts::N-07: should apply ingredients with \"any selected\" (hasSome) semantics"
+  },
+  "N-08_1_price_range_filter.png": {
+    "test": "search-filter-guest.spec.ts::N-08: should return only products inside the selected price range"
+  },
+  "N-09_1_rating_filter.png": {
+    "test": "search-filter-guest.spec.ts::N-09: should return only products at or above the selected rating"
+  },
+  "N-10_1_sort_price_asc.png": {
+    "test": "search-filter-guest.spec.ts::N-10: should sort the results by price ascending"
+  },
+  "N-11_1_sort_price_desc.png": {
+    "test": "search-filter-guest.spec.ts::N-11: should sort the results by price descending"
+  },
+  "N-12_1_sort_highest_rated.png": {
+    "test": "search-filter-guest.spec.ts::N-12: should sort the results by highest rating"
+  },
+  "N-13_1_pagination_page_two.png": {
+    "test": "search-filter-guest.spec.ts::N-13: should navigate between result pages and keep the previous page while loading"
+  },
+  "N-14_1_limit_url_param.png": {
+    "test": "search-filter-guest.spec.ts::N-14: should honour the limit URL parameter"
+  },
+  "N-15_1_view_mode_toggle.png": {
+    "test": "search-filter-guest.spec.ts::N-15: should switch between grid and list view without refetching"
+  },
+  "N-16_1_filter_chip_removal.png": {
+    "test": "search-filter-guest.spec.ts::N-16: should render active filter chips and remove a single chip"
+  },
+  "N-17_1_clear_all.png": {
+    "test": "search-filter-guest.spec.ts::N-17: should clear every filter on \"Clear all\" in the chip row"
+  },
+  "N-18_1_panel_clear_all.png": {
+    "test": "search-filter-guest.spec.ts::N-18: should clear every filter on the panel \"Clear All\""
+  },
+  "N-19_1_back_preserves_search_state.png": {
+    "test": "search-filter-guest.spec.ts::N-19: should navigate to the product detail and restore the search state on back"
+  },
+  "N-20_1_sponsored_ad_slider.png": {
+    "test": "search-filter-guest.spec.ts::N-20: should render the sponsored ad slider between the search bar and the filter row"
+  },
+  "N-21_1_lang_initial.png": {
+    "test": "search-filter-guest.spec.ts::N-21: should toggle the language on the guest search page"
+  },
+  "N-21_2_lang_japanese.png": {
+    "test": "search-filter-guest.spec.ts::N-21: should toggle the language on the guest search page"
+  },
+  "N-21_3_lang_myanmar.png": {
+    "test": "search-filter-guest.spec.ts::N-21: should toggle the language on the guest search page"
+  },
+  "N-21_4_lang_english.png": {
+    "test": "search-filter-guest.spec.ts::N-21: should toggle the language on the guest search page"
+  },
+  "N-22_1_theme_toggle.png": {
+    "test": "search-filter-guest.spec.ts::N-22: should switch the theme between dark and light"
+  },
+  "N-23_1_desktop_layout.png": {
+    "test": "search-filter-guest.spec.ts::N-23: should render the desktop layout on a wide viewport"
+  },
+  "N-24_1_mobile_layout_and_drawer.png": {
+    "test": "search-filter-guest.spec.ts::N-24: should render the mobile layout with a filter drawer"
+  },
+  "N-25_1_shared_url_restores_state.png": {
+    "test": "search-filter-guest.spec.ts::N-25: should restore the full search state from a shared URL"
+  },
+  "N-26_1_tags_has_some.png": {
+    "test": "search-filter-guest.spec.ts::N-26: should apply tags with \"any selected\" (hasSome) semantics"
+  },
+  "N-27_1_category_view_more_less.png": {
+    "test": "search-filter-guest.spec.ts::N-27: should collapse the category list to 5 items with View More / View Less"
+  },
+  "N-28_1_sale_badge.png": {
+    "test": "search-filter-guest.spec.ts::N-28: should show the SALE badge and the compare-at price"
+  },
+  "N-29_1_shop_name_and_rating.png": {
+    "test": "search-filter-guest.spec.ts::N-29: should show the shop name and the rating on every card"
+  },
+  "N-30_1_max_three_skin_type_badges.png": {
+    "test": "search-filter-guest.spec.ts::N-30: should render at most 3 skin-type badges per card"
+  },
+  "N-31_1_no_image_placeholder.png": {
+    "test": "search-filter-guest.spec.ts::N-31: should fall back to the \"No image\" placeholder"
+  },
+  "N-32_1_enter_submits_immediately.png": {
+    "test": "search-filter-guest.spec.ts::N-32: should submit immediately when Enter is pressed in the search input"
+  },
+  "N-33_1_category_all_clears_filter.png": {
+    "test": "search-filter-guest.spec.ts::N-33: should clear the category filter when \"All\" is selected"
+  },
+  "N-34_1_category_chip_name.png": {
+    "test": "search-filter-guest.spec.ts::N-34: should show the resolved category name on the category chip"
+  },
+  "N-35_1_pagination_ellipsis.png": {
+    "test": "search-filter-guest.spec.ts::N-35: should render the numbered pagination with ellipsis and respect the bounds"
+  },
+  "N-36_1_price_format_ks.png": {
+    "test": "search-filter-guest.spec.ts::N-36: should format prices with the \"Ks\" suffix and thousands separators"
+  },
+  "N-37_1_out_of_stock.png": {
+    "test": "search-filter-guest.spec.ts::N-37: should hide the add-to-cart action for out-of-stock products"
+  },
+  "N-38_1_loading_spinner.png": {
+    "test": "search-filter-guest.spec.ts::N-38: should show a spinner while the product list is loading"
+  },
+  "N-39_1_ad_slider_auto_advance.png": {
+    "test": "search-filter-guest.spec.ts::N-39: should auto-advance the ad slider and pause on hover"
+  },
+  "N-39_2_ad_slider_reduced_motion.png": {
+    "test": "search-filter-guest.spec.ts::N-39b: should disable the ad auto-advance when reduced motion is requested"
+  },
+  "N-40_1_ad_slider_manual_controls.png": {
+    "test": "search-filter-guest.spec.ts::N-40: should navigate the ad slides with the manual controls"
+  },
+  "N-41_1_ad_click_destination.png": {
+    "test": "search-filter-guest.spec.ts::N-41: should open the linked destination when a sponsored ad is clicked"
+  },
+  "N-42_1_ad_image_placeholder.png": {
+    "test": "search-filter-guest.spec.ts::N-42: should render the ad image placeholder when no image can be loaded"
+  },
+  "N-43_1_keyboard_activation.png": {
+    "test": "search-filter-guest.spec.ts::N-43: should activate a product card with the keyboard"
+  },
+  "N-44_1_mobile_drawer_clear_all.png": {
+    "test": "search-filter-guest.spec.ts::N-44: should clear the filters and close the drawer from the mobile filter sheet"
+  },
+  "N-45_1_guest_notification_state.png": {
+    "test": "search-filter-guest.spec.ts::N-45: should not expose any notification state to a guest"
+  },
+  "A-01_1_keyword_too_long.png": {
+    "test": "search-filter-guest.spec.ts::A-01: should reject a keyword longer than 255 characters"
+  },
+  "A-02_1_min_greater_than_max.png": {
+    "test": "search-filter-guest.spec.ts::A-02: should reject a minimum price greater than the maximum price"
+  },
+  "A-03_1_negative_price.png": {
+    "test": "search-filter-guest.spec.ts::A-03: should reject negative price values"
+  },
+  "A-04_1_rating_out_of_range.png": {
+    "test": "search-filter-guest.spec.ts::A-04: should reject a rating outside the 1-5 range"
+  },
+  "A-05_1_invalid_category_uuid.png": {
+    "test": "search-filter-guest.spec.ts::A-05: should reject an invalid category UUID"
+  },
+  "A-06_1_guest_login_required.png": {
+    "test": "search-filter-guest.spec.ts::A-06: should prompt a guest to log in before any shopping action"
+  },
+  "A-07_1_merchant_shopping_blocked.png": {
+    "test": "search-filter-guest.spec.ts::A-07: should block the shopping actions for a merchant"
+  },
+  "A-08_1_network_error_state.png": {
+    "test": "search-filter-guest.spec.ts::A-08: should show the inline error state when the product list request fails"
+  },
+  "A-09_1_server_error_state.png": {
+    "test": "search-filter-guest.spec.ts::A-09: should show the inline error state for a 500 response"
+  },
+  "A-10_1_rate_limit_error_state.png": {
+    "test": "search-filter-guest.spec.ts::A-10: should surface a rate limit response as an error state"
+  },
+  "A-11_1_product_not_found.png": {
+    "test": "search-filter-guest.spec.ts::A-11: should return not-found for a non-existent product slug"
+  },
+  "A-12_1_product_list_failure_state.png": {
+    "test": "search-filter-guest.spec.ts::A-12: should show the inline error state instead of the product grid on failure"
+  },
+  "A-13_1_price_validation_blocks_query.png": {
+    "test": "search-filter-guest.spec.ts::A-13: should block the URL and query updates while the price range is invalid"
+  },
+  "A-14_1_ad_failure_isolated.png": {
+    "test": "search-filter-guest.spec.ts::A-14: should isolate a sponsored ad request failure from the product results"
+  },
+  "B-01_1_keyword_255_chars.png": {
+    "test": "search-filter-guest.spec.ts::B-01: should accept a keyword of exactly 255 characters"
+  },
+  "B-02_1_keyword_256_chars.png": {
+    "test": "search-filter-guest.spec.ts::B-02: should reject a keyword of 256 characters"
+  },
+  "B-03_1_limit_boundaries.png": {
+    "test": "search-filter-guest.spec.ts::B-03: should accept limit values of 1 and 100"
+  },
+  "B-04_1_limit_above_maximum.png": {
+    "test": "search-filter-guest.spec.ts::B-04: should reject a limit above the maximum of 100"
+  },
+  "B-05_1_page_out_of_range.png": {
+    "test": "search-filter-guest.spec.ts::B-05: should show the empty state for a page beyond the result range"
+  },
+  "B-06_1_empty_state.png": {
+    "test": "search-filter-guest.spec.ts::B-06: should show the empty state without a reset button"
+  },
+  "B-07_1_empty_category_tree.png": {
+    "test": "search-filter-guest.spec.ts::B-07: should render the category group gracefully for an empty category tree"
+  },
+  "B-08_1_price_bound_zero.png": {
+    "test": "search-filter-guest.spec.ts::B-08: should accept a price bound of 0"
+  },
+  "B-09_1_rating_boundaries.png": {
+    "test": "search-filter-guest.spec.ts::B-09: should accept rating boundaries of 1 and 5"
+  },
+  "B-10_1_out_of_stock_listed.png": {
+    "test": "search-filter-guest.spec.ts::B-10: should list out-of-stock products with the flag applied"
+  },
+  "B-11_1_inactive_product_excluded.png": {
+    "test": "search-filter-guest.spec.ts::B-11: should exclude inactive products from the results"
+  },
+  "B-12_1_fallback_ads.png": {
+    "test": "search-filter-guest.spec.ts::B-12: should render the built-in fallback ads when no eligible ad is returned"
+  },
+  "B-15_1_rating_options.png": {
+    "test": "search-filter-guest.spec.ts::B-15: should expose only rating options from 3.0+ to 4.5+"
+  },
+  "B-16_1_category_collapsed_items.png": {
+    "test": "search-filter-guest.spec.ts::B-16: should show 5 category items and then View More / View Less"
+  },
+  "B-17_1_equal_price_bounds.png": {
+    "test": "search-filter-guest.spec.ts::B-17: should accept an equal minimum and maximum price"
+  },
+  "B-18_1_exactly_five_categories.png": {
+    "test": "search-filter-guest.spec.ts::B-18: should hide View More when exactly 5 category items exist"
+  },
+  "B-19_1_single_page_no_pagination.png": {
+    "test": "search-filter-guest.spec.ts::B-19: should hide the pagination for a single page of results"
   }
 }

@@ -29,6 +29,7 @@ export function CartSummaryPanel({
   const totalAmount = parseFloat(summary.total || '0');
 
   const handleCheckoutClick = () => {
+    if (summary.hasOutOfStock) return;
     if (checkoutBlocked) {
       onCheckoutBlocked?.();
       return;
@@ -70,6 +71,7 @@ export function CartSummaryPanel({
             type="button"
             size="lg"
             className="w-full h-11 text-sm font-bold bg-primary hover:bg-primary/90"
+            disabled={summary.hasOutOfStock || checkoutBlocked}
             onClick={handleCheckoutClick}
           >
             {t('cart.checkout', 'Proceed to Checkout')}{' '}

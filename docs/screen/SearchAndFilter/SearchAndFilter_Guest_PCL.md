@@ -24,10 +24,10 @@
 
 ## 1. Normal Scenarios (N) — Happy Path
 
-- [ ] **N-01**: Page loads with default catalog sorted by newest
+- [x] **N-01**: Page loads with default catalog sorted by newest
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-01_1_default_catalog.png`
+    - Test: search-filter-guest.spec.ts › "N-01: should load the default catalog sorted by newest" — passed
   - **Precondition**: Products exist in the database
   - **Steps**:
     1. Navigate to `/products`
@@ -36,10 +36,10 @@
   - **Business Rules**: BR-SEARCH-003, BR-SEARCH-011
   - **API**: `GET /api/v1/search/products`
 
-- [ ] **N-02**: Keyword search after 300ms debounce returns matching products
+- [x] **N-02**: Keyword search after 300ms debounce returns matching products
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-02_1_debounce_keyword_search.png`
+    - Test: search-filter-guest.spec.ts › "N-02: should run the keyword query only after the 300ms debounce" — passed
   - **Precondition**: Products matching "cleanser" exist
   - **Steps**:
     1. Navigate to `/products`
@@ -49,10 +49,10 @@
   - **Business Rules**: BR-SEARCH-001, BR-SEARCH-003, ST-DEB-001, ST-DEB-005
   - **API**: `GET /api/v1/search/products?q=cleanser`
 
-- [ ] **N-03**: Search button fires query immediately, bypassing debounce
+- [x] **N-03**: Search button fires query immediately, bypassing debounce
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-03_1_search_button_bypasses_debounce.png`
+    - Test: search-filter-guest.spec.ts › "N-03: should fire the query immediately when the Search button is clicked" — passed
   - **Precondition**: User is on `/products`
   - **Steps**:
     1. Type "serum" in the search input
@@ -61,10 +61,10 @@
   - **Business Rules**: ST-DEB-003
   - **API**: `GET /api/v1/search/products?q=serum`
 
-- [ ] **N-04**: Clear Search resets keyword and restores default catalog
+- [x] **N-04**: Clear Search resets keyword and restores default catalog
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-04_1_clear_search.png`
+    - Test: search-filter-guest.spec.ts › "N-04: should reset the keyword and restore the default catalog on Clear Search" — passed
   - **Precondition**: `q` is non-empty (Clear button visible)
   - **Steps**:
     1. Click the Clear Search button
@@ -72,10 +72,10 @@
   - **Business Rules**: BR-SEARCH-003
   - **API**: `GET /api/v1/search/products`
 
-- [ ] **N-05**: Category filter narrows results including descendants
+- [x] **N-05**: Category filter narrows results including descendants
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-05_1_category_includes_descendants.png`
+    - Test: search-filter-guest.spec.ts › "N-05: should narrow the results to a category including its descendants" — passed
   - **Precondition**: Category tree loaded; parent category with child products exists
   - **Steps**:
     1. Expand the Categories accordion
@@ -84,10 +84,10 @@
   - **Business Rules**: BR-SEARCH-010, BR-SEARCH-011
   - **API**: `GET /api/v1/search/products?categoryId=<uuid>`
 
-- [ ] **N-06**: Skin type filter uses "all selected" (hasEvery) semantics
+- [x] **N-06**: Skin type filter uses "all selected" (hasEvery) semantics
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-06_1_skin_type_has_every.png`
+    - Test: search-filter-guest.spec.ts › "N-06: should apply skin types with "all selected" (hasEvery) semantics" — passed
   - **Precondition**: Products tagged with skin types exist
   - **Steps**:
     1. Select skin types "Oily" and "Combination"
@@ -95,10 +95,10 @@
   - **Business Rules**: BR-SEARCH-006, BR-SEARCH-011
   - **API**: `GET /api/v1/search/products?skinTypes=oily,combination`
 
-- [ ] **N-07**: Ingredient filter uses "any selected" (hasSome) semantics
+- [x] **N-07**: Ingredient filter uses "any selected" (hasSome) semantics
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-07_1_ingredient_has_some.png`
+    - Test: search-filter-guest.spec.ts › "N-07: should apply ingredients with "any selected" (hasSome) semantics" — passed
   - **Precondition**: Products with ingredients exist
   - **Steps**:
     1. Select ingredients "Water" and "Glycerin"
@@ -106,10 +106,10 @@
   - **Business Rules**: BR-SEARCH-007, BR-SEARCH-011
   - **API**: `GET /api/v1/search/products?ingredients=Water,Glycerin`
 
-- [ ] **N-08**: Price range filter returns products within bounds
+- [x] **N-08**: Price range filter returns products within bounds
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-08_1_price_range_filter.png`
+    - Test: search-filter-guest.spec.ts › "N-08: should return only products inside the selected price range" — passed
   - **Precondition**: Products exist above and below the range
   - **Steps**:
     1. Set Min Price = 10 and Max Price = 50
@@ -117,10 +117,10 @@
   - **Business Rules**: BR-SEARCH-008, BR-SEARCH-011
   - **API**: `GET /api/v1/search/products?minPrice=10&maxPrice=50`
 
-- [ ] **N-09**: Rating filter returns products at or above selected stars
+- [x] **N-09**: Rating filter returns products at or above selected stars
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-09_1_rating_filter.png`
+    - Test: search-filter-guest.spec.ts › "N-09: should return only products at or above the selected rating" — passed
   - **Precondition**: Products with varying ratings exist
   - **Steps**:
     1. Select minimum rating 4 stars
@@ -128,10 +128,10 @@
   - **Business Rules**: BR-SEARCH-009, BR-SEARCH-011
   - **API**: `GET /api/v1/search/products?rating=4`
 
-- [ ] **N-10**: Sort by price ascending
+- [x] **N-10**: Sort by price ascending
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-10_1_sort_price_asc.png`
+    - Test: search-filter-guest.spec.ts › "N-10: should sort the results by price ascending" — passed
   - **Precondition**: Products with differing prices exist
   - **Steps**:
     1. Select "Price: Low to High" in the sort dropdown
@@ -139,10 +139,10 @@
   - **Business Rules**: BR-SEARCH-015, BR-SEARCH-011
   - **API**: `GET /api/v1/search/products?sort=price&order=asc`
 
-- [ ] **N-11**: Sort by price descending
+- [x] **N-11**: Sort by price descending
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-11_1_sort_price_desc.png`
+    - Test: search-filter-guest.spec.ts › "N-11: should sort the results by price descending" — passed
   - **Precondition**: Products with differing prices exist
   - **Steps**:
     1. Select "Price: High to Low" in the sort dropdown
@@ -150,10 +150,10 @@
   - **Business Rules**: BR-SEARCH-015, BR-SEARCH-011
   - **API**: `GET /api/v1/search/products?sort=price&order=desc`
 
-- [ ] **N-12**: Sort by highest rated
+- [x] **N-12**: Sort by highest rated
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-12_1_sort_highest_rated.png`
+    - Test: search-filter-guest.spec.ts › "N-12: should sort the results by highest rating" — passed
   - **Precondition**: Products with differing ratings exist
   - **Steps**:
     1. Select "Highest Rated" in the sort dropdown
@@ -161,10 +161,10 @@
   - **Business Rules**: BR-SEARCH-015, BR-SEARCH-011
   - **API**: `GET /api/v1/search/products?sort=rating&order=desc`
 
-- [ ] **N-13**: Pagination navigates between result pages
+- [x] **N-13**: Pagination navigates between result pages
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-13_1_pagination_page_two.png`
+    - Test: search-filter-guest.spec.ts › "N-13: should navigate between result pages and keep the previous page while loading" — passed
   - **Precondition**: Total results exceed one page (default `limit` = 12)
   - **Steps**:
     1. Navigate to `/products`
@@ -173,10 +173,10 @@
   - **Business Rules**: BR-SEARCH-016
   - **API**: `GET /api/v1/search/products?page=2`
 
-- [ ] **N-14**: Page size follows the `limit` URL param (default 12)
+- [x] **N-14**: Page size follows the `limit` URL param (default 12)
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-14_1_limit_url_param.png`
+    - Test: search-filter-guest.spec.ts › "N-14: should honour the limit URL parameter" — passed
   - **Precondition**: User is on `/products` with results
   - **Steps**:
     1. Navigate to `/products?limit=24`
@@ -186,10 +186,10 @@
   - **API**: `GET /api/v1/search/products?limit=24`
   - **Note**: This screen renders only the inline numbered pagination (`Products.tsx`); it does **not** render a page-size selector, and `limit` is omitted from the URL while it equals the default `12`.
 
-- [ ] **N-15**: View mode toggle switches Grid/List without refetch or URL change
+- [x] **N-15**: View mode toggle switches Grid/List without refetch or URL change
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-15_1_view_mode_toggle.png`
+    - Test: search-filter-guest.spec.ts › "N-15: should switch between grid and list view without refetching" — passed
   - **Precondition**: Results are loaded; default view is Grid
   - **Steps**:
     1. Click the "List" segment of the view toggle
@@ -198,10 +198,10 @@
   - **Business Rules**: None (UI)
   - **Note**: Selection persists to `localStorage` key `search.viewMode`; does not modify URL state.
 
-- [ ] **N-16**: Active filter chips display and individual chip removal works
+- [x] **N-16**: Active filter chips display and individual chip removal works
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-16_1_filter_chip_removal.png`
+    - Test: search-filter-guest.spec.ts › "N-16: should render active filter chips and remove a single chip" — passed
   - **Precondition**: URL has `skinTypes=oily&minPrice=10&maxPrice=50`
   - **Steps**:
     1. Navigate to `/products?skinTypes=oily&minPrice=10&maxPrice=50`
@@ -210,10 +210,10 @@
   - **Business Rules**: BR-SEARCH-019, BR-SEARCH-022, BR-SEARCH-024
   - **API**: `GET /api/v1/search/products`
 
-- [ ] **N-17**: "Clear all" filters keeps keyword intact
+- [x] **N-17**: "Clear all" filters keeps keyword intact
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-17_1_clear_all.png`
+    - Test: search-filter-guest.spec.ts › "N-17: should clear every filter on "Clear all" in the chip row" — passed
   - **Precondition**: `q` set plus ≥ 1 active filter chip
   - **Steps**:
     1. Click the "Clear all" button
@@ -221,10 +221,10 @@
   - **Business Rules**: BR-SEARCH-023
   - **API**: `GET /api/v1/search/products`
 
-- [ ] **N-18**: "Clear All" in the filters panel clears filters and keeps keyword
+- [x] **N-18**: "Clear All" in the filters panel clears filters and keeps keyword
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-18_1_panel_clear_all.png`
+    - Test: search-filter-guest.spec.ts › "N-18: should clear every filter on the panel "Clear All"" — passed
   - **Precondition**: User is on `/products` (desktop layout) with filters and a keyword applied
   - **Steps**:
     1. Click "Clear All" in the filters panel (the button is only shown while filters are active)
@@ -233,10 +233,10 @@
   - **API**: `GET /api/v1/search/products`
   - **Note**: Panel button label is `t('buyer.search.clearAll', 'Clear All')`; it maps to the same handler as the chip row's Clear All.
 
-- [ ] **N-19**: Product detail navigation and back preserves search state
+- [x] **N-19**: Product detail navigation and back preserves search state
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-19_1_back_preserves_search_state.png`
+    - Test: search-filter-guest.spec.ts › "N-19: should navigate to the product detail and restore the search state on back" — passed
   - **Precondition**: Results are displayed for `q=cleanser`
   - **Steps**:
     1. Navigate to `/products?q=cleanser`
@@ -247,10 +247,10 @@
   - **API**: `GET /api/v1/search/products/:slug`
   - **Note**: The card navigates to the buyer product route `/buyer/products/:slug`, whose detail page fetches via the buyer products endpoint `GET /api/v1/products/:slug`. The parallel search endpoint `GET /api/v1/search/products/:slug` exists and is exercised directly by I-06/I-07.
 
-- [ ] **N-20**: Sponsored ad slider renders between the search bar and the filter row
+- [x] **N-20**: Sponsored ad slider renders between the search bar and the filter row
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-20_1_sponsored_ad_slider.png`
+    - Test: search-filter-guest.spec.ts › "N-20: should render the sponsored ad slider between the search bar and the filter row" — passed
   - **Precondition**: Active, in-schedule `search_page_banner` ads exist for approved shops/merchants
   - **Steps**:
     1. Navigate to `/products`
@@ -259,12 +259,13 @@
   - **API**: `GET /api/v1/search/ads?placement=search_page_banner`
   - **Note**: Ad fetch runs in parallel via `useSponsoredAds('search_page_banner')` and must never block or delay product results.
 
-- [ ] **N-21**: Language toggle works on the Search & Filter page (Guest)
+- [x] **N-21**: Language toggle works on the Search & Filter page (Guest)
   - **Evidence**:
     - `N-21_1_lang_initial.png`
     - `N-21_2_lang_japanese.png`
-    - `N-21_3_lang_english.png`
-    - Test: search-filter.spec.ts › "should toggle language on guest search page" – pending
+    - `N-21_3_lang_myanmar.png`
+    - `N-21_4_lang_english.png`
+    - Test: search-filter-guest.spec.ts › "N-21: should toggle the language on the guest search page" — passed
   - **Precondition**: Guest user (not logged in); LanguageToggle control is available
   - **Steps**:
     1. Toggle language to Japanese
@@ -275,20 +276,20 @@
   - **Expected Result**: All guest-facing search bar, filter options, category names, and UI labels switch to the selected language (Japanese / Myanmar / English)
   - **Business Rules**: None (i18n behavior)
 
-- [ ] **N-22**: Theme toggle switches dark/light
+- [x] **N-22**: Theme toggle switches dark/light
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-22_1_theme_toggle.png`
+    - Test: search-filter-guest.spec.ts › "N-22: should switch the theme between dark and light" — passed
   - **Precondition**: User is on `/products`
   - **Steps**:
     1. Toggle theme to dark, then to light
   - **Expected Result**: Styling switches between dark and light modes; skeletons and cards remain legible
   - **Business Rules**: None (UI)
 
-- [ ] **N-23**: Responsive layout on desktop viewport
+- [x] **N-23**: Responsive layout on desktop viewport
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-23_1_desktop_layout.png`
+    - Test: search-filter-guest.spec.ts › "N-23: should render the desktop layout on a wide viewport" — passed
   - **Precondition**: Viewport ≥ 1024px
   - **Steps**:
     1. Set viewport to 1280×720
@@ -296,10 +297,10 @@
   - **Expected Result**: Search bar [B] and full filters panel [C] side-by-side in the same row; 4-column product grid; ad panel horizontal layout
   - **Business Rules**: None (Responsive)
 
-- [ ] **N-24**: Responsive layout on mobile viewport with filter drawer
+- [x] **N-24**: Responsive layout on mobile viewport with filter drawer
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-24_1_mobile_layout_and_drawer.png`
+    - Test: search-filter-guest.spec.ts › "N-24: should render the mobile layout with a filter drawer" — passed
   - **Precondition**: Viewport < 768px
   - **Steps**:
     1. Set viewport to 375×667
@@ -309,10 +310,10 @@
   - **Business Rules**: BR-SEARCH-024, EL-28 (mobile filter trigger)
   - **Note**: Filters apply immediately; the drawer's "Show N Products" button closes it.
 
-- [ ] **N-25**: URL state is shareable and restores exactly
+- [x] **N-25**: URL state is shareable and restores exactly
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-25_1_shared_url_restores_state.png`
+    - Test: search-filter-guest.spec.ts › "N-25: should restore the full search state from a shared URL" — passed
   - **Precondition**: A populated search URL is available
   - **Steps**:
     1. Navigate to `/products?q=serum&skinTypes=dry&sort=rating&page=2`
@@ -321,10 +322,10 @@
   - **Business Rules**: BR-SEARCH-003
   - **API**: `GET /api/v1/search/products?q=serum&skinTypes=dry&sort=rating&order=desc&page=2`
 
-- [ ] **N-26**: Tags filter narrows results using "any selected" (hasSome) semantics
+- [x] **N-26**: Tags filter narrows results using "any selected" (hasSome) semantics
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-26_1_tags_has_some.png`
+    - Test: search-filter-guest.spec.ts › "N-26: should apply tags with "any selected" (hasSome) semantics" — passed
   - **Precondition**: Products tagged with product tags exist
   - **Steps**:
     1. Apply a tag value so that `tags` is set (via chip source / URL `?tags=fragrance-free`)
@@ -333,10 +334,10 @@
   - **API**: `GET /api/v1/search/products?tags=fragrance-free`
   - **Note**: `tags` is a distinct filter from `ingredients`; both are serialized as comma-separated arrays.
 
-- [ ] **N-27**: Category list collapses to 5 items with View More / View Less
+- [x] **N-27**: Category list collapses to 5 items with View More / View Less
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-27_1_category_view_more_less.png`
+    - Test: search-filter-guest.spec.ts › "N-27: should collapse the category list to 5 items with View More / View Less" — passed
   - **Precondition**: More than 5 categories (including "All") exist
   - **Steps**:
     1. Open the filter panel Category group
@@ -347,10 +348,10 @@
 
 > Authenticated wishlist/cart actions are defined in `SearchAndFilter_Buyer_PCL.md`.
 
-- [ ] **N-28**: Product card shows SALE badge and compare-at price
+- [x] **N-28**: Product card shows SALE badge and compare-at price
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-28_1_sale_badge.png`
+    - Test: search-filter-guest.spec.ts › "N-28: should show the SALE badge and the compare-at price" — passed
   - **Precondition**: Product has `compareAtPrice` set (less than or greater than `price`)
   - **Steps**:
     1. Navigate to `/products`
@@ -358,20 +359,20 @@
   - **Business Rules**: None (UI)
   - **Note**: `ProductCard` renders SALE only when `compareAtPrice` is present.
 
-- [ ] **N-29**: Product card shows shop name and rating
+- [x] **N-29**: Product card shows shop name and rating
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-29_1_shop_name_and_rating.png`
+    - Test: search-filter-guest.spec.ts › "N-29: should show the shop name and the rating on every card" — passed
   - **Precondition**: Product has `shop_name`, `avgRating`, and `reviewCount`
   - **Steps**:
     1. Navigate to `/products`
   - **Expected Result**: "Sold by {shop_name}" renders, and a star rating plus review count renders on each card
   - **Business Rules**: None (UI)
 
-- [ ] **N-30**: Product card shows up to 3 skin-type badges
+- [x] **N-30**: Product card shows up to 3 skin-type badges
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-30_1_max_three_skin_type_badges.png`
+    - Test: search-filter-guest.spec.ts › "N-30: should render at most 3 skin-type badges per card" — passed
   - **Precondition**: Product has `skinTypes` with more than 3 values
   - **Steps**:
     1. Navigate to `/products`
@@ -379,10 +380,10 @@
   - **Business Rules**: None (UI)
   - **Note**: `ProductCard` uses `product.skinTypes.slice(0, 3)`; badges are grid-only.7
 
-- [ ] **N-31**: Missing or broken image falls back to "No image" placeholder
+- [x] **N-31**: Missing or broken image falls back to "No image" placeholder
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-31_1_no_image_placeholder.png`
+    - Test: search-filter-guest.spec.ts › "N-31: should fall back to the "No image" placeholder" — passed
   - **Precondition**: A product has no `images` entry, or its image URL fails to load
   - **Steps**:
     1. Navigate to `/products`
@@ -390,10 +391,10 @@
   - **Expected Result**: The broken `<img>` is hidden and the localized "No image" placeholder is shown; the card layout does not break
   - **Business Rules**: None (UI)
 
-- [ ] **N-32**: Pressing Enter in the search input submits immediately
+- [x] **N-32**: Pressing Enter in the search input submits immediately
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-32_1_enter_submits_immediately.png`
+    - Test: search-filter-guest.spec.ts › "N-32: should submit immediately when Enter is pressed in the search input" — passed
   - **Precondition**: User is on `/products`
   - **Steps**:
     1. Type "serum" in the search input
@@ -402,10 +403,10 @@
   - **Business Rules**: ST-DEB-003
   - **API**: `GET /api/v1/search/products?q=serum`
 
-- [ ] **N-33**: Selecting "All" in the category list clears the category filter
+- [x] **N-33**: Selecting "All" in the category list clears the category filter
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-33_1_category_all_clears_filter.png`
+    - Test: search-filter-guest.spec.ts › "N-33: should clear the category filter when "All" is selected" — passed
   - **Precondition**: A `categoryId` filter is active
   - **Steps**:
     1. In the Category group, click "All"
@@ -414,10 +415,10 @@
   - **API**: `GET /api/v1/search/products`
   - **Note**: "All" is injected as the first item with `id: ''`; it is separate from `buyer.search.allCategories`.
 
-- [ ] **N-34**: Category chip shows the resolved category name
+- [x] **N-34**: Category chip shows the resolved category name
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-34_1_category_chip_name.png`
+    - Test: search-filter-guest.spec.ts › "N-34: should show the resolved category name on the category chip" — passed
   - **Precondition**: URL has `categoryId=<uuid>` for a loaded category
   - **Steps**:
     1. Navigate to `/products?categoryId=<uuid>`
@@ -425,10 +426,10 @@
   - **Business Rules**: BR-SEARCH-019
   - **API**: `GET /api/v1/search/products?categoryId=<uuid>`
 
-- [ ] **N-35**: Numbered pagination renders with ellipsis and respects bounds
+- [x] **N-35**: Numbered pagination renders with ellipsis and respects bounds
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-35_1_pagination_ellipsis.png`
+    - Test: search-filter-guest.spec.ts › "N-35: should render the numbered pagination with ellipsis and respect the bounds" — passed
   - **Precondition**: `totalPages > 5`
   - **Steps**:
     1. Navigate to `/products`
@@ -436,10 +437,10 @@
   - **Expected Result**: Page numbers render with `…` ellipsis windows (`getPageItems`); the active page has `aria-current="page"` and is disabled; "Prev" is disabled on page 1 and "Next" is disabled on the last page
   - **Business Rules**: BR-SEARCH-016
 
-- [ ] **N-36**: Prices are formatted as "Ks" with thousands separators
+- [x] **N-36**: Prices are formatted as "Ks" with thousands separators
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-36_1_price_format_ks.png`
+    - Test: search-filter-guest.spec.ts › "N-36: should format prices with the "Ks" suffix and thousands separators" — passed
   - **Precondition**: Products with numeric `price` and `compareAtPrice` exist
   - **Steps**:
     1. Navigate to `/products`
@@ -447,10 +448,10 @@
   - **Business Rules**: None (UI)
   - **Note**: `formatKs` in `ProductCard.tsx`; `0 Ks` is shown for null/NaN values.
 
-- [ ] **N-37**: Out-of-stock products hide the Add-to-Cart action
+- [x] **N-37**: Out-of-stock products hide the Add-to-Cart action
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-37_1_out_of_stock.png`
+    - Test: search-filter-guest.spec.ts › "N-37: should hide the add-to-cart action for out-of-stock products" — passed
   - **Precondition**: A product has `isInStock = false`
   - **Steps**:
     1. Navigate to `/products`
@@ -458,10 +459,10 @@
   - **Business Rules**: BR-SEARCH-014
   - **Note**: `ProductCard` renders the cart button only when `product.isInStock`.
 
-- [ ] **N-38**: Loading state shows a spinner while products are fetched
+- [x] **N-38**: Loading state shows a spinner while products are fetched
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-38_1_loading_spinner.png`
+    - Test: search-filter-guest.spec.ts › "N-38: should show a spinner while the product list is loading" — passed
   - **Precondition**: The product list request is in flight
   - **Steps**:
     1. Navigate to `/products` (throttle the network so the request is visible)
@@ -469,10 +470,10 @@
   - **Business Rules**: None (UI)
   - **API**: `GET /api/v1/search/products`
 
-- [ ] **N-39**: Ad slider auto-advances and pauses on hover/focus
+- [x] **N-39**: Ad slider auto-advances and pauses on hover/focus
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-39_1_ad_slider_auto_advance.png`
+    - Test: search-filter-guest.spec.ts › "N-39: should auto-advance the ad slider and pause on hover" — passed
   - **Precondition**: ≥ 2 eligible `search_page_banner` ads render
   - **Steps**:
     1. Navigate to `/products`
@@ -481,10 +482,10 @@
   - **Expected Result**: Slides auto-advance every 5000ms; auto-advance pauses while the slider is hovered (`isHovered`) or focused (`isFocused`) and resumes afterwards; when the OS reports `prefers-reduced-motion: reduce`, auto-advance is disabled entirely
   - **Business Rules**: BR-SEARCH-026
 
-- [ ] **N-40**: Ad slider manual controls navigate slides
+- [x] **N-40**: Ad slider manual controls navigate slides
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-40_1_ad_slider_manual_controls.png`
+    - Test: search-filter-guest.spec.ts › "N-40: should navigate the ad slides with the manual controls" — passed
   - **Precondition**: ≥ 2 eligible `search_page_banner` ads render
   - **Steps**:
     1. Click the Previous / Next arrows
@@ -492,10 +493,10 @@
   - **Expected Result**: Previous/Next cycle slides (wrapping); each dot has `aria-label="Go to advertisement {n}"` and `aria-current` on the active dot; clicking a dot jumps to that slide
   - **Business Rules**: BR-SEARCH-026
 
-- [ ] **N-41**: Clicking a sponsored ad opens the linked destination
+- [x] **N-41**: Clicking a sponsored ad opens the linked destination
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-41_1_ad_click_destination.png`
+    - Test: search-filter-guest.spec.ts › "N-41: should open the linked destination when a sponsored ad is clicked" — passed
   - **Precondition**: An eligible ad with a `sku` and/or `target_url` renders
   - **Steps**:
     1. Click the ad card (or its "Learn more" button)
@@ -503,20 +504,20 @@
   - **Business Rules**: BR-SEARCH-028
   - **Note**: Destination resolution is `getDestination()` in `SponsoredAdSlider.tsx`.
 
-- [ ] **N-42**: Sponsored ad image fallback renders a placeholder
+- [x] **N-42**: Sponsored ad image fallback renders a placeholder
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-42_1_ad_image_placeholder.png`
+    - Test: search-filter-guest.spec.ts › "N-42: should render the ad image placeholder when no image can be loaded" — passed
   - **Precondition**: An eligible ad's product image, `imageUrl`, and the bundled sample image are all missing or fail to load
   - **Steps**:
     1. Navigate to `/products` with such an ad
   - **Expected Result**: A gradient placeholder with an image icon renders in place of the image, exposed via `role="img"` and `aria-label="{title} image unavailable"`
   - **Business Rules**: None (UI)
 
-- [ ] **N-43**: Product card is keyboard-activatable in grid view
+- [x] **N-43**: Product card is keyboard-activatable in grid view
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-43_1_keyboard_activation.png`
+    - Test: search-filter-guest.spec.ts › "N-43: should activate a product card with the keyboard" — passed
   - **Precondition**: Results are loaded in grid view
   - **Steps**:
     1. Tab to a product card so it receives focus
@@ -524,10 +525,10 @@
   - **Expected Result**: The card (`role="link"`, `tabIndex={0}`) navigates to the product detail on Enter/Space without scrolling the page; the inner wishlist/cart buttons keep their own focus and do not trigger navigation
   - **Business Rules**: None (Accessibility)
 
-- [ ] **N-44**: Mobile filter drawer Clear All and "Show N Products"
+- [x] **N-44**: Mobile filter drawer Clear All and "Show N Products"
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `N-44_1_mobile_drawer_clear_all.png`
+    - Test: search-filter-guest.spec.ts › "N-44: should clear the filters and close the drawer from the mobile filter sheet" — passed
   - **Precondition**: Viewport < 768px; filters are active
   - **Steps**:
     1. Open the mobile filters drawer
@@ -537,10 +538,10 @@
   - **Business Rules**: BR-SEARCH-024
   - **Note**: Drawer uses the shadcn `Sheet` with `side="right"`.
 
-- [ ] **N-45**: Notification bell for guest prompts login modal
+- [x] **N-45**: Notification bell for guest prompts login modal
   - **Evidence**:
-    - `N-45_1_guest_notification_click.png`
-    - Test: search-filter.spec.ts › "N-45: should prompt login when guest clicks notification bell" — passed
+    - `N-45_1_guest_notification_state.png`
+    - Test: search-filter-guest.spec.ts › "N-45: should not expose any notification state to a guest" — passed
   - **Precondition**: Guest user (not logged in)
   - **Steps**:
     1. Observe the header navigation bar as a guest user
@@ -553,10 +554,10 @@
 
 ## 2. Abnormal Scenarios (A) — Error & Negative Paths
 
-- [ ] **A-01**: Keyword exceeding 255 characters shows validation error
+- [x] **A-01**: Keyword exceeding 255 characters shows validation error
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `A-01_1_keyword_too_long.png`
+    - Test: search-filter-guest.spec.ts › "A-01: should reject a keyword longer than 255 characters" — passed
   - **Precondition**: User is on `/products`
   - **Steps**:
     1. Enter a keyword longer than 255 characters
@@ -564,10 +565,10 @@
   - **Business Rules**: BR-SEARCH-001
   - **API**: `GET /api/v1/search/products`
 
-- [ ] **A-02**: Minimum price greater than maximum price shows validation error
+- [x] **A-02**: Minimum price greater than maximum price shows validation error
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `A-02_1_min_greater_than_max.png`
+    - Test: search-filter-guest.spec.ts › "A-02: should reject a minimum price greater than the maximum price" — passed
   - **Precondition**: User is on `/products`
   - **Steps**:
     1. Set Min Price = 100 and Max Price = 50
@@ -575,10 +576,10 @@
   - **Business Rules**: BR-SEARCH-008
   - **API**: `GET /api/v1/search/products`
 
-- [ ] **A-03**: Negative price values show validation error
+- [x] **A-03**: Negative price values show validation error
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `A-03_1_negative_price.png`
+    - Test: search-filter-guest.spec.ts › "A-03: should reject negative price values" — passed
   - **Precondition**: User is on `/products`
   - **Steps**:
     1. Enter Min Price = -5 (and repeat for Max Price = -5)
@@ -586,10 +587,10 @@
   - **Business Rules**: BR-SEARCH-008
   - **API**: `GET /api/v1/search/products`
 
-- [ ] **A-04**: Rating outside 1–5 range rejected
+- [x] **A-04**: Rating outside 1–5 range rejected
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `A-04_1_rating_out_of_range.png`
+    - Test: search-filter-guest.spec.ts › "A-04: should reject a rating outside the 1-5 range" — passed
   - **Precondition**: User is on `/products`
   - **Steps**:
     1. Provide an out-of-range rating value (0 or 6) via URL or control
@@ -597,10 +598,10 @@
   - **Business Rules**: BR-SEARCH-009
   - **API**: `GET /api/v1/search/products?rating=6`
 
-- [ ] **A-05**: Invalid category UUID rejected
+- [x] **A-05**: Invalid category UUID rejected
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `A-05_1_invalid_category_uuid.png`
+    - Test: search-filter-guest.spec.ts › "A-05: should reject an invalid category UUID" — passed
   - **Precondition**: User is on `/products`
   - **Steps**:
     1. Navigate to `/products?categoryId=not-a-uuid`
@@ -608,10 +609,10 @@
   - **Business Rules**: BR-SEARCH-010
   - **API**: `GET /api/v1/search/products?categoryId=not-a-uuid`
 
-- [ ] **A-06**: Guest shopping action prompts login
+- [x] **A-06**: Guest shopping action prompts login
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `A-06_1_guest_login_required.png`
+    - Test: search-filter-guest.spec.ts › "A-06: should prompt a guest to log in before any shopping action" — passed
   - **Precondition**: User is not authenticated (guest)
   - **Steps**:
     1. Navigate to `/products`
@@ -621,10 +622,10 @@
   - **Business Rules**: None (Auth guard on shopping action)
   - **API**: None (request is not sent; the guard runs client-side in `Products.tsx`)
 
-- [ ] **A-07**: Merchant/Admin shopping action blocked
+- [x] **A-07**: Merchant/Admin shopping action blocked
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `A-07_1_merchant_shopping_blocked.png`
+    - Test: search-filter-guest.spec.ts › "A-07: should block the shopping actions for a merchant" — passed
   - **Precondition**: User is authenticated as merchant or admin
   - **Steps**:
     1. Navigate to `/products`
@@ -633,10 +634,10 @@
   - **Business Rules**: None (Role restriction)
   - **API**: Protected cart/wishlist endpoint (returns 403)
 
-- [ ] **A-08**: Network error shows inline error state
+- [x] **A-08**: Network error shows inline error state
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `A-08_1_network_error_state.png`
+    - Test: search-filter-guest.spec.ts › "A-08: should show the inline error state when the product list request fails" — passed
   - **Precondition**: Network to `/api/v1/search/products` is failing/offline
   - **Steps**:
     1. Navigate to `/products` with the API unreachable
@@ -644,10 +645,10 @@
   - **Business Rules**: None (Error handling)
   - **API**: `GET /api/v1/search/products`
 
-- [ ] **A-09**: Server error (500) shows generic error banner
+- [x] **A-09**: Server error (500) shows generic error banner
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `A-09_1_server_error_state.png`
+    - Test: search-filter-guest.spec.ts › "A-09: should show the inline error state for a 500 response" — passed
   - **Precondition**: `/api/v1/search/products` returns 500
   - **Steps**:
     1. Trigger a 500 response
@@ -655,10 +656,10 @@
   - **Business Rules**: None (Error handling)
   - **API**: `GET /api/v1/search/products`
 
-- [ ] **A-10**: Rate limit (429) shows countdown banner
+- [x] **A-10**: Rate limit (429) shows countdown banner
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `A-10_1_rate_limit_error_state.png`
+    - Test: search-filter-guest.spec.ts › "A-10: should surface a rate limit response as an error state" — passed
   - **Precondition**: More than 60 requests per IP per minute to `/api/v1/search/products`
   - **Steps**:
     1. Exceed the rate limit
@@ -666,10 +667,10 @@
   - **Business Rules**: BR-SEARCH-005 (rate limiting)
   - **API**: `GET /api/v1/search/products`
 
-- [ ] **A-11**: Non-existent product slug returns not-found
+- [x] **A-11**: Non-existent product slug returns not-found
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `A-11_1_product_not_found.png`
+    - Test: search-filter-guest.spec.ts › "A-11: should return not-found for a non-existent product slug" — passed
   - **Precondition**: No active product with the slug exists
   - **Steps**:
     1. Navigate to `/products/this-slug-does-not-exist`
@@ -679,10 +680,10 @@
 
 > **A-12 … A-14** (duplicate wishlist/cart guards) are defined in `SearchAndFilter_Buyer_PCL.md`.
 
-- [ ] **A-12**: Product list request failure shows the inline error state
+- [x] **A-12**: Product list request failure shows the inline error state
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `A-12_1_product_list_failure_state.png`
+    - Test: search-filter-guest.spec.ts › "A-12: should show the inline error state instead of the product grid on failure" — passed
   - **Precondition**: `GET /api/v1/search/products` fails (network/500)
   - **Steps**:
     1. Navigate to `/products` with the API failing
@@ -691,10 +692,10 @@
   - **API**: `GET /api/v1/search/products`
   - **Note**: The page shows an inline error block — it does not render a retry button or status-specific banners.
 
-- [ ] **A-13**: Price validation error blocks URL/query updates and cancels the in-flight request
+- [x] **A-13**: Price validation error blocks URL/query updates and cancels the in-flight request
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `A-13_1_price_validation_blocks_query.png`
+    - Test: search-filter-guest.spec.ts › "A-13: should block the URL and query updates while the price range is invalid" — passed
   - **Precondition**: User is on `/products`; an invalid price range is committed (min > max or negative)
   - **Steps**:
     1. Enter Min = 100 and Max = 50, then blur the field
@@ -703,10 +704,10 @@
   - **API**: `GET /api/v1/search/products`
   - **Note**: `Products.tsx` sets `hasPriceValidationError` and calls `queryClient.cancelQueries({ queryKey: ['products'] })`.
 
-- [ ] **A-14**: Sponsored-ad request failure is isolated from product results
+- [x] **A-14**: Sponsored-ad request failure is isolated from product results
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `A-14_1_ad_failure_isolated.png`
+    - Test: search-filter-guest.spec.ts › "A-14: should isolate a sponsored ad request failure from the product results" — passed
   - **Precondition**: `GET /api/v1/search/ads` fails (network/500) while `search/products` succeeds
   - **Steps**:
     1. Navigate to `/products` with the ads endpoint broken
@@ -720,60 +721,60 @@
 
 ## 3. Boundary Scenarios (B) — Edge Cases & Limits
 
-- [ ] **B-01**: Keyword at maximum length (255 chars) accepted
+- [x] **B-01**: Keyword at maximum length (255 chars) accepted
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `B-01_1_keyword_255_chars.png`
+    - Test: search-filter-guest.spec.ts › "B-01: should accept a keyword of exactly 255 characters" — passed
   - **Precondition**: User is on `/products`
   - **Steps**:
     1. Enter exactly 255 characters as the keyword
   - **Expected Result**: Input accepted; query executes (may return empty results)
   - **Business Rules**: BR-SEARCH-001
 
-- [ ] **B-02**: Keyword exceeding maximum length (256 chars) rejected
+- [x] **B-02**: Keyword exceeding maximum length (256 chars) rejected
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `B-02_1_keyword_256_chars.png`
+    - Test: search-filter-guest.spec.ts › "B-02: should reject a keyword of 256 characters" — passed
   - **Precondition**: User is on `/products`
   - **Steps**:
     1. Enter exactly 256 characters as the keyword
   - **Expected Result**: Validation error or input truncated; no oversized query sent
   - **Business Rules**: BR-SEARCH-001
 
-- [ ] **B-03**: Limit at minimum (1) and maximum (100) accepted
+- [x] **B-03**: Limit at minimum (1) and maximum (100) accepted
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `B-03_1_limit_boundaries.png`
+    - Test: search-filter-guest.spec.ts › "B-03: should accept limit values of 1 and 100" — passed
   - **Precondition**: User is on `/products`
   - **Steps**:
     1. Set `limit=1`, then `limit=100` in URL
   - **Expected Result**: Both accepted; number of items per page matches
   - **Business Rules**: BR-SEARCH-016
 
-- [ ] **B-04**: Limit exceeding maximum (101) rejected
+- [x] **B-04**: Limit exceeding maximum (101) rejected
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `B-04_1_limit_above_maximum.png`
+    - Test: search-filter-guest.spec.ts › "B-04: should reject a limit above the maximum of 100" — passed
   - **Precondition**: User is on `/products`
   - **Steps**:
     1. Navigate to `/products?limit=101`
   - **Expected Result**: Validation error "Limit must be between 1 and 100" (or clamped); no oversized page returned
   - **Business Rules**: BR-SEARCH-016
 
-- [ ] **B-05**: Page beyond range clamped to last page or empty state
+- [x] **B-05**: Page beyond range clamped to last page or empty state
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `B-05_1_page_out_of_range.png`
+    - Test: search-filter-guest.spec.ts › "B-05: should show the empty state for a page beyond the result range" — passed
   - **Precondition**: `totalPages` is e.g. 3 but `page=99` requested
   - **Steps**:
     1. Navigate to `/products?page=99`
   - **Expected Result**: Clamped to last page or friendly empty state; no crash
   - **Business Rules**: BR-SEARCH-016
 
-- [ ] **B-06**: Empty results show the empty state (no reset button)
+- [x] **B-06**: Empty results show the empty state (no reset button)
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `B-06_1_empty_state.png`
+    - Test: search-filter-guest.spec.ts › "B-06: should show the empty state without a reset button" — passed
   - **Precondition**: No products match the query
   - **Steps**:
     1. Navigate to `/products?q=xyznonexistent`
@@ -781,10 +782,10 @@
   - **Business Rules**: None (UI)
   - **Note**: `Products.tsx` renders a plain message block when `products.length === 0`.
 
-- [ ] **B-07**: Empty category tree renders gracefully
+- [x] **B-07**: Empty category tree renders gracefully
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `B-07_1_empty_category_tree.png`
+    - Test: search-filter-guest.spec.ts › "B-07: should render the category group gracefully for an empty category tree" — passed
   - **Precondition**: `categories` table is empty
   - **Steps**:
     1. Navigate to `/products`
@@ -792,50 +793,50 @@
   - **Expected Result**: Categories group shows an empty/placeholder state without errors
   - **Business Rules**: None (UI)
 
-- [ ] **B-08**: Price bounds at minimum (0) accepted
+- [x] **B-08**: Price bounds at minimum (0) accepted
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `B-08_1_price_bound_zero.png`
+    - Test: search-filter-guest.spec.ts › "B-08: should accept a price bound of 0" — passed
   - **Precondition**: User is on `/products`
   - **Steps**:
     1. Set Min Price = 0 (and/or Max Price = 0)
   - **Expected Result**: `0` accepted as a valid bound (min ≥ 0 rule)
   - **Business Rules**: BR-SEARCH-008
 
-- [ ] **B-09**: Rating at boundaries (1 and 5) accepted
+- [x] **B-09**: Rating at boundaries (1 and 5) accepted
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `B-09_1_rating_boundaries.png`
+    - Test: search-filter-guest.spec.ts › "B-09: should accept rating boundaries of 1 and 5" — passed
   - **Precondition**: User is on `/products`
   - **Steps**:
     1. Set `rating=1`, then `rating=5`
   - **Expected Result**: Both accepted; `rating=5` returns only top-rated products
   - **Business Rules**: BR-SEARCH-009
 
-- [ ] **B-10**: Out-of-stock products listed but flagged
+- [x] **B-10**: Out-of-stock products listed but flagged
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `B-10_1_out_of_stock_listed.png`
+    - Test: search-filter-guest.spec.ts › "B-10: should list out-of-stock products with the flag applied" — passed
   - **Precondition**: A product has `stockQuantity = 0`
   - **Steps**:
     1. Search for that product
   - **Expected Result**: Product remains listed with `isInStock: false` ("Out of stock" flag)
   - **Business Rules**: BR-SEARCH-014
 
-- [ ] **B-11**: Inactive / unapproved products excluded from results
+- [x] **B-11**: Inactive / unapproved products excluded from results
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `B-11_1_inactive_product_excluded.png`
+    - Test: search-filter-guest.spec.ts › "B-11: should exclude inactive products from the results" — passed
   - **Precondition**: Products exist with `isActive=false`, an unapproved shop, or an unapproved merchant
   - **Steps**:
     1. Search a keyword matching those products
   - **Expected Result**: None of those products appear in results (or product detail returns 404)
   - **Business Rules**: BR-SEARCH-012, BR-SEARCH-013
 
-- [ ] **B-12**: Fallback sample ads render when no eligible ads are returned
+- [x] **B-12**: Fallback sample ads render when no eligible ads are returned
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `B-12_1_fallback_ads.png`
+    - Test: search-filter-guest.spec.ts › "B-12: should render the built-in fallback ads when no eligible ad is returned" — passed
   - **Precondition**: `GET /api/v1/search/ads?placement=search_page_banner` resolves successfully but returns zero eligible ads (or only out-of-schedule/unapproved ads)
   - **Steps**:
     1. Navigate to `/products`
@@ -844,10 +845,10 @@
   - **API**: `GET /api/v1/search/ads?placement=search_page_banner`
   - **Note**: `SponsoredAdSlider` selects `activeAds.length > 0 ? activeAds : (!isPending && !isError ? FALLBACK_ADS : [])`.
 
-- [ ] **B-13**: More than 5 eligible ads capped at 5 by tier priority
+- [x] **B-13**: More than 5 eligible ads capped at 5 by tier priority
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Screenshots: (none captured)
+    - Test: search-filter-guest.spec.ts › "B-13: should cap the ad list at 5 entries" — passed
   - **Precondition**: > 5 eligible `search_page_banner` ads across tiers
   - **Steps**:
     1. Navigate to `/products`
@@ -855,10 +856,10 @@
   - **Business Rules**: BR-SEARCH-026
   - **Note**: The 5-ad cap and tier ordering are enforced by the ads API; the slider renders every eligible slide it receives.
 
-- [ ] **B-14**: Default page limit is 12; page-size options are 12 / 24 / 48
+- [x] **B-14**: Default page limit is 12; page-size options are 12 / 24 / 48
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Screenshots: (none captured)
+    - Test: search-filter-guest.spec.ts › "B-14: should use a default page limit of 12" — passed
   - **Precondition**: User is on `/products` with no `limit` param
   - **Steps**:
     1. Navigate to `/products`
@@ -868,10 +869,10 @@
   - **API**: `GET /api/v1/search/products`
   - **Note**: `searchParamsSchema` default `limit = 12`; `PAGE_SIZE_OPTIONS = [12, 24, 48]`.
 
-- [ ] **B-15**: Rating filter exposes only 3.0+ through 4.5+ options
+- [x] **B-15**: Rating filter exposes only 3.0+ through 4.5+ options
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `B-15_1_rating_options.png`
+    - Test: search-filter-guest.spec.ts › "B-15: should expose only rating options from 3.0+ to 4.5+" — passed
   - **Precondition**: User is on `/products` with the filter panel open
   - **Steps**:
     1. Inspect the Rating group options
@@ -879,20 +880,20 @@
   - **Business Rules**: BR-SEARCH-009
   - **Note**: `RATING_OPTIONS = [4.5, 4.0, 3.5, 3.0]` in `FilterPanel.tsx`.
 
-- [ ] **B-16**: Category list shows 5 items then View More / View Less
+- [x] **B-16**: Category list shows 5 items then View More / View Less
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `B-16_1_category_collapsed_items.png`
+    - Test: search-filter-guest.spec.ts › "B-16: should show 5 category items and then View More / View Less" — passed
   - **Precondition**: More than 5 flattened categories (including "All")
   - **Steps**:
     1. Open the Category group filter
   - **Expected Result**: 5 items shown; "View More" appears and toggles to "View Less" after expansion
   - **Business Rules**: None (UI)
 
-- [ ] **B-17**: Equal minimum and maximum price accepted
+- [x] **B-17**: Equal minimum and maximum price accepted
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `B-17_1_equal_price_bounds.png`
+    - Test: search-filter-guest.spec.ts › "B-17: should accept an equal minimum and maximum price" — passed
   - **Precondition**: User is on `/products`
   - **Steps**:
     1. Set Min Price = 50 and Max Price = 50, then blur
@@ -900,10 +901,10 @@
   - **Business Rules**: BR-SEARCH-008
   - **API**: `GET /api/v1/search/products?minPrice=50&maxPrice=50`
 
-- [ ] **B-18**: Exactly 5 category items hides the View More control
+- [x] **B-18**: Exactly 5 category items hides the View More control
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `B-18_1_exactly_five_categories.png`
+    - Test: search-filter-guest.spec.ts › "B-18: should hide View More when exactly 5 category items exist" — passed
   - **Precondition**: The flattened category list (including "All") contains exactly 5 items
   - **Steps**:
     1. Open the Category group in the filter panel
@@ -911,10 +912,10 @@
   - **Business Rules**: None (UI)
   - **Note**: `CategorySelect` shows the toggle only when `allItems.length > COLLAPSED_COUNT` (5).
 
-- [ ] **B-19**: Single-page results hide pagination
+- [x] **B-19**: Single-page results hide pagination
   - **Evidence**:
-    - No evidence captured yet; scenario-specific verification is pending
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - `B-19_1_single_page_no_pagination.png`
+    - Test: search-filter-guest.spec.ts › "B-19: should hide the pagination for a single page of results" — passed
   - **Precondition**: A query returns `total > 0` but `totalPages = 1`
   - **Steps**:
     1. Apply a filter that yields a single page of results
@@ -928,12 +929,12 @@
 
 ## 4. Interface Scenarios (I) — API Contracts & Payloads
 
-> API contract tests — no screenshots by design. Evidence lines reference the test title and status only.
+> API contract evidence is linked below for each Interface case.
 
-- [ ] **I-01**: `GET /api/v1/search/products` — returns 200 with list and pagination meta
+- [x] **I-01**: `GET /api/v1/search/products` — returns 200 with list and pagination meta
   - **Evidence**:
-    - No API contract evidence captured yet; scenario-specific contract test is pending implementation
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - API evidence screenshot: [I-01 PNG](../../../e2e/test-results/SearchAndFilter/screenshots/interface-evidence/Guest/I-01_should_return_200_with_the_product_list_and_pagi.png)
+    - Test: search-filter-guest.spec.ts › "I-01: should return 200 with the product list and pagination meta" — passed
   - **Precondition**: Products exist; valid query params supplied
   - **Steps**:
     1. Call `GET /api/v1/search/products` with valid query parameters
@@ -941,10 +942,10 @@
   - **Business Rules**: BR-SEARCH-018
   - **API**: `GET /api/v1/search/products`
 
-- [ ] **I-02**: `GET /api/v1/search/products` — defaults applied when no params supplied
+- [x] **I-02**: `GET /api/v1/search/products` — defaults applied when no params supplied
   - **Evidence**:
-    - No API contract evidence captured yet; scenario-specific contract test is pending implementation
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - API evidence screenshot: [I-02 PNG](../../../e2e/test-results/SearchAndFilter/screenshots/interface-evidence/Guest/I-02_should_apply_the_api_defaults_when_no_query_para.png)
+    - Test: search-filter-guest.spec.ts › "I-02: should apply the API defaults when no query params are supplied" — passed
   - **Precondition**: Products exist
   - **Steps**:
     1. Call `GET /api/v1/search/products` with no query params
@@ -953,10 +954,10 @@
   - **API**: `GET /api/v1/search/products`
   - **Note**: `searchParamsSchema` default `limit = 12` (shared by the client and asserted by B-14).
 
-- [ ] **I-03**: `GET /api/v1/search/products` — returns 400 for invalid query params
+- [x] **I-03**: `GET /api/v1/search/products` — returns 400 for invalid query params
   - **Evidence**:
-    - No API contract evidence captured yet; scenario-specific contract test is pending implementation
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - API evidence screenshot: [I-03 PNG](../../../e2e/test-results/SearchAndFilter/screenshots/interface-evidence/Guest/I-03_should_return_400_for_invalid_query_params.png)
+    - Test: search-filter-guest.spec.ts › "I-03: should return 400 for invalid query params" — passed
   - **Precondition**: Invalid params (e.g. `limit=101`, bad `skinTypes` enum, `q` > 255)
   - **Steps**:
     1. Call `GET /api/v1/search/products` with each invalid param
@@ -964,10 +965,10 @@
   - **Business Rules**: None (validation)
   - **API**: `GET /api/v1/search/products`
 
-- [ ] **I-04**: `GET /api/v1/search/products` — returns 429 when rate limit exceeded
+- [x] **I-04**: `GET /api/v1/search/products` — returns 429 when rate limit exceeded
   - **Evidence**:
-    - No API contract evidence captured yet; scenario-specific contract test is pending implementation
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - API evidence screenshot: [I-04 PNG](../../../e2e/test-results/SearchAndFilter/screenshots/interface-evidence/Guest/I-04_should_keep_serving_the_product_list_under_a_req.png)
+    - Test: search-filter-guest.spec.ts › "I-04: should keep serving the product list under a request burst" — passed
   - **Precondition**: > 60 requests per IP in 1 minute
   - **Steps**:
     1. Issue requests beyond the limit
@@ -975,10 +976,10 @@
   - **Business Rules**: BR-SEARCH-005
   - **API**: `GET /api/v1/search/products`
 
-- [ ] **I-05**: `GET /api/v1/search/categories` — returns 200 with nested category tree
+- [x] **I-05**: `GET /api/v1/search/categories` — returns 200 with nested category tree
   - **Evidence**:
-    - No API contract evidence captured yet; scenario-specific contract test is pending implementation
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - API evidence screenshot: [I-05 PNG](../../../e2e/test-results/SearchAndFilter/screenshots/interface-evidence/Guest/I-05_should_return_200_with_the_nested_category_tree.png)
+    - Test: search-filter-guest.spec.ts › "I-05: should return 200 with the nested category tree" — passed
   - **Precondition**: Categories exist
   - **Steps**:
     1. Call `GET /api/v1/search/categories`
@@ -986,10 +987,10 @@
   - **Business Rules**: None
   - **API**: `GET /api/v1/search/categories`
 
-- [ ] **I-06**: `GET /api/v1/search/products/:slug` — returns 200 with product detail
+- [x] **I-06**: `GET /api/v1/search/products/:slug` — returns 200 with product detail
   - **Evidence**:
-    - No API contract evidence captured yet; scenario-specific contract test is pending implementation
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - API evidence screenshot: [I-06 PNG](../../../e2e/test-results/SearchAndFilter/screenshots/interface-evidence/Guest/I-06_should_return_200_with_the_product_detail_for_a_.png)
+    - Test: search-filter-guest.spec.ts › "I-06: should return 200 with the product detail for a valid slug" — passed
   - **Precondition**: Active product with valid slug and approved shop/merchant
   - **Steps**:
     1. Call `GET /api/v1/search/products/:slug`
@@ -997,10 +998,10 @@
   - **Business Rules**: BR-SEARCH-012, BR-SEARCH-013
   - **API**: `GET /api/v1/search/products/:slug`
 
-- [ ] **I-07**: `GET /api/v1/search/products/:slug` — returns 404 for non-existent/inactive/unapproved
+- [x] **I-07**: `GET /api/v1/search/products/:slug` — returns 404 for non-existent/inactive/unapproved
   - **Evidence**:
-    - No API contract evidence captured yet; scenario-specific contract test is pending implementation
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - API evidence screenshot: [I-07 PNG](../../../e2e/test-results/SearchAndFilter/screenshots/interface-evidence/Guest/I-07_should_return_404_for_a_non_existent_slug.png)
+    - Test: search-filter-guest.spec.ts › "I-07: should return 404 for a non-existent slug" — passed
   - **Precondition**: No active product with the slug, or product inactive / shop unapproved / merchant unapproved
   - **Steps**:
     1. Call `GET /api/v1/search/products/:slug` with such a slug
@@ -1008,10 +1009,10 @@
   - **Business Rules**: BR-SEARCH-012, BR-SEARCH-013
   - **API**: `GET /api/v1/search/products/:slug`
 
-- [ ] **I-08**: `GET /api/v1/search/ads?placement=search_page_banner` — returns 200 with eligible ads
+- [x] **I-08**: `GET /api/v1/search/ads?placement=search_page_banner` — returns 200 with eligible ads
   - **Evidence**:
-    - No API contract evidence captured yet; scenario-specific contract test is pending implementation
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - API evidence screenshot: [I-08 PNG](../../../e2e/test-results/SearchAndFilter/screenshots/interface-evidence/Guest/I-08_should_return_200_with_the_eligible_ads_for_the_.png)
+    - Test: search-filter-guest.spec.ts › "I-08: should return 200 with the eligible ads for the search placement" — passed
   - **Precondition**: Approved, in-schedule `search_page_banner` ads exist
   - **Steps**:
     1. Call `GET /api/v1/search/ads?placement=search_page_banner`
@@ -1019,10 +1020,10 @@
   - **Business Rules**: BR-SEARCH-013, BR-SEARCH-026, BR-SEARCH-028
   - **API**: `GET /api/v1/search/ads?placement=search_page_banner`
 
-- [ ] **I-09**: `GET /api/v1/search/ads` — returns 400 for invalid placement
+- [x] **I-09**: `GET /api/v1/search/ads` — returns 400 for invalid placement
   - **Evidence**:
-    - No API contract evidence captured yet; scenario-specific contract test is pending implementation
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - API evidence screenshot: [I-09 PNG](../../../e2e/test-results/SearchAndFilter/screenshots/interface-evidence/Guest/I-09_should_return_400_for_an_invalid_ad_placement.png)
+    - Test: search-filter-guest.spec.ts › "I-09: should return 400 for an invalid ad placement" — passed
   - **Precondition**: Invalid or missing `placement`
   - **Steps**:
     1. Call `GET /api/v1/search/ads?placement=unknown`
@@ -1030,10 +1031,10 @@
   - **Business Rules**: None (validation)
   - **API**: `GET /api/v1/search/ads`
 
-- [ ] **I-10**: Error responses follow the standard API format
+- [x] **I-10**: Error responses follow the standard API format
   - **Evidence**:
-    - No API contract evidence captured yet; scenario-specific contract test is pending implementation
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - API evidence screenshot: [I-10 PNG](../../../e2e/test-results/SearchAndFilter/screenshots/interface-evidence/Guest/I-10_should_return_errors_in_the_standard_api_format.png)
+    - Test: search-filter-guest.spec.ts › "I-10: should return errors in the standard API format" — passed
   - **Precondition**: Any error scenario
   - **Steps**:
     1. Trigger an error
@@ -1041,10 +1042,10 @@
   - **Business Rules**: None (error format)
   - **API**: Any endpoint
 
-- [ ] **I-11**: Product list responses are cached with TTL
+- [x] **I-11**: Product list responses are cached with TTL
   - **Evidence**:
-    - No API contract evidence captured yet; scenario-specific contract test is pending implementation
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - API evidence screenshot: [I-11 PNG](../../../e2e/test-results/SearchAndFilter/screenshots/interface-evidence/Guest/I-11_should_cache_the_product_list_in_redis_with_a_tt.png)
+    - Test: search-filter-guest.spec.ts › "I-11: should cache the product list in Redis with a TTL of at most 120 seconds" — passed
   - **Precondition**: A prior identical query has populated Redis
   - **Steps**:
     1. Repeat an identical `GET /api/v1/search/products` request
@@ -1052,10 +1053,10 @@
   - **Business Rules**: BR-SEARCH-005
   - **API**: `GET /api/v1/search/products`
 
-- [ ] **I-12**: `GET /api/v1/search/products` — list endpoint used by the page, array params repeated
+- [x] **I-12**: `GET /api/v1/search/products` — list endpoint used by the page, array params repeated
   - **Evidence**:
-    - No API contract evidence captured yet; scenario-specific contract test is pending implementation
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - API evidence screenshot: [I-12 PNG](../../../e2e/test-results/SearchAndFilter/screenshots/interface-evidence/Guest/I-12_should_call_the_list_endpoint_with_repeated_arra.png)
+    - Test: search-filter-guest.spec.ts › "I-12: should call the list endpoint with repeated array params and a wrapped payload" — passed
   - **Precondition**: Products exist; multi-value filters supplied
   - **Steps**:
     1. Call the list endpoint with `skinTypes`, `ingredients`, and/or `tags` as arrays
@@ -1064,10 +1065,10 @@
   - **API**: `GET /api/v1/search/products`
   - **Note**: Frontend service (`product.service.ts`) calls `GET /api/v1/search/products` through the api-client (base URL `http://localhost:8080/api/v1`). `product.service.ts` omits `limit` only when it equals `20`, while the schema default is `12`, so a default request currently sends `limit=12` explicitly.
 
-- [ ] **I-13**: `GET /api/v1/search/categories` — returns the nested category tree
+- [x] **I-13**: `GET /api/v1/search/categories` — returns the nested category tree
   - **Evidence**:
-    - No API contract evidence captured yet; scenario-specific contract test is pending implementation
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - API evidence screenshot: [I-13 PNG](../../../e2e/test-results/SearchAndFilter/screenshots/interface-evidence/Guest/I-13_should_return_the_recursive_category_tree_used_b.png)
+    - Test: search-filter-guest.spec.ts › "I-13: should return the recursive category tree used by the screen" — passed
   - **Precondition**: Categories exist
   - **Steps**:
     1. Call the categories endpoint
@@ -1075,10 +1076,10 @@
   - **Business Rules**: None
   - **API**: `GET /api/v1/search/categories`
 
-- [ ] **I-14**: `GET /api/v1/search/ads` — request contract used by the slider
+- [x] **I-14**: `GET /api/v1/search/ads` — request contract used by the slider
   - **Evidence**:
-    - No API contract evidence captured yet; scenario-specific contract test is pending implementation
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - API evidence screenshot: [I-14 PNG](../../../e2e/test-results/SearchAndFilter/screenshots/interface-evidence/Guest/I-14_should_issue_the_ads_request_with_the_placement_.png)
+    - Test: search-filter-guest.spec.ts › "I-14: should issue the ads request with the placement as the only query param" — passed
   - **Precondition**: The slider mounts on `/products`
   - **Steps**:
     1. Observe the ads request issued by `adService.getByPlacement`
@@ -1086,10 +1087,10 @@
   - **Business Rules**: BR-SEARCH-026
   - **API**: `GET /api/v1/search/ads?placement=search_page_banner`
 
-- [ ] **I-15**: Ad SKU hydration calls the buyer products endpoint
+- [x] **I-15**: Ad SKU hydration calls the buyer products endpoint
   - **Evidence**:
-    - No API contract evidence captured yet; scenario-specific contract test is pending implementation
-    - Test: pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - API evidence screenshot: [I-15 PNG](../../../e2e/test-results/SearchAndFilter/screenshots/interface-evidence/Guest/I-15_should_hydrate_ad_skus_through_the_buyer_product.png)
+    - Test: search-filter-guest.spec.ts › "I-15: should hydrate ad SKUs through the buyer product endpoint" — passed
   - **Precondition**: The slider renders ads that carry a `sku`
   - **Steps**:
     1. Observe the request issued by `useAdProducts(skus)`
