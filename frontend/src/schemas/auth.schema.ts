@@ -66,12 +66,14 @@ export const registerSchema = z
     }
   )
   .refine(
-    (data) =>
-      data.role !== 'merchant' ||
-      !data.phone?.trim() ||
-      PHONE_REGEX.test(data.phone.trim()),
+    (data) => {
+      if (data.role !== 'merchant' || !data.phone?.trim()) return true
+      const phone = data.phone.trim()
+      const digitCount = phone.replace(/\D/g, '').length
+      return PHONE_REGEX.test(phone) && digitCount >= 7 && digitCount <= 11
+    },
     {
-      error: () => i18n.t('auth.validation.phoneInvalid', { defaultValue: 'Please enter a valid phone number' }),
+      error: () => i18n.t('auth.validation.phoneDigitLength', { defaultValue: 'Phone number must be between 7 and 11 digits' }),
       path: ['phone'],
     }
   )
