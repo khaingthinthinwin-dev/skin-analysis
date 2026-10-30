@@ -11,7 +11,7 @@
 | **Subsystem** | Skin Analysis — Image Upload, AI Processing & Historical Tracking; Shared Buyer Account & Preferences |
 | **Version** | 1.0 |
 | **Created** | 2026-10-28 |
-| **Last Updated** | 2026-10-28 |
+| **Last Updated** | 2026-10-30 |
 | **Status** | Active |
 
 ---
@@ -25,9 +25,9 @@
     2. Verify the live-scan and photo-upload modes and their controls
   - **Expected Result**: The scanner screen loads with live scan selected by default and a control to switch to photo upload
   - **Business Rules**: BR-SKIN-001
-  - **Note**: Not yet verified by an E2E assertion.
+  - **Note**: Playwright verifies the scanner controls are visible; the default-selected mode is not asserted.
 
-- [] **N-02**: Upload a valid facial image and complete an analysis
+- [x] **N-02**: Upload a valid facial image and complete an analysis
   - **Precondition**: Authenticated buyer has a valid JPG, PNG, or WebP facial image under 10MB and available daily quota
   - **Steps**:
     1. Select the photo upload mode and choose a valid image
@@ -36,7 +36,7 @@
   - **Expected Result**: Upload and analysis start successfully; progress is shown and the completed result is displayed
   - **Business Rules**: BR-SKIN-002, BR-SKIN-003, BR-SKIN-005, BR-SKIN-010
   - **API**: `POST /api/v1/skin-analysis/upload`, `POST /api/v1/skin-analysis/analyze`
-  - **Note**: Verified by Playwright live evidence scenario `N-02` with database capture.
+  - **Note**: Verified by the focused live E2E run. The scenario registers a dedicated buyer, waits for the analysis API response, and verifies the completed result inline on the scanner page.
 
 - [ ] **N-03**: Capture a facial image using the live camera
   - **Precondition**: Authenticated buyer on the scanner; browser camera permission is granted
@@ -56,7 +56,7 @@
   - **Expected Result**: Results include health score, hydration, skin type, skin age, confidence, the facial scan image, condition severity, clinical findings, routine guidance, and product recommendations when present
   - **Business Rules**: BR-SKIN-007, BR-SKIN-012, BR-SKIN-015, BR-SKIN-016, BR-SKIN-017
   - **API**: `GET /api/v1/skin-analysis/:id`
-  - **Note**: Not yet verified by an E2E assertion; the existing scenario has TODO steps.
+  - **Note**: Playwright verifies the score, hydration, completion state, and a recommendation; additional result fields still need coverage.
 
 - [ ] **N-05**: Open analysis history and navigate to a result
   - **Precondition**: Buyer has at least one analysis record
@@ -88,7 +88,7 @@
   - **API**: `POST /api/v1/skin-analysis/compare`
   - **Note**: Not currently reachable through the UI. The history page renders the comparison modal but no action sets the selected analysis IDs.
 
-- [ ] **N-08**: Submit product recommendation feedback
+- [x] **N-08**: Submit product recommendation feedback
   - **Precondition**: A completed analysis includes a product recommendation
   - **Steps**:
     1. Select **Helpful** or **Not Helpful**
@@ -96,7 +96,7 @@
   - **Expected Result**: Feedback is recorded and the selected state is shown; the same feedback is not submitted repeatedly
   - **Business Rules**: BR-SKIN-021
   - **API**: `POST /api/v1/skin-analysis/recommendations/:id/feedback`
-  - **Note**: Verified by Playwright live evidence scenario `N-08` with database capture.
+  - **Note**: Verified by the live E2E scenario. It captures the no-feedback result, the ready-to-submit state, the selected Helpful state, and matching database evidence in PNG and JSON. It selects a recommendation with no prior feedback so the change is observable on reruns.
 
 - [ ] **N-09**: Export an analysis report and the history report
   - **Precondition**: Buyer has at least one completed analysis
@@ -136,7 +136,7 @@
     3. Return to the skin analysis screen
   - **Expected Result**: The app theme switches between light and dark on the Settings and skin analysis screens
   - **Business Rules**: None (shared UI preference)
-  - **Note**: Not yet verified by an E2E assertion.
+  - **Note**: The E2E scenario uses a dedicated buyer and restores its temporary password after the assertion; rerun it against the configured API and database before marking it verified.
 
 - [ ] **N-13**: Use the skin analysis screen at desktop and mobile widths
   - **Precondition**: Authenticated buyer
@@ -236,7 +236,7 @@
   - **Expected Result**: A success notification is shown; the updated name and avatar persist and the shared user navigation reflects the updated profile
   - **Business Rules**: None (shared account profile)
   - **API**: `PATCH /api/v1/users/me`
-  - **Note**: Buyer profile updates submit name and avatar; shop phone and address fields are merchant-only. Verify file-processing compatibility separately for image formats beyond those listed in the UI helper text.
+  - **Note**: N-22 captures before, filled-form, after-save, and database evidence for the name update. The live scenario does not change an avatar, so the full name-and-avatar scenario remains unchecked; shop phone and address fields are merchant-only.
 
 - [ ] **N-23**: Change the buyer account password
   - **Precondition**: Authenticated buyer knows the current password
@@ -247,7 +247,7 @@
   - **Expected Result**: A success notification is shown and the form fields are cleared
   - **Business Rules**: None (shared account security)
   - **API**: `POST /api/v1/auth/change-password`
-  - **Note**: Not yet verified by an E2E assertion.
+  - **Note**: N-23 captures the password form before entry, after values are filled, after the successful change and form reset, and database evidence without exposing password hashes. It restores the original test password after capture.
 
 - [ ] **N-24**: Remove the buyer's profile avatar
   - **Precondition**: Buyer has an avatar and is on the Edit Profile tab
@@ -259,7 +259,7 @@
   - **API**: `PATCH /api/v1/users/me`
   - **Note**: Not yet verified by an E2E assertion.
 
-- [] **N-25**: Delete selected analysis history records
+- [x] **N-25**: Delete selected analysis history records
   - **Precondition**: Buyer has one or more analysis records on the history page
   - **Steps**:
     1. Select one or more rows
@@ -268,7 +268,7 @@
   - **Expected Result**: The selected records are deleted and the history and latest-analysis data refresh
   - **Business Rules**: None (implemented history action)
   - **API**: `DELETE /api/v1/skin-analysis/bulk`
-  - **Note**: Implemented by the current screen but conflicts with BR-SKIN-007; see sign-off note.
+  - **Note**: Verified by the live E2E scenario. Evidence captures the unselected row, selected row, confirmation dialog, post-delete UI, and database query result in PNG and JSON. The implemented action still conflicts with BR-SKIN-007; see sign-off note.
 
 ---
 
@@ -540,7 +540,7 @@
   - **Expected Response**: Status `201`; response data contains the upload URL and image metadata
   - **Business Rules**: BR-SKIN-001, BR-SKIN-002, BR-SKIN-003, BR-SKIN-010
   - **API**: `POST /api/v1/skin-analysis/upload`
-  - **Note**: Verified by Playwright live evidence scenario `N-02` with database capture.
+  - **Note**: The API-contract test uses a dedicated registered buyer and verifies the successful response includes `blobUrl` and `fileSize`; it accepts either `200` or `201`.
 
 - [ ] **I-02**: `POST /api/v1/skin-analysis/analyze` — starts a scan
   - **Precondition**: Authenticated buyer has a valid uploaded image URL and remaining quota
@@ -549,7 +549,7 @@
   - **Expected Response**: Status `202`; response data includes `analysisId`, `status`, `remainingDailyQuota`, and `estimatedWaitSeconds`
   - **Business Rules**: BR-SKIN-005
   - **API**: `POST /api/v1/skin-analysis/analyze`
-  - **Note**: Verified by Playwright live evidence scenario `N-02` with database capture.
+  - **Note**: The API-contract test uses a dedicated registered buyer, verifies `analysisId` and `status`, and captures the created analysis, conditions, findings, and recommendations in database PNG/JSON evidence.
 
 - [ ] **I-03**: `GET /api/v1/skin-analysis/:id` — returns the buyer's result
   - **Precondition**: Authenticated buyer owns the requested analysis ID
@@ -576,7 +576,7 @@
   - **Expected Response**: Status `200`; response data contains the buyer's health-score and hydration time series for the requested range
   - **Business Rules**: BR-SKIN-006, BR-SKIN-013
   - **API**: `GET /api/v1/skin-analysis/trends`
-  - **Note**: Not yet verified by an API contract assertion.
+  - **Note**: The API test verifies a successful status and that response data exists; exact time-series fields and values are not asserted.
 
 - [ ] **I-06**: `POST /api/v1/skin-analysis/compare` — compares two owned analyses
   - **Precondition**: Authenticated buyer owns two completed analysis IDs
@@ -585,7 +585,7 @@
   - **Expected Response**: Status `201`; response data contains both analysis summaries, score differences, and condition changes
   - **Business Rules**: BR-SKIN-006, BR-SKIN-020
   - **API**: `POST /api/v1/skin-analysis/compare`
-  - **Note**: Not yet verified by an API contract assertion.
+  - **Note**: The API test uses two distinct owned analysis IDs and verifies a successful status; comparison response fields are not yet asserted.
 
 - [ ] **I-07**: Export endpoints return PDF content
   - **Precondition**: Authenticated buyer has at least one completed analysis
@@ -595,7 +595,7 @@
   - **Expected Response**: Status `200`; response has `Content-Type: application/pdf` and attachment content
   - **Business Rules**: BR-SKIN-006, BR-SKIN-014
   - **API**: `GET /api/v1/skin-analysis/:id/export`, `GET /api/v1/skin-analysis/export-history`
-  - **Note**: Not yet verified by an API contract assertion.
+  - **Note**: The API test verifies that the history export returns a PDF content type; single-analysis export is not covered by this assertion.
 
 - [ ] **I-08**: `POST /api/v1/skin-analysis/recommendations/:id/feedback` — records feedback
   - **Precondition**: Authenticated buyer owns the recommendation
@@ -604,7 +604,7 @@
   - **Expected Response**: Status `201`; response data confirms the feedback was recorded
   - **Business Rules**: BR-SKIN-021
   - **API**: `POST /api/v1/skin-analysis/recommendations/:id/feedback`
-  - **Note**: Verified by Playwright live evidence scenario `N-08` with database capture.
+  - **Note**: The API test posts feedback for a recommendation owned by the dedicated buyer and captures the database row in PNG/JSON. The live UI scenario N-08 additionally verifies the before/doing/after states and matching feedback row.
 
 - [ ] **I-09**: Skin analysis API rejects missing authentication and disallowed roles
   - **Precondition**: Requests are made without a JWT and with a non-buyer role
@@ -613,7 +613,7 @@
   - **Expected Response**: Status `401` without authentication and `403` for a role other than buyer
   - **Business Rules**: BR-SKIN-001
   - **API**: Any protected `/api/v1/skin-analysis` endpoint
-  - **Note**: Not yet verified by an API contract assertion.
+  - **Note**: The API test checks that unauthenticated and merchant requests receive either `401` or `403`; it does not assert the exact status for each case.
 
 - [ ] **I-10**: `GET /api/v1/users/me` — returns the authenticated buyer profile
   - **Precondition**: Authenticated buyer requests their own profile
@@ -622,7 +622,7 @@
   - **Expected Response**: Status `200`; response data contains the buyer's profile fields, including ID, email, name, role, and any returned avatar or contact fields
   - **Business Rules**: None (shared account profile)
   - **API**: `GET /api/v1/users/me`
-  - **Note**: Not yet verified by an API contract assertion.
+  - **Note**: The API test verifies the authenticated profile email; the remaining profile fields are not asserted.
 
 - [ ] **I-11**: `PATCH /api/v1/users/me` — updates buyer profile fields
   - **Precondition**: Authenticated buyer provides a valid profile update
@@ -631,25 +631,25 @@
   - **Expected Response**: Successful response data contains the updated buyer profile
   - **Business Rules**: None (shared account profile)
   - **API**: `PATCH /api/v1/users/me`
-  - **Note**: Not yet verified by an API contract assertion.
+  - **Note**: The API test verifies the buyer name update, captures the changed profile in database PNG/JSON, and restores the original name. Avatar persistence is not asserted.
 
-- [ ] **I-12**: `POST /api/v1/auth/change-password` — changes the authenticated buyer password
+- [x] **I-12**: `POST /api/v1/auth/change-password` — changes the authenticated buyer password
   - **Precondition**: Authenticated buyer provides the correct current password and a valid new password
   - **Steps**:
     1. Send `currentPassword` and `newPassword`
   - **Expected Response**: Successful response confirms the password change; the `confirmPassword` UI field is not part of the API payload
   - **Business Rules**: None (shared account security)
   - **API**: `POST /api/v1/auth/change-password`
-  - **Note**: Not yet verified by an API contract assertion.
+  - **Note**: Verified by the API test, which captures safe database evidence (no password hash), logs in with the changed password, and restores the original password afterward. The UI flow N-23 captures before/filled/after screenshots as well.
 
-- [] **I-13**: `DELETE /api/v1/skin-analysis/bulk` — deletes the buyer's selected history rows
+- [ ] **I-13**: `DELETE /api/v1/skin-analysis/bulk` — deletes the buyer's selected history rows
   - **Precondition**: Authenticated buyer has selected one or more analysis IDs
   - **Steps**:
     1. Send `{ "ids": ["<analysis-id>"] }`
   - **Expected Response**: Status `200`; response data contains `deletedCount` for records owned by the buyer
   - **Business Rules**: None (implemented history action)
   - **API**: `DELETE /api/v1/skin-analysis/bulk`
-  - **Note**: Verified by Playwright live evidence scenario `N-25` with database capture.
+  - **Note**: The API test checks the response for an unknown UUID; actual selected-record deletion and database removal are verified by live UI scenario N-25.
 
 ---
 

@@ -1,0 +1,123 @@
+{
+  "capturedAt": "2026-10-30T09:23:46.049Z",
+  "description": "DB CHANGES — API contract created an analysis with conditions, findings, and recommendations",
+  "results": [
+    {
+      "label": "skin_analyses (created analysis record)",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "0c7089af-17f3-4e6d-a968-73d9d54b0a0c",
+          "user_id": "25552be0-75c2-4a8d-aaaa-662cedd89b68",
+          "analysis_status": "completed",
+          "health_score": 78,
+          "hydration": 64,
+          "skin_type": "sensitive",
+          "estimated_age": 40,
+          "created_at": "2026-10-30T02:53:45.930Z"
+        }
+      ]
+    },
+    {
+      "label": "skin_analysis_conditions (detected conditions)",
+      "rowCount": 6,
+      "rows": [
+        {
+          "id": "ae44fc9f-7d90-484c-bb2b-ded6516cf45e",
+          "condition_name": "acne",
+          "severity": "MILD",
+          "severity_score": 17,
+          "affected_area": "Cheeks",
+          "confidence": "0.76"
+        },
+        {
+          "id": "4200c72b-0951-4bd3-8ee9-fd7260cb400c",
+          "condition_name": "dryness",
+          "severity": "MILD",
+          "severity_score": 24,
+          "affected_area": "Whole Face",
+          "confidence": "0.76"
+        },
+        {
+          "id": "ea0a5928-d5ac-4f56-b01a-10c35e0ec4d3",
+          "condition_name": "pigmentation",
+          "severity": "NONE",
+          "severity_score": 2,
+          "affected_area": "None",
+          "confidence": "0.71"
+        },
+        {
+          "id": "f80c6e79-ded4-41ba-96d7-8840cbb2ea6c",
+          "condition_name": "pore_size",
+          "severity": "MILD",
+          "severity_score": 28,
+          "affected_area": "Nasal Crest",
+          "confidence": "0.97"
+        },
+        {
+          "id": "a2e824ca-d168-4948-9312-0f3fa443b230",
+          "condition_name": "redness",
+          "severity": "MODERATE",
+          "severity_score": 41,
+          "affected_area": "Nose",
+          "confidence": "0.94"
+        },
+        {
+          "id": "69861848-a0c9-4e9d-ba5c-62c3bb74c63f",
+          "condition_name": "texture",
+          "severity": "NONE",
+          "severity_score": 3,
+          "affected_area": "None",
+          "confidence": "0.94"
+        }
+      ]
+    },
+    {
+      "label": "skin_analysis_findings (clinical findings)",
+      "rowCount": 2,
+      "rows": [
+        {
+          "id": "5319d7dd-61e9-4f0d-8027-caf83d5c6a4a",
+          "finding_type": "PRIMARY",
+          "title": "Hydration support Attention Required",
+          "severity": "MODERATE",
+          "affected_area": "Nose"
+        },
+        {
+          "id": "94d423e7-fbc9-43ce-bf49-f21f557b2e0e",
+          "finding_type": "SECONDARY",
+          "title": "Pore minimizing Maintenance",
+          "severity": "MILD",
+          "affected_area": "Nasal Crest"
+        }
+      ]
+    },
+    {
+      "label": "skin_analysis_recommendations (product recommendations)",
+      "rowCount": 3,
+      "rows": [
+        {
+          "id": "d029a12e-29de-4420-9660-c6d7dc6b0b48",
+          "product_name": "Soothing Aloe Vera Gel",
+          "product_type": "Moisturizers",
+          "priority": "HIGH",
+          "match_score": 100
+        },
+        {
+          "id": "cd0c644a-45fb-4fae-8f1f-43159a2e4965",
+          "product_name": "Eye Revital Cream",
+          "product_type": "Eye Care",
+          "priority": "MEDIUM",
+          "match_score": 72
+        },
+        {
+          "id": "3faa0f46-f47a-4106-94d0-869db6670ec9",
+          "product_name": "Vitamin C Brightening Serum",
+          "product_type": "Serums",
+          "priority": "MEDIUM",
+          "match_score": 67
+        }
+      ]
+    }
+  ]
+}
