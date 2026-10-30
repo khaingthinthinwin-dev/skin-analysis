@@ -952,10 +952,13 @@ export default function ReviewManagement() {
                             <Button
                               size="icon"
                               variant="outline"
-                              className="h-8 w-8"
+                              aria-label={t('admin.reviews.viewDetails', 'View review details')}
+                              title={t('admin.reviews.viewDetails', 'View review details')}
+                              data-testid="btn-view-review"
+                              className="h-7 w-7 border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800"
                               onClick={() => setDetailReview(review)}
                             >
-                              <Eye className="h-4 w-4" />
+                              <Eye className="h-3.5 w-3.5" />
                             </Button>
                             <Button
                               size="icon"
@@ -1162,7 +1165,7 @@ export default function ReviewManagement() {
                             <Button
                               size="icon"
                               variant="outline"
-                              className="h-8 w-8"
+                              className="h-7 w-7 border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800"
                               onClick={() => {
                                 setReportAdminNote('');
                                 if (report.status === 'pending') {
@@ -1176,7 +1179,7 @@ export default function ReviewManagement() {
                                 setDetailReport(report);
                               }}
                             >
-                              <Eye className="h-4 w-4" />
+                              <Eye className="h-3.5 w-3.5" />
                             </Button>
                             {report.status !== 'resolved' && (
                               <Button
