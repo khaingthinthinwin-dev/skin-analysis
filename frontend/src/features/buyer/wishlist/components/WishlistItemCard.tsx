@@ -104,17 +104,18 @@ export function WishlistItemCard({
               )}
           </div>
           <Button
-            size="sm"
+            size="icon"
             disabled={!item.isInStock || isMoving}
-            className="gap-1 text-xs w-full sm:w-auto h-8 px-2 sm:px-3 shrink-0"
+            className="h-9 w-9 shrink-0 rounded-full bg-violet-600 p-0 text-white shadow-sm hover:bg-violet-700"
             onClick={() => onMoveToCart(item.productId)}
+            aria-label={t('wishlist.moveToCart')}
+            title={t('wishlist.moveToCart')}
           >
             {isMoving ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <ShoppingCart className="h-3.5 w-3.5" />
-            )}{' '}
-            {t('wishlist.moveToCart')}
+              <ShoppingCart className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </CardContent>
