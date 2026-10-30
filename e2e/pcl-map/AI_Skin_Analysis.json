@@ -1,15 +1,327 @@
 {
+  "format": "pcl-id-keyed",
   "pclFile": "docs/screen/AI_Skin_Analysis/AI_Skin_Analysis_PCL.md",
   "specFiles": [
     "e2e/tests/AI_Skin_Analysis/skin-analysis.spec.ts"
   ],
   "mappings": {
-    "should display skin analysis upload page": "E2E-SKIN-01: Skin analysis upload page loads",
-    "should upload a skin image for analysis": "E2E-SKIN-02: Skin image upload works",
-    "should show error for invalid file type": "E2E-SKIN-03: Invalid file type error shown",
-    "should display skin analysis results": "E2E-SKIN-04: Analysis results display correctly",
-    "should display product recommendations": "E2E-SKIN-05: Product recommendations display",
-    "should display analysis history": "E2E-SKIN-06: Analysis history displays",
-    "should export analysis report": "E2E-SKIN-07: PDF export works"
+    "N-01": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-01: buyer opens the skin analysis scanner"
+      }
+    ],
+    "N-02": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-02: uploads a skin image and completes analysis (live database evidence)"
+      }
+    ],
+    "A-01": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "A-01: rejects unsupported image file formats"
+      }
+    ],
+    "N-04": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-04: displays completed skin analysis results"
+      }
+    ],
+    "N-08": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-08: submits product recommendation feedback (live database evidence)"
+      }
+    ],
+    "N-05": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-05: opens analysis history and navigates to a result"
+      }
+    ],
+    "N-09": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-09: exports an analysis report and the history report"
+      }
+    ],
+    "A-02": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "A-02: rejects images larger than 10 MB"
+      }
+    ],
+    "A-04": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "A-04: requires consent before starting a scan"
+      }
+    ],
+    "A-09": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "A-09: offers photo upload when camera access is denied"
+      }
+    ],
+    "N-13": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-13: keeps scanner actions usable on mobile"
+      }
+    ],
+    "N-06": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-06 and N-16: filters, clears, and changes the analysis history page size"
+      }
+    ],
+    "N-16": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-06 and N-16: filters, clears, and changes the analysis history page size"
+      }
+    ],
+    "N-15": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-15: shows history summary metrics and row actions"
+      }
+    ],
+    "N-17": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-17 and A-08: result details are read-only and New Scan returns to the scanner"
+      }
+    ],
+    "A-08": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-17 and A-08: result details are read-only and New Scan returns to the scanner"
+      }
+    ],
+    "N-19": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-19: opens the recommended product detail"
+      }
+    ],
+    "A-03": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "A-03: blocks a supported image when face detection finds no face"
+      }
+    ],
+    "B-01": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "B-01: accepts a supported image exactly at the 10 MB limit"
+      }
+    ],
+    "I-01": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "I-01: POST /api/v1/skin-analysis/upload validates multipart facial scan upload"
+      }
+    ],
+    "I-02": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "I-02: POST /api/v1/skin-analysis/analyze starts an AI skin analysis"
+      }
+    ],
+    "I-03": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "I-03: GET /api/v1/skin-analysis/:id returns the buyer analysis result"
+      }
+    ],
+    "I-04": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "I-04: GET /api/v1/skin-analysis/history returns scoped paginated history"
+      }
+    ],
+    "I-07": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "I-07: GET /api/v1/skin-analysis export endpoints return PDF content"
+      }
+    ],
+    "I-08": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "I-08: POST /api/v1/skin-analysis/recommendations/:id/feedback records feedback"
+      }
+    ],
+    "B-02": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "B-02: displays the empty history state when there are no analyses"
+      }
+    ],
+    "N-25": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-25: deletes selected analysis history records (live database evidence)"
+      }
+    ],
+    "A-05": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "A-05: displays an upload error instead of showing a successful analysis"
+      }
+    ],
+    "A-06": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "A-06: rejects unauthenticated and non-buyer access"
+      }
+    ],
+    "I-09": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "I-09: skin analysis API rejects missing authentication and disallowed roles"
+      }
+    ],
+    "N-11": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-11 and N-12: exposes language and theme preferences in Settings"
+      }
+    ],
+    "N-12": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-11 and N-12: exposes language and theme preferences in Settings"
+      }
+    ],
+    "N-21": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-20, N-21, N-24: views buyer profile and removes avatar"
+      }
+    ],
+    "N-22": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-22: updates buyer profile name and avatar (live database evidence)"
+      }
+    ],
+    "N-24": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-20, N-21, N-24: views buyer profile and removes avatar"
+      }
+    ],
+    "I-10": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "I-10: GET /api/v1/users/me returns authenticated buyer profile"
+      }
+    ],
+    "I-11": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "I-11: PATCH /api/v1/users/me updates buyer profile fields"
+      }
+    ],
+    "A-13": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "A-13 and A-15: rejects invalid profile names and password fields"
+      }
+    ],
+    "A-15": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "A-13 and A-15: rejects invalid profile names and password fields"
+      }
+    ],
+    "N-23": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-23: changes buyer account password (live database evidence)"
+      }
+    ],
+    "I-12": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "I-12: POST /api/v1/auth/change-password changes buyer password"
+      }
+    ],
+    "B-06": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "B-06: accepts profile names at the 2 and 100 character boundaries"
+      }
+    ],
+    "B-07": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "B-07: rejects a profile name longer than 100 characters"
+      }
+    ],
+    "A-14": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "A-14: rejects a non-image profile avatar file"
+      }
+    ],
+    "A-17": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "A-17: displays an error when the buyer profile cannot be loaded"
+      }
+    ],
+    "A-18": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "A-18: rejects a new password that matches the current password"
+      }
+    ],
+    "B-08": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "B-08: enforces new password length boundaries"
+      }
+    ],
+    "I-13": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "I-13: DELETE /api/v1/skin-analysis/bulk deletes selected history records"
+      }
+    ],
+    "N-20": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-20, N-21, N-24: views buyer profile and removes avatar"
+      }
+    ],
+    "B-04": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "B-04: displays the daily-quota error when analysis returns HTTP 429"
+      }
+    ],
+    "A-16": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "A-16: shows an error when the current password is incorrect"
+      }
+    ],
+    "I-05": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "I-05: GET /api/v1/skin-analysis/trends returns trend data for supported range"
+      }
+    ],
+    "I-06": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "I-06: POST /api/v1/skin-analysis/compare compares two owned analyses"
+      }
+    ]
   }
 }

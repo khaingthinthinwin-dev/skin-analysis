@@ -527,7 +527,7 @@ export default function MerchantManagement() {
                             </p>
                             {merchant.businessLicenseUrl && (
                               <a
-                                href={merchant.businessLicenseUrl}
+                                href={getImageUrl(merchant.businessLicenseUrl)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-xs text-primary hover:underline flex items-center gap-1"

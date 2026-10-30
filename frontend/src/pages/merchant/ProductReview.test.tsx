@@ -7,7 +7,7 @@ import type { Product } from '@/types/product.types'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, values?: { name?: string }) => {
+    t: (key: string, defaultText: string = key, options?: { name?: string; count?: number; [k: string]: unknown }) => {
       const labels: Record<string, string> = {
         'merchant.productReview.title': 'Product Review',
         'merchant.productReview.subtitle': 'View review counts for your products',
@@ -28,7 +28,11 @@ vi.mock('react-i18next', () => ({
         'merchant.products.imageAlt': 'Image of {{name}}',
         'merchant.products.noImage': 'No image',
       }
-      return (labels[key] ?? key).replace('{{name}}', values?.name ?? '')
+      let result = labels[key] ?? defaultText
+      if (options?.name) {
+        result = result.replace('{{name}}', options.name)
+      }
+      return result
     },
   }),
 }))
