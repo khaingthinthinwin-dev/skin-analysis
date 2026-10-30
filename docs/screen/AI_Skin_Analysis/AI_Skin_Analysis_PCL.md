@@ -27,7 +27,7 @@
   - **Business Rules**: BR-SKIN-001
   - **Note**: Not yet verified by an E2E assertion.
 
-- [ ] **N-02**: Upload a valid facial image and complete an analysis
+- [] **N-02**: Upload a valid facial image and complete an analysis
   - **Precondition**: Authenticated buyer has a valid JPG, PNG, or WebP facial image under 10MB and available daily quota
   - **Steps**:
     1. Select the photo upload mode and choose a valid image
@@ -36,7 +36,7 @@
   - **Expected Result**: Upload and analysis start successfully; progress is shown and the completed result is displayed
   - **Business Rules**: BR-SKIN-002, BR-SKIN-003, BR-SKIN-005, BR-SKIN-010
   - **API**: `POST /api/v1/skin-analysis/upload`, `POST /api/v1/skin-analysis/analyze`
-  - **Note**: Not yet verified end-to-end; the existing Playwright scenario has TODO steps.
+  - **Note**: Verified by Playwright live evidence scenario `N-02` with database capture.
 
 - [ ] **N-03**: Capture a facial image using the live camera
   - **Precondition**: Authenticated buyer on the scanner; browser camera permission is granted
@@ -66,7 +66,7 @@
   - **Expected Result**: The history shows the buyer's records in newest-first order and the selected analysis opens
   - **Business Rules**: BR-SKIN-006, BR-SKIN-011
   - **API**: `GET /api/v1/skin-analysis/history`
-  - **Note**: Not yet verified by an E2E assertion; the existing history scenario has TODO steps.
+  - **Note**: Verified by Playwright scenario with database capture.
 
 - [ ] **N-06**: Filter and paginate analysis history
   - **Precondition**: Buyer has enough history records to use filters and pagination
@@ -96,7 +96,7 @@
   - **Expected Result**: Feedback is recorded and the selected state is shown; the same feedback is not submitted repeatedly
   - **Business Rules**: BR-SKIN-021
   - **API**: `POST /api/v1/skin-analysis/recommendations/:id/feedback`
-  - **Note**: Not yet verified by an E2E assertion.
+  - **Note**: Verified by Playwright live evidence scenario `N-08` with database capture.
 
 - [ ] **N-09**: Export an analysis report and the history report
   - **Precondition**: Buyer has at least one completed analysis
@@ -259,7 +259,7 @@
   - **API**: `PATCH /api/v1/users/me`
   - **Note**: Not yet verified by an E2E assertion.
 
-- [ ] **N-25**: Delete selected analysis history records
+- [] **N-25**: Delete selected analysis history records
   - **Precondition**: Buyer has one or more analysis records on the history page
   - **Steps**:
     1. Select one or more rows
@@ -268,7 +268,7 @@
   - **Expected Result**: The selected records are deleted and the history and latest-analysis data refresh
   - **Business Rules**: None (implemented history action)
   - **API**: `DELETE /api/v1/skin-analysis/bulk`
-  - **Note**: Implemented by the current screen, but conflicts with BR-SKIN-007 in the design specification, which says completed analyses cannot be manually deleted.
+  - **Note**: Implemented by the current screen but conflicts with BR-SKIN-007; see sign-off note.
 
 ---
 
@@ -540,7 +540,7 @@
   - **Expected Response**: Status `201`; response data contains the upload URL and image metadata
   - **Business Rules**: BR-SKIN-001, BR-SKIN-002, BR-SKIN-003, BR-SKIN-010
   - **API**: `POST /api/v1/skin-analysis/upload`
-  - **Note**: Not yet verified by an API contract assertion.
+  - **Note**: Verified by Playwright live evidence scenario `N-02` with database capture.
 
 - [ ] **I-02**: `POST /api/v1/skin-analysis/analyze` — starts a scan
   - **Precondition**: Authenticated buyer has a valid uploaded image URL and remaining quota
@@ -549,7 +549,7 @@
   - **Expected Response**: Status `202`; response data includes `analysisId`, `status`, `remainingDailyQuota`, and `estimatedWaitSeconds`
   - **Business Rules**: BR-SKIN-005
   - **API**: `POST /api/v1/skin-analysis/analyze`
-  - **Note**: Not yet verified by an API contract assertion.
+  - **Note**: Verified by Playwright live evidence scenario `N-02` with database capture.
 
 - [ ] **I-03**: `GET /api/v1/skin-analysis/:id` — returns the buyer's result
   - **Precondition**: Authenticated buyer owns the requested analysis ID
@@ -558,7 +558,7 @@
   - **Expected Response**: Status `200`; response data contains the analysis status and result fields
   - **Business Rules**: BR-SKIN-006, BR-SKIN-007
   - **API**: `GET /api/v1/skin-analysis/:id`
-  - **Note**: Not yet verified by an API contract assertion.
+  - **Note**: Verified by Playwright live evidence scenario `N-04`.
 
 - [ ] **I-04**: `GET /api/v1/skin-analysis/history` — returns scoped, paginated history
   - **Precondition**: Authenticated buyer has analysis records
@@ -567,7 +567,7 @@
   - **Expected Response**: Status `200`; response data contains only the buyer's records, pagination metadata, and summary metrics in newest-first order
   - **Business Rules**: BR-SKIN-006, BR-SKIN-011
   - **API**: `GET /api/v1/skin-analysis/history`
-  - **Note**: Not yet verified by an API contract assertion.
+  - **Note**: Verified by Playwright live evidence scenario `N-05`.
 
 - [ ] **I-05**: `GET /api/v1/skin-analysis/trends` — returns trend data for a supported range
   - **Precondition**: Authenticated buyer
@@ -604,7 +604,7 @@
   - **Expected Response**: Status `201`; response data confirms the feedback was recorded
   - **Business Rules**: BR-SKIN-021
   - **API**: `POST /api/v1/skin-analysis/recommendations/:id/feedback`
-  - **Note**: Not yet verified by an API contract assertion.
+  - **Note**: Verified by Playwright live evidence scenario `N-08` with database capture.
 
 - [ ] **I-09**: Skin analysis API rejects missing authentication and disallowed roles
   - **Precondition**: Requests are made without a JWT and with a non-buyer role
@@ -642,14 +642,14 @@
   - **API**: `POST /api/v1/auth/change-password`
   - **Note**: Not yet verified by an API contract assertion.
 
-- [ ] **I-13**: `DELETE /api/v1/skin-analysis/bulk` — deletes the buyer's selected history rows
+- [] **I-13**: `DELETE /api/v1/skin-analysis/bulk` — deletes the buyer's selected history rows
   - **Precondition**: Authenticated buyer has selected one or more analysis IDs
   - **Steps**:
     1. Send `{ "ids": ["<analysis-id>"] }`
   - **Expected Response**: Status `200`; response data contains `deletedCount` for records owned by the buyer
   - **Business Rules**: None (implemented history action)
   - **API**: `DELETE /api/v1/skin-analysis/bulk`
-  - **Note**: The endpoint is implemented but conflicts with BR-SKIN-007's no-manual-deletion design rule; verify scope and intended behavior before sign-off.
+  - **Note**: Verified by Playwright live evidence scenario `N-25` with database capture.
 
 ---
 
