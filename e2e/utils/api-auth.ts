@@ -29,6 +29,10 @@ export async function loginApi(
   return { Authorization: `Bearer ${token}` };
 }
 
+export async function buyerHeaders(request: APIRequestContext) {
+  return loginApi(request, 'eem@gmail.com', 'Cosmetics@123');
+}
+
 export async function adminHeaders(request: APIRequestContext) {
   return loginApi(request, ADMIN.email, ADMIN.password);
 }
