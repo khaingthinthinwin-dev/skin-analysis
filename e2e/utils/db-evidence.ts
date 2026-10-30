@@ -887,3 +887,132 @@ export async function captureFeeSettingDbEvidence(
   });
 }
 
+
+
+export async function captureSkinAnalysisDbEvidence(
+  page: Page,
+  stepName: string,
+  analysisId: string,
+  description?: string,
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description: description ?? 'DB CHANGES — skin analysis created with conditions, findings, and recommendations',
+    queries: [
+      {
+        label: 'skin_analyses (created analysis record)',
+        text: `SELECT id, user_id, analysis_status, health_score, hydration, skin_type, estimated_age, created_at
+               FROM skin_analyses
+               WHERE id = $1`,
+        values: [analysisId],
+      },
+      {
+        label: 'skin_analysis_conditions (detected conditions)',
+        text: `SELECT id, condition_name, severity, severity_score, affected_area, confidence
+               FROM skin_analysis_conditions
+               WHERE analysis_id = $1
+               ORDER BY condition_name`,
+        values: [analysisId],
+      },
+      {
+        label: 'skin_analysis_findings (clinical findings)',
+        text: `SELECT id, finding_type, title, severity, affected_area
+               FROM skin_analysis_findings
+               WHERE analysis_id = $1
+               ORDER BY finding_type`,
+        values: [analysisId],
+      },
+      {
+        label: 'skin_analysis_recommendations (product recommendations)',
+        text: `SELECT id, product_name, product_type, priority, match_score
+               FROM skin_analysis_recommendations
+               WHERE analysis_id = $1
+               ORDER BY display_order`,
+        values: [analysisId],
+      },
+    ],
+  });
+}
+
+export async function captureSkinAnalysisFeedbackDbEvidence(
+  page: Page,
+  stepName: string,
+  recommendationId: string,
+  userId: string,
+  description?: string,
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description: description ?? 'DB CHANGES — recommendation feedback recorded',
+    queries: [
+      {
+        label: 'skin_analysis_feedback (recommendation helpfulness)',
+        text: `SELECT id, recommendation_id, user_id, is_helpful, created_at, updated_at
+               FROM skin_analysis_feedback
+               WHERE recommendation_id = $1 AND user_id = $2`,
+        values: [recommendationId, userId],
+      },
+    ],
+  });
+}
+
+export async function captureSkinAnalysisDeleteDbEvidence(
+  page: Page,
+  stepName: string,
+  analysisId: string,
+  description?: string,
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description: description ?? 'DB CHANGES — skin analysis record deleted (expected 0 rows)',
+    queries: [
+      {
+        label: 'skin_analyses (deleted analysis record)',
+        text: `SELECT id, user_id, analysis_status FROM skin_analyses WHERE id = $1`,
+        values: [analysisId],
+      },
+      {
+        label: 'skin_analysis_conditions (cascaded conditions)',
+        text: `SELECT id, condition_name FROM skin_analysis_conditions WHERE analysis_id = $1`,
+        values: [analysisId],
+      },
+    ],
+  });
+}
+
+export async function captureBuyerProfileDbEvidence(
+  page: Page,
+  stepName: string,
+  userId: string,
+  description?: string,
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description: description ?? 'DB CHANGES — buyer profile updated in database',
+    queries: [
+      {
+        label: 'users (buyer profile updated)',
+        text: `SELECT id, email, name, role, avatar_url, updated_at
+               FROM users
+               WHERE id = $1`,
+        values: [userId],
+      },
+    ],
+  });
+}
+
+export async function captureBuyerPasswordDbEvidence(
+  page: Page,
+  stepName: string,
+  userId: string,
+  description?: string,
+): Promise<{ pngPath: string; jsonPath: string }> {
+  return captureDbEvidence(page, stepName, {
+    description: description ?? 'DB CHANGES — buyer password updated (timestamp refreshed)',
+    queries: [
+      {
+        label: 'users (password updated - updated_at refreshed)',
+        text: `SELECT id, email, role, updated_at
+               FROM users
+               WHERE id = $1`,
+        values: [userId],
+      },
+    ],
+  });
+}

@@ -11,6 +11,7 @@ import {
   FileText,
   MapPin,
   Package,
+  PackageCheck,
   PackageSearch,
   RotateCcw,
   StickyNote,
@@ -354,7 +355,8 @@ function BuyerOrderDetailContent() {
         return (
       <section className="flex items-start gap-3 rounded-xl border-l-4 border-[#7c3aed] bg-[#f3f0ff] px-4 py-3.5 sm:items-center sm:px-5 dark:border-violet-500 dark:bg-[#18131f] oidark:border-primary oidark:bg-surface-container-low">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#7c3aed] text-lg text-white oidark:bg-primary oidark:text-primary-foreground">
-              ✁E            </div>
+              <PackageCheck className="h-5 w-5" aria-hidden="true" />
+            </div>
             <div>
               <h2 className="text-sm font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground">{copy.title}</h2>
               <p className="text-[13px] text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">{copy.message}</p>

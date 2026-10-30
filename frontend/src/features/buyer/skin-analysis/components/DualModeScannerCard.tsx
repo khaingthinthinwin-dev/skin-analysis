@@ -364,7 +364,7 @@ export function DualModeScannerCard({
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
                 <Zap className="h-3 w-3 text-pink-500" />
-                Free, no signup
+                Free
               </span>
             </div>
           </div>
