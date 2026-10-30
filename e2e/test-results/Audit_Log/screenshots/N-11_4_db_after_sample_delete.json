@@ -1,0 +1,33 @@
+{
+  "capturedAt": "2026-10-30T02:30:46.062Z",
+  "description": "SAMPLE DATA ONLY — the retention-delete flow was simulated for this test-run sample ID; no pre-existing audit rows were eligible or targeted",
+  "results": [
+    {
+      "label": "synthetic retention sample rows remaining (expected: none)",
+      "rowCount": 0,
+      "rows": []
+    },
+    {
+      "label": "synthetic AUDIT_LOG_DELETE sample event",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "6f20c03c-29d8-4562-a453-dafe99e83e70",
+          "action": "AUDIT_LOG_DELETE",
+          "entity_type": "AuditLog",
+          "new_value": {
+            "recordIds": [
+              "cdd18713-31ba-4d40-af2b-f79abd745355"
+            ],
+            "synthetic": true,
+            "testRunId": "c7e94dbd-5070-45d9-a2b7-66e5aa9e1ce7",
+            "deletedFiles": 0,
+            "olderThanDays": 90,
+            "deletedRecords": 1
+          },
+          "created_at": "2026-10-30T02:30:45.073Z"
+        }
+      ]
+    }
+  ]
+}

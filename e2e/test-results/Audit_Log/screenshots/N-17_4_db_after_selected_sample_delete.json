@@ -1,0 +1,40 @@
+{
+  "capturedAt": "2026-10-30T02:30:52.762Z",
+  "description": "SAMPLE DATA ONLY — the selected test-run sample row was deleted while the unselected sample row remains; no pre-existing audit rows were targeted",
+  "results": [
+    {
+      "label": "synthetic selection samples remaining (only unselected row expected)",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "c0f71aab-8167-48b4-b4b3-33bb8e057f28",
+          "action": "E2E_SAMPLE_SELECTION_96c64085-2fa5-4117-846a-94514d3a8417_PRESERVED",
+          "entity_type": "AuditLog",
+          "created_at": "2026-07-30T20:00:47.448Z"
+        }
+      ]
+    },
+    {
+      "label": "synthetic AUDIT_LOG_DELETE sample event",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "fe721da5-afda-4d8f-9934-4199dd0d7fcd",
+          "action": "AUDIT_LOG_DELETE",
+          "entity_type": "AuditLog",
+          "new_value": {
+            "recordIds": [
+              "34c5fd0b-66f0-4f59-939a-5ad1bd1c19dd"
+            ],
+            "synthetic": true,
+            "testRunId": "96c64085-2fa5-4117-846a-94514d3a8417",
+            "deletedFiles": 0,
+            "olderThanDays": 90,
+            "deletedRecords": 1
+          },
+          "created_at": "2026-10-30T02:30:51.873Z"
+        }
+      ]
+    }
+  ]
+}
