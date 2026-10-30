@@ -1,13 +1,498 @@
 {
   "pclFile": "docs/screen/Advertisement_Management/Merchant_Advertisement_PCL.md",
+  "format": "pcl-id-keyed",
   "specFiles": [
-    "e2e/tests/Advertisement_Management/merchant-ads.spec.ts"
+    "e2e/tests/Advertisement_Management/merchant-ads.spec.ts",
+    "e2e/tests/Advertisement_Management/merchant-ads-abnormal.spec.ts",
+    "e2e/tests/Advertisement_Management/merchant-ads-boundary.spec.ts",
+    "e2e/tests/Advertisement_Management/merchant-ads-api.spec.ts"
   ],
   "mappings": {
-    "should display merchant ad management page": "E2E-MAD-01: Merchant ad management page loads",
-    "should create a new advertisement": "E2E-MAD-02: Ad creation works",
-    "should edit an existing advertisement": "E2E-MAD-03: Ad editing works",
-    "should delete an advertisement": "E2E-MAD-04: Ad deletion works",
-    "should show ad status correctly": "E2E-MAD-05: Ad status displays correctly"
+    "N-01": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-01: Approved merchant loads advertisement management page"
+      }
+    ],
+    "N-02": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-02: Statistics cards display counts and filter advertisement list on click"
+      }
+    ],
+    "N-03": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-03: Browse available advertisement packages catalog"
+      }
+    ],
+    "N-04": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-04: Deep link from package notification highlights package card (?updatedPackage=)"
+      }
+    ],
+    "N-05": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-05: Select package to create draft advertisement"
+      }
+    ],
+    "N-06": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-06: Upload ad content and set schedule (startsAt >= 3 days)"
+      }
+    ],
+    "N-07": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-07: Pay advertising fee and submit ad for admin approval"
+      }
+    ],
+    "N-08": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-08: View own advertisements grid with 3 cards per page"
+      }
+    ],
+    "N-09": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-09: Search advertisements by title (debounced 300ms)"
+      }
+    ],
+    "N-10": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-10: Filter advertisements by status (All, Active, Inactive, Expired)"
+      }
+    ],
+    "N-11": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-11: Filter advertisements by approval status (All, Pending, Approved, Rejected)"
+      }
+    ],
+    "N-12": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-12: Reset filters and reload list via Refresh button"
+      }
+    ],
+    "N-13": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-13: Deep link from approval/rejection notification highlights ad card (?highlightAdId=)"
+      }
+    ],
+    "N-14": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-14: View read-only advertisement detail modal (AdViewDialog)"
+      }
+    ],
+    "N-15": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-15: Edit unpaid advertisement content (PATCH /ads/:id)"
+      }
+    ],
+    "N-16": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-16: Edit and resubmit rejected advertisement with fresh schedule and payment"
+      }
+    ],
+    "N-17": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-17: Toggle active/inactive switch on approved and paid advertisement"
+      }
+    ],
+    "N-18": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-18: Delete draft or unpaid advertisement (Hard delete)"
+      }
+    ],
+    "N-19": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-19: Delete expired advertisement (Hard delete)"
+      }
+    ],
+    "N-20": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-20: Delete paid inactive advertisement (Soft delete / Deactivate & retain history)"
+      }
+    ],
+    "N-21": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-21: Expiry warning badges display correctly for ads expiring today or tomorrow"
+      }
+    ],
+    "N-22": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-22: Product Image Picker stages selection and commits on Confirm"
+      }
+    ],
+    "N-23": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-23: Draft content persists across cancel/reopen via LocalStorage cache"
+      }
+    ],
+    "N-24": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-24: Language toggle works across all Merchant Advertisement UI elements"
+      }
+    ],
+    "N-25": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-25: Theme toggle switches between light and dark modes"
+      }
+    ],
+    "N-26": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-26: Responsive layout on desktop viewport (>= 1024px)"
+      }
+    ],
+    "N-27": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-27: Responsive layout on tablet viewport (768px – 1023px)"
+      }
+    ],
+    "N-28": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-28: Responsive layout on mobile viewport (< 768px)"
+      }
+    ],
+    "N-29": [
+      {
+        "file": "merchant-ads.spec.ts",
+        "title": "N-29: Public storefront active ads endpoint returns active approved ads"
+      }
+    ],
+    "A-01": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-01: Access /merchant/advertisements without authentication"
+      }
+    ],
+    "A-02": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-02: Access /merchant/advertisements with non-merchant role (e.g. buyer)"
+      }
+    ],
+    "A-03": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-03: Deactivated merchant account shows AccountDeactivatedBanner and disables package selection"
+      }
+    ],
+    "A-04": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-04: Pending license merchant shows warning banner and cannot select packages"
+      }
+    ],
+    "A-05": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-05: Rejected license merchant shows destructive banner and cannot select packages"
+      }
+    ],
+    "A-06": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-06: Submit upload content form with empty required fields"
+      }
+    ],
+    "A-07": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-07: Submit upload content form with content description exceeding 100 characters"
+      }
+    ],
+    "A-08": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-08: Submit start date violating 3-day lead time rule (< today + 3 days)"
+      }
+    ],
+    "A-09": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-09: Select non-existent or inactive package ID"
+      }
+    ],
+    "A-10": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-10: Select package when shop is not approved"
+      }
+    ],
+    "A-11": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-11: Upload content to an advertisement not in pending/pending state"
+      }
+    ],
+    "A-12": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-12: Upload image path not matching any of the merchant's own products"
+      }
+    ],
+    "A-13": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-13: Pay fee for an advertisement missing content or schedule"
+      }
+    ],
+    "A-14": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-14: Enter invalid payment reference (< 8 digits or non-numeric)"
+      }
+    ],
+    "A-15": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-15: Attempt to pay fee for already paid advertisement"
+      }
+    ],
+    "A-16": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-16: Attempt to delete an active approved advertisement"
+      }
+    ],
+    "A-17": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-17: Attempt to toggle active status on non-approved or unpaid advertisement"
+      }
+    ],
+    "A-18": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-18: Cross-shop access denied when modifying another merchant's advertisement"
+      }
+    ],
+    "A-19": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-19: Attempt to edit advertisement that is not editable"
+      }
+    ],
+    "A-20": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-20: Product Image Picker handles empty catalog or products with no images"
+      }
+    ],
+    "A-21": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-21: Product Image Picker handles product API failure"
+      }
+    ],
+    "A-22": [
+      {
+        "file": "merchant-ads-abnormal.spec.ts",
+        "title": "A-22: Package selection fails when package fee setting lacks past effective history"
+      }
+    ],
+    "B-01": [
+      {
+        "file": "merchant-ads-boundary.spec.ts",
+        "title": "B-01: Submit ad title at minimum allowable length (1 character)"
+      }
+    ],
+    "B-02": [
+      {
+        "file": "merchant-ads-boundary.spec.ts",
+        "title": "B-02: Submit ad title at maximum allowable length (200 characters)"
+      }
+    ],
+    "B-03": [
+      {
+        "file": "merchant-ads-boundary.spec.ts",
+        "title": "B-03: Attempt to exceed ad title maximum length (201 characters)"
+      }
+    ],
+    "B-04": [
+      {
+        "file": "merchant-ads-boundary.spec.ts",
+        "title": "B-04: Submit content description at exact maximum length (100 characters)"
+      }
+    ],
+    "B-05": [
+      {
+        "file": "merchant-ads-boundary.spec.ts",
+        "title": "B-05: Submit announcement message at maximum length (500 characters)"
+      }
+    ],
+    "B-06": [
+      {
+        "file": "merchant-ads-boundary.spec.ts",
+        "title": "B-06: Select start date at exact minimum boundary (today + 3 days at UTC 00:00:00)"
+      }
+    ],
+    "B-07": [
+      {
+        "file": "merchant-ads-boundary.spec.ts",
+        "title": "B-07: Payment reference at minimum boundary length (8 digits)"
+      }
+    ],
+    "B-08": [
+      {
+        "file": "merchant-ads-boundary.spec.ts",
+        "title": "B-08: Payment reference at maximum boundary length (100 digits)"
+      }
+    ],
+    "B-09": [
+      {
+        "file": "merchant-ads-boundary.spec.ts",
+        "title": "B-09: Empty advertisements list (Zero state)"
+      }
+    ],
+    "B-10": [
+      {
+        "file": "merchant-ads-boundary.spec.ts",
+        "title": "B-10: Empty package catalog (Zero state)"
+      }
+    ],
+    "B-11": [
+      {
+        "file": "merchant-ads-boundary.spec.ts",
+        "title": "B-11: Pagination boundary with exactly 3 advertisements (1 page) vs 4 advertisements (2 pages)"
+      }
+    ],
+    "B-12": [
+      {
+        "file": "merchant-ads-boundary.spec.ts",
+        "title": "B-12: Package catalog pagination boundary with 4 packages (no pagination) vs 5 packages (2 pages)"
+      }
+    ],
+    "B-13": [
+      {
+        "file": "merchant-ads-boundary.spec.ts",
+        "title": "B-13: Search query with no matching advertisements"
+      }
+    ],
+    "B-14": [
+      {
+        "file": "merchant-ads-boundary.spec.ts",
+        "title": "B-14: Schedule end date calculation across month and leap year boundaries"
+      }
+    ],
+    "B-15": [
+      {
+        "file": "merchant-ads-boundary.spec.ts",
+        "title": "B-15: Ad lifecycle display state transitions exactly at schedule boundaries"
+      }
+    ],
+    "I-01": [
+      {
+        "file": "merchant-ads-api.spec.ts",
+        "title": "I-01: GET /api/v1/ads/packages — returns 200 with active packages catalog"
+      }
+    ],
+    "I-02": [
+      {
+        "file": "merchant-ads-api.spec.ts",
+        "title": "I-02: POST /api/v1/ads/packages/:feeSettingId/select — returns 201 with created draft ad"
+      }
+    ],
+    "I-03": [
+      {
+        "file": "merchant-ads-api.spec.ts",
+        "title": "I-03: GET /api/v1/ads/my-ads — returns 200 with paginated merchant ads"
+      }
+    ],
+    "I-04": [
+      {
+        "file": "merchant-ads-api.spec.ts",
+        "title": "I-04: PATCH /api/v1/ads/:id/content — returns 200 with saved content & schedule"
+      }
+    ],
+    "I-05": [
+      {
+        "file": "merchant-ads-api.spec.ts",
+        "title": "I-05: POST /api/v1/ads/:id/pay — returns 201 with paid ad entering admin queue"
+      }
+    ],
+    "I-06": [
+      {
+        "file": "merchant-ads-api.spec.ts",
+        "title": "I-06: PATCH /api/v1/ads/:id — returns 200 with updated content"
+      }
+    ],
+    "I-07": [
+      {
+        "file": "merchant-ads-api.spec.ts",
+        "title": "I-07: DELETE /api/v1/ads/:id — returns 200 with deletion message"
+      }
+    ],
+    "I-08": [
+      {
+        "file": "merchant-ads-api.spec.ts",
+        "title": "I-08: PATCH /api/v1/ads/:id/toggle — returns 200 with updated isActive state"
+      }
+    ],
+    "I-09": [
+      {
+        "file": "merchant-ads-api.spec.ts",
+        "title": "I-09: GET /api/v1/ads/active (Public) — returns 200 with array of active ads"
+      }
+    ],
+    "I-10": [
+      {
+        "file": "merchant-ads-api.spec.ts",
+        "title": "I-10: POST /api/v1/ads/packages/:feeSettingId/select — returns 403 for unapproved shop"
+      }
+    ],
+    "I-11": [
+      {
+        "file": "merchant-ads-api.spec.ts",
+        "title": "I-11: PATCH /api/v1/ads/:id/content — returns 400 for image not belonging to merchant"
+      }
+    ],
+    "I-12": [
+      {
+        "file": "merchant-ads-api.spec.ts",
+        "title": "I-12: PATCH /api/v1/ads/:id/content — returns 400 for start date violating 3-day lead time"
+      }
+    ],
+    "I-13": [
+      {
+        "file": "merchant-ads-api.spec.ts",
+        "title": "I-13: DELETE /api/v1/ads/:id — returns 400 for active approved advertisement"
+      }
+    ],
+    "I-14": [
+      {
+        "file": "merchant-ads-api.spec.ts",
+        "title": "I-14: Cross-shop access mutation returns 403 Forbidden"
+      }
+    ],
+    "I-15": [
+      {
+        "file": "merchant-ads-api.spec.ts",
+        "title": "I-15: Error response conforms to standard API contract"
+      }
+    ]
   }
 }

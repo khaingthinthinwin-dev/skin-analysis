@@ -1,0 +1,430 @@
+{
+  "I-01_1_packages_list.png": {
+    "description": "GET /api/v1/ads/packages returned HTTP 200: Returns 200 with active packages catalog array",
+    "test": "merchant-ads-api.spec.ts::I-01: GET /api/v1/ads/packages — returns 200 with active packages catalog"
+  },
+  "I-02_1_select_package.png": {
+    "description": "POST /api/v1/ads/packages/ebfba975-8f96-40ce-a781-31eca78c64c6/select returned HTTP 201: Returns 201 with newly created draft advertisement payload",
+    "test": "merchant-ads-api.spec.ts::I-02: POST /api/v1/ads/packages/:feeSettingId/select — returns 201 with created draft ad"
+  },
+  "A-01_1_unauthenticated_redirect.png": {
+    "description": "Unauthenticated user redirected to login page",
+    "test": "merchant-ads-abnormal.spec.ts::A-01: Access /merchant/advertisements without authentication"
+  },
+  "I-03_1_list_my_ads.png": {
+    "description": "GET /api/v1/ads/my-ads?page=1&limit=3&status=active returned HTTP 200: Returns 200 with paginated merchant ads and meta envelope",
+    "test": "merchant-ads-api.spec.ts::I-03: GET /api/v1/ads/my-ads — returns 200 with paginated merchant ads"
+  },
+  "N-01_1_page_header_and_stats.png": {
+    "description": "Page header, subtitle, and statistics cards loaded",
+    "test": "merchant-ads.spec.ts::N-01: Approved merchant loads advertisement management page"
+  },
+  "I-04_1_upload_content.png": {
+    "description": "PATCH /api/v1/ads/6c82a93c-33c4-4494-9d79-67a1a4ef9453/content returned HTTP 200: Returns 200 with saved ad content and derived expiresAt",
+    "test": "merchant-ads-api.spec.ts::I-04: PATCH /api/v1/ads/:id/content — returns 200 with saved content & schedule"
+  },
+  "N-01_2_packages_and_ad_grid.png": {
+    "description": "Packages catalog grid and merchant advertisements grid loaded",
+    "test": "merchant-ads.spec.ts::N-01: Approved merchant loads advertisement management page"
+  },
+  "I-05_1_pay_fee.png": {
+    "description": "POST /api/v1/ads/cbf872db-b3d5-4014-a1b5-2f4bd4d3af60/pay returned HTTP 201: Returns 201 with paid advertisement entering admin review queue",
+    "test": "merchant-ads-api.spec.ts::I-05: POST /api/v1/ads/:id/pay — returns 201 with paid ad entering admin queue"
+  },
+  "B-01_1_min_title_length_accepted.png": {
+    "description": "Form saved successfully with 1-character minimum length title",
+    "test": "merchant-ads-boundary.spec.ts::B-01: Submit ad title at minimum allowable length (1 character)"
+  },
+  "I-06_1_update_content.png": {
+    "description": "PATCH /api/v1/ads/a7367741-7d30-46c9-b137-fc4a985b84db returned HTTP 200: Returns 200 with updated advertisement payload",
+    "test": "merchant-ads-api.spec.ts::I-06: PATCH /api/v1/ads/:id — returns 200 with updated content"
+  },
+  "I-07_1_delete_ad.png": {
+    "description": "DELETE /api/v1/ads/f11d909b-7bfc-4eed-9132-30711f72a925 returned HTTP 200: Returns 200 with unwrapped {\"message\": \"Advertisement deleted\"}",
+    "test": "merchant-ads-api.spec.ts::I-07: DELETE /api/v1/ads/:id — returns 200 with deletion message"
+  },
+  "I-08_1_toggle_ad.png": {
+    "description": "PATCH /api/v1/ads/c1206dfb-75c4-456b-90f6-521bdedaee49/toggle returned HTTP 200: Returns 200 with updated isActive boolean state",
+    "test": "merchant-ads-api.spec.ts::I-08: PATCH /api/v1/ads/:id/toggle — returns 200 with updated isActive state"
+  },
+  "I-09_1_active_ads_public.png": {
+    "description": "GET /api/v1/ads/active returned HTTP 200: Public endpoint returns 200 with array of active approved ads without auth header",
+    "test": "merchant-ads-api.spec.ts::I-09: GET /api/v1/ads/active (Public) — returns 200 with array of active ads"
+  },
+  "A-02_1_buyer_role_blocked.png": {
+    "description": "Buyer user blocked from accessing merchant advertisement screen",
+    "test": "merchant-ads-abnormal.spec.ts::A-02: Access /merchant/advertisements with non-merchant role (e.g. buyer)"
+  },
+  "I-10_1_unapproved_shop_forbidden.png": {
+    "description": "POST /api/v1/ads/packages/ebfba975-8f96-40ce-a781-31eca78c64c6/select returned HTTP 403: Returns 403 Forbidden with SHOP_NOT_APPROVED when shop is unapproved",
+    "test": "merchant-ads-api.spec.ts::I-10: POST /api/v1/ads/packages/:feeSettingId/select — returns 403 for unapproved shop"
+  },
+  "N-02_1_stats_cards_initial.png": {
+    "description": "Statistics cards with active, pending, expired counts",
+    "test": "merchant-ads.spec.ts::N-02: Statistics cards display counts and filter advertisement list on click"
+  },
+  "N-02_2_filter_active_on_click.png": {
+    "description": "Active ads filtered on clicking Active stat card",
+    "test": "merchant-ads.spec.ts::N-02: Statistics cards display counts and filter advertisement list on click"
+  },
+  "I-11_1_unowned_image_bad_request.png": {
+    "description": "PATCH /api/v1/ads/47f7f9a0-3198-4b5e-bac6-a39c75aa321a/content returned HTTP 400: Returns 400 Bad Request when image does not belong to merchant products",
+    "test": "merchant-ads-api.spec.ts::I-11: PATCH /api/v1/ads/:id/content — returns 400 for image not belonging to merchant"
+  },
+  "I-12_1_invalid_schedule_lead_time.png": {
+    "description": "PATCH /api/v1/ads/164ce1a6-2e96-4e9b-8cef-f8408d7b8819/content returned HTTP 400: Returns 400 Bad Request when start date is less than 3 days from today",
+    "test": "merchant-ads-api.spec.ts::I-12: PATCH /api/v1/ads/:id/content — returns 400 for start date violating 3-day lead time"
+  },
+  "N-02_3_filter_pending_on_click.png": {
+    "description": "Pending ads filtered on clicking Pending stat card",
+    "test": "merchant-ads.spec.ts::N-02: Statistics cards display counts and filter advertisement list on click"
+  },
+  "B-02_1_max_title_length_accepted.png": {
+    "description": "Form accepted exactly 200 characters title boundary",
+    "test": "merchant-ads-boundary.spec.ts::B-02: Submit ad title at maximum allowable length (200 characters)"
+  },
+  "I-13_1_delete_active_ad_bad_request.png": {
+    "description": "DELETE /api/v1/ads/d61aa015-84b2-4ee1-b1d3-9f27a00f53ba returned HTTP 400: Returns 400 Bad Request when attempting to delete active approved advertisement",
+    "test": "merchant-ads-api.spec.ts::I-13: DELETE /api/v1/ads/:id — returns 400 for active approved advertisement"
+  },
+  "N-02_4_filter_expired_on_click.png": {
+    "description": "Expired ads filtered on clicking Expired stat card",
+    "test": "merchant-ads.spec.ts::N-02: Statistics cards display counts and filter advertisement list on click"
+  },
+  "A-03_1_deactivated_banner_displayed.png": {
+    "description": "AccountDeactivatedBanner displayed and package selection disabled",
+    "test": "merchant-ads-abnormal.spec.ts::A-03: Deactivated merchant account shows AccountDeactivatedBanner and disables package selection"
+  },
+  "I-14_1_cross_shop_forbidden.png": {
+    "description": "PATCH /api/v1/ads/458d6d24-cf51-4287-88b2-3ca7622f315b/content returned HTTP 403: Returns 403 Forbidden for cross-shop mutation attempt",
+    "test": "merchant-ads-api.spec.ts::I-14: Cross-shop access mutation returns 403 Forbidden"
+  },
+  "I-15_1_standard_error_format.png": {
+    "description": "GET /api/v1/ads/my-ads?status=invalid_enum_status returned HTTP 400: Conforms to standard HTTP exception payload with statusCode, message, error, timestamp, path",
+    "test": "merchant-ads-api.spec.ts::I-15: Error response conforms to standard API contract"
+  },
+  "N-03_1_packages_catalog_grid.png": {
+    "description": "Available advertisement packages catalog with details and action buttons",
+    "test": "merchant-ads.spec.ts::N-03: Browse available advertisement packages catalog"
+  },
+  "B-03_1_title_capped_at_200.png": {
+    "description": "Title input capped at 200 characters and API rejects 201 characters with 400",
+    "test": "merchant-ads-boundary.spec.ts::B-03: Attempt to exceed ad title maximum length (201 characters)"
+  },
+  "A-04_1_pending_license_banner.png": {
+    "description": "Pending approval warning banner displayed and package selection disabled",
+    "test": "merchant-ads-abnormal.spec.ts::A-04: Pending license merchant shows warning banner and cannot select packages"
+  },
+  "N-04_1_package_deep_link_highlight.png": {
+    "description": "Package card highlighted with purple ring and Updated badge via deep link",
+    "test": "merchant-ads.spec.ts::N-04: Deep link from package notification highlights package card (?updatedPackage=)"
+  },
+  "A-05_1_rejected_license_banner.png": {
+    "description": "Rejected license destructive alert displayed and package selection disabled",
+    "test": "merchant-ads-abnormal.spec.ts::A-05: Rejected license merchant shows destructive banner and cannot select packages"
+  },
+  "B-04_1_content_at_exact_100_max.png": {
+    "description": "Content description of exact 100 characters accepted with 100/100 counter",
+    "test": "merchant-ads-boundary.spec.ts::B-04: Submit content description at exact maximum length (100 characters)"
+  },
+  "N-05_1_package_selection_dialog.png": {
+    "description": "Package selection confirmation dialog showing fee and duration details",
+    "test": "merchant-ads.spec.ts::N-05: Select package to create draft advertisement"
+  },
+  "A-06_1_empty_required_fields_errors.png": {
+    "description": "Inline validation errors shown when submitting empty required ad content fields",
+    "test": "merchant-ads-abnormal.spec.ts::A-06: Submit upload content form with empty required fields"
+  },
+  "N-05_2_draft_created_content_dialog.png": {
+    "description": "Upload Ad Content dialog automatically opened after package selection",
+    "test": "merchant-ads.spec.ts::N-05: Select package to create draft advertisement"
+  },
+  "B-05_1_announcement_at_500_max.png": {
+    "description": "Announcement message accepted at maximum 500 characters boundary",
+    "test": "merchant-ads-boundary.spec.ts::B-05: Submit announcement message at maximum length (500 characters)"
+  },
+  "A-07_1_content_exceeds_100_error.png": {
+    "description": "Validation error displayed when content exceeds 100 characters",
+    "test": "merchant-ads-abnormal.spec.ts::A-07: Submit upload content form with content description exceeding 100 characters"
+  },
+  "N-06_1_ad_content_form_filled.png": {
+    "description": "Content dialog filled with title, announcement, image, and valid schedule",
+    "test": "merchant-ads.spec.ts::N-06: Upload ad content and set schedule (startsAt >= 3 days)"
+  },
+  "N-06_2_payment_dialog_opened.png": {
+    "description": "Payment confirmation dialog opened automatically after saving content",
+    "test": "merchant-ads.spec.ts::N-06: Upload ad content and set schedule (startsAt >= 3 days)"
+  },
+  "B-06_1_exact_min_start_date_accepted.png": {
+    "description": "Start date accepted at exact minimum boundary (today + 3 days)",
+    "test": "merchant-ads-boundary.spec.ts::B-06: Select start date at exact minimum boundary (today + 3 days at UTC 00:00:00)"
+  },
+  "A-08_1_min_start_date_enforced.png": {
+    "description": "Start date min attribute enforced and 3-day lead time violation rejected",
+    "test": "merchant-ads-abnormal.spec.ts::A-08: Submit start date violating 3-day lead time rule (< today + 3 days)"
+  },
+  "N-07_1_payment_reference_entered.png": {
+    "description": "Payment dialog with valid 8+ digit transaction reference entered",
+    "test": "merchant-ads.spec.ts::N-07: Pay advertising fee and submit ad for admin approval"
+  },
+  "N-07_2_ad_submitted_for_approval.png": {
+    "description": "Success toast shown and ad updated to pending review with payment completed",
+    "test": "merchant-ads.spec.ts::N-07: Pay advertising fee and submit ad for admin approval"
+  },
+  "B-07_1_min_payment_ref_8_digits_accepted.png": {
+    "description": "Payment reference of exactly 8 digits accepted and payment submitted",
+    "test": "merchant-ads-boundary.spec.ts::B-07: Payment reference at minimum boundary length (8 digits)"
+  },
+  "A-09_1_invalid_package_rejected.png": {
+    "description": "404 AD_PACKAGE_INVALID returned when attempting to select non-existent package",
+    "test": "merchant-ads-abnormal.spec.ts::A-09: Select non-existent or inactive package ID"
+  },
+  "N-08_1_advertisement_cards_grid.png": {
+    "description": "Grid displaying ad cards with thumbnail, metadata, and contextual buttons",
+    "test": "merchant-ads.spec.ts::N-08: View own advertisements grid with 3 cards per page"
+  },
+  "B-08_1_max_payment_ref_100_digits_accepted.png": {
+    "description": "Payment reference of exactly 100 digits accepted without error",
+    "test": "merchant-ads-boundary.spec.ts::B-08: Payment reference at maximum boundary length (100 digits)"
+  },
+  "A-10_1_unapproved_shop_forbidden.png": {
+    "description": "403 Forbidden returned when user does not have an approved merchant shop",
+    "test": "merchant-ads-abnormal.spec.ts::A-10: Select package when shop is not approved"
+  },
+  "N-09_1_search_debounced_results.png": {
+    "description": "Ad grid filtered after typing Radiant in search with 300ms debounce",
+    "test": "merchant-ads.spec.ts::N-09: Search advertisements by title (debounced 300ms)"
+  },
+  "B-09_1_empty_ads_zero_state.png": {
+    "description": "Empty state card displayed when merchant has zero advertisements",
+    "test": "merchant-ads-boundary.spec.ts::B-09: Empty advertisements list (Zero state)"
+  },
+  "A-11_1_upload_content_rejected_on_approved_ad.png": {
+    "description": "Content upload rejected with 400 for already approved ad",
+    "test": "merchant-ads-abnormal.spec.ts::A-11: Upload content to an advertisement not in pending/pending state"
+  },
+  "N-10_1_status_filter_active.png": {
+    "description": "Advertisements filtered by Active status",
+    "test": "merchant-ads.spec.ts::N-10: Filter advertisements by status (All, Active, Inactive, Expired)"
+  },
+  "B-10_1_empty_packages_zero_state.png": {
+    "description": "Empty state message displayed when zero advertisement packages are available",
+    "test": "merchant-ads-boundary.spec.ts::B-10: Empty package catalog (Zero state)"
+  },
+  "N-10_2_status_filter_inactive.png": {
+    "description": "Advertisements filtered by Inactive status",
+    "test": "merchant-ads.spec.ts::N-10: Filter advertisements by status (All, Active, Inactive, Expired)"
+  },
+  "N-10_3_status_filter_expired.png": {
+    "description": "Advertisements filtered by Expired status",
+    "test": "merchant-ads.spec.ts::N-10: Filter advertisements by status (All, Active, Inactive, Expired)"
+  },
+  "A-12_1_unowned_image_rejected.png": {
+    "description": "400 returned when attempting to submit image not belonging to merchant products",
+    "test": "merchant-ads-abnormal.spec.ts::A-12: Upload image path not matching any of the merchant's own products"
+  },
+  "B-11_1_pagination_3_ads_1_page.png": {
+    "description": "Pagination disabled for exactly 3 advertisements (1 single page)",
+    "test": "merchant-ads-boundary.spec.ts::B-11: Pagination boundary with exactly 3 advertisements (1 page) vs 4 advertisements (2 pages)"
+  },
+  "B-11_2_pagination_4_ads_2_pages.png": {
+    "description": "Pagination enabled with 2 pages when boundary exceeds 3 items (4 total ads)",
+    "test": "merchant-ads-boundary.spec.ts::B-11: Pagination boundary with exactly 3 advertisements (1 page) vs 4 advertisements (2 pages)"
+  },
+  "A-13_1_pay_fee_missing_content_rejected.png": {
+    "description": "400 returned when attempting to pay fee for ad without content or schedule",
+    "test": "merchant-ads-abnormal.spec.ts::A-13: Pay fee for an advertisement missing content or schedule"
+  },
+  "N-11_1_approval_filter_pending.png": {
+    "description": "Advertisements filtered by Pending approval",
+    "test": "merchant-ads.spec.ts::N-11: Filter advertisements by approval status (All, Pending, Approved, Rejected)"
+  },
+  "N-11_2_approval_filter_approved.png": {
+    "description": "Advertisements filtered by Approved status",
+    "test": "merchant-ads.spec.ts::N-11: Filter advertisements by approval status (All, Pending, Approved, Rejected)"
+  },
+  "N-11_3_approval_filter_rejected.png": {
+    "description": "Advertisements filtered by Rejected status",
+    "test": "merchant-ads.spec.ts::N-11: Filter advertisements by approval status (All, Pending, Approved, Rejected)"
+  },
+  "B-12_1_packages_pagination_5_items.png": {
+    "description": "Package catalog pagination bar displayed for 5 packages (boundary >4 items)",
+    "test": "merchant-ads-boundary.spec.ts::B-12: Package catalog pagination boundary with 4 packages (no pagination) vs 5 packages (2 pages)"
+  },
+  "A-14_1_invalid_payment_ref_short.png": {
+    "description": "Validation error shown and submit disabled for <8 digit payment reference",
+    "test": "merchant-ads-abnormal.spec.ts::A-14: Enter invalid payment reference (< 8 digits or non-numeric)"
+  },
+  "N-12_1_filters_reset_on_refresh.png": {
+    "description": "Search input and filters cleared after clicking Refresh button",
+    "test": "merchant-ads.spec.ts::N-12: Reset filters and reload list via Refresh button"
+  },
+  "B-13_1_search_no_matches_empty_state.png": {
+    "description": "Empty state displayed cleanly when search query produces zero results",
+    "test": "merchant-ads-boundary.spec.ts::B-13: Search query with no matching advertisements"
+  },
+  "A-15_1_pay_already_paid_rejected.png": {
+    "description": "400 returned when attempting to submit payment for already paid advertisement",
+    "test": "merchant-ads-abnormal.spec.ts::A-15: Attempt to pay fee for already paid advertisement"
+  },
+  "N-13_1_ad_highlight_deep_link.png": {
+    "description": "Target ad highlighted with violet ring outline via notification deep link",
+    "test": "merchant-ads.spec.ts::N-13: Deep link from approval/rejection notification highlights ad card (?highlightAdId=)"
+  },
+  "B-14_1_month_boundary_end_date_computed.png": {
+    "description": "Auto-computed end date correctly rolls over month boundary from Jan 28 to Feb 4",
+    "test": "merchant-ads-boundary.spec.ts::B-14: Schedule end date calculation across month and leap year boundaries"
+  },
+  "A-16_1_delete_button_hidden_for_active_ad.png": {
+    "description": "Delete button is hidden for live active approved advertisement",
+    "test": "merchant-ads-abnormal.spec.ts::A-16: Attempt to delete an active approved advertisement"
+  },
+  "A-16_2_api_delete_active_ad_rejected.png": {
+    "description": "API returns 400 rejecting deletion of active approved advertisement",
+    "test": "merchant-ads-abnormal.spec.ts::A-16: Attempt to delete an active approved advertisement"
+  },
+  "N-14_1_ad_view_detail_dialog.png": {
+    "description": "Read-only advertisement detail dialog displaying full media, schedule, and fee details",
+    "test": "merchant-ads.spec.ts::N-14: View read-only advertisement detail modal (AdViewDialog)"
+  },
+  "B-15_1_lifecycle_state_transitions.png": {
+    "description": "Ad cards correctly exhibiting scheduled, active, and expired display states",
+    "test": "merchant-ads-boundary.spec.ts::B-15: Ad lifecycle display state transitions exactly at schedule boundaries"
+  },
+  "A-17_1_toggle_unapproved_rejected.png": {
+    "description": "Switch hidden on UI and API returns 400 for toggling unapproved/unpaid ad",
+    "test": "merchant-ads-abnormal.spec.ts::A-17: Attempt to toggle active status on non-approved or unpaid advertisement"
+  },
+  "N-15_1_edit_unpaid_content_form.png": {
+    "description": "Edit dialog populated and modified with updated title and announcement",
+    "test": "merchant-ads.spec.ts::N-15: Edit unpaid advertisement content (PATCH /ads/:id)"
+  },
+  "N-15_2_edit_unpaid_saved_card.png": {
+    "description": "Ad card updated with modified title after saving edits",
+    "test": "merchant-ads.spec.ts::N-15: Edit unpaid advertisement content (PATCH /ads/:id)"
+  },
+  "A-18_1_cross_shop_access_denied.png": {
+    "description": "403 Forbidden returned when attempting to mutate ad owned by another shop",
+    "test": "merchant-ads-abnormal.spec.ts::A-18: Cross-shop access denied when modifying another merchant's advertisement"
+  },
+  "N-16_1_resubmit_dialog_with_fresh_schedule.png": {
+    "description": "Edit dialog for rejected ad with Save & Pay button and rescheduled dates",
+    "test": "merchant-ads.spec.ts::N-16: Edit and resubmit rejected advertisement with fresh schedule and payment"
+  },
+  "N-16_2_resubmit_payment_dialog.png": {
+    "description": "Payment confirmation dialog opened for resubmission",
+    "test": "merchant-ads.spec.ts::N-16: Edit and resubmit rejected advertisement with fresh schedule and payment"
+  },
+  "N-16_3_resubmit_completed.png": {
+    "description": "Rejected ad successfully resubmitted with pending status and updated payment",
+    "test": "merchant-ads.spec.ts::N-16: Edit and resubmit rejected advertisement with fresh schedule and payment"
+  },
+  "A-19_1_edit_approved_ad_rejected.png": {
+    "description": "Edit button hidden and API returns 400 for editing approved advertisement",
+    "test": "merchant-ads-abnormal.spec.ts::A-19: Attempt to edit advertisement that is not editable"
+  },
+  "N-17_1_toggle_active_initial.png": {
+    "description": "Approved paid ad with Active switch toggled on",
+    "test": "merchant-ads.spec.ts::N-17: Toggle active/inactive switch on approved and paid advertisement"
+  },
+  "N-17_2_toggle_deactivated.png": {
+    "description": "Ad deactivated; switch turned off",
+    "test": "merchant-ads.spec.ts::N-17: Toggle active/inactive switch on approved and paid advertisement"
+  },
+  "A-20_1_empty_product_images_picker.png": {
+    "description": "Product Image Picker displays empty state message and disables Confirm button",
+    "test": "merchant-ads-abnormal.spec.ts::A-20: Product Image Picker handles empty catalog or products with no images"
+  },
+  "N-17_3_toggle_reactivated.png": {
+    "description": "Ad reactivated; switch turned back on",
+    "test": "merchant-ads.spec.ts::N-17: Toggle active/inactive switch on approved and paid advertisement"
+  },
+  "N-18_1_delete_unpaid_confirmation.png": {
+    "description": "Delete confirmation dialog for unpaid ad indicating permanent removal",
+    "test": "merchant-ads.spec.ts::N-18: Delete draft or unpaid advertisement (Hard delete)"
+  },
+  "N-18_2_unpaid_ad_deleted.png": {
+    "description": "Ad card permanently removed from list after hard delete",
+    "test": "merchant-ads.spec.ts::N-18: Delete draft or unpaid advertisement (Hard delete)"
+  },
+  "A-21_1_picker_api_failure_alert.png": {
+    "description": "Destructive error alert displayed when product images API fails",
+    "test": "merchant-ads-abnormal.spec.ts::A-21: Product Image Picker handles product API failure"
+  },
+  "N-19_1_delete_expired_dialog.png": {
+    "description": "Delete confirmation dialog for expired advertisement",
+    "test": "merchant-ads.spec.ts::N-19: Delete expired advertisement (Hard delete)"
+  },
+  "N-19_2_expired_ad_deleted.png": {
+    "description": "Expired ad card permanently removed from list",
+    "test": "merchant-ads.spec.ts::N-19: Delete expired advertisement (Hard delete)"
+  },
+  "A-22_1_package_future_effective_rejected.png": {
+    "description": "404 AD_PACKAGE_INVALID returned when package lacks past effective history",
+    "test": "merchant-ads-abnormal.spec.ts::A-22: Package selection fails when package fee setting lacks past effective history"
+  },
+  "N-20_1_soft_delete_dialog_message.png": {
+    "description": "Delete confirmation indicating soft delete and performance retention",
+    "test": "merchant-ads.spec.ts::N-20: Delete paid inactive advertisement (Soft delete / Deactivate & retain history)"
+  },
+  "N-20_2_soft_delete_completed.png": {
+    "description": "Inactive ad removed from active grid view while history is retained",
+    "test": "merchant-ads.spec.ts::N-20: Delete paid inactive advertisement (Soft delete / Deactivate & retain history)"
+  },
+  "N-21_1_expiry_warning_badges.png": {
+    "description": "Ad cards displaying amber warning badges for today/tomorrow and red for expired",
+    "test": "merchant-ads.spec.ts::N-21: Expiry warning badges display correctly for ads expiring today or tomorrow"
+  },
+  "N-22_1_picker_image_staged.png": {
+    "description": "Product image staged with border and ring highlight",
+    "test": "merchant-ads.spec.ts::N-22: Product Image Picker stages selection and commits on Confirm"
+  },
+  "N-22_2_picker_selection_confirmed.png": {
+    "description": "Product image confirmed and rendered in content dialog preview",
+    "test": "merchant-ads.spec.ts::N-22: Product Image Picker stages selection and commits on Confirm"
+  },
+  "N-23_1_draft_content_typed.png": {
+    "description": "Draft values entered in dialog before cancelling",
+    "test": "merchant-ads.spec.ts::N-23: Draft content persists across cancel/reopen via LocalStorage cache"
+  },
+  "N-23_2_draft_restored_from_cache.png": {
+    "description": "Draft values restored from local storage cache on reopening dialog",
+    "test": "merchant-ads.spec.ts::N-23: Draft content persists across cancel/reopen via LocalStorage cache"
+  },
+  "N-24_1_language_japanese.png": {
+    "description": "Merchant advertisement management page rendered in Japanese",
+    "test": "merchant-ads.spec.ts::N-24: Language toggle works across all Merchant Advertisement UI elements"
+  },
+  "N-24_2_language_myanmar.png": {
+    "description": "Merchant advertisement management page rendered in Myanmar",
+    "test": "merchant-ads.spec.ts::N-24: Language toggle works across all Merchant Advertisement UI elements"
+  },
+  "N-24_3_language_english_restored.png": {
+    "description": "Page restored to English language",
+    "test": "merchant-ads.spec.ts::N-24: Language toggle works across all Merchant Advertisement UI elements"
+  },
+  "N-25_1_theme_dark_mode.png": {
+    "description": "Dark mode theme activated on Merchant Advertisements page",
+    "test": "merchant-ads.spec.ts::N-25: Theme toggle switches between light and dark modes"
+  },
+  "N-25_2_theme_light_restored.png": {
+    "description": "Light mode restored cleanly",
+    "test": "merchant-ads.spec.ts::N-25: Theme toggle switches between light and dark modes"
+  },
+  "N-26_1_desktop_viewport_layout.png": {
+    "description": "Full desktop dashboard layout (1280x800) with multi-column grids",
+    "test": "merchant-ads.spec.ts::N-26: Responsive layout on desktop viewport (>= 1024px)"
+  },
+  "N-27_1_tablet_viewport_layout.png": {
+    "description": "Tablet layout (768x1024) with 2-column grid and wrapped toolbar",
+    "test": "merchant-ads.spec.ts::N-27: Responsive layout on tablet viewport (768px – 1023px)"
+  },
+  "N-28_1_mobile_viewport_layout.png": {
+    "description": "Mobile viewport layout (375x667) cleanly stacked with zero horizontal overflow",
+    "test": "merchant-ads.spec.ts::N-28: Responsive layout on mobile viewport (< 768px)"
+  },
+  "N-29_1_public_active_ads_verified.png": {
+    "description": "Public active ads verified matching storefront active advertisement endpoint",
+    "test": "merchant-ads.spec.ts::N-29: Public storefront active ads endpoint returns active approved ads"
+  }
+}
