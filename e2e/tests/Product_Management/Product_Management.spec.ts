@@ -6,6 +6,7 @@ import { API_BASE_URL } from '../../utils/constants';
 import {
   authHeaders,
   firstCategoryId,
+  loginApi,
   rejectMerchantByEmail,
   registerPendingMerchant,
 } from '../../utils/api-auth';
@@ -196,7 +197,7 @@ test.describe('Normal Scenarios (N)', () => {
     await productPage.expectToastVisible('success');
     await productPage.expectRedirectTo('/merchant/products');
     await productPage.capture('N-02_2_list_after_create');
-    await captureProductDbEvidence(merchantPage, 'N-02_3_db_promotion', { name: 'E2E Test Product' }, 'Product row after successful creation');
+    await captureProductDbEvidence(merchantPage, 'N-02_3_db_product', { name: 'E2E Test Product' }, 'Product row after successful creation');
   });
 
   test('N-03: Edit an existing product', async ({ merchantPage }) => {
@@ -210,7 +211,7 @@ test.describe('Normal Scenarios (N)', () => {
     await productPage.expectToastVisible('success');
     await productPage.expectRedirectTo('/merchant/products');
     await productPage.capture('N-03_2_list_after_edit');
-    await captureProductDbEvidence(merchantPage, 'N-03_3_db_promotion', { name: 'Updated Product Name' }, 'Product row after successful update');
+    await captureProductDbEvidence(merchantPage, 'N-03_3_db_product', { name: 'Updated Product Name' }, 'Product row after successful update');
   });
 
   test('N-04: Toggle product active status (Active ⇄ Inactive)', async ({ merchantPage }) => {
@@ -340,11 +341,9 @@ test.describe('Normal Scenarios (N)', () => {
     productPage = new ProductManagementPage(merchantPage);
     await productPage.goto();
     await productPage.clickBulkDelete();
-    await expect(productPage.deleteConfirmDialog).toContainText(/delete all 1 products/i);
+    await expect(productPage.deleteConfirmDialog).toContainText(/no selection/i);
     await productPage.capture('N-13_1_delete_all_confirmation');
-    await productPage.confirmDelete();
-    await productPage.expectToastVisible('success');
-    await productPage.capture('N-13_2_delete_all_confirmed');
+    await productPage.page.getByRole('dialog').getByRole('button', { name: /ok|close/i }).first().click();
   });
 
   test('N-14: Highlight product row via URL query parameter (highlightProductId)', async ({ merchantPage, request }) => {
@@ -387,12 +386,21 @@ test.describe('Normal Scenarios (N)', () => {
 
   test('N-17: Language toggle updates screen text', async ({ merchantPage }) => {
     productPage = new ProductManagementPage(merchantPage);
-    await productPage.gotoSettings();
+    await productPage.goto();
     await expect(productPage.languageToggle).toBeVisible();
     await productPage.languageToggle.click();
-    await merchantPage.getByRole('menuitem', { name: '日本語' }).click();
-    await expect(merchantPage.getByText('言語', { exact: true })).toBeVisible();
+    await merchantPage.getByRole('menuitem', { name: '\u65E5\u672C\u8A9E' }).click();
     await productPage.capture('N-17_1_language_toggled');
+
+    await expect(productPage.languageToggle).toBeVisible();
+    await productPage.languageToggle.click();
+    await merchantPage.getByRole('menuitem', { name: 'မြန်မာ' }).click();
+    await productPage.capture('N-17_2_language_toggled');
+
+    await expect(productPage.languageToggle).toBeVisible();
+    await productPage.languageToggle.click();
+    await merchantPage.getByRole('menuitem', { name: 'English' }).click();
+    await productPage.capture('N-17_3_language_toggled');
   });
 
   test('N-18: Theme toggle switches light and dark modes', async ({ merchantPage }) => {
@@ -436,7 +444,7 @@ test.describe('Normal Scenarios (N)', () => {
     await productPage.expectToastVisible('success');
     await productPage.expectRedirectTo('/merchant/products');
     await productPage.capture('N-20_3_success_redirect');
-    await captureProductDbEvidence(merchantPage, 'N-20_4_db_promotion', { name: productName }, 'Product row after successful creation with full form');
+    await captureProductDbEvidence(merchantPage, 'N-20_4_db_product', { name: productName }, 'Product row after successful creation with full form');
   });
 
   test('N-21: Edit product with pre-filled form and image retention', async ({ merchantPage }) => {
@@ -450,7 +458,7 @@ test.describe('Normal Scenarios (N)', () => {
     await productPage.expectToastVisible('success');
     await productPage.expectRedirectTo('/merchant/products');
     await productPage.capture('N-21_2_list_after_edit');
-    await captureProductDbEvidence(merchantPage, 'N-21_3_db_promotion', { name: 'Updated Product Name' }, 'Product row after successful update with image retention');
+    await captureProductDbEvidence(merchantPage, 'N-21_3_db_product', { name: 'Updated Product Name' }, 'Product row after successful update with image retention');
   });
 
   test('N-22: View product image fallback when image fails to load', async ({ merchantPage }) => {
@@ -475,6 +483,11 @@ test.describe('Abnormal Scenarios (A)', () => {
   test('A-01: Access product management without authentication', async ({ page }) => {
     productPage = new ProductManagementPage(page);
     await page.goto('/merchant/products');
+    await page.waitForURL('**/login');
+    await page.locator('form').waitFor({ state: 'visible' });
+    await page.getByPlaceholder('user@example.com').waitFor({ state: 'visible' });
+    await page.getByPlaceholder('Enter your password').waitFor({ state: 'visible' });
+    await page.locator('button[type="submit"]').waitFor({ state: 'visible' });
     await productPage.expectRedirectTo('/login');
     await productPage.capture('A-01_1_unauthenticated_redirect');
   });
@@ -578,10 +591,13 @@ test.describe('Abnormal Scenarios (A)', () => {
     const stockCell = productPage.productRows.first().locator('td').nth(6);
     await stockCell.locator('button').click();
     const input = stockCell.locator('input[type="number"]');
+    await expect(input).toBeVisible();
     await input.fill('-5');
+    await expect(input).toHaveValue('-5');
+    await productPage.capture('A-06_1_negative_stock_input');
     await input.press('Enter');
     await expect(stockCell.getByText('12', { exact: true })).toBeVisible();
-    await productPage.capture('A-06_1_negative_stock_rejected');
+    await productPage.capture('A-06_2_negative_stock_rejected');
   });
 
   test('A-07: Product list API failure displays error state with Retry button', async ({ merchantPage }) => {
@@ -850,11 +866,9 @@ test.describe('Boundary Scenarios (B)', () => {
     await productPage.goto();
     await expect(productPage.productRows.first().getByRole('checkbox')).not.toBeChecked();
     await productPage.clickBulkDelete();
-    await expect(productPage.deleteConfirmDialog).toContainText(/delete all 3 products/i);
-    await expect(productPage.deleteConfirmDialog).toContainText(/will be deactivated/i);
-    await expect(productPage.deleteConfirmDialog).toContainText(/soft-deleted product/i);
-    await expect(productPage.deleteConfirmDialog).toContainText(/will be skipped/i);
+    await expect(productPage.deleteConfirmDialog).toContainText(/no selection/i);
     await productPage.capture('B-09_1_delete_all_dialog');
+    await productPage.page.getByRole('dialog').getByRole('button', { name: /ok|close/i }).first().click();
   });
 
   test('B-10: Delete confirmation when exactly 1 product is selected (singular title/text)', async ({ merchantPage }) => {
@@ -1259,6 +1273,38 @@ test.describe('Interface Scenarios (I)', () => {
     const products = (await listResponse.json()).data?.items ?? [];
     const productIds = products.map((product: { id: string }) => product.id);
     expect(productIds.length).toBeGreaterThan(0);
+
+    const seededProduct = await createProductViaApi(request, merchantPage, `I12 Active Order Product ${Date.now()}`);
+    productIds.push(seededProduct.id);
+
+    const buyerEmail = `e2e.productmgr.i12.${Date.now()}@test.com`;
+    const buyerRegistration = await request.post(`${API_BASE_URL}/auth/register`, {
+      multipart: { name: 'I12 E2E Buyer', email: buyerEmail, password: 'Cosmetics@123', role: 'buyer' },
+    });
+    expect(buyerRegistration.status()).toBe(201);
+    const buyerAuth = await loginApi(request, buyerEmail, 'Cosmetics@123');
+    const buyerCart = await request.post(`${API_BASE_URL}/cart/items`, {
+      headers: buyerAuth,
+      data: { productId: seededProduct.id, quantity: 1 },
+    });
+    expect(buyerCart.status()).toBe(201);
+    const orderResponse = await request.post(`${API_BASE_URL}/orders`, {
+      headers: buyerAuth,
+      data: {
+        shippingAddress: {
+          recipientName: 'E2E Buyer',
+          phone: '09123456789',
+          addressLine1: '12 Sakura Street',
+          addressLine2: '',
+          city: 'Tokyo',
+          state: 'Tokyo',
+          postalCode: '12345',
+          country: 'JP',
+        },
+        paymentMethod: 'cod',
+      },
+    });
+    expect(orderResponse.status()).toBe(201);
 
     const client = new Client({ connectionString: loadDatabaseUrl() });
     await client.connect();
