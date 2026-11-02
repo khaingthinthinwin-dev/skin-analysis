@@ -11,6 +11,8 @@ import {
 import { API_BASE_URL } from '../../utils/constants';
 import { loginApi } from '../../utils/api-auth';
 import { randomUUID } from 'crypto';
+import { Client } from 'pg';
+import { loadDatabaseUrl } from '../../utils/db-evidence';
 
 let merchantAdPage: MerchantAdPage;
 let ctx: MerchantTestContext;
@@ -220,38 +222,107 @@ test.describe('Merchant Advertisement Management — Abnormal Scenarios (A-01 to
 
   // A-09: Select non-existent or inactive package ID
   test('A-09: Select non-existent or inactive package ID', async ({ request, merchantPage }) => {
-    const merchantHeaders = await loginApi(request, 'smt@gmail.com', 'Cosmetics@123');
-    const fakeUuid = randomUUID();
-    const res = await request.post(`${API_BASE_URL}/ads/packages/${fakeUuid}/select`, {
-      headers: merchantHeaders,
-    });
-    expect(res.status()).toBe(404);
-    const body = await res.json();
-    expect(body.message).toContain('AD_PACKAGE_INVALID');
-
     await merchantAdPage.goto();
-    await captureScreenshot(merchantPage, 'A-09_1_invalid_package_rejected', '404 AD_PACKAGE_INVALID returned when attempting to select non-existent package');
+    await expect(merchantAdPage.packageCards.first()).toBeVisible();
+
+    const invalidUuid = randomUUID();
+    await merchantPage.route('**/ads/packages/*/select', async (route) => {
+      const response = await route.fetch({
+        url: `${API_BASE_URL}/ads/packages/${invalidUuid}/select`,
+      });
+      await route.fulfill({ response });
+    });
+
+    await merchantAdPage.packageCards.first()
+      .getByRole('button', { name: /Select Package|ပက်ကေ့ဂျ်ရွေးချယ်ပါ|パッケージを選択/i })
+      .click();
+    const selectionResponse = merchantPage.waitForResponse((response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes('/ads/packages/') &&
+      response.url().endsWith('/select'),
+    );
+    await merchantAdPage.confirmPackageSelectionButton.click();
+
+    const response = await selectionResponse;
+    expect(response.status()).toBe(404);
+    const body = await response.json();
+    expect(body.message).toContain('AD_PACKAGE_INVALID');
+    await expect(
+      merchantPage.locator('[data-sonner-toast]').filter({
+        hasText: /The selected advertising package is no longer available|Selected advertising package is unavailable/i,
+      }),
+    ).toBeVisible();
+
+    await captureScreenshot(merchantPage, 'A-09_1_invalid_package_rejected', '404 AD_PACKAGE_INVALID response displayed as a package-unavailable error toast');
   });
 
   // A-10: Select package when shop is not approved
   test('A-10: Select package when shop is not approved', async ({ request, merchantPage }) => {
-    // Register or test against an unapproved shop
-    // If shop is not approved, endpoint returns 403 SHOP_NOT_APPROVED
-    // We can verify this via API using the unapproved shop check
-    const buyerHeaders = await loginApi(request, 'eem@gmail.com', 'Cosmetics@123');
-    const res = await request.post(`${API_BASE_URL}/ads/packages/${ctx.feeSettingId}/select`, {
-      headers: buyerHeaders,
-    });
-    expect(res.status()).toBe(403);
+    const client = new Client({ connectionString: loadDatabaseUrl() });
+    await client.connect();
+    let originalShopApproval: boolean | undefined;
+    let originalLicenseStatus: string | null | undefined;
 
-    await merchantAdPage.goto();
-    await captureScreenshot(merchantPage, 'A-10_1_unapproved_shop_forbidden', '403 Forbidden returned when user does not have an approved merchant shop');
+    try {
+      const state = await client.query<{
+        is_approved: boolean;
+        license_status: string | null;
+      }>(
+        `SELECT s.is_approved, m.license_status
+         FROM shops s
+         JOIN merchants m ON m.user_id = s.user_id
+         WHERE s.id = $1`,
+        [ctx.shopId],
+      );
+      const originalState = state.rows[0];
+      if (!originalState) {
+        throw new Error(`Shop ${ctx.shopId} or its merchant profile was not found`);
+      }
+      originalShopApproval = originalState.is_approved;
+      originalLicenseStatus = originalState.license_status;
+
+      await client.query('UPDATE shops SET is_approved = false WHERE id = $1', [ctx.shopId]);
+      await client.query(
+        "UPDATE merchants SET license_status = 'pending' WHERE user_id = (SELECT user_id FROM shops WHERE id = $1)",
+        [ctx.shopId],
+      );
+
+      const merchantHeaders = await loginApi(request, 'smt@gmail.com', 'Cosmetics@123');
+      const response = await request.post(`${API_BASE_URL}/ads/packages/${ctx.feeSettingId}/select`, {
+        headers: merchantHeaders,
+      });
+      expect(response.status()).toBe(403);
+      const body = await response.json();
+      expect(body.message).toContain('SHOP_NOT_APPROVED');
+
+      await merchantAdPage.goto();
+      const selectButtons = merchantAdPage.packageCards.getByRole('button', {
+        name: /Select Package|ပက်ကေ့ဂျ်ရွေးချယ်ပါ|パッケージを選択/i,
+      });
+      await expect(selectButtons.first()).toBeVisible();
+      await expect(selectButtons.first()).toBeDisabled();
+      await captureScreenshot(merchantPage, 'A-10_1_unapproved_shop_forbidden', 'Merchant shop is unapproved, package selection is disabled, and API returns 403 SHOP_NOT_APPROVED');
+    } finally {
+      if (originalShopApproval !== undefined) {
+        await client.query('UPDATE shops SET is_approved = $2 WHERE id = $1', [ctx.shopId, originalShopApproval]);
+      }
+      if (originalLicenseStatus !== undefined) {
+        await client.query(
+          'UPDATE merchants SET license_status = $2 WHERE user_id = (SELECT user_id FROM shops WHERE id = $1)',
+          [ctx.shopId, originalLicenseStatus],
+        );
+      }
+      await client.end();
+    }
   });
 
   // A-11: Upload content to an advertisement not in pending/pending state
   test('A-11: Upload content to an advertisement not in pending/pending state', async ({ request, merchantPage }) => {
     const approvedAdId = await seedAd({
       title: 'A11 Approved Ad',
+      announcementMessage: 'Approved advertisement content',
+      imageUrl: ctx.productImageUrl,
+      sku: ctx.productSku,
       approvalStatus: 'approved',
       paymentStatus: 'completed',
       startsAt: new Date(Date.now() + 5 * 24 * 3600 * 1000),
@@ -259,23 +330,49 @@ test.describe('Merchant Advertisement Management — Abnormal Scenarios (A-01 to
     });
     seededAdIds.push(approvedAdId);
 
-    const merchantHeaders = await loginApi(request, 'smt@gmail.com', 'Cosmetics@123');
-    const res = await request.patch(`${API_BASE_URL}/ads/${approvedAdId}/content`, {
-      headers: merchantHeaders,
-      data: {
-        title: 'New Attempt Title',
-        announcementMessage: 'New Announcement',
-        imageUrl: ctx.productImageUrl,
-        startsAt: getFutureDateString(5),
-      },
+    await merchantPage.route('**/api/v1/ads/my-ads*', async (route) => {
+      const response = await route.fetch();
+      const payload = await response.json() as {
+        data?: {
+          data?: Array<{
+            id: string;
+            approvalStatus: string;
+            paymentStatus: string;
+            startsAt: string | null;
+          }>;
+        };
+      };
+      const ad = payload.data?.data?.find((item) => item.id === approvedAdId);
+      if (ad) {
+        ad.approvalStatus = 'pending';
+        ad.paymentStatus = 'pending';
+        ad.startsAt = null;
+      }
+      await route.fulfill({ response, json: payload });
     });
 
-    expect(res.status()).toBe(400);
-    const body = await res.json();
-    expect(body.message).toContain('Advertisement cannot accept content');
-
     await merchantAdPage.goto();
-    await captureScreenshot(merchantPage, 'A-11_1_upload_content_rejected_on_approved_ad', 'Content upload rejected with 400 for already approved ad');
+    await merchantAdPage.searchInput.fill('A11 Approved Ad');
+    const adCard = merchantAdPage.getAdCard('A11 Approved Ad');
+    await expect(adCard).toBeVisible();
+    await adCard.getByRole('button', { name: /Edit|ပြင်ဆင်ရန်|編集/i }).click();
+    await expect(merchantAdPage.contentDialog).toBeVisible();
+    await merchantAdPage.adAnnouncementTextarea.fill('Attempt to edit approved ad');
+    await merchantAdPage.adStartDateInput.fill(getFutureDateString(5));
+
+    const contentResponsePromise = merchantPage.waitForResponse((response) =>
+      response.request().method() === 'PATCH' &&
+      response.url().endsWith(`/ads/${approvedAdId}/content`),
+    );
+    await merchantAdPage.saveButton.click();
+    const contentResponse = await contentResponsePromise;
+    expect(contentResponse.status()).toBe(400);
+    const body = await contentResponse.json();
+    expect(body.message).toContain('Advertisement cannot accept content');
+    await expect(
+      merchantPage.locator('[data-sonner-toast]').filter({ hasText: /Request failed with status code 400/i }),
+    ).toBeVisible();
+    await captureScreenshot(merchantPage, 'A-11_1_upload_content_rejected_on_approved_ad', 'Approved ad content upload returned 400 and its UI error toast is visible');
   });
 
   // A-12: Upload image path not matching any of the merchant's own products
@@ -287,23 +384,49 @@ test.describe('Merchant Advertisement Management — Abnormal Scenarios (A-01 to
     });
     seededAdIds.push(draftId);
 
-    const merchantHeaders = await loginApi(request, 'smt@gmail.com', 'Cosmetics@123');
-    const res = await request.patch(`${API_BASE_URL}/ads/${draftId}/content`, {
-      headers: merchantHeaders,
-      data: {
-        title: 'Malicious External Image Ad',
-        announcementMessage: 'Some announcement',
-        imageUrl: '/uploads/external/malicious-phishing.jpg',
-        startsAt: getFutureDateString(4),
-      },
+    await merchantPage.route('**/api/v1/products*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            items: [{
+              id: randomUUID(),
+              name: 'External Image Test Product',
+              sku: 'E2E-EXTERNAL-IMAGE',
+              images: ['/uploads/external/malicious.jpg'],
+            }],
+            meta: { page: 1, limit: 3, total: 1, totalPages: 1 },
+          },
+        }),
+      });
     });
 
-    expect(res.status()).toBe(400);
-    const body = await res.json();
-    expect(body.message).toContain('Advertisement image must be selected from your products');
-
     await merchantAdPage.goto();
-    await captureScreenshot(merchantPage, 'A-12_1_unowned_image_rejected', '400 returned when attempting to submit image not belonging to merchant products');
+    const adCard = merchantAdPage.getAdCard(/Draft Advertisement|ကြော်ငြာမူကြမ်း|下書き/i);
+    await adCard.getByRole('button', { name: /Edit|ပြင်ဆင်ရန်|編集/i }).click();
+    await expect(merchantAdPage.contentDialog).toBeVisible();
+    await merchantAdPage.adTitleInput.fill('Malicious External Image Ad');
+    await merchantAdPage.adAnnouncementTextarea.fill('Some announcement');
+    await merchantAdPage.chooseImageButton.click();
+    await expect(merchantAdPage.imagePickerDialog).toBeVisible();
+    await merchantAdPage.imageOptions.first().click();
+    await merchantAdPage.confirmImageButton.click();
+    await merchantAdPage.adStartDateInput.fill(getFutureDateString(4));
+
+    const contentResponsePromise = merchantPage.waitForResponse((response) =>
+      response.request().method() === 'PATCH' &&
+      response.url().endsWith(`/ads/${draftId}/content`),
+    );
+    await merchantAdPage.saveContinueButton.click();
+    const contentResponse = await contentResponsePromise;
+    expect(contentResponse.status()).toBe(400);
+    const body = await contentResponse.json();
+    expect(body.message).toContain('Advertisement image must be selected from your products');
+    await expect(
+      merchantPage.locator('[data-sonner-toast]').filter({ hasText: /Request failed with status code 400/i }),
+    ).toBeVisible();
+    await captureScreenshot(merchantPage, 'A-12_1_unowned_image_rejected', 'Unowned image path rejected with 400 and the UI error toast is visible');
   });
 
   // A-13: Pay fee for an advertisement missing content or schedule
@@ -317,18 +440,56 @@ test.describe('Merchant Advertisement Management — Abnormal Scenarios (A-01 to
     });
     seededAdIds.push(draftId);
 
-    const merchantHeaders = await loginApi(request, 'smt@gmail.com', 'Cosmetics@123');
-    const res = await request.post(`${API_BASE_URL}/ads/${draftId}/pay`, {
-      headers: merchantHeaders,
-      data: { paymentReference: '1234567890' },
+    await merchantPage.route('**/api/v1/ads/my-ads*', async (route) => {
+      const response = await route.fetch();
+      const payload = await response.json() as {
+        data?: {
+          data?: Array<{
+            id: string;
+            title: string;
+            announcementMessage: string;
+            imageUrl: string | null;
+            approvalStatus: string;
+            paymentStatus: string;
+            startsAt: string | null;
+            expiresAt: string | null;
+          }>;
+        };
+      };
+      const ad = payload.data?.data?.find((item) => item.id === draftId);
+      if (ad) {
+        ad.title = 'A13 Incomplete Draft';
+        ad.announcementMessage = 'Visible only to expose the pay action';
+        ad.imageUrl = ctx.productImageUrl;
+        ad.approvalStatus = 'pending';
+        ad.paymentStatus = 'pending';
+        ad.startsAt = getFutureDateString(5);
+        ad.expiresAt = getFutureDateString(12);
+      }
+      await route.fulfill({ response, json: payload });
     });
 
-    expect(res.status()).toBe(400);
-    const body = await res.json();
-    expect(body.message).toContain('Advertisement content and schedule are required');
-
     await merchantAdPage.goto();
-    await captureScreenshot(merchantPage, 'A-13_1_pay_fee_missing_content_rejected', '400 returned when attempting to pay fee for ad without content or schedule');
+    await merchantAdPage.searchInput.fill('A13 Incomplete Draft');
+    const adCard = merchantAdPage.getAdCard('A13 Incomplete Draft');
+    await expect(adCard).toBeVisible();
+    await adCard.getByRole('button', { name: /Pay|ပေးချေရန်|支払/i }).click();
+    await expect(merchantAdPage.paymentDialog).toBeVisible();
+    await merchantAdPage.paymentReferenceInput.fill('1234567890');
+
+    const paymentResponsePromise = merchantPage.waitForResponse((response) =>
+      response.request().method() === 'POST' &&
+      response.url().endsWith(`/ads/${draftId}/pay`),
+    );
+    await merchantAdPage.paySubmitButton.click();
+    const paymentResponse = await paymentResponsePromise;
+    expect(paymentResponse.status()).toBe(400);
+    const body = await paymentResponse.json();
+    expect(body.message).toContain('Advertisement content and schedule are required');
+    await expect(
+      merchantPage.locator('[data-sonner-toast]').filter({ hasText: /Payment failed\. Please try again\./i }),
+    ).toBeVisible();
+    await captureScreenshot(merchantPage, 'A-13_1_pay_fee_missing_content_rejected', 'Draft payment rejected with 400 and the UI payment error toast is visible');
   });
 
   // A-14: Enter invalid payment reference (< 8 digits or non-numeric)
@@ -374,16 +535,44 @@ test.describe('Merchant Advertisement Management — Abnormal Scenarios (A-01 to
     });
     seededAdIds.push(paidAdId);
 
-    const merchantHeaders = await loginApi(request, 'smt@gmail.com', 'Cosmetics@123');
-    const res = await request.post(`${API_BASE_URL}/ads/${paidAdId}/pay`, {
-      headers: merchantHeaders,
-      data: { paymentReference: '9988776655' },
+    await merchantPage.route('**/api/v1/ads/my-ads*', async (route) => {
+      const response = await route.fetch();
+      const payload = await response.json() as {
+        data?: {
+          data?: Array<{
+            id: string;
+            approvalStatus: string;
+            paymentStatus: string;
+          }>;
+        };
+      };
+      const ad = payload.data?.data?.find((item) => item.id === paidAdId);
+      if (ad) {
+        ad.approvalStatus = 'pending';
+        ad.paymentStatus = 'pending';
+      }
+      await route.fulfill({ response, json: payload });
     });
 
-    expect(res.status()).toBe(400);
-
     await merchantAdPage.goto();
-    await captureScreenshot(merchantPage, 'A-15_1_pay_already_paid_rejected', '400 returned when attempting to submit payment for already paid advertisement');
+    await merchantAdPage.searchInput.fill('A15 Already Paid Ad');
+    const adCard = merchantAdPage.getAdCard('A15 Already Paid Ad');
+    await expect(adCard).toBeVisible();
+    await adCard.getByRole('button', { name: /Pay|ပေးချေရန်|支払/i }).click();
+    await expect(merchantAdPage.paymentDialog).toBeVisible();
+    await merchantAdPage.paymentReferenceInput.fill('9988776655');
+
+    const paymentResponsePromise = merchantPage.waitForResponse((response) =>
+      response.request().method() === 'POST' &&
+      response.url().endsWith(`/ads/${paidAdId}/pay`),
+    );
+    await merchantAdPage.paySubmitButton.click();
+    const paymentResponse = await paymentResponsePromise;
+    expect(paymentResponse.status()).toBe(400);
+    await expect(
+      merchantPage.locator('[data-sonner-toast]').filter({ hasText: /Payment failed\. Please try again\./i }),
+    ).toBeVisible();
+    await captureScreenshot(merchantPage, 'A-15_1_pay_already_paid_rejected', 'Already-paid advertisement payment rejected with 400 and the UI payment error toast is visible');
   });
 
   // A-16: Attempt to delete an active approved advertisement
@@ -576,4 +765,3 @@ test.describe('Merchant Advertisement Management — Abnormal Scenarios (A-01 to
     await captureScreenshot(merchantPage, 'A-22_1_package_future_effective_rejected', '404 AD_PACKAGE_INVALID returned when package lacks past effective history');
   });
 });
-
