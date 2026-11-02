@@ -322,6 +322,72 @@
         "file": "skin-analysis.spec.ts",
         "title": "I-06: POST /api/v1/skin-analysis/compare compares two owned analyses"
       }
+    ],
+    "N-03": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-03: captures a facial image using the live camera"
+      }
+    ],
+    "N-07": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-07: compares two completed analyses"
+      }
+    ],
+    "N-10": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-10: renders health score and hydration trend charts"
+      }
+    ],
+    "N-14": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-14: switches cameras, captures, and retakes"
+      }
+    ],
+    "N-18": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "N-18: displays remaining daily analysis quota"
+      }
+    ],
+    "A-07": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "A-07: denies cross-buyer data access"
+      }
+    ],
+    "A-10": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "A-10: blocks deactivated buyer analysis"
+      }
+    ],
+    "A-11": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "A-11: shows result load error with retry"
+      }
+    ],
+    "A-12": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "A-12: cancels or recovers from failed analysis"
+      }
+    ],
+    "B-03": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "B-03: renders trends at minimum of two analyses"
+      }
+    ],
+    "B-05": [
+      {
+        "file": "skin-analysis.spec.ts",
+        "title": "B-05: handles image below minimum resolution"
+      }
     ]
   }
 }

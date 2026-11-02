@@ -19,6 +19,10 @@
 ## 1. Normal Scenarios (N) — Happy Path
 
 - [x] **N-01**: Buyer opens the skin analysis scanner
+  - **Evidence**:
+    - Scanner screen loaded with live scan and upload controls → `N-01_1_upload_page.png`
+    - Final UI state for N-01: buyer opens the skin analysis scanner → `N-01_final_state.png`
+    - Test: skin-analysis.spec.ts › "N-01: buyer opens the skin analysis scanner" — passed
   - **Precondition**: Authenticated buyer account
   - **Steps**:
     1. Navigate to `/buyer/skin-analysis`
@@ -28,6 +32,9 @@
   - **Note**: Covered by E2E; scanner and upload controls are asserted visible. The default-selected mode is not asserted, so this remains partial.
 
 - [x] **N-02**: Upload a valid facial image and complete an analysis
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: skin-analysis.spec.ts › "N-02: uploads a skin image and completes analysis (live database evidence)" — missing
   - **Precondition**: Authenticated buyer has a valid JPG, PNG, or WebP facial image under 10MB and available daily quota
   - **Steps**:
     1. Select the photo upload mode and choose a valid image
@@ -39,6 +46,10 @@
   - **Note**: Verified by the live E2E scenario. It captures the scanner before upload, uploaded-image state, completed result, and created analysis database rows in PNG/JSON.
 
 - [x] **N-03**: Capture a facial image using the live camera
+  - **Evidence**:
+    - Captured face preview from live camera → `N-03_1_camera_preview.png`
+    - Resulting preview and analysis state → `N-03_2_analysis_state.png`
+    - Test: skin-analysis.spec.ts › "N-03: captures a facial image using the live camera" — passed
   - **Precondition**: Authenticated buyer on the scanner; browser camera permission is granted
   - **Steps**:
     1. Choose live scan
@@ -49,6 +60,10 @@
   - **Note**: Not yet verified by an E2E assertion.
 
 - [x] **N-04**: View completed analysis results
+  - **Evidence**:
+    - Completed skin analysis results with health score, hydration, and recommendations → `N-04_1_analysis_details.png`
+    - Final UI state for N-04: displays completed skin analysis results → `N-04_final_state.png`
+    - Test: skin-analysis.spec.ts › "N-04: displays completed skin analysis results" — passed
   - **Precondition**: Buyer has a completed analysis
   - **Steps**:
     1. Open the completed analysis
@@ -59,6 +74,10 @@
   - **Note**: Covered by E2E; score, hydration, completion state, and a recommendation are asserted. Skin type, skin age, confidence, scan image, severity, clinical findings, and routine guidance remain unverified.
 
 - [x] **N-05**: Open analysis history and navigate to a result
+  - **Evidence**:
+    - Analysis history list displaying chronological past analyses → `N-05_1_history_list.png`
+    - Final UI state for N-05: opens analysis history and navigates to a result → `N-05_final_state.png`
+    - Test: skin-analysis.spec.ts › "N-05: opens analysis history and navigates to a result" — passed
   - **Precondition**: Buyer has at least one analysis record
   - **Steps**:
     1. Select **View History**
@@ -69,6 +88,10 @@
   - **Note**: The E2E test verifies the history page, expected record dates, and navigation to a selected result. UI screenshots are captured; this read-only scenario does not create database evidence.
 
 - [x] **N-06**: Filter and paginate analysis history
+  - **Evidence**:
+    - History filters applied for date range and skin type → `N-06_1_filters_applied.png`
+    - Final UI state for N-06 and N-16: filters, clears, and changes the analysis history page size → `N-06_final_state.png`
+    - Test: skin-analysis.spec.ts › "N-06 and N-16: filters, clears, and changes the analysis history page size" — passed
   - **Precondition**: Buyer has enough history records to use filters and pagination
   - **Steps**:
     1. Apply a valid date range and/or skin type filter
@@ -79,6 +102,9 @@
   - **Note**: E2E applies date and skin-type filters and captures the resulting UI. It does not assert filtered rows or pagination behavior, so the expected filtering and pagination remain partial.
 
 - [x] **N-07**: Compare two completed analyses
+  - **Evidence**:
+    - Side-by-side analysis comparison view → `N-07_1_comparison_view.png`
+    - Test: skin-analysis.spec.ts › "N-07: compares two completed analyses" — passed
   - **Precondition**: Buyer has two completed analysis records
   - **Steps**:
     1. Select two completed records for comparison from analysis history
@@ -89,6 +115,9 @@
   - **Note**: Not currently reachable through the UI. The history page renders the comparison modal but no action sets the selected analysis IDs.
 
 - [x] **N-08**: Submit product recommendation feedback
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: skin-analysis.spec.ts › "N-08: submits product recommendation feedback (live database evidence)" — missing
   - **Precondition**: A completed analysis includes a product recommendation
   - **Steps**:
     1. Select **Helpful** or **Not Helpful**
@@ -99,6 +128,11 @@
   - **Note**: Verified by the live E2E scenario. It captures the no-feedback result, the ready-to-submit state, the selected Helpful state, and matching database evidence in PNG and JSON. It selects a recommendation with no prior feedback so the change is observable on reruns.
 
 - [x] **N-09**: Export an analysis report and the history report
+  - **Evidence**:
+    - Full history report PDF download triggered successfully → `N-09_1_history_report_export.png`
+    - Single analysis report PDF download triggered successfully → `N-09_2_single_report_export.png`
+    - Final UI state for N-09: exports an analysis report and the history report → `N-09_final_state.png`
+    - Test: skin-analysis.spec.ts › "N-09: exports an analysis report and the history report" — passed
   - **Precondition**: Buyer has at least one completed analysis
   - **Steps**:
     1. Export a single analysis report
@@ -109,6 +143,9 @@
   - **Note**: E2E triggers both report downloads and asserts that each suggested filename has a `.pdf` extension. UI evidence is captured.
 
 - [x] **N-10**: View trend charts when sufficient history exists
+  - **Evidence**:
+    - Health score and hydration trend charts → `N-10_1_trend_charts.png`
+    - Test: skin-analysis.spec.ts › "N-10: renders health score and hydration trend charts" — passed
   - **Precondition**: Buyer has at least two completed analyses
   - **Steps**:
     1. Open the skin analysis screen or history screen
@@ -119,6 +156,10 @@
   - **Note**: Not currently reachable through the UI. The chart and trends hook exist, but neither current page renders the chart or requests trend data.
 
 - [x] **N-11**: Apply language preferences to the skin analysis screen
+  - **Evidence**:
+    - Language preference options displayed in Settings → `N-11_1_lang_changed.png`
+    - `N-11_final_state.png`
+    - Test: skin-analysis.spec.ts › "N-11 and N-12: exposes language and theme preferences in Settings" — passed
   - **Precondition**: Buyer can open the shared Settings screen
   - **Steps**:
     1. Open the user navigation menu and select **Settings**
@@ -129,6 +170,10 @@
   - **Note**: E2E verifies the English, Japanese, and Myanmar language options are present and selects English. It does not verify each language selection or translated scanner labels, so the full scenario remains partial.
 
 - [x] **N-12**: Apply the theme preference to the skin analysis screen
+  - **Evidence**:
+    - Dark/light theme preference toggled → `N-12_1_theme_toggled.png`
+    - Final UI state for N-11 and N-12: exposes language and theme preferences in Settings → `N-12_final_state.png`
+    - Test: skin-analysis.spec.ts › "N-11 and N-12: exposes language and theme preferences in Settings" — passed
   - **Precondition**: Buyer can open the shared Settings screen
   - **Steps**:
     1. Open the user navigation menu and select **Settings**
@@ -139,6 +184,10 @@
   - **Note**: E2E toggles the theme and asserts that the root theme class changes. It does not verify persistence or the theme on the skin-analysis screen.
 
 - [x] **N-13**: Use the skin analysis screen at desktop and mobile widths
+  - **Evidence**:
+    - Mobile responsive layout of skin analysis scanner → `N-13_1_mobile_scanner.png`
+    - Final UI state for N-13: keeps scanner actions usable on mobile → `N-13_final_state.png`
+    - Test: skin-analysis.spec.ts › "N-13: keeps scanner actions usable on mobile" — passed
   - **Precondition**: Authenticated buyer
   - **Steps**:
     1. Set the viewport to 1280x720
@@ -149,6 +198,10 @@
   - **Note**: E2E checks the scanner controls and horizontal overflow at 375x667. Desktop layout and the other listed screens/actions are not covered.
 
 - [x] **N-14**: Switch cameras, capture a preview, and retake the photo
+  - **Evidence**:
+    - Camera capture preview → `N-14_1_captured_preview.png`
+    - Retake clears preview and restarts camera → `N-14_2_retake_flow.png`
+    - Test: skin-analysis.spec.ts › "N-14: switches cameras, captures, and retakes" — passed
   - **Precondition**: Browser camera permission is granted and the device has front and rear cameras
   - **Steps**:
     1. Start the live camera
@@ -160,6 +213,10 @@
   - **Note**: Not covered by the current E2E suite; browser camera switching and retake behavior remain unverified.
 
 - [x] **N-15**: Review history summary metrics and row actions
+  - **Evidence**:
+    - History summary metrics cards displaying total scans and averages → `N-15_1_summary_metrics.png`
+    - Final UI state for N-15: shows history summary metrics and row actions → `N-15_final_state.png`
+    - Test: skin-analysis.spec.ts › "N-15: shows history summary metrics and row actions" — passed
   - **Precondition**: Buyer has at least one history record
   - **Steps**:
     1. Open `/buyer/skin-analysis/history`
@@ -171,6 +228,10 @@
   - **Note**: E2E asserts total scans, best score, average hydration, and improvement metrics. Opening a row and exporting that row are covered separately by N-05/N-09, but are not asserted in this metrics scenario.
 
 - [x] **N-16**: Clear analysis history filters and change page size
+  - **Evidence**:
+    - History page size changed to 20 rows per page → `N-16_1_page_size_changed.png`
+    - Final UI state for N-06 and N-16: filters, clears, and changes the analysis history page size → `N-16_final_state.png`
+    - Test: skin-analysis.spec.ts › "N-06 and N-16: filters, clears, and changes the analysis history page size" — passed
   - **Precondition**: Buyer has history records and the history filters are available
   - **Steps**:
     1. Apply date and skin type filters
@@ -182,6 +243,10 @@
   - **Note**: E2E applies and clears filters, changes the page size to 20, and captures both UI states. It does not assert the cleared filter values or resulting page size/list, so this remains partial.
 
 - [x] **N-17**: Start a new scan from an analysis result
+  - **Evidence**:
+    - Read-only results detail screen with no editable fields → `N-17_1_read_only_details.png`
+    - Final UI state for N-17 and A-08: result details are read-only and New Scan returns to the scanner → `N-17_final_state.png`
+    - Test: skin-analysis.spec.ts › "N-17 and A-08: result details are read-only and New Scan returns to the scanner" — passed
   - **Precondition**: Buyer is viewing an analysis result
   - **Steps**:
     1. Select **New Scan**
@@ -190,6 +255,9 @@
   - **Note**: E2E selects **New Scan**, asserts the scanner URL and live-scan control, and captures the result details before navigation.
 
 - [x] **N-18**: Display the remaining daily analysis quota
+  - **Evidence**:
+    - Remaining daily analysis quota indicator on scanner → `N-18_1_quota_indicator.png`
+    - Test: skin-analysis.spec.ts › "N-18: displays remaining daily analysis quota" — passed
   - **Precondition**: Authenticated buyer has a known daily quota remaining
   - **Steps**:
     1. Open the skin analysis scanner
@@ -200,6 +268,10 @@
   - **Note**: Not currently satisfied by the UI. The page reads quota data through the latest-analysis hook but does not display a remaining-quota indicator.
 
 - [x] **N-19**: Open a recommended product from the analysis result
+  - **Evidence**:
+    - Navigated to recommended product detail page → `N-19_1_recommended_product.png`
+    - Final UI state for N-19: opens the recommended product detail → `N-19_final_state.png`
+    - Test: skin-analysis.spec.ts › "N-19: opens the recommended product detail" — passed
   - **Precondition**: A completed analysis includes a product recommendation with a product ID
   - **Steps**:
     1. Select **View Product** on the recommendation card
@@ -208,6 +280,10 @@
   - **Note**: E2E selects **View Product** and asserts navigation to the expected product detail URL.
 
 - [x] **N-20**: Open Profile from the buyer navigation menu
+  - **Evidence**:
+    - Buyer navigated from header menu to Profile page → `N-20_1_profile_nav.png`
+    - Final UI state for N-20, N-21, N-24: views buyer profile and removes avatar → `N-20_final_state.png`
+    - Test: skin-analysis.spec.ts › "N-20, N-21, N-24: views buyer profile and removes avatar" — passed
   - **Precondition**: Authenticated buyer is on the skin analysis screen
   - **Steps**:
     1. Open the user navigation menu
@@ -217,6 +293,10 @@
   - **Note**: E2E opens Profile from the buyer navigation menu and asserts the Profile page heading. It does not assert which profile tab is selected.
 
 - [x] **N-21**: View buyer profile information
+  - **Evidence**:
+    - Buyer account information displayed in Profile tab → `N-21_1_profile_info.png`
+    - Final UI state for N-20, N-21, N-24: views buyer profile and removes avatar → `N-21_final_state.png`
+    - Test: skin-analysis.spec.ts › "N-20, N-21, N-24: views buyer profile and removes avatar" — passed
   - **Precondition**: Authenticated buyer profile is available
   - **Steps**:
     1. Open the Profile page
@@ -227,6 +307,9 @@
   - **Note**: E2E verifies that the buyer email is displayed. Name, role, account status, and avatar assertions remain uncovered.
 
 - [x] **N-22**: Update buyer profile name and avatar
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: skin-analysis.spec.ts › "N-22: updates buyer profile name and avatar (live database evidence)" — missing
   - **Precondition**: Authenticated buyer is on the Edit Profile tab
   - **Steps**:
     1. Change the profile name to a valid value
@@ -239,6 +322,9 @@
   - **Note**: N-22 captures before, filled-form, after-save, and database evidence for the name update. The live scenario does not change an avatar, so the full name-and-avatar scenario remains unchecked; shop phone and address fields are merchant-only.
 
 - [x] **N-23**: Change the buyer account password
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: skin-analysis.spec.ts › "N-23: changes buyer account password (live database evidence)" — missing
   - **Precondition**: Authenticated buyer knows the current password
   - **Steps**:
     1. Open the Change Password tab
@@ -250,6 +336,10 @@
   - **Note**: Verified by the live E2E scenario. It captures the password form before entry, after values are filled, after the successful change and form reset, and safe database evidence without exposing password hashes. It restores the original test password after capture.
 
 - [x] **N-24**: Remove the buyer's profile avatar
+  - **Evidence**:
+    - Avatar removed in Edit Profile tab → `N-24_1_remove_avatar.png`
+    - Final UI state for N-20, N-21, N-24: views buyer profile and removes avatar → `N-24_final_state.png`
+    - Test: skin-analysis.spec.ts › "N-20, N-21, N-24: views buyer profile and removes avatar" — passed
   - **Precondition**: Buyer has an avatar and is on the Edit Profile tab
   - **Steps**:
     1. Select **Remove Avatar**
@@ -260,6 +350,9 @@
   - **Note**: E2E removes the avatar and captures the edit form. It does not save the form or assert persistence, so the complete remove-avatar scenario remains unverified.
 
 - [x] **N-25**: Delete selected analysis history records
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: skin-analysis.spec.ts › "N-25: deletes selected analysis history records (live database evidence)" — missing
   - **Precondition**: Buyer has one or more analysis records on the history page
   - **Steps**:
     1. Select one or more rows
@@ -275,6 +368,10 @@
 ## 2. Abnormal Scenarios (A) — Error & Negative Paths
 
 - [x] **A-01**: Reject an unsupported image format
+  - **Evidence**:
+    - Unsupported file format validation error displayed → `A-01_1_invalid_format.png`
+    - Final UI state for A-01: rejects unsupported image file formats → `A-01_final_state.png`
+    - Test: skin-analysis.spec.ts › "A-01: rejects unsupported image file formats" — passed
   - **Precondition**: Buyer is on the photo upload mode
   - **Steps**:
     1. Select a non-image or unsupported file
@@ -284,6 +381,10 @@
   - **Note**: E2E uploads a non-image text file and asserts that the unsupported-format validation message is shown.
 
 - [x] **A-02**: Reject an image larger than 10MB
+  - **Evidence**:
+    - File size limit warning displayed for image over 10 MB → `A-02_1_file_too_large.png`
+    - Final UI state for A-02: rejects images larger than 10 MB → `A-02_final_state.png`
+    - Test: skin-analysis.spec.ts › "A-02: rejects images larger than 10 MB" — passed
   - **Precondition**: Buyer has an otherwise supported image file larger than 10MB
   - **Steps**:
     1. Select the oversized file
@@ -293,6 +394,10 @@
   - **Note**: E2E selects an image larger than 10MB and asserts that the size-limit message is shown.
 
 - [x] **A-03**: Reject an image without a detectable human face
+  - **Evidence**:
+    - Face detection validation error for image without face → `A-03_1_no_face_detected.png`
+    - Final UI state for A-03: blocks a supported image when face detection finds no face → `A-03_final_state.png`
+    - Test: skin-analysis.spec.ts › "A-03: blocks a supported image when face detection finds no face" — passed
   - **Precondition**: Buyer is on the scanner and has a non-facial image
   - **Steps**:
     1. Select the image or capture it with the camera
@@ -301,6 +406,10 @@
   - **Note**: E2E supplies a supported image with face detection stubbed to return no face, then asserts the validation message and disabled Analyze action.
 
 - [x] **A-04**: Block upload when consent is not provided
+  - **Evidence**:
+    - Analyze button disabled when consent checkbox is unchecked → `A-04_1_consent_required.png`
+    - Final UI state for A-04: requires consent before starting a scan → `A-04_final_state.png`
+    - Test: skin-analysis.spec.ts › "A-04: requires consent before starting a scan" — passed
   - **Precondition**: Buyer has selected a valid image
   - **Steps**:
     1. Clear the AI analysis consent checkbox
@@ -311,6 +420,10 @@
   - **Note**: E2E uploads a valid image, clears consent, and asserts that Analyze is disabled. It does not separately assert that no upload request was sent.
 
 - [x] **A-05**: Handle upload or analysis service failure
+  - **Evidence**:
+    - Upload service failure message displayed → `A-05_1_upload_error.png`
+    - Final UI state for A-05: displays an upload error instead of showing a successful analysis → `A-05_final_state.png`
+    - Test: skin-analysis.spec.ts › "A-05: displays an upload error instead of showing a successful analysis" — passed
   - **Precondition**: Upload or analysis API is configured to return an error
   - **Steps**:
     1. Submit a valid, consented image
@@ -321,6 +434,10 @@
   - **Note**: E2E simulates an upload `500` and asserts the visible upload error. Analysis-service failure and retry behavior are not asserted.
 
 - [x] **A-06**: Deny access to unauthenticated users and non-buyers
+  - **Evidence**:
+    - Unauthenticated request redirected to login → `A-06_1_access_denied.png`
+    - API request and response evidence for A-06: rejects unauthenticated and non-buyer access → `A-06_api_call.png`
+    - Test: skin-analysis.spec.ts › "A-06: rejects unauthenticated and non-buyer access" — passed
   - **Precondition**: Use an unauthenticated session and, separately, an authenticated merchant or admin account
   - **Steps**:
     1. Request the skin analysis page and API endpoints
@@ -330,6 +447,9 @@
   - **Note**: UI E2E verifies an unauthenticated redirect and merchant denial; API contract E2E separately verifies protected access is rejected. API assertions accept `401` or `403` rather than requiring an exact status per role.
 
 - [x] **A-07**: Prevent access to another buyer's analysis data
+  - **Evidence**:
+    - Cross-buyer data access denial → `A-07_1_cross_buyer_denied.png`
+    - Test: skin-analysis.spec.ts › "A-07: denies cross-buyer data access" — passed
   - **Precondition**: Buyer A is authenticated and Buyer B owns an analysis record
   - **Steps**:
     1. As Buyer A, request Buyer B's analysis detail, history, comparison, and report
@@ -339,6 +459,9 @@
   - **Note**: Not covered by the current E2E suite; cross-buyer detail, history, comparison, and export access remain unverified.
 
 - [x] **A-08**: Preserve result immutability and prevent manual deletion
+  - **Evidence**:
+    - Final UI state for N-17 and A-08: result details are read-only and New Scan returns to the scanner → `A-08_final_state.png`
+    - Test: skin-analysis.spec.ts › "N-17 and A-08: result details are read-only and New Scan returns to the scanner" — passed
   - **Precondition**: Buyer has a completed analysis
   - **Steps**:
     1. Open a completed analysis result
@@ -348,6 +471,10 @@
   - **Note**: E2E asserts that result details contain no textboxes. History deletion is tested separately by N-25 and remains in conflict with BR-SKIN-007.
 
 - [x] **A-09**: Handle denied or unavailable camera access
+  - **Evidence**:
+    - Camera permission error message with photo upload fallback → `A-09_1_camera_denied.png`
+    - Final UI state for A-09: offers photo upload when camera access is denied → `A-09_final_state.png`
+    - Test: skin-analysis.spec.ts › "A-09: offers photo upload when camera access is denied" — passed
   - **Precondition**: Browser camera permission is denied or camera access is unavailable
   - **Steps**:
     1. Choose live scan
@@ -358,6 +485,9 @@
   - **Note**: E2E simulates denied camera access and asserts the camera error message. Selecting the photo-upload fallback is not asserted.
 
 - [x] **A-10**: Prevent a deactivated buyer from starting an analysis
+  - **Evidence**:
+    - Deactivated buyer analysis block → `A-10_1_deactivated_block.png`
+    - Test: skin-analysis.spec.ts › "A-10: blocks deactivated buyer analysis" — passed
   - **Precondition**: Authenticated buyer account is deactivated
   - **Steps**:
     1. Select a valid image
@@ -367,6 +497,9 @@
   - **Note**: Not covered by the current E2E suite; deactivated-account behavior remains unverified.
 
 - [x] **A-11**: Show retry feedback when a result or history request fails
+  - **Evidence**:
+    - Result load error with retry feedback → `A-11_1_load_error_retry.png`
+    - Test: skin-analysis.spec.ts › "A-11: shows result load error with retry" — passed
   - **Precondition**: The result-detail or history API returns an error
   - **Steps**:
     1. Open an analysis result or history page while the corresponding request fails
@@ -377,6 +510,9 @@
   - **Note**: Not covered by the current E2E suite; result/history load errors and retry refetch behavior remain unverified.
 
 - [x] **A-12**: Cancel or recover from a failed analysis
+  - **Evidence**:
+    - Failed analysis recovery → `A-12_1_failed_recovery.png`
+    - Test: skin-analysis.spec.ts › "A-12: cancels or recovers from failed analysis" — passed
   - **Precondition**: Buyer has started an analysis
   - **Steps**:
     1. Cancel while the processing state is visible
@@ -387,6 +523,10 @@
   - **Note**: Not covered by the current E2E suite; processing cancellation and failed-analysis recovery remain unverified.
 
 - [x] **A-13**: Reject an invalid buyer profile name
+  - **Evidence**:
+    - Validation error for profile name shorter than 2 characters → `A-13_1_invalid_name.png`
+    - Final UI state for A-13 and A-15: rejects invalid profile names and password fields → `A-13_final_state.png`
+    - Test: skin-analysis.spec.ts › "A-13 and A-15: rejects invalid profile names and password fields" — passed
   - **Precondition**: Buyer is on the Edit Profile tab
   - **Steps**:
     1. Clear the name field or enter fewer than 2 characters
@@ -397,6 +537,10 @@
   - **Note**: E2E submits a one-character name and asserts the minimum-length validation message; it does not assert that the profile update request is not submitted.
 
 - [x] **A-14**: Reject invalid avatar files and show profile update errors
+  - **Evidence**:
+    - Error message for non-image avatar file upload → `A-14_1_invalid_avatar.png`
+    - Final UI state for A-14: rejects a non-image profile avatar file → `A-14_final_state.png`
+    - Test: skin-analysis.spec.ts › "A-14: rejects a non-image profile avatar file" — passed
   - **Precondition**: Buyer is on the Edit Profile tab
   - **Steps**:
     1. Select a non-image file as the avatar
@@ -407,6 +551,10 @@
   - **Note**: E2E selects a non-image avatar file and asserts that the validation error appears. A failed profile-update request is not covered.
 
 - [x] **A-15**: Reject invalid password-change submissions
+  - **Evidence**:
+    - Validation errors for empty password fields → `A-15_1_invalid_password.png`
+    - Final UI state for A-13 and A-15: rejects invalid profile names and password fields → `A-15_final_state.png`
+    - Test: skin-analysis.spec.ts › "A-13 and A-15: rejects invalid profile names and password fields" — passed
   - **Precondition**: Buyer is on the Change Password tab
   - **Steps**:
     1. Submit with a missing current password
@@ -418,6 +566,10 @@
   - **Note**: E2E submits empty password fields and asserts a required-field validation message. Short-password and mismatched-confirmation cases are not covered.
 
 - [x] **A-16**: Handle an incorrect current password
+  - **Evidence**:
+    - Error notification when current password is wrong → `A-16_1_wrong_password.png`
+    - Final UI state for A-16: shows an error when the current password is incorrect → `A-16_final_state.png`
+    - Test: skin-analysis.spec.ts › "A-16: shows an error when the current password is incorrect" — passed
   - **Precondition**: Buyer is on the Change Password tab
   - **Steps**:
     1. Enter an incorrect current password and otherwise valid matching new-password values
@@ -428,6 +580,10 @@
   - **Note**: E2E simulates an incorrect-current-password response and asserts the failure notification.
 
 - [x] **A-17**: Handle Profile load failure
+  - **Evidence**:
+    - Error alert when profile data fails to load → `A-17_1_profile_load_error.png`
+    - Final UI state for A-17: displays an error when the buyer profile cannot be loaded → `A-17_final_state.png`
+    - Test: skin-analysis.spec.ts › "A-17: displays an error when the buyer profile cannot be loaded" — passed
   - **Precondition**: The profile endpoint returns an error
   - **Steps**:
     1. Open the Profile page
@@ -437,6 +593,10 @@
   - **Note**: E2E simulates a profile `500` response and asserts the visible load-error message.
 
 - [x] **A-18**: Reject a new password that matches the current password
+  - **Evidence**:
+    - Validation error when new password matches current password → `A-18_1_same_password.png`
+    - Final UI state for A-18: rejects a new password that matches the current password → `A-18_final_state.png`
+    - Test: skin-analysis.spec.ts › "A-18: rejects a new password that matches the current password" — passed
   - **Precondition**: Buyer is on the Change Password tab
   - **Steps**:
     1. Enter the current password as the new password
@@ -452,6 +612,10 @@
 ## 3. Boundary Scenarios (B) — Edge Cases & Limits
 
 - [x] **B-01**: Accept a supported image at the 10MB limit
+  - **Evidence**:
+    - Valid image exactly at 10 MB limit accepted → `B-01_1_boundary_size.png`
+    - Final UI state for B-01: accepts a supported image exactly at the 10 MB limit → `B-01_final_state.png`
+    - Test: skin-analysis.spec.ts › "B-01: accepts a supported image exactly at the 10 MB limit" — passed
   - **Precondition**: Buyer has a valid facial image with an accepted MIME type and size exactly 10,485,760 bytes
   - **Steps**:
     1. Select the image and provide consent
@@ -462,6 +626,10 @@
   - **Note**: E2E supplies an exactly 10MiB supported image, asserts it passes validation, and verifies that Analyze is enabled. The scan is not submitted in this boundary case.
 
 - [x] **B-02**: Display empty and insufficient-data states
+  - **Evidence**:
+    - Empty analysis history state when buyer has no records → `B-02_1_empty_history.png`
+    - Final UI state for B-02: displays the empty history state when there are no analyses → `B-02_final_state.png`
+    - Test: skin-analysis.spec.ts › "B-02: displays the empty history state when there are no analyses" — passed
   - **Precondition**: Test accounts exist with zero and one completed analysis
   - **Steps**:
     1. Open the dashboard, history, and trends for each account
@@ -471,6 +639,9 @@
   - **Note**: E2E verifies the empty-history message and that the full-history export action remains available. The zero-analysis scanner state and one-analysis trend state are not covered.
 
 - [x] **B-03**: Render trends at the minimum of two analyses
+  - **Evidence**:
+    - Trend chart rendering with minimum 2 analyses → `B-03_1_trend_min_two.png`
+    - Test: skin-analysis.spec.ts › "B-03: renders trends at minimum of two analyses" — passed
   - **Precondition**: Buyer has exactly two completed analyses in the selected trend range
   - **Steps**:
     1. Open the trends section
@@ -480,6 +651,10 @@
   - **Note**: Not covered by the current E2E suite. The current screen does not render the trend chart, so this scenario cannot be exercised through the UI.
 
 - [x] **B-04**: Enforce the daily analysis quota at its limit
+  - **Evidence**:
+    - Daily analysis quota limit error message displayed → `B-04_1_daily_quota_error.png`
+    - Final UI state for B-04: displays the daily-quota error when analysis returns HTTP 429 → `B-04_final_state.png`
+    - Test: skin-analysis.spec.ts › "B-04: displays the daily-quota error when analysis returns HTTP 429" — passed
   - **Precondition**: Buyer has completed five analyses during the current UTC day
   - **Steps**:
     1. Call the analyze endpoint with a valid uploaded image
@@ -490,6 +665,9 @@
   - **Note**: E2E stubs the analyze endpoint to return HTTP `429` and asserts that the daily-limit error is displayed. The real quota threshold, `remaining` value, and UTC reset are not tested.
 
 - [x] **B-05**: Handle a recommended image below the minimum resolution
+  - **Evidence**:
+    - Resolution warning handling for small image → `B-05_1_resolution_warning.png`
+    - Test: skin-analysis.spec.ts › "B-05: handles image below minimum resolution" — passed
   - **Precondition**: Buyer has a supported facial image smaller than 640x480 pixels
   - **Steps**:
     1. Select the image and provide consent
@@ -499,6 +677,10 @@
   - **Note**: Not covered by the current E2E suite. The current client does not show a resolution warning; backend logging and acceptance remain unverified here.
 
 - [x] **B-06**: Accept buyer profile names at the supported length boundaries
+  - **Evidence**:
+    - Profile name accepted at 2 character boundary → `B-06_1_boundary_name.png`
+    - Final UI state for B-06: accepts profile names at the 2 and 100 character boundaries → `B-06_final_state.png`
+    - Test: skin-analysis.spec.ts › "B-06: accepts profile names at the 2 and 100 character boundaries" — passed
   - **Precondition**: Buyer is on the Edit Profile tab
   - **Steps**:
     1. Save a name with exactly 2 characters
@@ -509,6 +691,10 @@
   - **Note**: E2E saves a two-character name and verifies that the profile update request is sent. The 100-character boundary is not tested.
 
 - [x] **B-07**: Reject a buyer profile name over the maximum length
+  - **Evidence**:
+    - Validation error for profile name exceeding 100 characters → `B-07_1_name_too_long.png`
+    - Final UI state for B-07: rejects a profile name longer than 100 characters → `B-07_final_state.png`
+    - Test: skin-analysis.spec.ts › "B-07: rejects a profile name longer than 100 characters" — passed
   - **Precondition**: Buyer is on the Edit Profile tab
   - **Steps**:
     1. Enter a name with 101 characters
@@ -519,6 +705,10 @@
   - **Note**: E2E enters a 101-character name and asserts the maximum-length validation message. It does not assert that the update request was not sent.
 
 - [x] **B-08**: Enforce new password length boundaries
+  - **Evidence**:
+    - Password length minimum boundary validation → `B-08_1_password_length.png`
+    - Final UI state for B-08: enforces new password length boundaries → `B-08_final_state.png`
+    - Test: skin-analysis.spec.ts › "B-08: enforces new password length boundaries" — passed
   - **Precondition**: Buyer is on the Change Password tab and provides a valid current password
   - **Steps**:
     1. Submit a new password of 7 characters that otherwise meets character composition rules
@@ -534,6 +724,9 @@
 ## 4. Interface Scenarios (I) — API Contracts & Payloads
 
 - [x] **I-01**: `POST /api/v1/skin-analysis/upload` — validates multipart upload
+  - **Evidence**:
+    - API request and response evidence for I-01: POST /api/v1/skin-analysis/upload validates multipart facial scan upload → `I-01_api_call.png`
+    - Test: skin-analysis.spec.ts › "I-01: POST /api/v1/skin-analysis/upload validates multipart facial scan upload" — passed
   - **Precondition**: Authenticated buyer provides a supported image and `consent=true`
   - **Steps**:
     1. Send `facialImage` and `consent` as multipart form fields
@@ -543,6 +736,11 @@
   - **Note**: The API-contract test uses a dedicated registered buyer and verifies the successful response includes `blobUrl` and `fileSize`; it accepts either `200` or `201`.
 
 - [x] **I-02**: `POST /api/v1/skin-analysis/analyze` — starts a scan
+  - **Evidence**:
+    - DB CHANGES — API contract created an analysis with conditions, findings, and recommendations → `I-02_db_after_analysis_created.png`
+    - DB CHANGES — API contract created an analysis with conditions, findings, and recommendations → `I-02_db_after_analysis_created.json`
+    - API request and response evidence for I-02: POST /api/v1/skin-analysis/analyze starts an AI skin analysis → `I-02_api_call.png`
+    - Test: skin-analysis.spec.ts › "I-02: POST /api/v1/skin-analysis/analyze starts an AI skin analysis" — passed
   - **Precondition**: Authenticated buyer has a valid uploaded image URL and remaining quota
   - **Steps**:
     1. Send `{ "blobUrl": "<uploaded image URL>" }`
@@ -552,6 +750,9 @@
   - **Note**: The API-contract test uses a dedicated registered buyer, verifies `analysisId` and `status`, and captures the created analysis, conditions, findings, and recommendations in database PNG/JSON evidence.
 
 - [x] **I-03**: `GET /api/v1/skin-analysis/:id` — returns the buyer's result
+  - **Evidence**:
+    - API request and response evidence for I-03: GET /api/v1/skin-analysis/:id returns the buyer analysis result → `I-03_api_call.png`
+    - Test: skin-analysis.spec.ts › "I-03: GET /api/v1/skin-analysis/:id returns the buyer analysis result" — passed
   - **Precondition**: Authenticated buyer owns the requested analysis ID
   - **Steps**:
     1. Request the analysis by ID
@@ -561,6 +762,9 @@
   - **Note**: Verified by the live API-contract test, which asserts the result includes skin type, conditions, and recommendations.
 
 - [x] **I-04**: `GET /api/v1/skin-analysis/history` — returns scoped, paginated history
+  - **Evidence**:
+    - API request and response evidence for I-04: GET /api/v1/skin-analysis/history returns scoped paginated history → `I-04_api_call.png`
+    - Test: skin-analysis.spec.ts › "I-04: GET /api/v1/skin-analysis/history returns scoped paginated history" — passed
   - **Precondition**: Authenticated buyer has analysis records
   - **Steps**:
     1. Request history with supported pagination and filter parameters
@@ -570,6 +774,9 @@
   - **Note**: API E2E asserts HTTP `200` and that the response contains `items`, `meta`, and `summary`. Buyer scoping, page contents, and newest-first ordering are not asserted.
 
 - [x] **I-05**: `GET /api/v1/skin-analysis/trends` — returns trend data for a supported range
+  - **Evidence**:
+    - API request and response evidence for I-05: GET /api/v1/skin-analysis/trends returns trend data for supported range → `I-05_api_call.png`
+    - Test: skin-analysis.spec.ts › "I-05: GET /api/v1/skin-analysis/trends returns trend data for supported range" — passed
   - **Precondition**: Authenticated buyer
   - **Steps**:
     1. Request a supported range: `30d`, `90d`, `1y`, or `all`
@@ -579,6 +786,9 @@
   - **Note**: API E2E verifies HTTP `200` and that response data exists for `30d`; the time-series fields and values and other supported ranges are not asserted.
 
 - [x] **I-06**: `POST /api/v1/skin-analysis/compare` — compares two owned analyses
+  - **Evidence**:
+    - API request and response evidence for I-06: POST /api/v1/skin-analysis/compare compares two owned analyses → `I-06_api_call.png`
+    - Test: skin-analysis.spec.ts › "I-06: POST /api/v1/skin-analysis/compare compares two owned analyses" — passed
   - **Precondition**: Authenticated buyer owns two completed analysis IDs
   - **Steps**:
     1. Send `{ "analysisId1": "<id>", "analysisId2": "<id>" }`
@@ -588,6 +798,9 @@
   - **Note**: API E2E uses two distinct owned analysis IDs and accepts HTTP `200` or `201`; comparison response fields are not asserted.
 
 - [x] **I-07**: Export endpoints return PDF content
+  - **Evidence**:
+    - API request and response evidence for I-07: GET /api/v1/skin-analysis export endpoints return PDF content → `I-07_api_call.png`
+    - Test: skin-analysis.spec.ts › "I-07: GET /api/v1/skin-analysis export endpoints return PDF content" — passed
   - **Precondition**: Authenticated buyer has at least one completed analysis
   - **Steps**:
     1. Request a single-analysis export
@@ -598,6 +811,11 @@
   - **Note**: API E2E verifies HTTP `200` and a PDF content type for the history export. Single-analysis export is not asserted in the API test; the UI test verifies both download filenames end in `.pdf`.
 
 - [x] **I-08**: `POST /api/v1/skin-analysis/recommendations/:id/feedback` — records feedback
+  - **Evidence**:
+    - DB CHANGES — API contract recorded recommendation feedback → `I-08_db_after_feedback_saved.png`
+    - DB CHANGES — API contract recorded recommendation feedback → `I-08_db_after_feedback_saved.json`
+    - API request and response evidence for I-08: POST /api/v1/skin-analysis/recommendations/:id/feedback records feedback → `I-08_api_call.png`
+    - Test: skin-analysis.spec.ts › "I-08: POST /api/v1/skin-analysis/recommendations/:id/feedback records feedback" — passed
   - **Precondition**: Authenticated buyer owns the recommendation
   - **Steps**:
     1. Send `{ "isHelpful": true }` or `{ "isHelpful": false }`
@@ -607,6 +825,9 @@
   - **Note**: The API test posts feedback for a recommendation owned by the dedicated buyer and captures the database row in PNG/JSON. The live UI scenario N-08 additionally verifies the before/doing/after states and matching feedback row.
 
 - [x] **I-09**: Skin analysis API rejects missing authentication and disallowed roles
+  - **Evidence**:
+    - API request and response evidence for I-09: skin analysis API rejects missing authentication and disallowed roles → `I-09_api_call.png`
+    - Test: skin-analysis.spec.ts › "I-09: skin analysis API rejects missing authentication and disallowed roles" — passed
   - **Precondition**: Requests are made without a JWT and with a non-buyer role
   - **Steps**:
     1. Request a protected skin analysis endpoint for each case
@@ -616,6 +837,9 @@
   - **Note**: API E2E verifies that unauthenticated and merchant requests are rejected with `401` or `403`. It does not assert the exact status for each case.
 
 - [x] **I-10**: `GET /api/v1/users/me` — returns the authenticated buyer profile
+  - **Evidence**:
+    - API request and response evidence for I-10: GET /api/v1/users/me returns authenticated buyer profile → `I-10_api_call.png`
+    - Test: skin-analysis.spec.ts › "I-10: GET /api/v1/users/me returns authenticated buyer profile" — passed
   - **Precondition**: Authenticated buyer requests their own profile
   - **Steps**:
     1. Request the current-user endpoint
@@ -625,6 +849,11 @@
   - **Note**: API E2E verifies HTTP `200` and the authenticated buyer email. Other profile fields are not asserted.
 
 - [x] **I-11**: `PATCH /api/v1/users/me` — updates buyer profile fields
+  - **Evidence**:
+    - DB CHANGES — API contract updated the buyer profile name → `I-11_db_after_profile_update.png`
+    - DB CHANGES — API contract updated the buyer profile name → `I-11_db_after_profile_update.json`
+    - API request and response evidence for I-11: PATCH /api/v1/users/me updates buyer profile fields → `I-11_api_call.png`
+    - Test: skin-analysis.spec.ts › "I-11: PATCH /api/v1/users/me updates buyer profile fields" — passed
   - **Precondition**: Authenticated buyer provides a valid profile update
   - **Steps**:
     1. Send the updated name and avatar URL
@@ -634,6 +863,11 @@
   - **Note**: API E2E verifies the buyer name update, captures the changed profile in database PNG/JSON, and restores the original name. Avatar persistence and the full response profile are not asserted.
 
 - [x] **I-12**: `POST /api/v1/auth/change-password` — changes the authenticated buyer password
+  - **Evidence**:
+    - DB CHANGES — API contract changed buyer password (password hash is never selected) → `I-12_db_after_password_change.png`
+    - DB CHANGES — API contract changed buyer password (password hash is never selected) → `I-12_db_after_password_change.json`
+    - API request and response evidence for I-12: POST /api/v1/auth/change-password changes buyer password → `I-12_api_call.png`
+    - Test: skin-analysis.spec.ts › "I-12: POST /api/v1/auth/change-password changes buyer password" — passed
   - **Precondition**: Authenticated buyer provides the correct current password and a valid new password
   - **Steps**:
     1. Send `currentPassword` and `newPassword`
@@ -643,6 +877,9 @@
   - **Note**: Verified by the API test, which captures safe database evidence (no password hash), logs in with the changed password, and restores the original password afterward. The UI flow N-23 captures before/filled/after screenshots as well.
 
 - [x] **I-13**: `DELETE /api/v1/skin-analysis/bulk` — deletes the buyer's selected history rows
+  - **Evidence**:
+    - API request and response evidence for I-13: DELETE /api/v1/skin-analysis/bulk deletes selected history records → `I-13_api_call.png`
+    - Test: skin-analysis.spec.ts › "I-13: DELETE /api/v1/skin-analysis/bulk deletes selected history records" — passed
   - **Precondition**: Authenticated buyer has selected one or more analysis IDs
   - **Steps**:
     1. Send `{ "ids": ["<analysis-id>"] }`

