@@ -13,9 +13,6 @@ interface OrderPaginationProps {
 export function OrderPagination({ meta, onPageChange, onLimitChange, sizes = [10, 20, 50, 100] }: OrderPaginationProps) {
   const { t } = useTranslation();
 
-  const startIndex = meta.total === 0 ? 0 : (meta.page - 1) * meta.limit + 1;
-  const endIndex = Math.min(meta.page * meta.limit, meta.total);
-
   const totalPages = Math.ceil(meta.total / meta.limit);
   const safeTotal = Math.max(totalPages || 1, 1);
   const prevDisabled = meta.page <= 1;
@@ -59,9 +56,9 @@ export function OrderPagination({ meta, onPageChange, onLimitChange, sizes = [10
         <span className="text-[13px] text-muted-foreground transition-opacity duration-200">
           {t(
             'common.pagination.showingOrders',
-            'Showing {start}–{end} of {total} orders',
-            { start: startIndex, end: endIndex, total: meta.total }
-          )}
+            'Showing {{page}} of {{totalPages}}',
+            { page: meta.page, totalPages: safeTotal }
+          ).replace(/<[^>]*>/g, '')}
         </span>
       </div>
 
