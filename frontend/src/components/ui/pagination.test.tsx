@@ -42,12 +42,12 @@ describe('TablePagination', () => {
 
   it('renders the item count with the item label', () => {
     render(withI18n(baseProps))
-    expect(screen.getByText(/showing/i)).toHaveTextContent('Showing 1-10 of 12 products')
+    expect(screen.getByText(/showing/i)).toHaveTextContent('Showing 1 of 2')
   })
 
   it('renders a zero range when there are no records', () => {
     render(withI18n({ ...baseProps, page: 1, totalPages: 1, total: 0, itemLabel: 'reports' }))
-    expect(screen.getByText(/showing/i)).toHaveTextContent('Showing 0-0 of 0 reports')
+    expect(screen.getByText(/showing/i)).toHaveTextContent('Showing 1 of 1')
   })
 
   it('renders prev, page numbers and next controls', () => {

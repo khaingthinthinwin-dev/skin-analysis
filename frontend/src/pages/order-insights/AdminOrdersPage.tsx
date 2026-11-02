@@ -164,7 +164,7 @@ export default function AdminOrdersPage() {
       </Card>
 
       {ordersQuery.data && ordersQuery.data.meta.total > 0 && (
-        <OrderPagination meta={ordersQuery.data.meta} onPageChange={changePage} onLimitChange={changeLimit} sizes={[10, 20, 50]} />
+        <OrderPagination meta={ordersQuery.data.meta} onPageChange={changePage} onLimitChange={changeLimit} sizes={[10, 20, 50, 100]} />
       )}
       {isExportDialogOpen && <ExportAdminOrdersDialog filters={filters} total={ordersQuery.data?.meta.total ?? 0} onClose={() => setIsExportDialogOpen(false)} />}
     </main>

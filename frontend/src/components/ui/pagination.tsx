@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import { Trans, useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next'
 
 export interface TablePaginationProps {
   page: number
@@ -54,17 +54,19 @@ export function TablePagination({
   limit,
   onLimitChange,
   total,
-  itemLabel,
   pageSizeOptions = [10, 20, 50, 100],
   className,
 }: TablePaginationProps) {
   const { t } = useTranslation()
-  const safeTotalPages = Math.max(totalPages || 1, 1)
+  const computedTotalPages = limit > 0 ? Math.ceil(total / limit) : 0
+  const safeTotalPages = Math.max(computedTotalPages || totalPages || 1, 1)
   const prevDisabled = page <= 1
   const nextDisabled = page >= safeTotalPages
 
-  const from = total === 0 ? 0 : (page - 1) * limit + 1
-  const to = Math.min(page * limit, total)
+  const showingText = t('common.pagination.showingRange', 'Showing {{page}} of {{totalPages}}', {
+    page,
+    totalPages: safeTotalPages,
+  }).replace(/<[^>]*>/g, '')
 
   return (
     <div
@@ -94,15 +96,7 @@ export function TablePagination({
         </select>
 
         <span className="text-[13px] text-muted-foreground transition-opacity duration-200">
-          <Trans
-            i18nKey="common.pagination.showingRange"
-            defaults="Showing <range>{{from}}-{{to}}</range> of <total>{{total}}</total> {{itemLabel}}"
-            values={{ from, to, total, itemLabel }}
-            components={{
-              range: <span className="font-semibold text-foreground" />,
-              total: <span className="font-semibold text-foreground" />,
-            }}
-          />
+          {showingText}
         </span>
       </div>
 
